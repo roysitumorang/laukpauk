@@ -1,2 +1,4 @@
 /.env
 /laukpauk
+/keys/app.rsa
+/keys/app.rsa.pub
