@@ -53,11 +53,7 @@ func GenerateHashIDs(mingLength int, numbers ...int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	hash, err := hashID.EncodeInt64(numbers)
-	if err != nil {
-		return "", err
-	}
-	return hash, nil
+	return hashID.EncodeInt64(numbers)
 }
 
 func GenerateSnowflakeUniqueID() (_ int64, err error) {
