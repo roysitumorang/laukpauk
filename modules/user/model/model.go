@@ -7,6 +7,12 @@ import (
 	roleModel "github.com/roysitumorang/laukpauk/modules/role/model"
 )
 
+const (
+	StatusHold int = iota
+	StatusActive
+	StatusSuspended = -1
+)
+
 type (
 	User struct {
 		ID                   int64              `json:"id"`

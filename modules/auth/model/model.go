@@ -1,20 +1,20 @@
 package model
 
 import (
-	"errors"
-
+	"github.com/gofiber/fiber/v2"
+	"github.com/roysitumorang/laukpauk/errors"
 	userModel "github.com/roysitumorang/laukpauk/modules/user/model"
 )
 
-var ErrLoginFailed = errors.New("login failed")
+var ErrLoginFailed = errors.New(fiber.StatusBadRequest, "login failed")
 
 type (
-	SignInRequest struct {
+	LoginRequest struct {
 		MobilePhone string `json:"mobile_phone"`
 		Password    string `json:"password"`
 	}
 
-	SignInResponse struct {
+	LoginResponse struct {
 		IDToken   string         `json:"id_token"`
 		ExpiresIn int64          `json:"expires_in"`
 		Profile   userModel.User `json:"profile"`

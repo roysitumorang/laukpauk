@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func SignIn(ctx context.Context, c *fiber.Ctx) (request model.SignInRequest, statusCode int, err error) {
-	ctxt := "AuthSanitizer-SignIn"
+func Login(ctx context.Context, c *fiber.Ctx) (request model.LoginRequest, statusCode int, err error) {
+	ctxt := "AuthSanitizer-Login"
 	statusCode = fiber.StatusBadRequest
 	err = c.BodyParser(&request)
 	var fiberErr *fiber.Error

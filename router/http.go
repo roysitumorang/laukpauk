@@ -55,12 +55,16 @@ func (q *Service) HTTPServerMain() error {
 		compress.New(),
 		redirect.New(redirect.Config{
 			Rules: map[string]string{
-				"/api/v1/provinces":      "/api/v1/region/provinces",
-				"/api/v1/provinces/*":    "/api/v1/region/provinces/$1",
-				"/api/v1/cities/*":       "/api/v1/region/cities/$1",
-				"/api/v1/subdistricts/*": "/api/v1/region/subdistricts/$1",
+				"/api/v1/provinces":           "/api/v1/region/provinces",
+				"/api/v1/provinces/*":         "/api/v1/region/provinces/$1",
+				"/api/v1/cities/*":            "/api/v1/region/cities/$1",
+				"/api/v1/subdistricts/*":      "/api/v1/region/subdistricts/$1",
+				"/api/v1/buyer/auth/login":    "/api/v1/auth/buyer/login",
+				"/api/v1/buyer/auth/profile":  "/api/v1/auth/buyer/profile",
+				"/api/v1/seller/auth/login":   "/api/v1/auth/seller/login",
+				"/api/v1/seller/auth/profile": "/api/v1/auth/seller/profile",
 			},
-			StatusCode: fiber.StatusMovedPermanently,
+			StatusCode: fiber.StatusPermanentRedirect,
 		}),
 	)
 	api := r.Group("/api")

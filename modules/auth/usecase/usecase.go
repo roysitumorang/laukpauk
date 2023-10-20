@@ -8,6 +8,6 @@ import (
 
 type (
 	AuthUseCase interface {
-		SignIn(ctx context.Context, request model.SignInRequest) (response model.SignInResponse, err error)
+		Login(ctx context.Context, roleID int64, request model.LoginRequest) (response model.LoginResponse, err error)
 	}
 )

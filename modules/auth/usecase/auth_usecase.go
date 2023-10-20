@@ -30,9 +30,16 @@ func NewAuthUseCase(
 	}
 }
 
-func (q *authUseCaseImplementation) SignIn(ctx context.Context, request authModel.SignInRequest) (response authModel.SignInResponse, err error) {
-	ctxt := "AuthUseCase-SignIn"
-	users, err := q.userQuery.FindUsers(ctx, userModel.UserFilter{MobilePhones: []string{request.MobilePhone}})
+func (q *authUseCaseImplementation) Login(ctx context.Context, roleID int64, request authModel.LoginRequest) (response authModel.LoginResponse, err error) {
+	ctxt := "AuthUseCase-Login"
+	users, err := q.userQuery.FindUsers(
+		ctx,
+		userModel.UserFilter{
+			RoleIDs:      []int64{roleID},
+			Status:       []int{userModel.StatusActive},
+			MobilePhones: []string{request.MobilePhone},
+		},
+	)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindUsers")
 		return
