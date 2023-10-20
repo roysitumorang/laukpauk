@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"time"
 	"unsafe"
 
@@ -45,7 +44,7 @@ func (q *authUseCaseImplementation) Login(ctx context.Context, roleID int64, req
 		return
 	}
 	if len(users) == 0 {
-		err = errors.New("mobile phone not found")
+		err = authModel.ErrLoginFailed
 		return
 	}
 	user := users[0]
@@ -53,7 +52,7 @@ func (q *authUseCaseImplementation) Login(ctx context.Context, roleID int64, req
 	password := unsafe.Slice(unsafe.StringData(request.Password), len(request.Password))
 	if err = bcrypt.CompareHashAndPassword(encryptedPassword, password); err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCompareHashAndPassword")
-		err = errors.New("login failed")
+		err = authModel.ErrLoginFailed
 		return
 	}
 	expiryTime := time.Now().Add(time.Hour * 72).Unix()
