@@ -59,6 +59,8 @@ func (q *Service) HTTPServerMain() error {
 				"/api/v1/provinces/*":         "/api/v1/region/provinces/$1",
 				"/api/v1/cities/*":            "/api/v1/region/cities/$1",
 				"/api/v1/subdistricts/*":      "/api/v1/region/subdistricts/$1",
+				"/api/v1/admin/auth/login":    "/api/v1/auth/admin/login",
+				"/api/v1/admin/auth/profile":  "/api/v1/auth/admin/profile",
 				"/api/v1/buyer/auth/login":    "/api/v1/auth/buyer/login",
 				"/api/v1/buyer/auth/profile":  "/api/v1/auth/buyer/profile",
 				"/api/v1/seller/auth/login":   "/api/v1/auth/seller/login",

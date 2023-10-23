@@ -57,7 +57,8 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 			params = append(params, mobilePhone)
 			placeholders[i] = fmt.Sprintf("$%d", len(params))
 		}
-		conditions = append(conditions, fmt.Sprintf("u.mobile_phone IN (%s)", strings.Join(placeholders, ",")))
+		joinedPlaceholders := strings.Join(placeholders, ",")
+		conditions = append(conditions, fmt.Sprintf("(u.mobile_phone IN (%s) OR u.email IN (%s))", joinedPlaceholders, joinedPlaceholders))
 	}
 	if n := len(filter.Status); n > 0 {
 		placeholders := make([]string, n)
