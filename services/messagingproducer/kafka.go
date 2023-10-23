@@ -3,7 +3,6 @@ package messagingproducer
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/IBM/sarama"
 	"github.com/goccy/go-json"
@@ -19,13 +18,15 @@ type (
 )
 
 func NewKafkaProducerService(brokers []string) MessagingProducerService {
+	ctxt := "MessagingProducerKafka-NewKafkaProducerService"
+	ctx := context.Background()
 	cfg := sarama.NewConfig()
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Retry.Max = 5
 	cfg.Producer.Return.Successes = true
 	producer, err := sarama.NewSyncProducer(brokers, cfg)
 	if err != nil {
-		log.Fatalf("Error creating Kafka producer: %s", err)
+		helper.Capture(ctx, zap.FatalLevel, fmt.Errorf("kafka: error creating producer: %v", err), ctxt, "ErrNewSyncProducer")
 	}
 	service := &kafkaProducerService{
 		producer: producer,
@@ -59,7 +60,7 @@ func (s *kafkaProducerService) Publish(topic string, payloads ...map[string]inte
 		}
 	}
 	if err = s.producer.SendMessages(messages); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, fmt.Errorf("delivery failed: %v", err), ctxt, "ErrSendMessages")
+		helper.Capture(ctx, zap.ErrorLevel, fmt.Errorf("kafka: delivery failed %v", err), ctxt, "ErrSendMessages")
 	}
 	return
 }
