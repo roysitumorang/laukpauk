@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/redirect"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/roysitumorang/laukpauk/helper"
 	authPresenter "github.com/roysitumorang/laukpauk/modules/auth/presenter"
 	regionPresenter "github.com/roysitumorang/laukpauk/modules/region/presenter"
 	"go.uber.org/zap"
@@ -33,15 +34,8 @@ func (q *Service) HTTPServerMain() error {
 			if errors.As(err, &e) {
 				code = e.Code
 			}
-			response := map[string]interface{}{
-				"code":    code,
-				"message": err.Error(),
-			}
-			err = ctx.Status(code).JSON(response)
-			if err != nil {
-				response["code"] = fiber.StatusInternalServerError
-				response["message"] = "Internal Server Error"
-				return ctx.Status(fiber.StatusInternalServerError).JSON(response)
+			if err = helper.NewResponse(code, err.Error(), nil).WriteResponse(ctx); err != nil {
+				return helper.NewResponse(fiber.StatusInternalServerError, "Internal Server Error", nil).WriteResponse(ctx)
 			}
 			return nil
 		},

@@ -35,7 +35,7 @@ func NewKafkaProducerService(brokers []string) MessagingProducerService {
 		config.TopicGeneral,
 	}
 	for _, topic := range topics {
-		_ = service.Publish(topic, map[string]interface{}{"action": "", "id": ""})
+		_ = service.Publish(topic, map[string]interface{}{})
 	}
 	return service
 }

@@ -3,6 +3,7 @@ package jwt
 import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/keys"
 )
 
@@ -15,11 +16,7 @@ func NewJWT() func(*fiber.Ctx) error {
 				Key:    privateKey.Public(),
 			},
 			ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-				code := fiber.StatusUnauthorized
-				return ctx.Status(code).JSON(map[string]interface{}{
-					"code":    code,
-					"message": err.Error(),
-				})
+				return helper.NewResponse(fiber.StatusUnauthorized, err.Error(), nil).WriteResponse(ctx)
 			},
 		},
 	)
