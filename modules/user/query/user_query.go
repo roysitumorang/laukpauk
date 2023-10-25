@@ -213,3 +213,18 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 	}
 	return
 }
+
+func (q *userQuery) ChangePassword(ctx context.Context, userID int64, encryptedPassword string) (err error) {
+	ctxt := "UserQuery-ChangePassword"
+	if _, err = q.dbWrite.Exec(
+		ctx,
+		`UPDATE users SET
+			password = $1
+		WHERE id = $2`,
+		encryptedPassword,
+		userID,
+	); err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
+	}
+	return
+}

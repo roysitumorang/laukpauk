@@ -9,5 +9,6 @@ import (
 type (
 	AuthUseCase interface {
 		Login(ctx context.Context, roleIDs []int64, request model.LoginRequest) (response model.LoginResponse, err error)
+		ChangePassword(ctx context.Context, userID int64, encryptedPassword string, request model.ChangePassword) (err error)
 	}
 )

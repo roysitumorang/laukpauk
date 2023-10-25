@@ -19,4 +19,9 @@ type (
 		ExpiresIn int64          `json:"expires_in"`
 		Profile   userModel.User `json:"profile"`
 	}
+
+	ChangePassword struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	}
 )

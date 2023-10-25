@@ -37,15 +37,18 @@ func (q *authHTTPHandler) Mount(r fiber.Router) {
 	admin := r.Group("/admin")
 	admin.Post("/login", q.AdminLogin)
 	admin.Use(bearerVerifier).
-		Get("/profile", q.AdminGetProfile)
+		Get("/profile", q.AdminGetProfile).
+		Put("/password/change", q.AdminChangePassword)
 	buyer := r.Group("/buyer")
 	buyer.Post("/login", q.BuyerLogin)
 	buyer.Use(bearerVerifier).
-		Get("/profile", q.BuyerGetProfile)
+		Get("/profile", q.BuyerGetProfile).
+		Put("/password/change", q.BuyerChangePassword)
 	seller := r.Group("/seller")
 	seller.Post("/login", q.SellerLogin)
 	seller.Use(bearerVerifier).
-		Get("/profile", q.SellerGetProfile)
+		Get("/profile", q.SellerGetProfile).
+		Put("/password/change", q.SellerChangePassword)
 }
 
 func (q *authHTTPHandler) AdminLogin(c *fiber.Ctx) error {
@@ -92,6 +95,43 @@ func (q *authHTTPHandler) AdminGetProfile(c *fiber.Ctx) error {
 	return helper.NewResponse(fiber.StatusOK, "", response).WriteResponse(c)
 }
 
+func (q *authHTTPHandler) AdminChangePassword(c *fiber.Ctx) error {
+	ctx := context.Background()
+	ctxt := "AuthPresenter-AdminChangePassword"
+	user := c.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	userID, ok := claims["id"].(float64)
+	if !ok || userID < 1 {
+		return helper.NewResponse(fiber.StatusUnauthorized, "unauthorized", nil).WriteResponse(c)
+	}
+	users, err := q.userUseCase.FindUsers(
+		ctx,
+		userModel.UserFilter{
+			RoleIDs: []int64{roleModel.RoleSuperAdmin, roleModel.RoleAdmin},
+			Status:  []int{userModel.StatusActive},
+			UserIDs: []int64{int64(userID)},
+		},
+	)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindUsers")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	if len(users) == 0 {
+		return helper.NewResponse(fiber.StatusUnauthorized, "unauthorized", nil).WriteResponse(c)
+	}
+	currentUser := users[0]
+	request, statusCode, err := sanitizer.ChangePassword(ctx, c)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
+		return helper.NewResponse(statusCode, err.Error(), nil).WriteResponse(c)
+	}
+	if err = q.authUseCase.ChangePassword(ctx, currentUser.ID, currentUser.Password, request); err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusNoContent, "", nil).WriteResponse(c)
+}
+
 func (q *authHTTPHandler) BuyerLogin(c *fiber.Ctx) error {
 	ctx := context.Background()
 	ctxt := "AuthPresenter-BuyerLogin"
@@ -136,6 +176,43 @@ func (q *authHTTPHandler) BuyerGetProfile(c *fiber.Ctx) error {
 	return helper.NewResponse(fiber.StatusOK, "", response).WriteResponse(c)
 }
 
+func (q *authHTTPHandler) BuyerChangePassword(c *fiber.Ctx) error {
+	ctx := context.Background()
+	ctxt := "AuthPresenter-BuyerChangePassword"
+	user := c.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	userID, ok := claims["id"].(float64)
+	if !ok || userID < 1 {
+		return helper.NewResponse(fiber.StatusUnauthorized, "unauthorized", nil).WriteResponse(c)
+	}
+	users, err := q.userUseCase.FindUsers(
+		ctx,
+		userModel.UserFilter{
+			RoleIDs: []int64{roleModel.RoleBuyer},
+			Status:  []int{userModel.StatusActive},
+			UserIDs: []int64{int64(userID)},
+		},
+	)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindUsers")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	if len(users) == 0 {
+		return helper.NewResponse(fiber.StatusUnauthorized, "unauthorized", nil).WriteResponse(c)
+	}
+	currentUser := users[0]
+	request, statusCode, err := sanitizer.ChangePassword(ctx, c)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
+		return helper.NewResponse(statusCode, err.Error(), nil).WriteResponse(c)
+	}
+	if err = q.authUseCase.ChangePassword(ctx, currentUser.ID, currentUser.Password, request); err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusNoContent, "", nil).WriteResponse(c)
+}
+
 func (q *authHTTPHandler) SellerLogin(c *fiber.Ctx) error {
 	ctx := context.Background()
 	ctxt := "AuthPresenter-SellerLogin"
@@ -178,4 +255,41 @@ func (q *authHTTPHandler) SellerGetProfile(c *fiber.Ctx) error {
 	}
 	response := users[0]
 	return helper.NewResponse(fiber.StatusOK, "", response).WriteResponse(c)
+}
+
+func (q *authHTTPHandler) SellerChangePassword(c *fiber.Ctx) error {
+	ctx := context.Background()
+	ctxt := "AuthPresenter-SellerChangePassword"
+	user := c.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	userID, ok := claims["id"].(float64)
+	if !ok || userID < 1 {
+		return helper.NewResponse(fiber.StatusUnauthorized, "unauthorized", nil).WriteResponse(c)
+	}
+	users, err := q.userUseCase.FindUsers(
+		ctx,
+		userModel.UserFilter{
+			RoleIDs: []int64{roleModel.RoleSeller},
+			Status:  []int{userModel.StatusActive},
+			UserIDs: []int64{int64(userID)},
+		},
+	)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindUsers")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	if len(users) == 0 {
+		return helper.NewResponse(fiber.StatusUnauthorized, "unauthorized", nil).WriteResponse(c)
+	}
+	currentUser := users[0]
+	request, statusCode, err := sanitizer.ChangePassword(ctx, c)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
+		return helper.NewResponse(statusCode, err.Error(), nil).WriteResponse(c)
+	}
+	if err = q.authUseCase.ChangePassword(ctx, currentUser.ID, currentUser.Password, request); err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusNoContent, "", nil).WriteResponse(c)
 }

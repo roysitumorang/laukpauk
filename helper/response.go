@@ -27,5 +27,9 @@ func NewResponse(code int, msg string, data interface{}) *Response {
 }
 
 func (r *Response) WriteResponse(c *fiber.Ctx) error {
-	return c.Status(r.Code).JSON(r)
+	c = c.Status(r.Code)
+	if r.Code == fiber.StatusNoContent {
+		return nil
+	}
+	return c.JSON(r)
 }

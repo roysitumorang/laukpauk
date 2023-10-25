@@ -9,5 +9,6 @@ import (
 type (
 	UserQuery interface {
 		FindUsers(ctx context.Context, filter model.UserFilter) (response []model.User, err error)
+		ChangePassword(ctx context.Context, userID int64, encryptedPassword string) (err error)
 	}
 )

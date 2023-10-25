@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"time"
 	"unsafe"
 
@@ -72,5 +73,28 @@ func (q *authUseCaseImplementation) Login(ctx context.Context, roleIDs []int64, 
 	}
 	response.ExpiresIn = expiryTime
 	response.Profile = user
+	return
+}
+
+func (q *authUseCaseImplementation) ChangePassword(ctx context.Context, userID int64, encryptedOldPassword string, request authModel.ChangePassword) (err error) {
+	ctxt := "AuthUseCase-ChangePassword"
+	encryptedOldPasswordByte := helper.String2ByteSlice(encryptedOldPassword)
+	oldPassword := helper.String2ByteSlice(request.OldPassword)
+	newPassword := helper.String2ByteSlice(request.NewPassword)
+	if err = bcrypt.CompareHashAndPassword(encryptedOldPasswordByte, oldPassword); err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCompareHashAndOldPassword")
+		return errors.New("invalid old password")
+	}
+	if err = bcrypt.CompareHashAndPassword(encryptedOldPasswordByte, newPassword); err == nil {
+		return errors.New("reusing old password is prohibited")
+	}
+	encryptedNewPassword, err := bcrypt.GenerateFromPassword(newPassword, bcrypt.DefaultCost)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrGenerateFromPassword")
+		return err
+	}
+	if err = q.userQuery.ChangePassword(ctx, userID, helper.ByteSlice2String(encryptedNewPassword)); err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
+	}
 	return
 }
