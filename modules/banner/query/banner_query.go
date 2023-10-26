@@ -3,6 +3,8 @@ package query
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -37,13 +39,13 @@ func (q *bannerQuery) FindBanners(ctx context.Context) (response []model.Banner,
 			, user_id
 			, published
 			, file
-			, thumbnails
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
 		FROM banners
-		WHERE published = 1
+		WHERE parent_id IS NULL
+		AND published
 		ORDER BY -id`,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -54,6 +56,11 @@ func (q *bannerQuery) FindBanners(ctx context.Context) (response []model.Banner,
 		return
 	}
 	defer rows.Close()
+	var (
+		params       []interface{}
+		placeholders []string
+		mapIndex     = map[int64]int{}
+	)
 	for rows.Next() {
 		var banner model.Banner
 		if err = rows.Scan(
@@ -61,7 +68,6 @@ func (q *bannerQuery) FindBanners(ctx context.Context) (response []model.Banner,
 			&banner.UserID,
 			&banner.Published,
 			&banner.File,
-			&banner.Thumbnails,
 			&banner.CreatedBy,
 			&banner.CreatedAt,
 			&banner.UpdatedBy,
@@ -70,7 +76,69 @@ func (q *bannerQuery) FindBanners(ctx context.Context) (response []model.Banner,
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
 			return
 		}
+		params = append(params, banner.ID)
+		placeholders = append(placeholders, fmt.Sprintf("$%d", len(params)))
 		response = append(response, banner)
+		mapIndex[banner.ID] = len(params) - 1
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrErr")
+		return
+	}
+	if len(params) == 0 {
+		return
+	}
+	rows, err = q.dbRead.Query(
+		ctx,
+		fmt.Sprintf(
+			`SELECT
+				id
+				, parent_id
+				, user_id
+				, published
+				, file
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			FROM banners
+			WHERE parent_id IN (%s)
+			AND published
+			ORDER BY -id`,
+			strings.Join(placeholders, ","),
+		),
+		params...,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrQuery")
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var thumbnail model.Banner
+		if err = rows.Scan(
+			&thumbnail.ID,
+			&thumbnail.ParentID,
+			&thumbnail.UserID,
+			&thumbnail.Published,
+			&thumbnail.File,
+			&thumbnail.CreatedBy,
+			&thumbnail.CreatedAt,
+			&thumbnail.UpdatedBy,
+			&thumbnail.UpdatedAt,
+		); err != nil {
+			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+			return
+		}
+		if thumbnail.ParentID != nil {
+			index := mapIndex[*thumbnail.ParentID]
+			banner := response[index]
+			banner.Thumbnails = append(banner.Thumbnails, thumbnail)
+			response[index] = banner
+		}
 	}
 	if err = rows.Err(); err != nil {
 		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrErr")
