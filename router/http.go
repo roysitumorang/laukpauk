@@ -15,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/roysitumorang/laukpauk/helper"
 	authPresenter "github.com/roysitumorang/laukpauk/modules/auth/presenter"
+	bannerPresenter "github.com/roysitumorang/laukpauk/modules/banner/presenter"
 	regionPresenter "github.com/roysitumorang/laukpauk/modules/region/presenter"
 	"go.uber.org/zap"
 )
@@ -49,9 +50,9 @@ func (q *Service) HTTPServerMain() error {
 		compress.New(),
 		redirect.New(redirect.Config{
 			Rules: map[string]string{
+				"/api/v1/cities/*":                    "/api/v1/region/cities/$1",
 				"/api/v1/provinces":                   "/api/v1/region/provinces",
 				"/api/v1/provinces/*":                 "/api/v1/region/provinces/$1",
-				"/api/v1/cities/*":                    "/api/v1/region/cities/$1",
 				"/api/v1/subdistricts/*":              "/api/v1/region/subdistricts/$1",
 				"/api/v1/admin/auth/login":            "/api/v1/auth/admin/login",
 				"/api/v1/admin/auth/password/change":  "/api/v1/auth/admin/password/change",
@@ -69,6 +70,7 @@ func (q *Service) HTTPServerMain() error {
 	api := r.Group("/api")
 	v1 := api.Group("/v1")
 	authPresenter.NewAuthHTTPHandler(q.AuthUseCase, q.UserUseCase).Mount(v1.Group("/auth"))
+	bannerPresenter.NewBannerHTTPHandler(q.BannerUseCase).Mount(v1.Group("/banners"))
 	regionPresenter.NewRegionHTTPHandler(q.RegionUseCase).Mount(v1.Group("/region"))
 	var port uint16
 	if envPort, ok := os.LookupEnv("PORT"); ok {
