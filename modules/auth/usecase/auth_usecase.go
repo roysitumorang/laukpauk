@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"time"
-	"unsafe"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -49,8 +48,8 @@ func (q *authUseCaseImplementation) Login(ctx context.Context, roleIDs []int64, 
 		return
 	}
 	user := users[0]
-	encryptedPassword := unsafe.Slice(unsafe.StringData(user.Password), len(user.Password))
-	password := unsafe.Slice(unsafe.StringData(request.Password), len(request.Password))
+	encryptedPassword := helper.String2ByteSlice(user.Password)
+	password := helper.String2ByteSlice(request.Password)
 	if err = bcrypt.CompareHashAndPassword(encryptedPassword, password); err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCompareHashAndPassword")
 		err = authModel.ErrLoginFailed
@@ -91,7 +90,7 @@ func (q *authUseCaseImplementation) ChangePassword(ctx context.Context, userID i
 	encryptedNewPassword, err := bcrypt.GenerateFromPassword(newPassword, bcrypt.DefaultCost)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrGenerateFromPassword")
-		return err
+		return
 	}
 	if err = q.userQuery.ChangePassword(ctx, userID, helper.ByteSlice2String(encryptedNewPassword)); err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrChangePassword")
