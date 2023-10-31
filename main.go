@@ -35,6 +35,7 @@ func main() {
 			}
 			var g errgroup.Group
 			service := router.MakeHandler()
+			service.Migration.Migrate(ctx)
 			g.Go(func() error {
 				return service.HTTPServerMain()
 			})

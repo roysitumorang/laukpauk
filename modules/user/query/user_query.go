@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/goccy/go-json"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -108,13 +109,7 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 				, u.date_of_birth
 				, u.avatar
 				, u.thumbnails
-				, u.open_on_sunday
-				, u.open_on_monday
-				, u.open_on_tuesday
-				, u.open_on_wednesday
-				, u.open_on_thursday
-				, u.open_on_friday
-				, u.open_on_saturday
+				, u.business_days
 				, u.business_opening_hour
 				, u.business_closing_hour
 				, u.delivery_hours
@@ -147,7 +142,10 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 		return
 	}
 	for rows.Next() {
-		var user model.User
+		var (
+			user             model.User
+			businessDaysByte []byte
+		)
 		if err = rows.Scan(
 			&user.ID,
 			&user.Role.ID,
@@ -182,13 +180,7 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 			&user.DateOfBirth,
 			&user.Avatar,
 			&user.Thumbnails,
-			&user.OpenOnSunday,
-			&user.OpenOnMonday,
-			&user.OpenOnTuesday,
-			&user.OpenOnWednesday,
-			&user.OpenOnThursday,
-			&user.OpenOnFriday,
-			&user.OpenOnSaturday,
+			&businessDaysByte,
 			&user.BusinessOpeningHour,
 			&user.BusinessClosingHour,
 			&user.DeliveryHours,
@@ -205,6 +197,14 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
 			return
+		}
+		if businessDaysByte != nil {
+			var businessDays model.BusinessDays
+			if err = json.Unmarshal(businessDaysByte, &businessDays); err != nil {
+				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrUnmarshal")
+				return
+			}
+			user.BusinessDays = &businessDays
 		}
 		response = append(response, user)
 	}
