@@ -5,11 +5,16 @@ import (
 	"math/big"
 	"unsafe"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/speps/go-hashids/v2"
 )
 
 const (
 	letters = "0123456789abcdefghijklmnopqrstuvwxyz"
+)
+
+var (
+	snowflakeNode *snowflake.Node
 )
 
 func GenerateRandomString(length int) string {
@@ -48,9 +53,15 @@ func GenerateHashIDs(mingLength int, numbers ...int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	hash, err := hashID.EncodeInt64(numbers)
-	if err != nil {
-		return "", err
+	return hashID.EncodeInt64(numbers)
+}
+
+func GenerateSnowflakeUniqueID() (_ int64, err error) {
+	if snowflakeNode == nil {
+		if snowflakeNode, err = snowflake.NewNode(1); err != nil {
+			return
+		}
 	}
-	return hash, nil
+	return snowflakeNode.Generate().Int64(), nil
+
 }

@@ -197,3 +197,30 @@ func (q *regionQuery) FindVillagesBySubdistrictID(ctx context.Context, subdistri
 	}
 	return
 }
+
+func (q *regionQuery) FindVillageByID(ctx context.Context, villageID int64) (*model.Village, error) {
+	ctxt := "RegionQuery-FindVillageByID"
+	var response model.Village
+	err := q.dbRead.QueryRow(
+		ctx,
+		`SELECT
+			id
+			, subdistrict_id
+			, name
+		FROM villages
+		WHERE id = $1`,
+		villageID,
+	).Scan(
+		&response.ID,
+		&response.SubdistrictID,
+		&response.Name,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	return &response, nil
+}

@@ -1,10 +1,17 @@
 package model
 
 import (
+	"net"
 	"time"
 
 	regionModel "github.com/roysitumorang/laukpauk/modules/region/model"
 	roleModel "github.com/roysitumorang/laukpauk/modules/role/model"
+)
+
+const (
+	StatusHold int = iota
+	StatusActive
+	StatusSuspended = -1
 )
 
 type (
@@ -19,7 +26,7 @@ type (
 		Name                 string             `json:"name"`
 		Email                *string            `json:"email"`
 		Password             string             `json:"-"`
-		Address              string             `json:"address"`
+		Address              *string            `json:"address"`
 		Village              regionModel.Region `json:"village"`
 		Subdistrict          regionModel.Region `json:"subdistrict"`
 		City                 regionModel.Region `json:"city"`
@@ -32,21 +39,15 @@ type (
 		PasswordResetToken   *string            `json:"password_reset_token"`
 		Deposit              float64            `json:"deposit"`
 		Company              *string            `json:"company"`
-		RegistrationIP       string             `json:"registration_ip"`
+		RegistrationIP       net.IP             `json:"registration_ip"`
 		Gender               *string            `json:"gender"`
 		DateOfBirth          *time.Time         `json:"date_of_birth"`
 		Avatar               *string            `json:"avatar"`
 		Thumbnails           *string            `json:"thumbnails"`
-		OpenOnSunday         int                `json:"open_on_sunday"`
-		OpenOnMonday         int                `json:"open_on_monday"`
-		OpenOnTuesday        int                `json:"open_on_tuesday"`
-		OpenOnWednesday      int                `json:"open_on_wednesday"`
-		OpenOnThursday       int                `json:"open_on_thursday"`
-		OpenOnFriday         int                `json:"open_on_friday"`
-		OpenOnSaturday       int                `json:"open_on_saturday"`
-		BusinessOpeningHour  *string            `json:"business_opening_hour"`
-		BusinessClosingHour  *string            `json:"business_closing_hour"`
-		DeliveryHours        *string            `json:"delivery_hours"`
+		BusinessDays         *BusinessDays      `json:"business_days,omitempty"`
+		BusinessOpeningHour  *int               `json:"business_opening_hour"`
+		BusinessClosingHour  *int               `json:"business_closing_hour"`
+		DeliveryHours        []int              `json:"delivery_hours"`
 		Latitude             *float64           `json:"latitude"`
 		Longitude            *float64           `json:"longitude"`
 		Keywords             *string            `json:"keywords"`
@@ -57,6 +58,16 @@ type (
 		CreatedAt            *time.Time         `json:"created_at"`
 		UpdatedBy            *int64             `json:"updated_by"`
 		UpdatedAt            *time.Time         `json:"updated_at"`
+	}
+
+	BusinessDays struct {
+		Sunday    bool `json:"sunday"`
+		Monday    bool `json:"monday"`
+		Tuesday   bool `json:"tuesday"`
+		Wednesday bool `json:"wednesday"`
+		Thursday  bool `json:"thursday"`
+		Friday    bool `json:"friday"`
+		Saturday  bool `json:"saturday"`
 	}
 
 	UserFilter struct {

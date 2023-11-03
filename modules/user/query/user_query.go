@@ -5,10 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/goccy/go-json"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
+	authModel "github.com/roysitumorang/laukpauk/modules/auth/model"
 	"github.com/roysitumorang/laukpauk/modules/user/model"
 	"go.uber.org/zap"
 )
@@ -57,7 +62,8 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 			params = append(params, mobilePhone)
 			placeholders[i] = fmt.Sprintf("$%d", len(params))
 		}
-		conditions = append(conditions, fmt.Sprintf("u.mobile_phone IN (%s)", strings.Join(placeholders, ",")))
+		joinedPlaceholders := strings.Join(placeholders, ",")
+		conditions = append(conditions, fmt.Sprintf("(u.mobile_phone IN (%s) OR u.email IN (%s))", joinedPlaceholders, joinedPlaceholders))
 	}
 	if n := len(filter.Status); n > 0 {
 		placeholders := make([]string, n)
@@ -107,13 +113,7 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 				, u.date_of_birth
 				, u.avatar
 				, u.thumbnails
-				, u.open_on_sunday
-				, u.open_on_monday
-				, u.open_on_tuesday
-				, u.open_on_wednesday
-				, u.open_on_thursday
-				, u.open_on_friday
-				, u.open_on_saturday
+				, u.business_days
 				, u.business_opening_hour
 				, u.business_closing_hour
 				, u.delivery_hours
@@ -146,7 +146,10 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 		return
 	}
 	for rows.Next() {
-		var user model.User
+		var (
+			user             model.User
+			businessDaysByte []byte
+		)
 		if err = rows.Scan(
 			&user.ID,
 			&user.Role.ID,
@@ -181,13 +184,7 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 			&user.DateOfBirth,
 			&user.Avatar,
 			&user.Thumbnails,
-			&user.OpenOnSunday,
-			&user.OpenOnMonday,
-			&user.OpenOnTuesday,
-			&user.OpenOnWednesday,
-			&user.OpenOnThursday,
-			&user.OpenOnFriday,
-			&user.OpenOnSaturday,
+			&businessDaysByte,
 			&user.BusinessOpeningHour,
 			&user.BusinessClosingHour,
 			&user.DeliveryHours,
@@ -205,10 +202,140 @@ func (q *userQuery) FindUsers(ctx context.Context, filter model.UserFilter) (res
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
 			return
 		}
+		if businessDaysByte != nil {
+			var businessDays model.BusinessDays
+			if err = json.Unmarshal(businessDaysByte, &businessDays); err != nil {
+				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrUnmarshal")
+				return
+			}
+			user.BusinessDays = &businessDays
+		}
 		response = append(response, user)
 	}
 	if err = rows.Err(); err != nil {
 		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrErr")
+	}
+	return
+}
+
+func (q *userQuery) ChangePassword(ctx context.Context, userID int64, encryptedPassword string) (err error) {
+	ctxt := "UserQuery-ChangePassword"
+	if _, err = q.dbWrite.Exec(
+		ctx,
+		`UPDATE users SET
+			password = $1
+		WHERE id = $2`,
+		encryptedPassword,
+		userID,
+	); err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
+	}
+	return
+}
+
+func (q *userQuery) Register(ctx context.Context, request authModel.RegisterRequest) (*authModel.RegisterResponse, error) {
+	ctxt := "UserQuery-Register"
+	var response authModel.RegisterResponse
+	tx, err := q.dbWrite.Begin(ctx)
+	if err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrBegin")
+		return nil, err
+	}
+	for {
+		userID, err := helper.GenerateSnowflakeUniqueID()
+		if err != nil {
+			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrGenerateSnowflakeUniqueID")
+			if errRollback := tx.Rollback(ctx); errRollback != nil {
+				helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
+			}
+			return nil, err
+		}
+		activationToken := helper.GenerateRandomString(32)
+		now := time.Now().UTC()
+		err = tx.QueryRow(
+			ctx,
+			`INSERT INTO users (
+				id
+				, role_id
+				, name
+				, password
+				, mobile_phone
+				, village_id
+				, subdistrict_id
+				, activation_token
+				, minimum_purchase
+				, admin_fee
+				, accumulation_divisor
+				, status
+				, deposit
+				, registration_ip
+				, created_at
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15)
+			RETURNING activation_token`,
+			userID,
+			request.RoleID,
+			request.Name,
+			request.Password,
+			request.MobilePhone,
+			request.VillageID,
+			request.SubdistrictID,
+			activationToken,
+			0,
+			0,
+			0,
+			model.StatusHold,
+			0,
+			request.IpAddress,
+			now,
+		).Scan(&response.ActivationToken)
+		if err != nil {
+			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+			if errRollback := tx.Rollback(ctx); errRollback != nil {
+				helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
+			}
+			var pgxErr *pgconn.PgError
+			if errors.As(err, &pgxErr) && pgxErr.Code == pgerrcode.UniqueViolation {
+				if pgxErr.ConstraintName == "users_role_id_mobile_phone_idx" {
+					return nil, fmt.Errorf("mobile phone %s already registered", request.MobilePhone)
+				}
+				continue
+			}
+			return nil, err
+		}
+		break
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrCommit")
+		return nil, err
+	}
+	return &response, err
+}
+
+func (q *userQuery) Activate(ctx context.Context, roleID int64, activationToken string) (response int64, err error) {
+	ctxt := "UserQuery-Activate"
+	now := time.Now().UTC()
+	err = q.dbWrite.QueryRow(
+		ctx,
+		`UPDATE users SET
+			status = $1
+			, activation_token = NULL
+			, activated_at = $2
+		WHERE role_id = $3
+		AND status = $4
+		AND activation_token = $5
+		RETURNING id`,
+		model.StatusActive,
+		now,
+		roleID,
+		model.StatusHold,
+		activationToken,
+	).Scan(&response)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
 	}
 	return
 }

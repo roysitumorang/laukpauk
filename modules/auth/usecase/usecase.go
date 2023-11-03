@@ -8,6 +8,9 @@ import (
 
 type (
 	AuthUseCase interface {
-		SignIn(ctx context.Context, request model.SignInRequest) (response model.SignInResponse, err error)
+		Login(ctx context.Context, roleIDs []int64, request model.LoginRequest) (response model.LoginResponse, err error)
+		ChangePassword(ctx context.Context, userID int64, encryptedPassword string, request model.ChangePassword) (err error)
+		Register(ctx context.Context, request model.RegisterRequest) (response *model.RegisterResponse, err error)
+		Activate(ctx context.Context, roleID int64, activationToken string) (response model.LoginResponse, err error)
 	}
 )

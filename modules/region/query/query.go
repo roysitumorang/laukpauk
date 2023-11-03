@@ -12,5 +12,6 @@ type (
 		FindCitiesByProvinceID(ctx context.Context, provinceID int64) (response []model.Region, err error)
 		FindSubdistrictsByCityID(ctx context.Context, cityID int64) (response []model.Region, err error)
 		FindVillagesBySubdistrictID(ctx context.Context, subdistrictID int64) (response []model.Region, err error)
+		FindVillageByID(ctx context.Context, villageID int64) (response *model.Village, err error)
 	}
 )

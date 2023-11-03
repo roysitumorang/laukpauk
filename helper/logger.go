@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	service string
+	service = "laukpauk"
 )
 
 func logContext(_ context.Context, context, scope string) *zap.Logger {
