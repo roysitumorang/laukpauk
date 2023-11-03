@@ -40,12 +40,16 @@ func (q *authHTTPHandler) Mount(r fiber.Router) {
 		Get("/profile", q.AdminGetProfile).
 		Put("/password/change", q.AdminChangePassword)
 	buyer := r.Group("/buyer")
-	buyer.Post("/login", q.BuyerLogin)
+	buyer.Post("/register", q.BuyerRegister).
+		Put("/:token/activate", q.BuyerActivate).
+		Post("/login", q.BuyerLogin)
 	buyer.Use(bearerVerifier).
 		Get("/profile", q.BuyerGetProfile).
 		Put("/password/change", q.BuyerChangePassword)
 	seller := r.Group("/seller")
-	seller.Post("/login", q.SellerLogin)
+	seller.Post("/register", q.SellerRegister).
+		Put("/:token/activate", q.SellerActivate).
+		Post("/login", q.SellerLogin)
 	seller.Use(bearerVerifier).
 		Get("/profile", q.SellerGetProfile).
 		Put("/password/change", q.SellerChangePassword)
@@ -132,6 +136,35 @@ func (q *authHTTPHandler) AdminChangePassword(c *fiber.Ctx) error {
 	return helper.NewResponse(fiber.StatusNoContent, "", nil).WriteResponse(c)
 }
 
+func (q *authHTTPHandler) BuyerRegister(c *fiber.Ctx) error {
+	ctx := context.Background()
+	ctxt := "AuthPresenter-BuyerRegister"
+	request, statusCode, err := sanitizer.Register(ctx, c)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRegister")
+		return helper.NewResponse(statusCode, err.Error(), nil).WriteResponse(c)
+	}
+	request.RoleID = roleModel.RoleBuyer
+	response, err := q.authUseCase.Register(ctx, request)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRegister")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK, "", response).WriteResponse(c)
+}
+
+func (q *authHTTPHandler) BuyerActivate(c *fiber.Ctx) error {
+	ctx := context.Background()
+	ctxt := "AuthPresenter-BuyerActivate"
+	activationToken := c.Params("token")
+	response, err := q.authUseCase.Activate(ctx, roleModel.RoleBuyer, activationToken)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrActivate")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK, "", response).WriteResponse(c)
+}
+
 func (q *authHTTPHandler) BuyerLogin(c *fiber.Ctx) error {
 	ctx := context.Background()
 	ctxt := "AuthPresenter-BuyerLogin"
@@ -211,6 +244,35 @@ func (q *authHTTPHandler) BuyerChangePassword(c *fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent, "", nil).WriteResponse(c)
+}
+
+func (q *authHTTPHandler) SellerRegister(c *fiber.Ctx) error {
+	ctx := context.Background()
+	ctxt := "AuthPresenter-SellerRegister"
+	request, statusCode, err := sanitizer.Register(ctx, c)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRegister")
+		return helper.NewResponse(statusCode, err.Error(), nil).WriteResponse(c)
+	}
+	request.RoleID = roleModel.RoleSeller
+	response, err := q.authUseCase.Register(ctx, request)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRegister")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK, "", response).WriteResponse(c)
+}
+
+func (q *authHTTPHandler) SellerActivate(c *fiber.Ctx) error {
+	ctx := context.Background()
+	ctxt := "AuthPresenter-SellerActivate"
+	activationToken := c.Params("token")
+	response, err := q.authUseCase.Activate(ctx, roleModel.RoleSeller, activationToken)
+	if err != nil {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrActivate")
+		return helper.NewResponse(fiber.StatusBadRequest, err.Error(), nil).WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK, "", response).WriteResponse(c)
 }
 
 func (q *authHTTPHandler) SellerLogin(c *fiber.Ctx) error {

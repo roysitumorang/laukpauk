@@ -26,7 +26,7 @@ type (
 		Name                 string             `json:"name"`
 		Email                *string            `json:"email"`
 		Password             string             `json:"-"`
-		Address              string             `json:"address"`
+		Address              *string            `json:"address"`
 		Village              regionModel.Region `json:"village"`
 		Subdistrict          regionModel.Region `json:"subdistrict"`
 		City                 regionModel.Region `json:"city"`

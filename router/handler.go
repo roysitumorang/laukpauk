@@ -40,7 +40,7 @@ func MakeHandler() *Service {
 	bannerQuery := bannerQuery.NewBannerQuery(dbRead, dbWrite)
 	regionQuery := regionQuery.NewRegionQuery(dbRead, dbWrite)
 	userQuery := userQuery.NewUserQuery(dbRead, dbWrite)
-	authUseCase := authUseCase.NewAuthUseCase(userQuery)
+	authUseCase := authUseCase.NewAuthUseCase(userQuery, regionQuery)
 	bannerUseCase := bannerUseCase.BannerUseCase(bannerQuery)
 	regionUseCase := regionUseCase.NewRegionUseCase(regionQuery)
 	userUseCase := userUseCase.NewUserUseCase(userQuery)

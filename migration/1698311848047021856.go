@@ -17,12 +17,6 @@ func init() {
 	Migrations[1698311848047021856] = func(ctx context.Context, tx pgx.Tx) (err error) {
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON users (mobile_phone);`,
-		); err != nil {
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
 			`ALTER TABLE users
 				ADD COLUMN business_days jsonb
 				, ALTER COLUMN activated_at TYPE timestamp with time zone USING activated_at::timestamp with time zone
