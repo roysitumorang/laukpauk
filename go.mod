@@ -3,7 +3,7 @@ module github.com/roysitumorang/laukpauk
 go 1.21.3
 
 require (
-	github.com/IBM/sarama v1.41.3
+	github.com/IBM/sarama v1.42.0
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/goccy/go-json v0.10.2
 	github.com/gofiber/contrib/fiberzap/v2 v2.1.1
