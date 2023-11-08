@@ -3,13 +3,13 @@ module github.com/roysitumorang/laukpauk
 go 1.21.3
 
 require (
-	github.com/IBM/sarama v1.42.0
+	github.com/IBM/sarama v1.42.1
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/goccy/go-json v0.10.2
 	github.com/gofiber/contrib/fiberzap/v2 v2.1.1
 	github.com/gofiber/contrib/jwt v1.0.7
 	github.com/gofiber/fiber/v2 v2.50.0
-	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/golang-jwt/jwt/v5 v5.1.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v5 v5.5.0
 	github.com/joho/godotenv v1.5.1
