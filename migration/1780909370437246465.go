@@ -41,7 +41,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
