@@ -18,20 +18,22 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, user_type character varying NOT NULL
 				, name character varying NOT NULL
-				, unconfirmed_mobile_phone character varying UNIQUE
-				, mobile_phone_unconfirmed_at timestamp with time zone
+				, confirmation_token character varying UNIQUE
+				, confirmed_at timestamp with time zone
+				, unconfirmed_mobile_phone character varying
+				, mobile_phone_confirmation_sent_at timestamp with time zone
 				, mobile_phone_confirmation_token character varying
 				, mobile_phone_confirmed_at timestamp with time zone
-				, mobile_phone character varying NOT NULL UNIQUE
+				, mobile_phone character varying UNIQUE
 				, otp_token character varying
 				, otp_created_at timestamp with time zone
 				, otp_expired_at timestamp with time zone
 				, username character varying NOT NULL UNIQUE
-				, unconfirmed_email character varying UNIQUE
-				, email_unconfirmed_at timestamp with time zone
+				, unconfirmed_email character varying
+				, email_confirmation_sent_at timestamp with time zone
 				, email_confirmation_token character varying
 				, email_confirmed_at timestamp with time zone
-				, email character varying NOT NULL UNIQUE
+				, email character varying UNIQUE
 				, encrypted_password character varying NOT NULL
 				, password_reset_at timestamp with time zone
 				, reset_password_token character varying
