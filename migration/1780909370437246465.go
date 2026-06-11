@@ -120,7 +120,7 @@ func init() {
 			ctx,
 			`CREATE TABLE buyers (
 				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
-				, referral_code character varying NOT NULL
+				, referral_code character varying NOT NULL UNIQUE
 				, photo character varying NOT NULL
 				, address character varying NOT NULL
 				, referenced_by UUID REFERENCES users (id)
