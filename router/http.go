@@ -20,8 +20,10 @@ import (
 	"github.com/gofiber/contrib/v3/swaggo"
 	fiberzap "github.com/gofiber/contrib/v3/zap"
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/extractors"
 	"github.com/gofiber/fiber/v3/middleware/compress"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/pprof"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
@@ -90,6 +92,17 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		cors.New(),
 		pprof.New(),
 		sessionMiddleware,
+		csrf.New(csrf.Config{
+			CookieName:        "__Host-csrf_",
+			CookieSecure:      true,
+			CookieHTTPOnly:    true, // false for SPAs
+			CookieSameSite:    "Lax",
+			CookieSessionOnly: true,
+			Extractor:         extractors.FromHeader("X-Csrf-Token"),
+			Session:           sessionStore,
+			// Redaction is enabled by default. Set DisableValueRedaction when you must expose tokens or storage keys in diagnostics.
+			// DisableValueRedaction: true,
+		}),
 	}
 	if sentryEnabled := os.Getenv("SENTRY_ENABLED") == "1"; sentryEnabled {
 		_ = sentry.Init(sentry.ClientOptions{
