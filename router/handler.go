@@ -12,10 +12,10 @@ import (
 	"github.com/gofiber/storage/valkey"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/config"
+	"github.com/roysitumorang/laukpauk/external/kafka"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migration"
 	"github.com/roysitumorang/laukpauk/models"
-	"github.com/roysitumorang/laukpauk/services/kafka"
 	"go.uber.org/zap"
 )
 
