@@ -89,6 +89,7 @@ func init() {
 			`CREATE TABLE admins (
 				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
 				, admin_level character varying NOT NULL
+				, photo character varying NOT NULL
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
