@@ -34,9 +34,9 @@ func init() {
 				, email_confirmation_token character varying
 				, email_confirmed_at timestamp with time zone
 				, email character varying UNIQUE
-				, encrypted_password character varying NOT NULL
+				, encrypted_password character varying
 				, password_reset_at timestamp with time zone
-				, reset_password_token character varying
+				, password_reset_token character varying
 				, password_changed_at timestamp with time zone
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
@@ -92,25 +92,7 @@ func init() {
 				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
 				, admin_level character varying NOT NULL
 				, photo character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
-				, updated_at timestamp with time zone NOT NULL
 			);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON admins (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON admins (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
@@ -124,10 +106,6 @@ func init() {
 				, photo character varying NOT NULL
 				, address character varying NOT NULL
 				, referenced_by UUID REFERENCES users (id)
-				, created_by UUID REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
-				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
@@ -136,20 +114,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON buyers (referenced_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON buyers (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON buyers (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
@@ -227,10 +191,6 @@ func init() {
 				, commission_rate bigint NOT NULL
 				, commission_type character varying NOT NULL
 				, bank_account character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
-				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
@@ -246,20 +206,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON sellers (status_reviewed_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON sellers (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON sellers (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return

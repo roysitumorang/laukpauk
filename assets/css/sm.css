@@ -1,0 +1,12 @@
+@media screen and (min-width: 576px){
+    .hero-slider-img-mobile > img{
+   		width: 350px !important;
+   		height: auto !important;
+   }
+    .hero-slider-item{
+      padding-top: 1rem !important;
+      height: 100% !important;
+      display: flex;
+      flex-wrap: wrap;
+    }
+}

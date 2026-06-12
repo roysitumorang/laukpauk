@@ -55,7 +55,7 @@ func (r *Response) WriteResponse(c fiber.Ctx) error {
 	var builder strings.Builder
 	_, _ = builder.WriteString(c.Method())
 	_, _ = builder.WriteString(" ")
-	_, _ = builder.WriteString(ByteSlice2String(c.Request().URI().FullURI()))
+	_, _ = builder.WriteString(c.FullURL())
 	r.RequestURL = builder.String()
 	r.RequestID = ByteSlice2String(c.Response().Header.Peek(fiber.HeaderXRequestID))
 	r.Latency = time.Since(c.RequestCtx().Time()).String()

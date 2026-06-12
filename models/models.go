@@ -1,77 +1,21 @@
 package models
 
 import (
-	"errors"
-	"fmt"
-	"net/mail"
 	"regexp"
-	"strings"
-
-	"github.com/nyaruka/phonenumbers"
 )
 
 const (
-	Authenticated  = "authenticated"
-	CurrentAdmin   = "current_admin"
-	CurrentUser    = "current_user"
-	CurrentJwt     = "current_jwt"
-	UserID         = "user_id"
-	CurrentCompany = "current_company"
-	CurrentSession = "current_session"
-)
-
-const (
-	AccountTypeAdmin uint8 = iota
-	AccountTypeUser
-)
-
-const (
-	StatusUnconfirmed int8 = iota
-	StatusConfirmed
-	StatusDeactivated int8 = -1
-)
-
-const (
-	TopicAccount         = "account"
-	TopicJwt             = "jwt"
-	TopicCompany         = "company"
-	TopicProductCategory = "product_category"
-	TopicProduct         = "product"
-	TopicStore           = "store"
-	TopicSession         = "session"
-	TopicTransaction     = "transaction"
+	CurrentAdmin = "current_admin"
+	UserID       = "user_id"
 )
 
 type (
-	Pagination struct {
-		Links struct {
-			First    string `json:"first" example:"http://localhost:19000/v1/cities?limit=1&search=Tangerang"`
-			Previous string `json:"previous" example:"http://localhost:19000/v1/cities?limit=1&search=Tangerang"`
-			Current  string `json:"current" example:"http://localhost:19000/v1/cities?limit=1&page=2&search=Tangerang"`
-			Next     string `json:"next" example:"http://localhost:19000/v1/cities?limit=1&page=3&search=Tangerang"`
-			Last     string `json:"last" example:"http://localhost:19000/v1/cities?limit=1&page=4&search=Tangerang"`
-		} `json:"links"`
-		Info struct {
-			Limit int64 `json:"limit" example:"1"`
-			Page  int64 `json:"page" example:"1"`
-			Pages int64 `json:"pages" example:"3"`
-			Total int64 `json:"total" example:"3"`
-		} `json:"info"`
-	}
-
-	NewAccount struct {
-		AccountType uint8   `json:"account_type"`
-		Name        string  `json:"name"`
-		Username    string  `json:"username"`
-		Email       *string `json:"email"`
-		Phone       *string `json:"phone"`
-		CreatedBy   *string `json:"-"`
-	}
-
 	Message struct {
 		Action string `json:"action"`
 		ID     string `json:"id"`
 	}
+
+	Map map[string]any
 )
 
 var (
@@ -79,68 +23,32 @@ var (
 	Limits           = []int64{10, 25, 50, 100}
 	PhoneNumberRegex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
 	UsernameRegex    = regexp.MustCompile("[^a-z0-9]+")
-	SliceTopics      = []string{
-		TopicAccount,
-		TopicJwt,
-		TopicCompany,
-		TopicProductCategory,
-		TopicProduct,
-		TopicStore,
-		TopicSession,
-		TopicTransaction,
-	}
-	MapTopics = map[string]int{
-		TopicAccount:         1,
-		TopicJwt:             1,
-		TopicCompany:         1,
-		TopicProductCategory: 1,
-		TopicProduct:         1,
-		TopicStore:           1,
-		TopicSession:         1,
-		TopicTransaction:     1,
-	}
+	SliceTopics      = []string{}
+	MapTopics        = map[string]struct{}{}
 )
 
-func (q *NewAccount) Validate() error {
-	if q.AccountType != AccountTypeAdmin &&
-		q.AccountType != AccountTypeUser {
-		return fmt.Errorf(
-			"account_type: should be either %d or %d",
-			AccountTypeAdmin,
-			AccountTypeUser,
-		)
-	}
-	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
-		return errors.New("name: is required")
-	}
-	if q.Username = strings.ToLower(strings.TrimSpace(q.Username)); q.Username == "" {
-		return errors.New("username: is required")
-	}
-	if q.Email != nil {
-		if *q.Email = strings.ToLower(strings.TrimSpace(*q.Email)); *q.Email != "" {
-			if _, err := mail.ParseAddress(*q.Email); err != nil {
-				return errors.New("email: invalid address")
-			}
-		} else {
-			q.Email = nil
+func NewMap() *Map {
+	return new(Map{})
+}
+
+func (q *Map) Push(args ...any) *Map {
+	n := len(args)
+	for i := 0; i < len(args); i += 2 {
+		if i+1 >= n {
+			break
+		}
+		if key, ok := args[i].(string); ok {
+			(*q)[key] = args[i+1]
 		}
 	}
-	if q.Phone != nil {
-		if *q.Phone = strings.TrimSpace(*q.Phone); *q.Phone != "" {
-			phone, err := phonenumbers.Parse(*q.Phone, "ID")
-			if err != nil {
-				return err
-			}
-			*q.Phone = phonenumbers.Format(phone, phonenumbers.E164)
-			if PhoneNumberRegex.Find([]byte(*q.Phone)) == nil {
-				return errors.New("phone: invalid number")
-			}
-		} else {
-			q.Phone = nil
-		}
-	}
-	if q.Email == nil && q.Phone == nil {
-		return errors.New("email: at least a valid email or phone number required")
-	}
-	return nil
+	return q
+}
+
+func (q *Map) Delete(key string) *Map {
+	delete(*q, key)
+	return q
+}
+
+func (q *Map) Size() int {
+	return len(*q)
 }

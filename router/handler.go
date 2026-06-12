@@ -16,6 +16,8 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migration"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/repositories"
+	"github.com/roysitumorang/laukpauk/services"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +27,7 @@ type (
 		Migration    *migration.Migration
 		KafkaService *kafka.KafkaService
 		Storage      fiber.Storage
+		UserService  services.UserService
 	}
 )
 
@@ -61,11 +64,14 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	storage := valkey.New(valkey.Config{
 		URL: os.Getenv("REDIS_URL"),
 	})
+	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
+	userService := services.NewUserService(userRepository)
 	return &Service{
 		DbWrite:      dbWrite,
 		Migration:    migration,
 		KafkaService: kafkaService,
 		Storage:      storage,
+		UserService:  userService,
 	}, nil
 }
 

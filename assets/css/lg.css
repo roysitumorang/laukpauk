@@ -1,0 +1,11 @@
+@media screen and (min-width: 992px){
+    /*.hero-slider-img{
+    	width:450px !important;
+    }*/
+    .hero-slider-title{
+    	line-height: 50px !important;
+    }
+    .owl-carousel .owl-item img{
+        width: auto !important;
+    }
+}

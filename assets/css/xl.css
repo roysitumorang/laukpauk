@@ -1,0 +1,8 @@
+@media screen and (min-width: 1200px){
+    #bantuan > .container{
+		padding-left: 15rem;
+		padding-right: 15rem;
+		margin-left: auto;
+		margin-right: auto;
+    }
+}

@@ -1,0 +1,29 @@
+@media screen and (max-width: 575px){
+   .hero-slider-img-mobile > img{
+   		width: 350px !important;
+   		height: auto !important;
+   }
+   .hero-slider-content{
+    	padding-top: 1.5rem !important;
+    	padding-bottom: 1.5rem !important;
+    }
+    .hero-slider-item .hero-slider-desc{
+    	font-size: .875rem!important;
+    }
+    .hero-slider-item .hero-slider-title{
+    	font-size: calc(1.25rem + 1.5vw) !important;
+      line-height: 35px !important;
+    }
+    #bantuan > .container{
+      padding-left: 1rem;
+      padding-right: 1rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero-slider-item{
+      padding-top: 1rem !important;
+      height: 100% !important;
+      display: flex;
+      flex-wrap: wrap;
+    }
+}

@@ -1,0 +1,2 @@
+* * * * * curl https://app.laukpauk.id/admin/CronJob/cekMelewatiBatasRangeJadwalDeliveryBelumCheckout
+* * * * * curl https://app.laukpauk.id/admin/CronJob/cekTransaksiBelumBayar
