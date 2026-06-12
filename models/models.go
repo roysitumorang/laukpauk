@@ -4,11 +4,6 @@ import (
 	"regexp"
 )
 
-const (
-	CurrentAdmin = "current_admin"
-	UserID       = "user_id"
-)
-
 type (
 	Message struct {
 		Action string `json:"action"`

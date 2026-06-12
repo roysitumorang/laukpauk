@@ -8,6 +8,11 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
+const (
+	CurrentAdmin = "current_admin"
+	UserID       = "user_id"
+)
+
 var (
 	ErrLoginFailed = errors.New("login failed")
 )

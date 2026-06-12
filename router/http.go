@@ -39,6 +39,7 @@ import (
 	_ "github.com/roysitumorang/laukpauk/docs"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
+	"github.com/roysitumorang/laukpauk/models"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +63,8 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		Storage: q.Storage,
 	})
 	sessionStore.RegisterType(new(helper.FlashMessage))
-	sessionStore.RegisterType(new(uuid.UUID))
+	sessionStore.RegisterType(uuid.UUID{})
+	sessionStore.RegisterType(new(models.Admin))
 	app := fiber.New(fiber.Config{
 		RegexHandler: coregex.MustCompile,
 		JSONEncoder:  json.Marshal,
@@ -92,6 +94,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		rewrite.New(rewrite.Config{
 			Rules: map[string]string{
 				"/admin/auth/*": "/auth/admin/$1",
+				"/admin":        "/home/admin",
 			},
 		}),
 		cors.New(),
@@ -157,8 +160,12 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		}).
 		Get("/assets*", static.New("", static.Config{
 			FS: os.DirFS("assets"),
+		})).
+		Get("/images*", static.New("", static.Config{
+			FS: os.DirFS("images"),
 		}))
 	controllers.NewAuthController(q.UserService).Mount(app.Group("/auth"))
+	controllers.NewHomeController(q.UserService).Mount(app.Group("/home"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).WriteResponse(c)
 	})

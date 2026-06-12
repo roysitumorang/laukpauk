@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/sanitizers"
 	"github.com/roysitumorang/laukpauk/services"
@@ -26,10 +27,11 @@ func NewAuthController(
 }
 
 func (q *authController) Mount(r fiber.Router) {
+	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
 	admin := r.Group("/admin")
 	admin.Get("/login", q.AdminNewLogin).
 		Post("/login", q.AdminLogin).
-		Get("/me", q.AdminProfile).
+		Get("/me", adminSessionAuth, q.AdminProfile).
 		Get("/logout", q.AdminLogout)
 }
 
@@ -37,7 +39,7 @@ func (q *authController) AdminNewLogin(c fiber.Ctx) error {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	if sess.Get(models.UserID) != nil {
-		return flash.Redirect(c, sess.Session, "/admin/auth/me")
+		return flash.Redirect(c, sess.Session, "/admin")
 	}
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.AdminLoginRequest)
@@ -56,7 +58,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	if sess.Get(models.UserID) != nil {
-		return flash.Redirect(c, sess.Session, "/admin/auth/me")
+		return flash.Redirect(c, sess.Session, "/admin")
 	}
 	csrfToken := csrf.TokenFromContext(c)
 	params := models.NewMap().Push(
@@ -102,21 +104,20 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRegenerate")
 	}
 	sess.Set(models.UserID, admin.ID)
-	return flash.Redirect(c, sess.Session, "/admin/auth/me")
+	return flash.Redirect(c, sess.Session, "/admin")
 }
 
 func (q *authController) AdminProfile(c fiber.Ctx) error {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	if sess.Get(models.UserID) == nil {
-		return flash.Redirect(c, sess.Session, "/admin/auth/login")
-	}
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	params := models.NewMap().Push(
 		"baseURL", c.Req().BaseURL(),
 		"flash", flash,
 		"path", c.Route().Path,
 		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
 	)
 	return c.Render("admin/auth_me", params)
 }
