@@ -93,8 +93,10 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		compress.New(),
 		rewrite.New(rewrite.Config{
 			Rules: map[string]string{
-				"/admin/auth/*": "/auth/admin/$1",
-				"/admin":        "/home/admin",
+				"/admin/auth/*":     "/auth/admin/$1",
+				"/admin":            "/home/admin",
+				"/admin/articles":   "/articles/admin",
+				"/admin/articles/*": "/articles/admin/$1",
 			},
 		}),
 		cors.New(),
@@ -166,6 +168,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		}))
 	controllers.NewAuthController(q.UserService).Mount(app.Group("/auth"))
 	controllers.NewHomeController(q.UserService).Mount(app.Group("/home"))
+	controllers.NewArticleController(q.UserService, q.ArticleService).Mount(app.Group("/articles"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).WriteResponse(c)
 	})

@@ -23,11 +23,12 @@ import (
 
 type (
 	Service struct {
-		DbWrite      *pgxpool.Pool
-		Migration    *migration.Migration
-		KafkaService *kafka.KafkaService
-		Storage      fiber.Storage
-		UserService  services.UserService
+		DbWrite        *pgxpool.Pool
+		Migration      *migration.Migration
+		KafkaService   *kafka.KafkaService
+		Storage        fiber.Storage
+		UserService    services.UserService
+		ArticleService services.ArticleService
 	}
 )
 
@@ -64,14 +65,18 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	storage := valkey.New(valkey.Config{
 		URL: os.Getenv("REDIS_URL"),
 	})
+	repositories.SetDbWrite(dbWrite)
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
+	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
+	articleService := services.NewArticleService(articleRepository)
 	return &Service{
-		DbWrite:      dbWrite,
-		Migration:    migration,
-		KafkaService: kafkaService,
-		Storage:      storage,
-		UserService:  userService,
+		DbWrite:        dbWrite,
+		Migration:      migration,
+		KafkaService:   kafkaService,
+		Storage:        storage,
+		UserService:    userService,
+		ArticleService: articleService,
 	}, nil
 }
 
