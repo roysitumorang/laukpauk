@@ -149,7 +149,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_250_20210202_160046.jpeg"
 												alt="TOMAT" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -171,7 +171,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_2225_20220129_043923.jpeg"
 												alt="AYAM POTONG" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -193,7 +193,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_266_20210130_190902.jpeg"
 												alt="CABE MERAH" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -215,7 +215,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_275_20210202_152714.jpeg"
 												alt="WORTEL" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -237,7 +237,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_2222_20210216_093545.jpeg"
 												alt="AYAM KAMPUNG" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -259,7 +259,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_1258_20210204_084243.jpeg"
 												alt="WORTEL" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -281,7 +281,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_1779_20210301_161541.jpeg"
 												alt="TOGE" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -303,7 +303,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_22775_20220129_042030.jpeg"
 												alt="NILA HIDUP" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -325,7 +325,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_279_20210205_160244.jpeg"
 												alt="SAWI MANIS" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">
@@ -347,7 +347,7 @@
 											<img src="{{ baseURL }}/images/produk/compress/Produk_319_20210202_143728.jpeg"
 												alt="KANGKUNG" class="img-circle"
 												style="width:50px; height:50px;"
-												onError="this.src="{{ baseURL }}/assets/img/no-image.png""/>
+												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</a>
 										</div>
 										<div class="col-lg-9">

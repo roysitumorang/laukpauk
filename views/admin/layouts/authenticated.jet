@@ -74,8 +74,13 @@
 						<span class="dropdown-item dropdown-header">0 Newest of 0 Notifications</span>
 						<div id="notifikasi">
 							<div class="col text-center mb-4">
-								<h2 class="text-danger mb-3 animate__animated animate__fadeInDown" style="font-weight:550;">Notifikasi</h2>
-								<img src="{{ baseURL }}/assets/img/empty.png" alt="No Data Img" class="animate__animated animate__fadeInUp" style="animation-delay:.35s; width:200px;" id="imgNotFound" />
+								<h2 class="text-danger mb-3 animate__animated animate__fadeInDown"
+								    style="font-weight:550;">Notifikasi</h2>
+								<img src="{{ baseURL }}/assets/img/empty.png"
+								    alt="No Data Img"
+									class="animate__animated animate__fadeInUp"
+									style="animation-delay:.35s; width:200px;"
+									id="imgNotFound" />
 								<p class="text-muted mb-0 mt-3 animate__animated animate__fadeInUp"><i>Tidak ada notifikasi</i></p>
 							</div>
 							<script>
@@ -85,12 +90,12 @@
 							</script>
 						</div>
 						<div class="dropdown-divider"></div>
-						<a href="{{ baseURL }}/admin/notifikasiAdmin" class="dropdown-item dropdown-footer">Lihat Semua Notifikasi</a>
+						<a href="{{ baseURL }}/admin/notifications" class="dropdown-item dropdown-footer">Lihat Semua Notifikasi</a>
 					</div>
 				</li>
 				<li class="nav-item">
 					<a class="nav-link" href="{{ baseURL }}/admin/auth/logout">
-					<i class="fas fa-power-off text-danger" data-toggle="tooltip" data-placement="top" title="Logout"></i>
+					    <i class="fas fa-power-off text-danger" data-toggle="tooltip" data-placement="top" title="Logout"></i>
 					</a>
 				</li>
 			</ul>
@@ -99,8 +104,11 @@
 		<!-- Main Sidebar Container -->
 		<aside class="main-sidebar sidebar-dark-primary elevation-4">
 			<!-- Brand Logo -->
-			<a href="{{ baseURL }}/admin/" class="brand-link">
-			    <img src="{{ baseURL }}/assets/img/laukpauk-icon.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: 0.8" />
+			<a href="{{ baseURL }}/admin" class="brand-link">
+			    <img src="{{ baseURL }}/assets/img/laukpauk-icon.png"
+					alt="AdminLTE Logo"
+					class="brand-image img-circle elevation-3"
+					style="opacity: 0.8" />
 			    <span class="brand-text font-weight-light">Laukpauk</span>
 			</a>
 			<!-- Sidebar -->
@@ -112,7 +120,7 @@
     						<img src="{{ baseURL }}/images/admin/compress/{{ currentAdmin.Photo }}"
                                 class="img-circle elevation-2"
     							alt="{{ currentAdmin.Name }}"
-    							onError="this.src="{{ baseURL }}/assets/img/no-image.png""
+    							onError="this.src='{{ baseURL }}/assets/img/no-image.png'"
     							style="width:3.2rem;" />
 						</a>
 					</div>
@@ -133,7 +141,7 @@
 							</a>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/pasar" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-newspaper"></i>
 								<p>
 									Artikel & Blog
@@ -142,25 +150,25 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/artikel" class="nav-link">
+									<a href="{{ baseURL }}/admin/articles" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Data Artikel</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/artikel/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/articles/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Artikel Baru</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blog" class="nav-link">
+									<a href="{{ baseURL }}/admin/blogs" class="nav-link">
 										<i class="fa fa-blog nav-icon"></i>
 										<p>List Data Blog</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blog/addBlog" class="nav-link">
+									<a href="{{ baseURL }}/admin/blogs/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Blog Baru</p>
 									</a>
@@ -168,7 +176,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/pasar" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-globe"></i>
 								<p>
 									Website
@@ -177,43 +185,43 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/website/hero" class="nav-link">
+									<a href="{{ baseURL }}/admin/websites/hero" class="nav-link">
 										<i class="fa fa-image nav-icon"></i>
 										<p>Hero Slider</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/website/fitur" class="nav-link">
+									<a href="{{ baseURL }}/admin/websites/fitur" class="nav-link">
 										<i class="fa fa-box nav-icon"></i>
 										<p>Fitur Laukpauk</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/website/why" class="nav-link">
+									<a href="{{ baseURL }}/admin/websites/why" class="nav-link">
 										<i class="fa fa-question nav-icon"></i>
 										<p>Mengapa Pilih Laukpauk</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/website/komitmen" class="nav-link">
+									<a href="{{ baseURL }}/admin/websites/komitmen" class="nav-link">
 										<i class="fa fa-handshake nav-icon"></i>
 										<p>Komitmen</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/website/uangBelanjaGratis" class="nav-link">
+									<a href="{{ baseURL }}/admin/websites/uang-belanja-gratis" class="nav-link">
 										<i class="fa fa-dollar-sign nav-icon"></i>
 										<p>Uang Belanja Gratis</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/website/pahlawanDapur" class="nav-link">
+									<a href="{{ baseURL }}/admin/websites/pahlawan-dapur" class="nav-link">
 										<i class="fa fa-utensils nav-icon"></i>
 										<p>Pahlawan Dapur</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/website/bantuan" class="nav-link">
+									<a href="{{ baseURL }}/admin/websites/bantuan" class="nav-link">
 										<i class="fa fa-question-circle nav-icon"></i>
 										<p>Halaman Bantuan</p>
 									</a>
@@ -221,7 +229,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/pasar" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-store"></i>
 								<p>
 									Pasar
@@ -230,13 +238,13 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/pasar" class="nav-link">
+									<a href="{{ baseURL }}/admin/bazaars" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Data Pasar</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/pasar/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/bazaars/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Pasar Baru</p>
 									</a>
@@ -244,7 +252,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/transaksi" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-shopping-cart"></i>
 								<p>
 									Transaksi
@@ -253,21 +261,23 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/transaksi" class="nav-link">
+									<a href="{{ baseURL }}/admin/transactions" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Data Transaksi</p>
 									</a>
 								</li>
-								<!-- <li class="nav-item">
-									<a href="{{ baseURL }}/admin/transaksi/mutasiRekeningBCA" class="nav-link">
+								<!--
+								<li class="nav-item">
+									<a href="{{ baseURL }}/admin/transactions/mutasi-rekening-bca" class="nav-link">
 									    <i class="fa fa-money-check-alt nav-icon"></i>
 									    <p>Mutasi Rekening BCA</p>
 									</a>
-									</li> -->
+								</li>
+								-->
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/banner" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-image"></i>
 								<p>
 									Banner & Konten App
@@ -276,25 +286,25 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/banner" class="nav-link">
+									<a href="{{ baseURL }}/admin/banners" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Data Banner</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/banner/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/banners/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Banner Baru</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/konten" class="nav-link">
+									<a href="{{ baseURL }}/admin/contents" class="nav-link">
 										<i class="fa fa-file nav-icon"></i>
 										<p>List Konten Aplikasi</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/konten/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/contents/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Konten Baru Aplikasi</p>
 									</a>
@@ -302,7 +312,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/voucher" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-money-check-alt"></i>
 								<p>
 									Voucher & Promo
@@ -311,25 +321,25 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/voucher" class="nav-link">
+									<a href="{{ baseURL }}/admin/vouchers" class="nav-link">
 										<i class="fa fa-money-check-alt nav-icon"></i>
 										<p>List Data Voucher</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/voucher/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/vouchers/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Voucher Baru</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/promo" class="nav-link">
+									<a href="{{ baseURL }}/admin/promos" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Data Promo</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/promo/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/promos/new" class="nav-link">
 										<i class="fa fa-bullhorn nav-icon"></i>
 										<p>Add New Promo</p>
 									</a>
@@ -337,7 +347,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/user" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-user-circle"></i>
 								<p>
 									User & Administrator
@@ -346,25 +356,25 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/user" class="nav-link">
+									<a href="{{ baseURL }}/admin/buyers" class="nav-link">
 										<i class="fa fa-users nav-icon"></i>
 										<p>List Data User</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/user/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/buyers/new" class="nav-link">
 										<i class="fa fa-user-plus nav-icon"></i>
 										<p>User Baru</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/admin" class="nav-link " >
+									<a href="{{ baseURL }}/admin/admins" class="nav-link " >
 										<i class="fa fa-crown nav-icon"></i>
 										<p>Administrator</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/admin/add" class="nav-link " >
+									<a href="{{ baseURL }}/admin/admins/new" class="nav-link " >
 										<i class="fa fa-user-plus nav-icon"></i>
 										<p>Administrator Baru</p>
 									</a>
@@ -372,7 +382,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/kategoriproduk" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-dollar-sign"></i>
 								<p>
 									Diskon Kategori
@@ -381,13 +391,13 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/diskonkategori" class="nav-link">
+									<a href="{{ baseURL }}/admin/product_category_discounts" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Data Diskon Kategori</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/diskonkategori/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/product_category_discounts/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Add Diskon Kategori</p>
 									</a>
@@ -395,7 +405,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/kategoriproduk" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-box"></i>
 								<p>
 									Produk
@@ -404,13 +414,13 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/kategoriproduk" class="nav-link">
+									<a href="{{ baseURL }}/admin/product_categories" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Data Kategori Produk</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/kategoriproduk/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/product_categories/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Add New Kategori Produk</p>
 									</a>
@@ -436,7 +446,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/sms" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-coins"></i>
 								<p>
 									Poin & Gift
@@ -445,25 +455,25 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/poin" class="nav-link">
+									<a href="{{ baseURL }}/admin/points" class="nav-link">
 										<i class="fa fa-coins nav-icon"></i>
 										<p>Histori Poin User</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/poin/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/points/new" class="nav-link">
 										<i class="fa fa-coins nav-icon"></i>
 										<p>Tambah Poin User</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/gift" class="nav-link">
+									<a href="{{ baseURL }}/admin/gifts" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Gift</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/gift/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/gifts/new" class="nav-link">
 										<i class="fa fa-gift nav-icon"></i>
 										<p>Add New Gift</p>
 									</a>
@@ -471,7 +481,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/sms" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-wifi"></i>
 								<p>
 									Broadcast
@@ -486,19 +496,19 @@
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/sms/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/sms/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>SMS Baru</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/pushnotifikasi" class="nav-link">
+									<a href="{{ baseURL }}/admin/notifications" class="nav-link">
 										<i class="fa fa-bell nav-icon"></i>
 										<p>Riwayat Push Notifikasi</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/pushnotifikasi/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/notifications/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Push Notifikasi Baru</p>
 									</a>
@@ -515,27 +525,27 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/rpd" class="nav-link">
+									<a href="{{ baseURL }}/admin/withdrawals" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>Riwayat Pencairan Dana</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/rpd/request" class="nav-link">
+									<a href="{{ baseURL }}/admin/withdrawals/request" class="nav-link">
 										<i class="fa fa-paper-plane nav-icon"></i>
 										<p>Request Pencairan Dana</p>
 										<span class="badge badge-danger ml-1">0</span>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/user/requestMenjadiPenjual" class="nav-link">
+									<a href="{{ baseURL }}/admin/sellers/request" class="nav-link">
 										<i class="fa fa-stamp nav-icon"></i>
 										<p>Request Menjadi Penjual</p>
 										<span class="badge badge-danger ml-1">4</span>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/user/requestMenjadiPenjualMandiri" class="nav-link">
+									<a href="{{ baseURL }}/admin/user/independent_request" class="nav-link">
 										<i class="fa fa-flag nav-icon"></i>
 										<p>Request Penjual Mandiri</p>
 										<span class="badge badge-danger ml-1">0</span>
@@ -544,7 +554,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/rpd" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-utensils"></i>
 								<p>
 									Resep
@@ -553,13 +563,13 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/resep" class="nav-link">
+									<a href="{{ baseURL }}/admin/recipes" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
 										<p>List Resep</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/resep/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/recipes/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Resep Baru</p>
 									</a>
@@ -567,7 +577,7 @@
 							</ul>
 						</li>
 						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/rpd" class="nav-link">
+							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-truck"></i>
 								<p>
 									Jadwal Delivery
@@ -576,33 +586,33 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/jadwaldelivery" class="nav-link">
+									<a href="{{ baseURL }}/admin/shipping_plans" class="nav-link">
 										<i class="fa fa-clock nav-icon"></i>
 										<p>Atur Jadwal Delivery</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/jadwaldelivery/global" class="nav-link">
+									<a href="{{ baseURL }}/admin/shipping_plans/global" class="nav-link">
 										<i class="fa fa-tags nav-icon"></i>
 										<p>Atur Jadwal Delivery Global</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/jadwaltutup" class="nav-link">
+									<a href="{{ baseURL }}/admin/non_shipping_days" class="nav-link">
 										<i class="fa fa-clock nav-icon"></i>
 										<p>Jadwal Tutup</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/jadwaltutup/add" class="nav-link">
+									<a href="{{ baseURL }}/admin/non_shipping_days/new" class="nav-link">
 										<i class="fa fa-clock nav-icon"></i>
 										<p>Tambah Jadwal Tutup</p>
 									</a>
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item  " >
-							<a href="{{ baseURL }}/admin/pengaturan" class="nav-link">
+						<li class="nav-item">
+							<a href="{{ baseURL }}/admin/settings" class="nav-link">
 								<i class="nav-icon fa fa-wrench"></i>
 								<p>Pengaturan</p>
 							</a>
@@ -666,80 +676,69 @@
 	<script src="{{ baseURL }}/assets/dist/js/demo.js"></script>
 	<script src="{{ baseURL }}/assets/dist/js/pages/dashboard3.js"></script>
 	<script>
-		let baseURLJS     =   "{{ baseURL }}/admin/";
-
+		let baseURLJS = "{{ baseURL }}/admin/";
 		$("[data-toggle=tooltip]").tooltip();
-
-		$(".notifikasi-item").on("click", function(e){
-		e.preventDefault();
-
-		let href 			=	$(this).attr("href");
-		let idNotifikasi 	=	$(this).attr("idNotifikasi");
-
-		$.ajax({
-		url 	: 	`${baseURLJS}/NotifikasiAdmin/toggleStatus/${idNotifikasi}`,
-		success	: 	function(responseFromServer){
-		let rFS 	=	JSON.parse(responseFromServer);
-		let statusToggleStatus	=	rFS.statusToggleStatus;
-
-		if(statusToggleStatus){
-						location.href 	=	href;
-		}
-		}
+		$(".notifikasi-item").on("click", function(e) {
+			e.preventDefault();
+			let href = $(this).attr("href");
+			let idNotifikasi = $(this).attr("idNotifikasi");
+			$.ajax({
+				url: `${baseURLJS}/NotifikasiAdmin/toggleStatus/${idNotifikasi}`,
+				success: function(responseFromServer) {
+					let rFS = JSON.parse(responseFromServer);
+					let statusToggleStatus = rFS.statusToggleStatus;
+					if (statusToggleStatus) {
+						location.href = href;
+					}
+				}
+			});
 		});
+		$(".not-allowed").on("click", function(e) {
+			e.preventDefault();
+			// Swal.fire({
+			//     title   :   "Not Allowed",
+			//     html    :   "Anda tidak diijinkan untuk mengakses halaman ini!",
+			//     type    :   "warning"
+			// });
+			alert("Anda tidak diijinkan untuk mengakses halaman ini!");
 		});
-
-		$(".not-allowed").on("click", function(e){
-		    e.preventDefault();
-		    // Swal.fire({
-		    //     title   :   "Not Allowed",
-		    //     html    :   "Anda tidak diijinkan untuk mengakses halaman ini!",
-		    //     type    :   "warning"
-		    // });
-		    alert("Anda tidak diijinkan untuk mengakses halaman ini!");
-		});
-
 		$("body").addClass("layout-fixed layout-navbar-fixed layout-footer-fixed");
 	</script>
 	<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
 	<script>
-		// let environment             =   "development";
-		let environment =   "production";
-
+		// let environment = "development";
+		let environment = "production";
 		window.OneSignal = window.OneSignal || [];
-		OneSignal.push(function(){
-		    OneSignal.init({
-		        appId: (environment === "development")? "52b56d11-5d2b-43e0-ba06-25f99fbde235" : "21ac8b87-e7cc-48b4-9fba-c38ccdf159c3",
-		        subdomainName: "laukpauk",
-		        promptOptions   :   {
-		            slidedown   :   {
-		                enabled     :   true,
-		                autoPrompt  :   true,
-		                timeDelay   :   1,
-		                pageViews   :   3,
-		                actionMessage       :   "Laukpauk ingin mengirimkan notifikasi realtime. Aktifkan fitur ini dengan klik ALLOW",
-		                acceptButtonText    :   "ALLOW",
-		                cancelButtonText    :   "NO"
-		            }
-		        }
-		    });
-		    OneSignal.on("notificationDisplay", function(noticationData){
-		        notificationReceived();
-		    });
-
+		OneSignal.push(function() {
+			OneSignal.init({
+				appId: (environment === "development") ? "52b56d11-5d2b-43e0-ba06-25f99fbde235" : "21ac8b87-e7cc-48b4-9fba-c38ccdf159c3",
+				subdomainName: "laukpauk",
+				promptOptions: {
+					slidedown: {
+						enabled: true,
+						autoPrompt: true,
+						timeDelay: 1,
+						pageViews: 3,
+						actionMessage: "Laukpauk ingin mengirimkan notifikasi realtime. Aktifkan fitur ini dengan klik ALLOW",
+						acceptButtonText: "ALLOW",
+						cancelButtonText: "NO"
+					}
+				}
+			});
+			OneSignal.on("notificationDisplay", function(noticationData) {
+				notificationReceived();
+			});
 		});
 
-		function notificationReceived(){
-		    let notificationRingtone        =   new Audio("assets/ringtone/notification.mp3");
-		    notificationRingtone.play();
-
-		    let jumlahNotifikasiBelumDibaca     =   getJumlahNotifikasi(false);
-		    let notifikasiAdminBelumDibaca      =   getNotifikasiAdmin(false, 5);
-
-		    let notifikasiAdminBelumDibacaHTML  =   "";
-		    if(notifikasiAdminBelumDibaca.length >= 1){
-		        notifikasiAdminBelumDibaca.forEach((item, index) => {
-		            notifikasiAdminBelumDibacaHTML  +=  `
+		function notificationReceived() {
+			let notificationRingtone = new Audio("assets/ringtone/notification.mp3");
+			notificationRingtone.play();
+			let jumlahNotifikasiBelumDibaca = getJumlahNotifikasi(false);
+			let notifikasiAdminBelumDibaca = getNotifikasiAdmin(false, 5);
+			let notifikasiAdminBelumDibacaHTML = "";
+			if (notifikasiAdminBelumDibaca.length >= 1) {
+				notifikasiAdminBelumDibaca.forEach((item, index) => {
+					notifikasiAdminBelumDibacaHTML += `
 		                <div class="dropdown-divider"></div>
 		                <a href="${item.route}" class="notifikasi-item" idNotifikasi="${item.id}">
 		                    <div class="dropdown-item">
@@ -755,67 +754,61 @@
 		                    </div>
 		                </a>
 		            `;
-		        });
-		    }
-
-		    $("#jumlahNotifikasi").text(jumlahNotifikasiBelumDibaca);
-		    $("#notifikasi").html(notifikasiAdminBelumDibacaHTML);
-		}
-		function getJumlahNotifikasi(isRead = null){
-		    let jumlahNotifikasi    =   0;
-		    let isReadQS    =   "";
-		    if(isRead != null){
-		        isReadQS    =   `${(isRead)? "&isRead=true" : "&isRead=false"}`;
-		    }
-
-		    $.ajax({
-		        url     :   `{{ baseURL }}/admin/Admin/getJumlahNotifikasiAdmin?${isReadQS}`,
-		        async   :   false,
-		        success :   function(responseFromServer){
-		            let rFS     =   JSON.parse(responseFromServer);
-		            jumlahNotifikasi    =   rFS.numberOfAdminNotification;
-		        }
-		    });
-
-		    return jumlahNotifikasi;
+				});
+			}
+			$("#jumlahNotifikasi").text(jumlahNotifikasiBelumDibaca);
+			$("#notifikasi").html(notifikasiAdminBelumDibacaHTML);
 		}
 
-		function getNotifikasiAdmin(isRead = null, limit = null){
-		    let notifikasiAdmin    =   [];
-		    let isReadQS    =   "";
-		    let limitQS     =   "";
-
-		    if(isRead != null){
-		        isReadQS    =   `${(isRead)? "&isRead=true" : "&isRead=false"}`;
-		    }
-		    if(limit != null){
-		        limitQS    =   `&limit=${limit}`;
-		    }
-
-		    $.ajax({
-		        url     :   `{{ baseURL }}/admin/Admin/getNotifikasiAdmin?${isReadQS}${limitQS}`,
-		        async   :   false,
-		        success :   function(responseFromServer){
-		            let rFS     =   JSON.parse(responseFromServer);
-		            notifikasiAdmin    =   rFS.notifikasiAdmin;
-		        }
-		    });
-
-		    return notifikasiAdmin;
+		function getJumlahNotifikasi(isRead = null) {
+			let jumlahNotifikasi = 0;
+			let isReadQS = "";
+			if (isRead != null) {
+				isReadQS = `${(isRead)? "&isRead=true" : "&isRead=false"}`;
+			}
+			$.ajax({
+				url: `{{ baseURL }}/admin/Admin/getJumlahNotifikasiAdmin?${isReadQS}`,
+				async: false,
+				success: function(responseFromServer) {
+					let rFS = JSON.parse(responseFromServer);
+					jumlahNotifikasi = rFS.numberOfAdminNotification;
+				}
+			});
+			return jumlahNotifikasi;
 		}
 
-		let _summernoteCustomToolbar    =   [
-		    ["style", ["style", "bold", "italic", "underline"]],
-		    ["fontname", ["fontname"]],
-		    ["fontsizeunit", ["fontsize", "fontsizeunit"]],
-		    ["fullscreen", ["fullscreen"]],
-		    ["undo", ["undo", "redo", "help"]],
-		    ["codeview", ["codeview"]],
-		    ["font", ["strikethrough", "superscript", "subscript"]],
-		    ["color", ["color"]],
-		    ["para", ["ul", "ol", "paragraph"]],
-		    ["height", ["height"]],
-		    ["insert", ["picture", "link", "video", "hr", "table"]]
+		function getNotifikasiAdmin(isRead = null, limit = null) {
+			let notifikasiAdmin = [];
+			let isReadQS = "";
+			let limitQS = "";
+			if (isRead != null) {
+				isReadQS = `${(isRead)? "&isRead=true" : "&isRead=false"}`;
+			}
+			if (limit != null) {
+				limitQS = `&limit=${limit}`;
+			}
+			$.ajax({
+				url: `{{ baseURL }}/admin/Admin/getNotifikasiAdmin?${isReadQS}${limitQS}`,
+				async: false,
+				success: function(responseFromServer) {
+					let rFS = JSON.parse(responseFromServer);
+					notifikasiAdmin = rFS.notifikasiAdmin;
+				}
+			});
+			return notifikasiAdmin;
+		}
+		let _summernoteCustomToolbar = [
+			["style", ["style", "bold", "italic", "underline"]],
+			["fontname", ["fontname"]],
+			["fontsizeunit", ["fontsize", "fontsizeunit"]],
+			["fullscreen", ["fullscreen"]],
+			["undo", ["undo", "redo", "help"]],
+			["codeview", ["codeview"]],
+			["font", ["strikethrough", "superscript", "subscript"]],
+			["color", ["color"]],
+			["para", ["ul", "ol", "paragraph"]],
+			["height", ["height"]],
+			["insert", ["picture", "link", "video", "hr", "table"]]
 		];
 	</script>
 	<script src="{{ baseURL }}/assets/plugins/datatables/jquery.dataTables.min.js"></script>
@@ -823,91 +816,83 @@
 	<link href="{{ baseURL }}/assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
 	<script>
 		$("#produkPalingLaku").DataTable();
-
-		let riwayatTransaksiLabel 	=	[];
-		let riwayatTransaksiData 	=	[];
-
-		$(".riwayat-transaksi-waktu").on("click", function(e){
+		let riwayatTransaksiLabel = [];
+		let riwayatTransaksiData = [];
+		$(".riwayat-transaksi-waktu").on("click", function(e) {
 			e.preventDefault();
 			$(".riwayat-transaksi-waktu").removeClass("active");
 			$(this).addClass("active");
-
-			let waktu 	=	$(this).attr("waktu");
+			let waktu = $(this).attr("waktu");
 			doAjaxGrafikTabel(waktu);
 		})
 
-		function generateGrafikTabel(){
+		function generateGrafikTabel() {
 			let salesGraphChartCanvas = $("#riwayatTransaksi").get(0).getContext("2d");
-
 			let salesGraphChartData = {
-				labels  : riwayatTransaksiLabel,
+				labels: riwayatTransaksiLabel,
 				datasets: [{
-					label               :	"Jumlah Transaksi",
-					fill                :	false,
-					borderWidth         :	2,
-					lineTension         :	0,
-					spanGaps :	true,
-					borderColor         :	"#007bff",
-					pointRadius         :	3,
-					pointHoverRadius    :	7,
-					pointColor          :	"#007bff",
-					pointBackgroundColor:	"#007bff",
-					data                :	riwayatTransaksiData
+					label: "Jumlah Transaksi",
+					fill: false,
+					borderWidth: 2,
+					lineTension: 0,
+					spanGaps: true,
+					borderColor: "#007bff",
+					pointRadius: 3,
+					pointHoverRadius: 7,
+					pointColor: "#007bff",
+					pointBackgroundColor: "#007bff",
+					data: riwayatTransaksiData
 				}]
 			}
-
 			let salesGraphChartOptions = {
-				maintainAspectRatio : false,
-				responsive : true,
+				maintainAspectRatio: false,
+				responsive: true,
 				legend: {
 					display: false,
 				},
 				scales: {
 					xAxes: [{
-						ticks : {
+						ticks: {
 							fontColor: "#007bff",
 						},
-						gridLines : {
-							display : false,
+						gridLines: {
+							display: false,
 							color: "#007bff",
 							drawBorder: false
 						}
 					}],
 					yAxes: [{
-						ticks : {
+						ticks: {
 							stepSize: 5000,
 							fontColor: "#007bff",
 						},
-						gridLines : {
-							display : true,
+						gridLines: {
+							display: true,
 							color: "#f0f0f0",
 							drawBorder: false,
 						}
 					}]
 				}
 			}
-
 			let salesGraphChart = new Chart(salesGraphChartCanvas, {
-					type: "line",
-					data: salesGraphChartData,
-					options: salesGraphChartOptions
-				}
-			)
+				type: "line",
+				data: salesGraphChartData,
+				options: salesGraphChartOptions
+			})
 		}
-		function doAjaxGrafikTabel(){
-			$.ajax({
-				url 	:	`{{ baseURL }}/admin/json/riwayatTransaksi/`,
-				success :	function(responseFromServer){
-					let rFS 	=	responseFromServer;
-					let riwayatTransaksi 	=	rFS.riwayatTransaksi;
 
-					riwayatTransaksiLabel	=	riwayatTransaksi.label;
-					riwayatTransaksiData	=	riwayatTransaksi.data;
+		function doAjaxGrafikTabel() {
+			$.ajax({
+				url: `{{ baseURL }}/admin/json/riwayatTransaksi/`,
+				success: function(responseFromServer) {
+					let rFS = responseFromServer;
+					let riwayatTransaksi = rFS.riwayatTransaksi;
+					riwayatTransaksiLabel = riwayatTransaksi.label;
+					riwayatTransaksiData = riwayatTransaksi.data;
 					generateGrafikTabel();
 				}
 			})
 		}
-
 		doAjaxGrafikTabel();
 		generateGrafikTabel();
 	</script>

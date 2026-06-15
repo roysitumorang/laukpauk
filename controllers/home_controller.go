@@ -41,5 +41,5 @@ func (q *homeController) AdminIndex(c fiber.Ctx) error {
 		"path", c.Route().Path,
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-	), "admin/layouts/authorized")
+	), "admin/layouts/authenticated")
 }
