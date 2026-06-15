@@ -133,7 +133,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -222,7 +222,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -273,7 +273,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -326,7 +326,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -405,7 +405,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 				, UNIQUE (unit_of_measurement, product_id)
 			);`,
@@ -452,7 +452,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -499,7 +499,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -553,7 +553,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -607,7 +607,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -746,7 +746,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -984,7 +984,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1033,7 +1033,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1117,7 +1117,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1322,7 +1322,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1535,7 +1535,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1576,7 +1576,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1619,7 +1619,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1664,7 +1664,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1739,7 +1739,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1781,7 +1781,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1831,7 +1831,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1875,7 +1875,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1952,7 +1952,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -1992,7 +1992,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
 		); err != nil {
@@ -2041,7 +2041,7 @@ func init() {
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone NOT NULL
+				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 				, UNIQUE (recipe_id, product_id)
 			);`,
