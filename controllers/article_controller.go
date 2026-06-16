@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"mime/multipart"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -151,27 +152,15 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	if photo != nil {
-		if err = c.SaveFile(photo, fmt.Sprintf(models.ArticlePhotoPath, request.Photo)); err != nil {
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Log(ctx, zap.ErrorLevel, errRollback.Error(), ctxt, "ErrRollback")
-			}
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/article_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-			), "admin/layouts/authenticated")
+	if err = q.saveFile(c, photo, request.Photo); err != nil {
+		if errRollback := tx.Rollback(ctx); errRollback != nil {
+			helper.Log(ctx, zap.ErrorLevel, errRollback.Error(), ctxt, "ErrRollback")
 		}
-		if err = c.SaveFile(photo, fmt.Sprintf(models.ArticlePhotoCompressPath, request.Photo)); err != nil {
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Log(ctx, zap.ErrorLevel, errRollback.Error(), ctxt, "ErrRollback")
-			}
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/article_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-			), "admin/layouts/authenticated")
-		}
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrSaveFile")
+		return c.Render("admin/article_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request,
+		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCommit")
@@ -277,27 +266,15 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	if photo != nil {
-		if err = c.SaveFile(photo, fmt.Sprintf(models.ArticlePhotoPath, request.Photo)); err != nil {
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Log(ctx, zap.ErrorLevel, errRollback.Error(), ctxt, "ErrRollback")
-			}
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/article_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-			), "admin/layouts/authenticated")
+	if err = q.saveFile(c, photo, request.Photo); err != nil {
+		if errRollback := tx.Rollback(ctx); errRollback != nil {
+			helper.Log(ctx, zap.ErrorLevel, errRollback.Error(), ctxt, "ErrRollback")
 		}
-		if err = c.SaveFile(photo, fmt.Sprintf(models.ArticlePhotoCompressPath, request.Photo)); err != nil {
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Log(ctx, zap.ErrorLevel, errRollback.Error(), ctxt, "ErrRollback")
-			}
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/article_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-			), "admin/layouts/authenticated")
-		}
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrSaveFile")
+		return c.Render("admin/article_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request,
+		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCommit")
@@ -346,4 +323,14 @@ func (q *articleController) AdminDeactivate(c fiber.Ctx) (err error) {
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
 	return flash.Success("article deactivated successfully").Redirect(c, sess.Session, "/admin/articles")
+}
+
+func (q *articleController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
+	if file == nil {
+		return nil
+	}
+	if err := c.SaveFile(file, fmt.Sprintf(models.ArticlePhotoPath, filename)); err != nil {
+		return err
+	}
+	return c.SaveFile(file, fmt.Sprintf(models.ArticlePhotoCompressPath, filename))
 }
