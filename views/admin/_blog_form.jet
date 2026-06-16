@@ -48,5 +48,10 @@
 		<a href="{{ baseURL }}/admin/blogs" class="btn btn-default ml-1">
 			Back to List Blog
 		</a>
+		<script>
+			$(document).ready(function() {
+				$("#body").summernote()
+			});
+		</script>
 	</div>
 </div>

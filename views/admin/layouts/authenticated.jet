@@ -29,6 +29,21 @@
 	<script src="{{ baseURL }}/assets/dist/js/pages/dashboard3.js"></script>
 	{{ end }}
 	<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
+	<script>
+		let _summernoteCustomToolbar = [
+			["style", ["style", "bold", "italic", "underline"]],
+			["fontname", ["fontname"]],
+			["fontsizeunit", ["fontsize", "fontsizeunit"]],
+			["fullscreen", ["fullscreen"]],
+			["undo", ["undo", "redo", "help"]],
+			["codeview", ["codeview"]],
+			["font", ["strikethrough", "superscript", "subscript"]],
+			["color", ["color"]],
+			["para", ["ul", "ol", "paragraph"]],
+			["height", ["height"]],
+			["insert", ["picture", "link", "video", "hr", "table"]]
+		];
+	</script>
 	<style type="text/css">
 		.nav-treeview > .nav-item {
 			font-size: .8rem;
@@ -765,19 +780,6 @@
 			});
 			return notifikasiAdmin;
 		}
-		let _summernoteCustomToolbar = [
-			["style", ["style", "bold", "italic", "underline"]],
-			["fontname", ["fontname"]],
-			["fontsizeunit", ["fontsize", "fontsizeunit"]],
-			["fullscreen", ["fullscreen"]],
-			["undo", ["undo", "redo", "help"]],
-			["codeview", ["codeview"]],
-			["font", ["strikethrough", "superscript", "subscript"]],
-			["color", ["color"]],
-			["para", ["ul", "ol", "paragraph"]],
-			["height", ["height"]],
-			["insert", ["picture", "link", "video", "hr", "table"]]
-		];
 	</script>
 </body>
 </html>
