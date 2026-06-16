@@ -68,7 +68,7 @@
 		placeholder: 'Your Content Here'
 	});
 
-	function imgChanged(thisContext) {
+	function blogImgChanged(thisContext) {
 		try {
 			let el = $(thisContext);
 			let _imgData = el.prop('files')[0];

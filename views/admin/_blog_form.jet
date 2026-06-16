@@ -12,7 +12,7 @@
 			<input type="file"
 				name="photo"
 				id="blogImg"
-				onChange="blogImgChanged(this, event)" />
+				onChange="blogImgChanged(this)" />
 		</label>
 	</div>
 	<div class="col-lg-8">
