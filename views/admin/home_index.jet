@@ -1,369 +1,406 @@
-<div class="row">
-	<div class="col-lg-3 col-6">
-		<!-- small box -->
-		<div class="small-box bg-info">
-			<div class="inner">
-				<h3>4</h3>
-				<p>Request Menjadi Penjual</p>
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+	<!-- Content Header (Page header) -->
+	<div class="content-header">
+		<div class="container-fluid">
+			<div class="row mb-4">
+				<div class="col-sm-6">
+					<h1 class="m-0 text-dark">Dashboard</h1>
+				</div>
+				<!-- /.col -->
+				<div class="col-sm-6">
+					<ol class="breadcrumb float-sm-right">
+						<li class="breadcrumb-item">
+							<a href="#">Home</a>
+						</li>
+						<li class="breadcrumb-item active">
+							Dashboard
+						</li>
+					</ol>
+				</div>
+				<!-- /.col -->
 			</div>
-			<div class="icon">
-				<i class="fa fa-stamp"></i>
-			</div>
-			<a href="{{ baseURL }}/admin/user/requestMenjadiPenjual" class="small-box-footer">
-			More info <i class="fas fa-arrow-circle-right"></i>
-			</a>
 		</div>
 	</div>
-	<!-- ./col -->
-	<div class="col-lg-3 col-6">
-		<!-- small box -->
-		<div class="small-box bg-success">
-			<div class="inner">
-				<h3>2</h3>
-				<p>Admin</p>
-			</div>
-			<div class="icon">
-				<i class="fa fa-user-circle"></i>
-			</div>
-			<a href="{{ baseURL }}/admin/admin" class="small-box-footer">
-			More info <i class="fas fa-arrow-circle-right"></i>
-			</a>
+	<!-- Main content -->
+	<div class="content">
+		<div class="container-fluid">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                   	<div class="col-lg-3 col-6">
+                  		<!-- small box -->
+                  		<div class="small-box bg-info">
+                 			<div class="inner">
+                    				<h3>4</h3>
+                    				<p>Request Menjadi Penjual</p>
+                 			</div>
+                 			<div class="icon">
+                    				<i class="fa fa-stamp"></i>
+                 			</div>
+                 			<a href="{{ baseURL }}/admin/user/requestMenjadiPenjual" class="small-box-footer">
+                 			More info <i class="fas fa-arrow-circle-right"></i>
+                 			</a>
+                  		</div>
+                   	</div>
+                   	<!-- ./col -->
+                   	<div class="col-lg-3 col-6">
+                  		<!-- small box -->
+                  		<div class="small-box bg-success">
+                 			<div class="inner">
+                    				<h3>2</h3>
+                    				<p>Admin</p>
+                 			</div>
+                 			<div class="icon">
+                    				<i class="fa fa-user-circle"></i>
+                 			</div>
+                 			<a href="{{ baseURL }}/admin/admin" class="small-box-footer">
+                 			More info <i class="fas fa-arrow-circle-right"></i>
+                 			</a>
+                  		</div>
+                   	</div>
+                   	<!-- ./col -->
+                   	<div class="col-lg-3 col-6">
+                  		<!-- small box -->
+                  		<div class="small-box bg-warning">
+                 			<div class="inner">
+                    				<h3>0</h3>
+                    				<p>Transaksi Selesai Hari Ini</p>
+                 			</div>
+                 			<div class="icon">
+                    				<i class="fa fa-shopping-bag"></i>
+                 			</div>
+                 			<a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                  		</div>
+                   	</div>
+                   	<!-- ./col -->
+                   	<div class="col-lg-3 col-6">
+                  		<!-- small box -->
+                  		<div class="small-box bg-danger">
+                 			<div class="inner">
+                    				<h3>Rp. 0</h3>
+                    				<p>Jumlah Belanja Hari Ini</p>
+                 			</div>
+                 			<div class="icon">
+                    				<i class="fa fa-dollar-sign"></i>
+                 			</div>
+                 			<a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                  		</div>
+                   	</div>
+                    </div>
+                    <div class="row">
+                   	<div class="col-lg-8">
+                  		<div class="row d-flex">
+                 			<div class="col-lg-6">
+                    				<!-- small box -->
+                    				<div class="small-box bg-primary">
+                   					<div class="inner">
+                  						<h3>0</h3>
+                  						<p>Request Pencairan Dana</p>
+                   					</div>
+                   					<div class="icon">
+                  						<i class="fa fa-money-bill-wave"></i>
+                   					</div>
+                   					<a href="{{ baseURL }}/admin/rpd/request" class="small-box-footer">
+                   					More info <i class="fas fa-arrow-circle-right"></i>
+                   					</a>
+                    				</div>
+                 			</div>
+                 			<div class="col-lg-6">
+                    				<div class="card">
+                   					<div class="card-body">
+                  						<p class="text-sm text-center">Klik tombol di bawah ini untuk menuju halaman Update Harga Produk secara Massal</p>
+                  						<a href="{{ baseURL }}/admin/produk/updateHargaProdukMassal" class="nav-link">
+                  						<button class="btn btn-primary btn-block">
+                  						<i class="fa fa-dollar-sign nav-icon"></i>
+                  						Update Harga Produk Massal
+                  						</button>
+                  						</a>
+                   					</div>
+                    				</div>
+                 			</div>
+                  		</div>
+                  		<div class="card">
+                 			<div class="card-header">
+                    				<h3 class="card-title">
+                   					<i class="fas fa-chart-line mr-1"></i>
+                   					Riwayat Transaksi
+                    				</h3>
+                    				<div class="card-tools">
+                   					<ul class="nav nav-pills ml-auto">
+                  						<li class="nav-item">
+                 							<a class="nav-link riwayat-transaksi-waktu active" href="" data-toggle="tab"
+                    								waktu="harian">Harian</a>
+                  						</li>
+                  						<li class="nav-item">
+                 							<a class="nav-link riwayat-transaksi-waktu" href="" data-toggle="tab"
+                    								waktu="bulanan">Bulanan</a>
+                  						</li>
+                  						<li class="nav-item">
+                 							<a class="nav-link riwayat-transaksi-waktu" href="" data-toggle="tab"
+                    								waktu="tahunan">Tahunan</a>
+                  						</li>
+                   					</ul>
+                    				</div>
+                 			</div>
+                 			<!-- /.card-header -->
+                 			<div class="card-body">
+                    				<canvas class="chart" id="riwayatTransaksi" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                 			</div>
+                 			<!-- /.card-body -->
+                  		</div>
+                   	</div>
+                   	<div class="col-lg-4">
+                  		<div class="card">
+                 			<div class="card-header border-0">
+                    				<h3 class="card-title">
+                   					<i class="far fa-star mr-2"></i>
+                   					10 Produk Paling Laku
+                    				</h3>
+                 			</div>
+                 			<div class="card-body">
+                    				<div class="table-responsive">
+                   					<table class="table table-sm table-striped" id="produkPalingLaku">
+                  						<thead>
+                 							<tr>
+                    								<th class="border-top-0 text-center">No.</th>
+                    								<th class="border-top-0 text-left" style="width:65%;">Produk</th>
+                    								<th class="border-top-0 text-right">Order</th>
+                 							</tr>
+                  						</thead>
+                  						<tbody>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>1</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_250_20210202_160046.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_250_20210202_160046.jpeg"
+                    												alt="TOMAT" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">TOMAT</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">39x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>2</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_2225_20220129_043923.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_2225_20220129_043923.jpeg"
+                    												alt="AYAM POTONG" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">AYAM POTONG</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PETISAH</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">34x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>3</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_266_20210130_190902.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_266_20210130_190902.jpeg"
+                    												alt="CABE MERAH" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">CABE MERAH</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">27x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>4</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_275_20210202_152714.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_275_20210202_152714.jpeg"
+                    												alt="WORTEL" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">WORTEL</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PETISAH</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">24x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>5</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_2222_20210216_093545.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_2222_20210216_093545.jpeg"
+                    												alt="AYAM KAMPUNG" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">AYAM KAMPUNG</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">24x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>6</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_1258_20210204_084243.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_1258_20210204_084243.jpeg"
+                    												alt="WORTEL" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">WORTEL</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK OFFICIAL</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">23x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>7</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_1779_20210301_161541.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_1779_20210301_161541.jpeg"
+                    												alt="TOGE" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">TOGE</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK - PAJAK PAGI</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">23x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>8</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_22775_20220129_042030.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_22775_20220129_042030.jpeg"
+                    												alt="NILA HIDUP" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">NILA HIDUP</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">21x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>9</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_279_20210205_160244.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_279_20210205_160244.jpeg"
+                    												alt="SAWI MANIS" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">SAWI MANIS</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">20x</b> di order
+                    								</td>
+                 							</tr>
+                 							<tr class="text-sm tr-parent">
+                    								<td class="vam text-center"><b>10</b>.</td>
+                    								<td class="vam text-left">
+                   									<div class="row">
+                  										<div class="col-lg-3 text-center">
+                 											<a href="{{ baseURL }}/images/produk/Produk_319_20210202_143728.jpeg" target="_blank">
+                 											<img src="{{ baseURL }}/images/produk/compress/Produk_319_20210202_143728.jpeg"
+                    												alt="KANGKUNG" class="img-circle"
+                    												style="width:50px; height:50px;"
+                    												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+                 											</a>
+                  										</div>
+                  										<div class="col-lg-9">
+                 											<h6 class="text-primary text-bold mb-0">KANGKUNG</h6>
+                 											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
+                  										</div>
+                   									</div>
+                    								</td>
+                    								<td class="vam text-right">
+                   									<b class="text-success">19x</b> di order
+                    								</td>
+                 							</tr>
+                  						</tbody>
+                   					</table>
+                    				</div>
+                 			</div>
+                  		</div>
+                   	</div>
+                    </div>
+                </div>
+            </div>
 		</div>
+		<!-- /.container-fluid -->
 	</div>
-	<!-- ./col -->
-	<div class="col-lg-3 col-6">
-		<!-- small box -->
-		<div class="small-box bg-warning">
-			<div class="inner">
-				<h3>0</h3>
-				<p>Transaksi Selesai Hari Ini</p>
-			</div>
-			<div class="icon">
-				<i class="fa fa-shopping-bag"></i>
-			</div>
-			<a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-		</div>
-	</div>
-	<!-- ./col -->
-	<div class="col-lg-3 col-6">
-		<!-- small box -->
-		<div class="small-box bg-danger">
-			<div class="inner">
-				<h3>Rp. 0</h3>
-				<p>Jumlah Belanja Hari Ini</p>
-			</div>
-			<div class="icon">
-				<i class="fa fa-dollar-sign"></i>
-			</div>
-			<a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-		</div>
-	</div>
+	<!-- /.content -->
 </div>
-<div class="row">
-	<div class="col-lg-8">
-		<div class="row d-flex">
-			<div class="col-lg-6">
-				<!-- small box -->
-				<div class="small-box bg-primary">
-					<div class="inner">
-						<h3>0</h3>
-						<p>Request Pencairan Dana</p>
-					</div>
-					<div class="icon">
-						<i class="fa fa-money-bill-wave"></i>
-					</div>
-					<a href="{{ baseURL }}/admin/rpd/request" class="small-box-footer">
-					More info <i class="fas fa-arrow-circle-right"></i>
-					</a>
-				</div>
-			</div>
-			<div class="col-lg-6">
-				<div class="card">
-					<div class="card-body">
-						<p class="text-sm text-center">Klik tombol di bawah ini untuk menuju halaman Update Harga Produk secara Massal</p>
-						<a href="{{ baseURL }}/admin/produk/updateHargaProdukMassal" class="nav-link">
-						<button class="btn btn-primary btn-block">
-						<i class="fa fa-dollar-sign nav-icon"></i>
-						Update Harga Produk Massal
-						</button>
-						</a>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="card">
-			<div class="card-header">
-				<h3 class="card-title">
-					<i class="fas fa-chart-line mr-1"></i>
-					Riwayat Transaksi
-				</h3>
-				<div class="card-tools">
-					<ul class="nav nav-pills ml-auto">
-						<li class="nav-item">
-							<a class="nav-link riwayat-transaksi-waktu active" href="" data-toggle="tab"
-								waktu="harian">Harian</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link riwayat-transaksi-waktu" href="" data-toggle="tab"
-								waktu="bulanan">Bulanan</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link riwayat-transaksi-waktu" href="" data-toggle="tab"
-								waktu="tahunan">Tahunan</a>
-						</li>
-					</ul>
-				</div>
-			</div>
-			<!-- /.card-header -->
-			<div class="card-body">
-				<canvas class="chart" id="riwayatTransaksi" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-			</div>
-			<!-- /.card-body -->
-		</div>
-	</div>
-	<div class="col-lg-4">
-		<div class="card">
-			<div class="card-header border-0">
-				<h3 class="card-title">
-					<i class="far fa-star mr-2"></i>
-					10 Produk Paling Laku
-				</h3>
-			</div>
-			<div class="card-body">
-				<div class="table-responsive">
-					<table class="table table-sm table-striped" id="produkPalingLaku">
-						<thead>
-							<tr>
-								<th class="border-top-0 text-center">No.</th>
-								<th class="border-top-0 text-left" style="width:65%;">Produk</th>
-								<th class="border-top-0 text-right">Order</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>1</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_250_20210202_160046.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_250_20210202_160046.jpeg"
-												alt="TOMAT" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">TOMAT</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">39x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>2</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_2225_20220129_043923.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_2225_20220129_043923.jpeg"
-												alt="AYAM POTONG" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">AYAM POTONG</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PETISAH</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">34x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>3</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_266_20210130_190902.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_266_20210130_190902.jpeg"
-												alt="CABE MERAH" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">CABE MERAH</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">27x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>4</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_275_20210202_152714.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_275_20210202_152714.jpeg"
-												alt="WORTEL" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">WORTEL</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PETISAH</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">24x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>5</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_2222_20210216_093545.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_2222_20210216_093545.jpeg"
-												alt="AYAM KAMPUNG" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">AYAM KAMPUNG</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">24x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>6</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_1258_20210204_084243.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_1258_20210204_084243.jpeg"
-												alt="WORTEL" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">WORTEL</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK OFFICIAL</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">23x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>7</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_1779_20210301_161541.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_1779_20210301_161541.jpeg"
-												alt="TOGE" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">TOGE</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK - PAJAK PAGI</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">23x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>8</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_22775_20220129_042030.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_22775_20220129_042030.jpeg"
-												alt="NILA HIDUP" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">NILA HIDUP</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">21x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>9</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_279_20210205_160244.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_279_20210205_160244.jpeg"
-												alt="SAWI MANIS" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">SAWI MANIS</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">20x</b> di order
-								</td>
-							</tr>
-							<tr class="text-sm tr-parent">
-								<td class="vam text-center"><b>10</b>.</td>
-								<td class="vam text-left">
-									<div class="row">
-										<div class="col-lg-3 text-center">
-											<a href="{{ baseURL }}/images/produk/Produk_319_20210202_143728.jpeg" target="_blank">
-											<img src="{{ baseURL }}/images/produk/compress/Produk_319_20210202_143728.jpeg"
-												alt="KANGKUNG" class="img-circle"
-												style="width:50px; height:50px;"
-												onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-											</a>
-										</div>
-										<div class="col-lg-9">
-											<h6 class="text-primary text-bold mb-0">KANGKUNG</h6>
-											<span class="text-muted">Dijual oleh LAUKPAUK PAJAK PAGI</span>
-										</div>
-									</div>
-								</td>
-								<td class="vam text-right">
-									<b class="text-success">19x</b> di order
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+<!-- /.content-wrapper -->
