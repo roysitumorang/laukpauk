@@ -1526,6 +1526,7 @@ func init() {
 			ctx,
 			`CREATE TABLE articles (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
 				, photo character varying NOT NULL
@@ -1534,10 +1535,17 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON articles (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
@@ -1565,7 +1573,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON articles (deactivated_by);`,
+			`CREATE INDEX ON articles (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return

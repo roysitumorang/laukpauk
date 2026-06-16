@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"mime/multipart"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -43,7 +44,7 @@ func (q *articleController) Mount(r fiber.Router) {
 		Post("", q.AdminCreate).
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
-		Post("/:id/deactivate", q.AdminDeactivate)
+		Post("/:id/delete", q.AdminDelete)
 }
 
 func (q *articleController) AdminIndex(c fiber.Ctx) (err error) {
@@ -73,6 +74,7 @@ func (q *articleController) AdminIndex(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
+	request = request.WithRecordStatus(models.RecordStatusActive)
 	if rows, pagination, err = q.articleService.FindArticles(
 		c,
 		request,
@@ -133,10 +135,14 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	createdBy := currentAdmin.ID
+	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
 	request.UpdatedBy = createdBy
 	request.UpdatedAt = now
+	if photo == nil {
+		request.Photo = os.Getenv("ARTICLE_DEFAULT_PHOTO")
+	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBeginTx")
@@ -184,12 +190,17 @@ func (q *articleController) AdminEdit(c fiber.Ctx) (err error) {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
-	articles, _, err := q.articleService.FindArticles(ctx, models.NewArticleFilter().WithArticleIDs(articleID))
+	articles, _, err := q.articleService.FindArticles(
+		ctx,
+		models.NewArticleFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithArticleIDs(articleID),
+	)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindArticles")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	if len(articles) == 0 || articles[0].DeactivatedBy != nil {
+	if len(articles) == 0 {
 		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
 	request := articles[0]
@@ -217,12 +228,17 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
-	articles, _, err := q.articleService.FindArticles(ctx, models.NewArticleFilter().WithArticleIDs(articleID))
+	articles, _, err := q.articleService.FindArticles(
+		ctx,
+		models.NewArticleFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithArticleIDs(articleID),
+	)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindArticles")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
+		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
-	if len(articles) == 0 || articles[0].DeactivatedBy != nil {
+	if len(articles) == 0 {
 		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
 	article := articles[0]
@@ -246,11 +262,15 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	request.ID = article.ID
+	request.RecordStatus = article.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
-	request.DeactivatedBy = nil
-	request.DeactivatedAt = nil
-	request.DeactivationReason = nil
+	request.DeletedBy = nil
+	request.DeletedAt = nil
+	request.DeletionReason = nil
+	if photo == nil {
+		request.Photo = os.Getenv("ARTICLE_DEFAULT_PHOTO")
+	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBeginTx")
@@ -286,9 +306,9 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 	return flash.Success("article updated successfully").Redirect(c, sess.Session, "/admin/articles")
 }
 
-func (q *articleController) AdminDeactivate(c fiber.Ctx) (err error) {
+func (q *articleController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "ArticleController-AdminDeactivate"
+	ctxt := "ArticleController-AdminDelete"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -297,18 +317,24 @@ func (q *articleController) AdminDeactivate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
-	articles, _, err := q.articleService.FindArticles(ctx, models.NewArticleFilter().WithArticleIDs(articleID))
+	articles, _, err := q.articleService.FindArticles(
+		ctx,
+		models.NewArticleFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithArticleIDs(articleID),
+	)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindArticles")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	if len(articles) == 0 || articles[0].DeactivatedBy != nil {
+	if len(articles) == 0 {
 		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
 	request := articles[0]
-	request.DeactivatedBy = &currentAdmin.ID
-	request.DeactivatedAt = new(time.Now())
-	request.DeactivationReason = nil
+	request.RecordStatus = models.RecordStatusDeleted
+	request.DeletedBy = &currentAdmin.ID
+	request.DeletedAt = new(time.Now())
+	request.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBeginTx")

@@ -11,6 +11,13 @@ type (
 	}
 
 	Map map[string]any
+
+	RecordStatus int
+)
+
+const (
+	RecordStatusActive  RecordStatus = 1
+	RecordStatusDeleted RecordStatus = -1
 )
 
 var (

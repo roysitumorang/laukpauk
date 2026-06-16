@@ -17,23 +17,25 @@ const (
 
 type (
 	Article struct {
-		RowNo              int64      `json:"-" form:"-"`
-		ID                 uuid.UUID  `json:"-" form:"-"`
-		Subject            string     `json:"-" form:"subject"`
-		Body               string     `json:"-" form:"body"`
-		Photo              string     `json:"-" form:"photo"`
-		Link               string     `json:"-" form:"link"`
-		CreatedBy          uuid.UUID  `json:"-" form:"-"`
-		CreatedAt          time.Time  `json:"-" form:"-"`
-		UpdatedBy          uuid.UUID  `json:"-" form:"-"`
-		UpdatedAt          time.Time  `json:"-" form:"-"`
-		DeactivatedBy      *uuid.UUID `json:"-" form:"-"`
-		DeactivatedAt      *time.Time `json:"-" form:"-"`
-		DeactivationReason *string    `json:"-" form:"-"`
+		RowNo          int64        `json:"-" form:"-"`
+		ID             uuid.UUID    `json:"-" form:"-"`
+		RecordStatus   RecordStatus `json:"-" form:"-"`
+		Subject        string       `json:"-" form:"subject"`
+		Body           string       `json:"-" form:"body"`
+		Photo          string       `json:"-" form:"photo"`
+		Link           string       `json:"-" form:"link"`
+		CreatedBy      uuid.UUID    `json:"-" form:"-"`
+		CreatedAt      time.Time    `json:"-" form:"-"`
+		UpdatedBy      uuid.UUID    `json:"-" form:"-"`
+		UpdatedAt      time.Time    `json:"-" form:"-"`
+		DeletedBy      *uuid.UUID   `json:"-" form:"-"`
+		DeletedAt      *time.Time   `json:"-" form:"-"`
+		DeletionReason *string      `json:"-" form:"-"`
 	}
 
 	ArticleFilter struct {
-		ArticleIDs []uuid.UUID
+		ArticleIDs   []uuid.UUID
+		RecordStatus []RecordStatus
 		Keyword,
 		PaginationURL string
 		Limit,
@@ -48,6 +50,11 @@ func NewArticleFilter() *ArticleFilter {
 
 func (q *ArticleFilter) WithArticleIDs(articleIDs ...uuid.UUID) *ArticleFilter {
 	q.ArticleIDs = articleIDs
+	return q
+}
+
+func (q *ArticleFilter) WithRecordStatus(recordStatus ...RecordStatus) *ArticleFilter {
+	q.RecordStatus = recordStatus
 	return q
 }
 

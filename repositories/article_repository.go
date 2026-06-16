@@ -72,6 +72,20 @@ func (q *articleRepository) FindArticles(
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.RecordStatus) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("record_status IN (")
+		for i, recordStatus := range request.RecordStatus {
+			params = append(params, recordStatus)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = sb.WriteString("$")
+			_, _ = sb.WriteString(strconv.Itoa(len(params)))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = sb.WriteString("%%")
@@ -114,6 +128,7 @@ func (q *articleRepository) FindArticles(
 		"COUNT(1)",
 		`ROW_NUMBER() OVER (ORDER BY id DESC) AS row_no
 		, id
+		, record_status
 		, subject
 		, body
 		, photo
@@ -122,9 +137,9 @@ func (q *articleRepository) FindArticles(
 		, created_at
 		, updated_by
 		, updated_at
-		, deactivated_by
-		, deactivated_at
-		, deactivation_reason`,
+		, deleted_by
+		, deleted_at
+		, deletion_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -167,6 +182,7 @@ func (q *articleRepository) FindArticles(
 		if err = rows.Scan(
 			&article.RowNo,
 			&article.ID,
+			&article.RecordStatus,
 			&article.Subject,
 			&article.Body,
 			&article.Photo,
@@ -175,9 +191,9 @@ func (q *articleRepository) FindArticles(
 			&article.CreatedAt,
 			&article.UpdatedBy,
 			&article.UpdatedAt,
-			&article.DeactivatedBy,
-			&article.DeactivatedAt,
-			&article.DeactivationReason,
+			&article.DeletedBy,
+			&article.DeletedAt,
+			&article.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -197,16 +213,7 @@ func (q *articleRepository) CreateArticle(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO articles (
-			subject
-			, body
-			, photo
-			, link
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id
+			record_status
 			, subject
 			, body
 			, photo
@@ -215,9 +222,21 @@ func (q *articleRepository) CreateArticle(
 			, created_at
 			, updated_by
 			, updated_at
-			, deactivated_by
-			, deactivated_at
-			, deactivation_reason`,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id
+			, record_status
+			, subject
+			, body
+			, photo
+			, link
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason`,
+		request.RecordStatus,
 		request.Subject,
 		request.Body,
 		request.Photo,
@@ -228,6 +247,7 @@ func (q *articleRepository) CreateArticle(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.RecordStatus,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
@@ -236,9 +256,9 @@ func (q *articleRepository) CreateArticle(
 		&response.CreatedAt,
 		&response.UpdatedBy,
 		&response.UpdatedAt,
-		&response.DeactivatedBy,
-		&response.DeactivatedAt,
-		&response.DeactivationReason,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
 			helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
@@ -259,17 +279,19 @@ func (q *articleRepository) UpdateArticle(
 	if err := tx.QueryRow(
 		ctx,
 		`UPDATE articles SET
-			subject = $1
-			, body = $2
-			, photo = $3
-			, link = $4
-			, updated_by = $5
-			, updated_at = $6
-			, deactivated_by = $7
-			, deactivated_at = $8
-			, deactivation_reason = $9
-		WHERE id = $10
+			record_status = $1
+			, subject = $2
+			, body = $3
+			, photo = $4
+			, link = $5
+			, updated_by = $6
+			, updated_at = $7
+			, deleted_by = $8
+			, deleted_at = $9
+			, deletion_reason = $10
+		WHERE id = $11
 		RETURNING id
+			, record_status
 			, subject
 			, body
 			, photo
@@ -278,21 +300,23 @@ func (q *articleRepository) UpdateArticle(
 			, created_at
 			, updated_by
 			, updated_at
-			, deactivated_by
-			, deactivated_at
-			, deactivation_reason`,
+			, deleted_by
+			, deleted_at
+			, deletion_reason`,
+		request.RecordStatus,
 		request.Subject,
 		request.Body,
 		request.Photo,
 		request.Link,
 		request.UpdatedBy,
 		request.UpdatedAt,
-		request.DeactivatedBy,
-		request.DeactivatedAt,
-		request.DeactivationReason,
+		request.DeletedBy,
+		request.DeletedAt,
+		request.DeletionReason,
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.RecordStatus,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
@@ -301,9 +325,9 @@ func (q *articleRepository) UpdateArticle(
 		&response.CreatedAt,
 		&response.UpdatedBy,
 		&response.UpdatedAt,
-		&response.DeactivatedBy,
-		&response.DeactivatedAt,
-		&response.DeactivationReason,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
 			helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
