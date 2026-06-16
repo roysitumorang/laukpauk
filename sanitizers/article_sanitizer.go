@@ -82,7 +82,6 @@ func ValidateArticle(ctx context.Context, c fiber.Ctx) (*models.Article, *multip
 			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
 		}
 		response.Photo = fmt.Sprintf(models.ArticlePhotoName, helper.GenerateSnowflakeID(), mtype.Extension())
-		fmt.Println(response.Photo)
 	}
 	return &response, photo, fiber.StatusOK, nil
 }
