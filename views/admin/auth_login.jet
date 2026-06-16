@@ -111,198 +111,40 @@
     <script src="{{ baseURL }}/assets/dist/js/adminlte.js"></script>
 
     <!-- OPTIONAL SCRIPTS -->
-    <script src="{{ baseURL }}/assets/plugins/chart.js/Chart.min.js"></script>
-    <script src="{{ baseURL }}/assets/dist/js/demo.js"></script>
-    <script src="{{ baseURL }}/assets/dist/js/pages/dashboard3.js"></script>
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
     <script>
-        let baseURLJS = "{{ baseURL }}/admin/";
-
-        $("[data-toggle=tooltip]").tooltip();
-
-        $(".notifikasi-item").on("click", function(e) {
-           	e.preventDefault();
-
-           	let href = $(this).attr("href");
-           	let idNotifikasi = $(this).attr("idNotifikasi");
-
-           	$.ajax({
-          		url: `${baseURLJS}/NotifikasiAdmin/toggleStatus/${idNotifikasi}`,
-          		success: function(responseFromServer) {
-         			let rFS = JSON.parse(responseFromServer);
-         			let statusToggleStatus = rFS.statusToggleStatus;
-
-         			if (statusToggleStatus) {
-        				location.href = href;
-         			}
-          		}
-           	});
-        });
-
-        $(".not-allowed").on("click", function(e) {
-           	e.preventDefault();
-           	// Swal.fire({
-           	//     title   :   "Not Allowed",
-           	//     html    :   "Anda tidak diijinkan untuk mengakses halaman ini!",
-           	//     type    :   "warning"
-           	// });
-           	alert("Anda tidak diijinkan untuk mengakses halaman ini!");
-        });
-
         $("body").addClass("layout-fixed layout-navbar-fixed layout-footer-fixed");
-        // let environment             =   "development";
-        let environment = "production";
-
-        window.OneSignal = window.OneSignal || [];
-        OneSignal.push(function() {
-           	OneSignal.init({
-          		appId: (environment === "development") ? "52b56d11-5d2b-43e0-ba06-25f99fbde235" : "21ac8b87-e7cc-48b4-9fba-c38ccdf159c3",
-          		subdomainName: "laukpauk",
-          		promptOptions: {
-         			slidedown: {
-        				enabled: true,
-        				autoPrompt: true,
-        				timeDelay: 1,
-        				pageViews: 3,
-        				actionMessage: "Laukpauk ingin mengirimkan notifikasi realtime. Aktifkan fitur ini dengan klik ALLOW",
-        				acceptButtonText: "ALLOW",
-        				cancelButtonText: "NO"
-         			}
-          		}
-           	});
-           	OneSignal.on("notificationDisplay", function(noticationData) {
-          		notificationReceived();
-           	});
-
-        });
-
-        function notificationReceived() {
-           	let notificationRingtone = new Audio("assets/ringtone/notification.mp3");
-           	notificationRingtone.play();
-
-           	let jumlahNotifikasiBelumDibaca = getJumlahNotifikasi(false);
-           	let notifikasiAdminBelumDibaca = getNotifikasiAdmin(false, 5);
-
-           	let notifikasiAdminBelumDibacaHTML = "";
-           	if (notifikasiAdminBelumDibaca.length >= 1) {
-          		notifikasiAdminBelumDibaca.forEach((item, index) => {
-         			notifikasiAdminBelumDibacaHTML += `
-                        <div class="dropdown-divider"></div>
-                        <a href="${item.route}" class="notifikasi-item" idNotifikasi="${item.id}">
-                            <div class="dropdown-item">
-                                <div class="row">
-                                    <div class="col-lg-2 text-center">
-                                        <span class="fa fa-bell"></span>
-                                    </div>
-                                    <div class="col-lg-10">
-                                        <p class="text-primary mb-1" class="word-break:break-all;">${item.judul.toUpperCase()}</p>
-                                        <span class="text-muted" style="font-size:.75em">Pada ${item.waktu}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    `;
-          		});
-           	}
-
-           	$("#jumlahNotifikasi").text(jumlahNotifikasiBelumDibaca);
-           	$("#notifikasi").html(notifikasiAdminBelumDibacaHTML);
-        }
-
-        function getJumlahNotifikasi(isRead = null) {
-           	let jumlahNotifikasi = 0;
-           	let isReadQS = "";
-           	if (isRead != null) {
-          		isReadQS = `${(isRead)? "&isRead=true" : "&isRead=false"}`;
-           	}
-
-           	$.ajax({
-          		url: `http://localhost:81/admin/Admin/getJumlahNotifikasiAdmin?${isReadQS}`,
-          		async: false,
-          		success: function(responseFromServer) {
-         			let rFS = JSON.parse(responseFromServer);
-         			jumlahNotifikasi = rFS.numberOfAdminNotification;
-          		}
-           	});
-
-           	return jumlahNotifikasi;
-        }
-
-        function getNotifikasiAdmin(isRead = null, limit = null) {
-           	let notifikasiAdmin = [];
-           	let isReadQS = "";
-           	let limitQS = "";
-
-           	if (isRead != null) {
-          		isReadQS = `${(isRead)? "&isRead=true" : "&isRead=false"}`;
-           	}
-           	if (limit != null) {
-          		limitQS = `&limit=${limit}`;
-           	}
-
-           	$.ajax({
-          		url: `http://localhost:81/admin/Admin/getNotifikasiAdmin?${isReadQS}${limitQS}`,
-          		async: false,
-          		success: function(responseFromServer) {
-         			let rFS = JSON.parse(responseFromServer);
-         			notifikasiAdmin = rFS.notifikasiAdmin;
-          		}
-           	});
-
-           	return notifikasiAdmin;
-        }
-
-        let _summernoteCustomToolbar = [
-           	["style", ["style", "bold", "italic", "underline"]],
-           	["fontname", ["fontname"]],
-           	["fontsizeunit", ["fontsize", "fontsizeunit"]],
-           	["fullscreen", ["fullscreen"]],
-           	["undo", ["undo", "redo", "help"]],
-           	["codeview", ["codeview"]],
-           	["font", ["strikethrough", "superscript", "subscript"]],
-           	["color", ["color"]],
-           	["para", ["ul", "ol", "paragraph"]],
-           	["height", ["height"]],
-           	["insert", ["picture", "link", "video", "hr", "table"]]
-        ];
         /*
         let btnSubmit = $("#btnSubmit");
         let btnSubmitText = btnSubmit.text();
-
         $("#formLogin").on("submit", function(e) {
-           	e.preventDefault();
-           	let formData = $(this).serialize();
-           	btnSubmit.prop("disabled", true).text("Processing ..");
-
-           	$.ajax({
-          		url: "{{ baseURL }}/admin/auth/login",
-          		data: formData,
-          		type: "POST",
-          		success: function(responseFromServer) {
-         			responseFromServer = JSON.parse(responseFromServer);
-         			let statusLogin = responseFromServer.statusLogin;
-
-         			if (statusLogin) {
+        	e.preventDefault();
+        	let formData = $(this).serialize();
+        	btnSubmit.prop("disabled", true).text("Processing ..");
+        	$.ajax({
+        		url: "{{ baseURL }}/admin/auth/login",
+        		data: formData,
+        		type: "POST",
+        		success: function(responseFromServer) {
+        			responseFromServer = JSON.parse(responseFromServer);
+        			let statusLogin = responseFromServer.statusLogin;
+        			if (statusLogin) {
         				let _urlSP = new URLSearchParams(location.search);
         				let _afterLogin = _urlSP.get("afterLogin");
-
         				let _to = "{{ baseURL }}/admin/auth/me";
         				if (_afterLogin != null) {
-           					_to = _afterLogin;
+        					_to = _afterLogin;
         				}
-
         				location.href = _to;
-         			} else {
+        			} else {
         				Swal.fire({
-           					title: `Autentikasi Login`,
-           					html: "Kombinasi username dan password tidak sesuai !",
-           					type: "error"
+        					title: `Autentikasi Login`,
+        					html: "Kombinasi username dan password tidak sesuai !",
+        					type: "error"
         				});
-
         				btnSubmit.prop("disabled", false).text(btnSubmitText);
-         			}
-          		}
-           	})
+        			}
+        		}
+        	})
         });
         */
     </script>
