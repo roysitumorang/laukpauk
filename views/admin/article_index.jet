@@ -172,3 +172,45 @@
 	<!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
+<script>
+    $('#listArtikel').DataTable();
+
+    function deleteArtikel(thisContext, namaArtikel) {
+    	let el = $(thisContext);
+    	Swal.fire({
+    		title: `Konfirmasi Penghapusan Artikel`,
+    		html: `Apakah anda yakin akan menghapus artikel <b class='text-info'>${namaArtikel}</b> ini ?`,
+    		type: 'question',
+    		showConfirmButton: true,
+    		showCancelButton: true,
+    		cancelButtonText: 'Batal',
+    		confirmButtonText: 'Ya, Lanjutkan !',
+    		focusCancel: true
+    	}).then((konfirmasi) => {
+    		if (konfirmasi.value) {
+    			let idArtikel = el.attr('idArtikel');
+    			$.ajax({
+    				url: `{{ baseURL }}/admin/artikel/delete/${idArtikel}`,
+    				success: function(responseFromServer) {
+    					let rFS = JSON.parse(responseFromServer);
+    					let swalText = `<span class='text-danger'>Gagal menghapus artikel !</span>`;
+    					let swalType = 'error';
+    					if (rFS.statusHapusArtikel) {
+    						swalText = `<span class='text-success'>Berhasil menghapus artikel !</span>`;
+    						swalType = 'success';
+    					}
+    					Swal.fire({
+    						title: `Penghapusan Data Artikel`,
+    						html: swalText,
+    						type: swalType
+    					}).then(() => {
+    						if (rFS.statusHapusArtikel) {
+    							location.reload();
+    						}
+    					});
+    				}
+    			})
+    		}
+    	});
+    }
+</script>

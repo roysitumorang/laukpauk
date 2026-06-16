@@ -25,6 +25,7 @@ var (
 	Limits           = []int64{10, 25, 50, 100}
 	PhoneNumberRegex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
 	UsernameRegex    = regexp.MustCompile("[^a-z0-9]+")
+	SlugRegex        = regexp.MustCompile("^[a-z0-9-]+$")
 	SliceTopics      = []string{}
 	MapTopics        = map[string]struct{}{}
 )

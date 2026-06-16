@@ -29,6 +29,7 @@ type (
 		Storage        fiber.Storage
 		UserService    services.UserService
 		ArticleService services.ArticleService
+		BlogService    services.BlogService
 	}
 )
 
@@ -68,8 +69,10 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	repositories.SetDbWrite(dbWrite)
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
+	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
+	blogService := services.NewBlogService(blogRepository)
 	return &Service{
 		DbWrite:        dbWrite,
 		Migration:      migration,
@@ -77,6 +80,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		Storage:        storage,
 		UserService:    userService,
 		ArticleService: articleService,
+		BlogService:    blogService,
 	}, nil
 }
 

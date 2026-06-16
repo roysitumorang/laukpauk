@@ -269,7 +269,7 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	if photo == nil {
-		request.Photo = os.Getenv("ARTICLE_DEFAULT_PHOTO")
+		request.Photo = article.Photo
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {

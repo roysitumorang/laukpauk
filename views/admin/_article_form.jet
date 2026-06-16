@@ -44,7 +44,7 @@
         </div>
         <hr />
         <button type="submit" class="btn btn-success mr-1">
-            Simpan  Data Artikel
+            Simpan Data Artikel
         </button>
         <a href="{{ baseURL }}/admin/articles" class="btn btn-default ml-1">
             Back to List Artikel

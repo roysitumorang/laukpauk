@@ -17,13 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	mimeTypes = map[string]struct{}{
-		"image/jpeg": struct{}{},
-		"image/png":  struct{}{},
-	}
-)
-
 func FindArticles(ctx context.Context, c fiber.Ctx) (*models.ArticleFilter, error) {
 	ctxt := "ArticleSanitizer-FindArticles"
 	response := models.NewArticleFilter()

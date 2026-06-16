@@ -97,6 +97,8 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 				"/admin":            "/home/admin",
 				"/admin/articles":   "/articles/admin",
 				"/admin/articles/*": "/articles/admin/$1",
+				"/admin/blogs":      "/blogs/admin",
+				"/admin/blogs/*":    "/blogs/admin/$1",
 			},
 		}),
 		cors.New(),
@@ -169,6 +171,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewAuthController(q.UserService).Mount(app.Group("/auth"))
 	controllers.NewHomeController(q.UserService).Mount(app.Group("/home"))
 	controllers.NewArticleController(q.UserService, q.ArticleService).Mount(app.Group("/articles"))
+	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).WriteResponse(c)
 	})
