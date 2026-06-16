@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/coregx/coregex v0.12.21
+	github.com/coregx/coregex v0.12.22
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gabriel-vasile/mimetype v1.4.13
 	github.com/getsentry/sentry-go v0.46.2
