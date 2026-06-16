@@ -63,6 +63,7 @@ func (q *articleController) AdminIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", "Data Artikel",
 		"limits", models.Limits,
 		"request", request,
 		"rows", rows,
@@ -103,6 +104,7 @@ func (q *articleController) AdminNew(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", "Add New Artikel",
 		"request", request,
 	)
 	return c.Render("admin/article_new", params, "admin/layouts/authenticated")
@@ -122,6 +124,7 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", "Add New Artikel",
 		"request", request,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateArticle(ctx, c)
@@ -210,6 +213,7 @@ func (q *articleController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", fmt.Sprintf("Edit Data Artikel|%s", request.Subject),
 		"request", request,
 		"articleID", request.ID,
 	)
@@ -249,6 +253,7 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", fmt.Sprintf("Edit Data Artikel|%s", article.Subject),
 		"request", request,
 		"articleID", article.ID,
 	)

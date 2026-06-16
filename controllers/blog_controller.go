@@ -63,6 +63,7 @@ func (q *blogController) AdminIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", "Blog Laukpauk",
 		"limits", models.Limits,
 		"request", request,
 		"rows", rows,
@@ -103,6 +104,7 @@ func (q *blogController) AdminNew(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", "Add New Blog",
 		"request", request,
 	)
 	return c.Render("admin/blog_new", params, "admin/layouts/authenticated")
@@ -122,6 +124,7 @@ func (q *blogController) AdminCreate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", "Add New Blog",
 		"request", request,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateBlog(ctx, c)
@@ -210,6 +213,7 @@ func (q *blogController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", fmt.Sprintf("Edit Data Blog|%s", request.Subject),
 		"request", request,
 		"blogID", request.ID,
 	)
@@ -249,6 +253,7 @@ func (q *blogController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
+		"pageTitle", fmt.Sprintf("Edit Data Blog|%s", blog.Subject),
 		"request", request,
 		"blogID", blog.ID,
 	)

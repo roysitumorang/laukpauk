@@ -4,7 +4,7 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta http-equiv="x-ua-compatible" content="ie=edge" />
-	<title>Dashboard Lauk Pauk</title>
+	<title>{{ pageTitle }}</title>
 	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/fontawesome-free/css/all.min.css" />
 	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/ionicons/ionicons.min.css" />
 	<link rel="stylesheet" href="{{ baseURL }}/assets/dist/css/adminlte.min.css" />
