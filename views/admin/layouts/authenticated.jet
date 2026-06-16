@@ -14,41 +14,56 @@
 	<link rel="shortcut icon" href="{{ baseURL }}/assets/img/laukpauk-icon.png" />
 	<script src="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
 	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.css" />
+	<!-- REQUIRED SCRIPTS -->
+	<!-- jQuery -->
+	<script src="{{ baseURL }}/assets/plugins/jquery/jquery.min.js"></script>
+	<script src="{{ baseURL }}/assets/plugins/jquery-ui/jquery-ui.min.js"></script>
+	<!-- Bootstrap -->
+	<script src="{{ baseURL }}/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+	<!-- AdminLTE -->
+	<script src="{{ baseURL }}/assets/dist/js/adminlte.js"></script>
+	<!-- OPTIONAL SCRIPTS -->
+	{{ if path == "/admin" }}
+	<script src="{{ baseURL }}/assets/plugins/chart.js/Chart.min.js"></script>
+	<script src="{{ baseURL }}/assets/dist/js/demo.js"></script>
+	<script src="{{ baseURL }}/assets/dist/js/pages/dashboard3.js"></script>
+	{{ end }}
+	<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
 	<style type="text/css">
 		.nav-treeview > .nav-item {
-		    font-size: .8rem;
-		    margin-left: 1rem;
+			font-size: .8rem;
+			margin-left: 1rem;
 		}
 		.nav-treeview > .nav-item .nav-icon {
-		    font-size: .8rem !important;
+			font-size: .8rem !important;
 		}
 		.cp {
-		    cursor: pointer;
+			cursor: pointer;
 		}
 		.label-title {
-		    font-weight: 100 !important;
+			font-weight: 100 !important;
 		}
 		.vam {
-		    vertical-align: middle !important;
+			vertical-align: middle !important;
 		}
 		.size-50-50 {
-		    width: 50px;
-		    height: 50px;
+			width: 50px;
+			height: 50px;
 		}
 		.size-25-25 {
-		    width: 25px;
-		    height: 25px;
+			width: 25px;
+			height: 25px;
 		}
 		.size-15-15 {
-		    width: 15px;
-		    height: 15px;
+			width: 15px;
+			height: 15px;
 		}
 		.sidebar::-webkit-scrollbar {
-		    width: .35rem;
-		    height: .5rem;
+			width: .35rem;
+			height: .5rem;
 		}
 		.sidebar::-webkit-scrollbar-thumb {
-		    background-color: #d2dfd9;
+			background-color: #d2dfd9;
 		}
 	</style>
 </head>
@@ -75,9 +90,9 @@
 						<div id="notifikasi">
 							<div class="col text-center mb-4">
 								<h2 class="text-danger mb-3 animate__animated animate__fadeInDown"
-								    style="font-weight:550;">Notifikasi</h2>
+									style="font-weight:550;">Notifikasi</h2>
 								<img src="{{ baseURL }}/assets/img/empty.png"
-								    alt="No Data Img"
+									alt="No Data Img"
 									class="animate__animated animate__fadeInUp"
 									style="animation-delay:.35s; width:200px;"
 									id="imgNotFound" />
@@ -85,7 +100,7 @@
 							</div>
 							<script>
 								setTimeout(() => {
-								    $("#imgNotFound").removeClass("animate__fadeInUp").addClass("animate__headShake animate__infinite");
+									$("#imgNotFound").removeClass("animate__fadeInUp").addClass("animate__headShake animate__infinite");
 								}, 2000);
 							</script>
 						</div>
@@ -95,7 +110,7 @@
 				</li>
 				<li class="nav-item">
 					<a class="nav-link" href="{{ baseURL }}/admin/auth/logout">
-					    <i class="fas fa-power-off text-danger" data-toggle="tooltip" data-placement="top" title="Logout"></i>
+						<i class="fas fa-power-off text-danger" data-toggle="tooltip" data-placement="top" title="Logout"></i>
 					</a>
 				</li>
 			</ul>
@@ -105,11 +120,11 @@
 		<aside class="main-sidebar sidebar-dark-primary elevation-4">
 			<!-- Brand Logo -->
 			<a href="{{ baseURL }}/admin" class="brand-link">
-			    <img src="{{ baseURL }}/assets/img/laukpauk-icon.png"
+				<img src="{{ baseURL }}/assets/img/laukpauk-icon.png"
 					alt="AdminLTE Logo"
 					class="brand-image img-circle elevation-3"
 					style="opacity: 0.8" />
-			    <span class="brand-text font-weight-light">Laukpauk</span>
+				<span class="brand-text font-weight-light">Laukpauk</span>
 			</a>
 			<!-- Sidebar -->
 			<div class="sidebar">
@@ -117,11 +132,11 @@
 				<div class="user-panel mt-3 pb-3 mb-3 d-flex">
 					<div class="image">
 						<a href="{{ baseURL }}/images/admin/{{ currentAdmin.Photo }}" target="_blank">
-    						<img src="{{ baseURL }}/images/admin/compress/{{ currentAdmin.Photo }}"
-                                class="img-circle elevation-2"
-    							alt="{{ currentAdmin.Name }}"
-    							onError="this.src='{{ baseURL }}/assets/img/no-image.png'"
-    							style="width:3.2rem;" />
+						<img src="{{ baseURL }}/images/admin/compress/{{ currentAdmin.Photo }}"
+							class="img-circle elevation-2"
+							alt="{{ currentAdmin.Name }}"
+							onError="this.src='{{ baseURL }}/assets/img/no-image.png'"
+							style="width:3.2rem;" />
 						</a>
 					</div>
 					<div class="info pt-0 pl-3">
@@ -131,16 +146,18 @@
 				</div>
 				<!-- Sidebar Menu -->
 				<nav class="mt-2">
-					<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview"
-						role="menu" data-accordion="false">
+					<ul class="nav nav-pills nav-sidebar flex-column"
+						data-widget="treeview"
+						role="menu"
+						data-accordion="false">
 						<li class="nav-header">Menu</li>
-						<li class="nav-item menu-open">
+						<li class="nav-item">
 							<a href="{{ baseURL }}/admin" class="nav-link">
 								<i class="nav-icon fa fa-desktop"></i>
 								<p>Dashboard</p>
 							</a>
 						</li>
-						<li class="nav-item has-treeview">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/articles") || HasPrefix(path, "/admin/blogs") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-newspaper"></i>
 								<p>
@@ -148,7 +165,7 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview">
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/articles") || HasPrefix(path, "/admin/blogs") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/articles" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
@@ -269,8 +286,8 @@
 								<!--
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/transactions/mutasi-rekening-bca" class="nav-link">
-									    <i class="fa fa-money-check-alt nav-icon"></i>
-									    <p>Mutasi Rekening BCA</p>
+										<i class="fa fa-money-check-alt nav-icon"></i>
+										<p>Mutasi Rekening BCA</p>
 									</a>
 								</li>
 								-->
@@ -368,13 +385,13 @@
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/admins" class="nav-link " >
+									<a href="{{ baseURL }}/admin/admins" class="nav-link">
 										<i class="fa fa-crown nav-icon"></i>
 										<p>Administrator</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/admins/new" class="nav-link " >
+									<a href="{{ baseURL }}/admin/admins/new" class="nav-link">
 										<i class="fa fa-user-plus nav-icon"></i>
 										<p>Administrator Baru</p>
 									</a>
@@ -438,7 +455,7 @@
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/produk/sinkronisasiProduk" class="nav-link " >
+									<a href="{{ baseURL }}/admin/produk/sinkronisasiProduk" class="nav-link">
 										<i class="fa fa-sync nav-icon"></i>
 										<p>Sinkronisasi Produk dan Harga</p>
 									</a>
@@ -630,18 +647,6 @@
 		</footer>
 	</div>
 	<!-- ./wrapper -->
-	<!-- REQUIRED SCRIPTS -->
-	<!-- jQuery -->
-	<script src="{{ baseURL }}/assets/plugins/jquery/jquery.min.js"></script>
-	<script src="{{ baseURL }}/assets/plugins/jquery-ui/jquery-ui.min.js"></script>
-	<!-- Bootstrap -->
-	<script src="{{ baseURL }}/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-	<!-- AdminLTE -->
-	<script src="{{ baseURL }}/assets/dist/js/adminlte.js"></script>
-	<!-- OPTIONAL SCRIPTS -->
-	<script src="{{ baseURL }}/assets/plugins/chart.js/Chart.min.js"></script>
-	<script src="{{ baseURL }}/assets/dist/js/demo.js"></script>
-	<script src="{{ baseURL }}/assets/dist/js/pages/dashboard3.js"></script>
 	<script>
 		let baseURLJS = "{{ baseURL }}/admin/";
 		$("[data-toggle=tooltip]").tooltip();
@@ -670,9 +675,6 @@
 			alert("Anda tidak diijinkan untuk mengakses halaman ini!");
 		});
 		$("body").addClass("layout-fixed layout-navbar-fixed layout-footer-fixed");
-	</script>
-	<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-	<script>
 		// let environment = "development";
 		let environment = "production";
 		window.OneSignal = window.OneSignal || [];
@@ -706,21 +708,20 @@
 			if (notifikasiAdminBelumDibaca.length >= 1) {
 				notifikasiAdminBelumDibaca.forEach((item, index) => {
 					notifikasiAdminBelumDibacaHTML += `
-		                <div class="dropdown-divider"></div>
-		                <a href="${item.route}" class="notifikasi-item" idNotifikasi="${item.id}">
-		                    <div class="dropdown-item">
-		                        <div class="row">
-		                            <div class="col-lg-2 text-center">
-		                                <span class="fa fa-bell"></span>
-		                            </div>
-		                            <div class="col-lg-10">
-		                                <p class="text-primary mb-1" class="word-break:break-all;">${item.judul.toUpperCase()}</p>
-		                                <span class="text-muted" style="font-size:.75em">Pada ${item.waktu}</span>
-		                            </div>
-		                        </div>
-		                    </div>
-		                </a>
-		            `;
+						<div class="dropdown-divider"></div>
+						<a href="${item.route}" class="notifikasi-item" idNotifikasi="${item.id}">
+							<div class="dropdown-item">
+								<div class="row">
+									<div class="col-lg-2 text-center">
+										<span class="fa fa-bell"></span>
+									</div>
+									<div class="col-lg-10">
+										<p class="text-primary mb-1" class="word-break:break-all;">${item.judul.toUpperCase()}</p>
+										<span class="text-muted" style="font-size:.75em">Pada ${item.waktu}</span>
+									</div>
+								</div>
+							</div>
+						</a>`;
 				});
 			}
 			$("#jumlahNotifikasi").text(jumlahNotifikasiBelumDibaca);
@@ -777,91 +778,6 @@
 			["height", ["height"]],
 			["insert", ["picture", "link", "video", "hr", "table"]]
 		];
-	</script>
-	<script src="{{ baseURL }}/assets/plugins/datatables/jquery.dataTables.min.js"></script>
-	<script src="{{ baseURL }}/assets/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
-	<link href="{{ baseURL }}/assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
-	<script>
-		$("#produkPalingLaku").DataTable();
-		let riwayatTransaksiLabel = [];
-		let riwayatTransaksiData = [];
-		$(".riwayat-transaksi-waktu").on("click", function(e) {
-			e.preventDefault();
-			$(".riwayat-transaksi-waktu").removeClass("active");
-			$(this).addClass("active");
-			let waktu = $(this).attr("waktu");
-			doAjaxGrafikTabel(waktu);
-		})
-
-		function generateGrafikTabel() {
-			let salesGraphChartCanvas = $("#riwayatTransaksi").get(0).getContext("2d");
-			let salesGraphChartData = {
-				labels: riwayatTransaksiLabel,
-				datasets: [{
-					label: "Jumlah Transaksi",
-					fill: false,
-					borderWidth: 2,
-					lineTension: 0,
-					spanGaps: true,
-					borderColor: "#007bff",
-					pointRadius: 3,
-					pointHoverRadius: 7,
-					pointColor: "#007bff",
-					pointBackgroundColor: "#007bff",
-					data: riwayatTransaksiData
-				}]
-			}
-			let salesGraphChartOptions = {
-				maintainAspectRatio: false,
-				responsive: true,
-				legend: {
-					display: false,
-				},
-				scales: {
-					xAxes: [{
-						ticks: {
-							fontColor: "#007bff",
-						},
-						gridLines: {
-							display: false,
-							color: "#007bff",
-							drawBorder: false
-						}
-					}],
-					yAxes: [{
-						ticks: {
-							stepSize: 5000,
-							fontColor: "#007bff",
-						},
-						gridLines: {
-							display: true,
-							color: "#f0f0f0",
-							drawBorder: false,
-						}
-					}]
-				}
-			}
-			let salesGraphChart = new Chart(salesGraphChartCanvas, {
-				type: "line",
-				data: salesGraphChartData,
-				options: salesGraphChartOptions
-			})
-		}
-
-		function doAjaxGrafikTabel() {
-			$.ajax({
-				url: `{{ baseURL }}/admin/json/riwayatTransaksi/`,
-				success: function(responseFromServer) {
-					let rFS = responseFromServer;
-					let riwayatTransaksi = rFS.riwayatTransaksi;
-					riwayatTransaksiLabel = riwayatTransaksi.label;
-					riwayatTransaksiData = riwayatTransaksi.data;
-					generateGrafikTabel();
-				}
-			})
-		}
-		doAjaxGrafikTabel();
-		generateGrafikTabel();
 	</script>
 </body>
 </html>

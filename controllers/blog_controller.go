@@ -58,9 +58,9 @@ func (q *blogController) AdminIndex(c fiber.Ctx) (err error) {
 	rows := []*models.Blog{}
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"limits", models.Limits,
@@ -98,9 +98,9 @@ func (q *blogController) AdminNew(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Blog)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,
@@ -117,9 +117,9 @@ func (q *blogController) AdminCreate(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Blog)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,
@@ -205,9 +205,9 @@ func (q *blogController) AdminEdit(c fiber.Ctx) (err error) {
 	}
 	request := blogs[0]
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,
@@ -244,9 +244,9 @@ func (q *blogController) AdminUpdate(c fiber.Ctx) (err error) {
 	blog := blogs[0]
 	request := new(models.Blog)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,

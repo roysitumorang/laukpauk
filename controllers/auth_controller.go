@@ -44,9 +44,9 @@ func (q *authController) AdminNewLogin(c fiber.Ctx) error {
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.AdminLoginRequest)
 	return c.Render("admin/auth_login", models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"request", request,
 	))
@@ -62,9 +62,9 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 	}
 	csrfToken := csrf.TokenFromContext(c)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"request", new(models.AdminLoginRequest),
 	)
@@ -113,9 +113,9 @@ func (q *authController) AdminProfile(c fiber.Ctx) error {
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 	)

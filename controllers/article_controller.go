@@ -58,9 +58,9 @@ func (q *articleController) AdminIndex(c fiber.Ctx) (err error) {
 	rows := []*models.Article{}
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"limits", models.Limits,
@@ -98,9 +98,9 @@ func (q *articleController) AdminNew(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Article)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,
@@ -117,9 +117,9 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Article)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,
@@ -205,9 +205,9 @@ func (q *articleController) AdminEdit(c fiber.Ctx) (err error) {
 	}
 	request := articles[0]
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,
@@ -244,9 +244,9 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 	article := articles[0]
 	request := new(models.Article)
 	params := models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"request", request,

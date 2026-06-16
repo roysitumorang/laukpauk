@@ -36,9 +36,9 @@ func (q *homeController) AdminIndex(c fiber.Ctx) error {
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	return c.Render("admin/home_index", models.NewMap().Push(
-		"baseURL", c.Req().BaseURL(),
+		"baseURL", c.BaseURL(),
 		"flash", flash,
-		"path", c.Route().Path,
+		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 	), "admin/layouts/authenticated")
