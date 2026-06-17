@@ -18,9 +18,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func FindWebsiteItems(ctx context.Context, c fiber.Ctx) (*models.WebsiteItemFilter, error) {
-	ctxt := "WebsiteItemSanitizer-FindWebsiteItems"
-	response := models.NewWebsiteItemFilter()
+func FindWebsiteBlockItems(ctx context.Context, c fiber.Ctx) (*models.WebsiteBlockItemFilter, error) {
+	ctxt := "WebsiteBlockItemSanitizer-FindWebsiteBlockItems"
+	response := models.NewWebsiteBlockItemFilter()
 	originalURL, err := url.ParseRequestURI(helper.ByteSlice2String(c.Request().URI().FullURI()))
 	if err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrParseRequestURI")
@@ -48,17 +48,16 @@ func FindWebsiteItems(ctx context.Context, c fiber.Ctx) (*models.WebsiteItemFilt
 	return response, nil
 }
 
-func ValidateWebsiteItem(ctx context.Context, c fiber.Ctx, websiteItemType models.WebsiteItemType, websiteItemIDs ...uuid.UUID) (*models.WebsiteItem, *multipart.FileHeader, int, error) {
-	ctxt := "WebsiteItemSanitizer-ValidateWebsiteItem"
-	var response models.WebsiteItem
+func ValidateWebsiteBlockItem(ctx context.Context, c fiber.Ctx, websiteBlockName models.WebsiteBlockName, websiteBlockItemIDs ...uuid.UUID) (*models.WebsiteBlockItem, *multipart.FileHeader, int, error) {
+	ctxt := "WebsiteBlockItemSanitizer-ValidateWebsiteBlockItem"
+	var response models.WebsiteBlockItem
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBody")
 		return nil, nil, fiberErr.Code, err
 	}
-	response.WebsiteItemType = websiteItemType
-	if len(websiteItemIDs) > 0 {
-		response.ID = websiteItemIDs[0]
+	if len(websiteBlockItemIDs) > 0 {
+		response.ID = websiteBlockItemIDs[0]
 	}
 	photo, err := c.FormFile("photo")
 	if err == nil {
@@ -75,9 +74,9 @@ func ValidateWebsiteItem(ctx context.Context, c fiber.Ctx, websiteItemType model
 		if _, ok := mimeTypes[mtype.String()]; !ok {
 			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
 		}
-		response.Photo = new(fmt.Sprintf(models.WebsiteItemHeroPhotoName, helper.GenerateSnowflakeID(), mtype.Extension()))
+		response.Photo = fmt.Sprintf(models.WebsiteBlockHeroPhotoName, helper.GenerateSnowflakeID(), mtype.Extension())
 	}
-	if err = (&response).Validate(); err != nil {
+	if err = (&response).Validate(websiteBlockName); err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrValidate")
 		return &response, photo, fiber.StatusBadRequest, err
 	}

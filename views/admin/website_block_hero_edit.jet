@@ -43,8 +43,8 @@
 						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 					</div>
 					{{ end }}
-					<form method="POST" action="{{ baseURL }}/admin/website_items/hero/{{ websiteItemID }}" enctype="multipart/form-data">
-						{{ include "_website_item_hero_form" }}
+					<form method="POST" action="{{ baseURL }}/admin/website_blocks/hero/{{ websiteBlockItemID }}" enctype="multipart/form-data">
+						{{ include "_website_block_hero_form" }}
 					</form>
 				</div>
 			</div>

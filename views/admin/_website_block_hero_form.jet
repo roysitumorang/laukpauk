@@ -9,7 +9,7 @@
 				data-placement="left"
 				title="Klik Gambar untuk Memilih Gambar"
 				id="imgPreview" />
-			<input type="file" name="photo" id="heroImage" onChange="imgChanged(this)" name="heroImg" />
+			<input type="file" name="photo" id="heroImage" onChange="imgChanged(this)" />
 		</label>
 		<div class="alert alert-warning alert-sm">
 			<h6>Note</h6>
@@ -55,7 +55,7 @@
 		</div>
 		<hr class="mb-4" />
 		<button type="submit" class="btn btn-success mr-1">Simpan Data Hero</button>
-		<a href="{{ baseURL }}/admin/website_items/hero" class="btn btn-default ml-1">
+		<a href="{{ baseURL }}/admin/website_blocks/hero" class="btn btn-default ml-1">
 			Back to List Hero
 		</a>
 	</div>

@@ -23,14 +23,15 @@ import (
 
 type (
 	Service struct {
-		DbWrite            *pgxpool.Pool
-		Migration          *migration.Migration
-		KafkaService       *kafka.KafkaService
-		Storage            fiber.Storage
-		UserService        services.UserService
-		ArticleService     services.ArticleService
-		BlogService        services.BlogService
-		WebsiteItemService services.WebsiteItemService
+		DbWrite                 *pgxpool.Pool
+		Migration               *migration.Migration
+		KafkaService            *kafka.KafkaService
+		Storage                 fiber.Storage
+		UserService             services.UserService
+		ArticleService          services.ArticleService
+		BlogService             services.BlogService
+		WebsiteBlockService     services.WebsiteBlockService
+		WebsiteBlockItemService services.WebsiteBlockItemService
 	}
 )
 
@@ -71,20 +72,23 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
 	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
-	websiteItemRepository := repositories.NewWebsiteItemRepository(dbRead, dbWrite)
+	websiteBlockRepository := repositories.NewWebsiteBlockRepository(dbRead, dbWrite)
+	websiteBlockItemRepository := repositories.NewWebsiteBlockItemRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
-	websiteItemService := services.NewWebsiteItemService(websiteItemRepository)
+	websiteBlockService := services.NewWebsiteBlockService(websiteBlockRepository)
+	websiteBlockItemService := services.NewWebsiteBlockItemService(websiteBlockItemRepository)
 	return &Service{
-		DbWrite:            dbWrite,
-		Migration:          migration,
-		KafkaService:       kafkaService,
-		Storage:            storage,
-		UserService:        userService,
-		ArticleService:     articleService,
-		BlogService:        blogService,
-		WebsiteItemService: websiteItemService,
+		DbWrite:                 dbWrite,
+		Migration:               migration,
+		KafkaService:            kafkaService,
+		Storage:                 storage,
+		UserService:             userService,
+		ArticleService:          articleService,
+		BlogService:             blogService,
+		WebsiteBlockService:     websiteBlockService,
+		WebsiteBlockItemService: websiteBlockItemService,
 	}, nil
 }
 

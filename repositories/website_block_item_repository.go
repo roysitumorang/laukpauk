@@ -15,54 +15,54 @@ import (
 )
 
 type (
-	WebsiteItemRepository interface {
-		FindWebsiteItems(
+	WebsiteBlockItemRepository interface {
+		FindWebsiteBlockItems(
 			ctx context.Context,
-			request *models.WebsiteItemFilter,
-		) ([]*models.WebsiteItem, int64, int64, error)
-		CreateWebsiteItem(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.WebsiteItem,
-		) (*models.WebsiteItem, error)
-		UpdateWebsiteItem(
+			request *models.WebsiteBlockItemFilter,
+		) ([]*models.WebsiteBlockItem, int64, int64, error)
+		CreateWebsiteBlockItem(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.WebsiteItem,
-		) (*models.WebsiteItem, error)
+			request *models.WebsiteBlockItem,
+		) (*models.WebsiteBlockItem, error)
+		UpdateWebsiteBlockItem(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.WebsiteBlockItem,
+		) (*models.WebsiteBlockItem, error)
 	}
 
-	websiteItemRepository struct {
+	websiteBlockItemRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewWebsiteItemRepository(
+func NewWebsiteBlockItemRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) WebsiteItemRepository {
-	return new(websiteItemRepository{
+) WebsiteBlockItemRepository {
+	return new(websiteBlockItemRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	})
 }
 
-func (q *websiteItemRepository) FindWebsiteItems(
+func (q *websiteBlockItemRepository) FindWebsiteBlockItems(
 	ctx context.Context,
-	request *models.WebsiteItemFilter,
-) ([]*models.WebsiteItem, int64, int64, error) {
-	ctxt := "WebsiteItemRepository-FindWebsiteItems"
+	request *models.WebsiteBlockItemFilter,
+) ([]*models.WebsiteBlockItem, int64, int64, error) {
+	ctxt := "WebsiteBlockItemRepository-FindWebsiteBlockItems"
 	var (
 		params []any
 		conds  []string
 		sb     strings.Builder
 	)
-	if len(request.WebsiteItemIDs) > 0 {
+	if len(request.WebsiteBlockItemIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("id IN (")
-		for i, websiteItemID := range request.WebsiteItemIDs {
-			params = append(params, websiteItemID)
+		_, _ = sb.WriteString("c.id IN (")
+		for i, websiteBlockItemID := range request.WebsiteBlockItemIDs {
+			params = append(params, websiteBlockItemID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -74,7 +74,7 @@ func (q *websiteItemRepository) FindWebsiteItems(
 	}
 	if len(request.RecordStatus) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("record_status IN (")
+		_, _ = sb.WriteString("c.record_status IN (")
 		for i, recordStatus := range request.RecordStatus {
 			params = append(params, recordStatus)
 			if i > 0 {
@@ -86,11 +86,11 @@ func (q *websiteItemRepository) FindWebsiteItems(
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.WebsiteItemTypes) > 0 {
+	if len(request.WebsiteBlockIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("website_item_type IN (")
-		for i, websiteItemType := range request.WebsiteItemTypes {
-			params = append(params, websiteItemType)
+		_, _ = sb.WriteString("c.website_block_id IN (")
+		for i, websiteBlockID := range request.WebsiteBlockIDs {
+			params = append(params, websiteBlockID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -98,6 +98,26 @@ func (q *websiteItemRepository) FindWebsiteItems(
 			_, _ = sb.WriteString(strconv.Itoa(len(params)))
 		}
 		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.WebsiteBlockNames) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString(
+			`EXISTS(
+				SELECT 1
+				FROM website_blocks p
+				WHERE p.id = c.website_block_id
+					AND p.name IN (`,
+		)
+		for i, name := range request.WebsiteBlockNames {
+			params = append(params, name)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = sb.WriteString("$")
+			_, _ = sb.WriteString(strconv.Itoa(len(params)))
+		}
+		_, _ = sb.WriteString("))")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
@@ -108,9 +128,9 @@ func (q *websiteItemRepository) FindWebsiteItems(
 		params = append(params, sb.String())
 		n := strconv.Itoa(len(params))
 		sb.Reset()
-		_, _ = sb.WriteString("(LOWER(subject) LIKE $")
+		_, _ = sb.WriteString("(LOWER(c.subject) LIKE $")
 		_, _ = sb.WriteString(n)
-		_, _ = sb.WriteString(" OR LOWER(body) LIKE $")
+		_, _ = sb.WriteString(" OR LOWER(c.body) LIKE $")
 		_, _ = sb.WriteString(n)
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -118,7 +138,7 @@ func (q *websiteItemRepository) FindWebsiteItems(
 	sb.Reset()
 	_, _ = sb.WriteString(
 		`SELECT COUNT(1)
-        	FROM website_items`,
+        	FROM website_block_items c`,
 	)
 	if len(conds) > 0 {
 		_, _ = sb.WriteString(" WHERE")
@@ -143,22 +163,22 @@ func (q *websiteItemRepository) FindWebsiteItems(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`ROW_NUMBER() OVER (ORDER BY id DESC) AS row_no
-		, id
-		, record_status
-		, website_item_type
-		, subject
-		, body
-		, photo
-		, link_text
-		, link_url
-		, created_by
-		, created_at
-		, updated_by
-		, updated_at
-		, deleted_by
-		, deleted_at
-		, deletion_reason`,
+		`ROW_NUMBER() OVER (ORDER BY c.id DESC) AS row_no
+		, c.id
+		, c.record_status
+		, c.website_block_id
+		, c.subject
+		, c.body
+		, c.photo
+		, c.link_text
+		, c.link_url
+		, c.created_by
+		, c.created_at
+		, c.updated_by
+		, c.updated_at
+		, c.deleted_by
+		, c.deleted_at
+		, c.deletion_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -195,47 +215,47 @@ func (q *websiteItemRepository) FindWebsiteItems(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.WebsiteItem
+	var response []*models.WebsiteBlockItem
 	for rows.Next() {
-		var websiteItem models.WebsiteItem
+		var websiteBlockItem models.WebsiteBlockItem
 		if err = rows.Scan(
-			&websiteItem.RowNo,
-			&websiteItem.ID,
-			&websiteItem.RecordStatus,
-			&websiteItem.WebsiteItemType,
-			&websiteItem.Subject,
-			&websiteItem.Body,
-			&websiteItem.Photo,
-			&websiteItem.LinkText,
-			&websiteItem.LinkURL,
-			&websiteItem.CreatedBy,
-			&websiteItem.CreatedAt,
-			&websiteItem.UpdatedBy,
-			&websiteItem.UpdatedAt,
-			&websiteItem.DeletedBy,
-			&websiteItem.DeletedAt,
-			&websiteItem.DeletionReason,
+			&websiteBlockItem.RowNo,
+			&websiteBlockItem.ID,
+			&websiteBlockItem.RecordStatus,
+			&websiteBlockItem.WebsiteBlockID,
+			&websiteBlockItem.Subject,
+			&websiteBlockItem.Body,
+			&websiteBlockItem.Photo,
+			&websiteBlockItem.LinkText,
+			&websiteBlockItem.LinkURL,
+			&websiteBlockItem.CreatedBy,
+			&websiteBlockItem.CreatedAt,
+			&websiteBlockItem.UpdatedBy,
+			&websiteBlockItem.UpdatedAt,
+			&websiteBlockItem.DeletedBy,
+			&websiteBlockItem.DeletedAt,
+			&websiteBlockItem.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
-		response = append(response, &websiteItem)
+		response = append(response, &websiteBlockItem)
 	}
 	return response, total, pages, nil
 }
 
-func (q *websiteItemRepository) CreateWebsiteItem(
+func (q *websiteBlockItemRepository) CreateWebsiteBlockItem(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.WebsiteItem,
-) (*models.WebsiteItem, error) {
-	ctxt := "WebsiteItemRepository-CreateWebsiteItem"
-	var response models.WebsiteItem
+	request *models.WebsiteBlockItem,
+) (*models.WebsiteBlockItem, error) {
+	ctxt := "WebsiteBlockItemRepository-CreateWebsiteBlockItem"
+	var response models.WebsiteBlockItem
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO website_items (
+		`INSERT INTO website_block_items (
 			record_status
-			, website_item_type
+			, website_block_id
 			, subject
 			, body
 			, photo
@@ -248,7 +268,7 @@ func (q *websiteItemRepository) CreateWebsiteItem(
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id
 			, record_status
-			, website_item_type
+			, website_block_id
 			, subject
 			, body
 			, photo
@@ -262,7 +282,7 @@ func (q *websiteItemRepository) CreateWebsiteItem(
 			, deleted_at
 			, deletion_reason`,
 		request.RecordStatus,
-		request.WebsiteItemType,
+		request.WebsiteBlockID,
 		request.Subject,
 		request.Body,
 		request.Photo,
@@ -275,7 +295,7 @@ func (q *websiteItemRepository) CreateWebsiteItem(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.WebsiteItemType,
+		&response.WebsiteBlockID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
@@ -298,16 +318,16 @@ func (q *websiteItemRepository) CreateWebsiteItem(
 	return new(response), nil
 }
 
-func (q *websiteItemRepository) UpdateWebsiteItem(
+func (q *websiteBlockItemRepository) UpdateWebsiteBlockItem(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.WebsiteItem,
-) (*models.WebsiteItem, error) {
-	ctxt := "WebsiteItemRepository-UpdateWebsiteItem"
-	var response models.WebsiteItem
+	request *models.WebsiteBlockItem,
+) (*models.WebsiteBlockItem, error) {
+	ctxt := "WebsiteBlockItemRepository-UpdateWebsiteBlockItem"
+	var response models.WebsiteBlockItem
 	if err := tx.QueryRow(
 		ctx,
-		`UPDATE website_items SET
+		`UPDATE website_block_items SET
 			record_status = $1
 			, subject = $2
 			, body = $3
@@ -322,7 +342,7 @@ func (q *websiteItemRepository) UpdateWebsiteItem(
 		WHERE id = $12
 		RETURNING id
 			, record_status
-			, website_item_type
+			, website_block_id
 			, subject
 			, body
 			, photo
@@ -350,7 +370,7 @@ func (q *websiteItemRepository) UpdateWebsiteItem(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.WebsiteItemType,
+		&response.WebsiteBlockID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
