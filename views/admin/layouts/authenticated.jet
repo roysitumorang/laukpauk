@@ -207,7 +207,7 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/website_items") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-globe"></i>
 								<p>
@@ -215,45 +215,45 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview">
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/website_items") }} style="display:block"{{ end }}>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/websites/hero" class="nav-link">
+									<a href="{{ baseURL }}/admin/website_items/hero" class="nav-link">
 										<i class="fa fa-image nav-icon"></i>
 										<p>Hero Slider</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/websites/fitur" class="nav-link">
+									<a href="{{ baseURL }}/admin/website_items/fitur" class="nav-link">
 										<i class="fa fa-box nav-icon"></i>
 										<p>Fitur Laukpauk</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/websites/why" class="nav-link">
+									<a href="{{ baseURL }}/admin/website_items/why" class="nav-link">
 										<i class="fa fa-question nav-icon"></i>
 										<p>Mengapa Pilih Laukpauk</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/websites/komitmen" class="nav-link">
+									<a href="{{ baseURL }}/admin/website_items/komitmen" class="nav-link">
 										<i class="fa fa-handshake nav-icon"></i>
 										<p>Komitmen</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/websites/uang-belanja-gratis" class="nav-link">
+									<a href="{{ baseURL }}/admin/website_items/uang-belanja-gratis" class="nav-link">
 										<i class="fa fa-dollar-sign nav-icon"></i>
 										<p>Uang Belanja Gratis</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/websites/pahlawan-dapur" class="nav-link">
+									<a href="{{ baseURL }}/admin/website_items/pahlawan-dapur" class="nav-link">
 										<i class="fa fa-utensils nav-icon"></i>
 										<p>Pahlawan Dapur</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/websites/bantuan" class="nav-link">
+									<a href="{{ baseURL }}/admin/website_items/bantuan" class="nav-link">
 										<i class="fa fa-question-circle nav-icon"></i>
 										<p>Halaman Bantuan</p>
 									</a>

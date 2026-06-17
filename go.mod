@@ -7,7 +7,7 @@ require (
 	github.com/coregx/coregex v0.12.22
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gabriel-vasile/mimetype v1.4.13
-	github.com/getsentry/sentry-go v0.46.2
+	github.com/getsentry/sentry-go v0.47.0
 	github.com/goccy/go-json v0.10.6
 	github.com/gofiber/contrib/v3/monitor v1.1.0
 	github.com/gofiber/contrib/v3/sentry v1.1.7

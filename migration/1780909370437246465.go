@@ -1757,19 +1757,25 @@ func init() {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
-		// homepages
+		// website_items
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE homepages (
+			`CREATE TABLE website_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, name character varying NOT NULL UNIQUE
-				, created_by UUID REFERENCES users (id)
+				, record_status integer NOT NULL
+				, website_item_type character varying NOT NULL
+				, subject character varying NOT NULL
+				, body character varying
+				, link_text character varying
+				, link_url character varying
+				, photo character varying
+				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
@@ -1777,70 +1783,49 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON homepages (created_by);`,
+			`CREATE INDEX ON website_items (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON homepages (updated_by);`,
+			`CREATE INDEX ON website_items (website_item_type);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON homepages (deactivated_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		// homepage_items
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE homepage_items (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, homepage_id UUID REFERENCES homepages (id)
-				, parent character varying
-				, key character varying NOT NULL
-				, value character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
-				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
-			);`,
+			`CREATE INDEX ON website_items (LOWER(subject));`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON homepage_items (homepage_id);`,
+			`CREATE INDEX ON website_items (LOWER(body));`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON homepage_items (created_by);`,
+			`CREATE INDEX ON website_items (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON homepage_items (updated_by);`,
+			`CREATE INDEX ON website_items (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON homepage_items (deactivated_by);`,
+			`CREATE INDEX ON website_items (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return

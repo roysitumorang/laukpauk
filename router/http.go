@@ -93,12 +93,14 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		compress.New(),
 		rewrite.New(rewrite.Config{
 			Rules: map[string]string{
-				"/admin/auth/*":     "/auth/admin/$1",
-				"/admin":            "/home/admin",
-				"/admin/articles":   "/articles/admin",
-				"/admin/articles/*": "/articles/admin/$1",
-				"/admin/blogs":      "/blogs/admin",
-				"/admin/blogs/*":    "/blogs/admin/$1",
+				"/admin/auth/*":            "/auth/admin/$1",
+				"/admin":                   "/home/admin",
+				"/admin/articles":          "/articles/admin",
+				"/admin/articles/*":        "/articles/admin/$1",
+				"/admin/blogs":             "/blogs/admin",
+				"/admin/blogs/*":           "/blogs/admin/$1",
+				"/admin/website_items/*":   "/website_items/admin/$1",
+				"/admin/website_items/*/*": "/website_items/admin/$1/$2",
 			},
 		}),
 		cors.New(),
@@ -172,6 +174,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewHomeController(q.UserService).Mount(app.Group("/home"))
 	controllers.NewArticleController(q.UserService, q.ArticleService).Mount(app.Group("/articles"))
 	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
+	controllers.NewWebsiteItemController(q.UserService, q.WebsiteItemService).Mount(app.Group("/website_items"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).WriteResponse(c)
 	})

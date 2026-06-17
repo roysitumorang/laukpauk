@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -91,7 +92,7 @@ func (q *Article) Validate() error {
 		return errors.New("link: is required")
 	}
 	if _, err := url.ParseRequestURI(q.Link); err != nil {
-		return err
+		return fmt.Errorf("link: %w", err)
 	}
 	return nil
 }
