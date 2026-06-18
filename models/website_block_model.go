@@ -9,7 +9,7 @@ import (
 
 const (
 	WebsiteBlockHeroPhotoName = "hero-%d%s"
-	WebsiteBlockHeroPhotoPath = "./images/landing-page-imgs/hero/%s"
+	WebsiteBlockHeroPhotoPath = "./images/landing-page/hero/%s"
 
 	WebsiteBlockNameHero         WebsiteBlockName = "hero"
 	WebsiteBlockNameFeature      WebsiteBlockName = "fitur"

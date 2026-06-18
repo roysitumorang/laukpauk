@@ -99,8 +99,8 @@
 								<tr class="text-sm tr-parent">
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
 									<td>
-										<a href="{{ baseURL }}/images/landing-page-imgs/hero/{{ row.Photo }}" target="_blank">
-											<img src="{{ baseURL }}/images/landing-page-imgs/hero/{{ row.Photo }}" alt="{{ row.Subject }}" class="img-circle size-50-50">
+										<a href="{{ baseURL }}/images/landing-page/hero/{{ row.Photo }}" target="_blank">
+											<img src="{{ baseURL }}/images/landing-page/hero/{{ row.Photo }}" alt="{{ row.Subject }}" class="img-circle size-50-50">
 										</a>
 									</td>
 									<td>
@@ -163,7 +163,7 @@
 <!-- /.content-wrapper -->
 <script>
 	let baseURL = '{{ baseURL }}/admin/';
-	let uploadGambarHero = 'images/landing-page-imgs/hero';
+	let uploadGambarHero = 'images/landing-page/hero';
 	let _tabelHeroSliderOptions = {
 		processing: true,
 		serverSide: true,

@@ -2,7 +2,7 @@
 <div class="row">
 	<div class="col-lg-4">
 		<label for="heroImage">
-			<img src="{{baseURL}}/{{ if request.Photo }}images/landing-page-imgs/hero/{{ request.Photo }}{{ else }}assets/img/upload-icon.png{{ end }}"
+			<img src="{{baseURL}}/{{ if request.Photo }}images/landing-page/hero/{{ request.Photo }}{{ else }}assets/img/upload-icon.png{{ end }}"
 				alt="Gambar Hero Slider"
 				class="w-100 cp"
 				data-toggle="tooltip"
