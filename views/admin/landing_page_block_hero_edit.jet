@@ -5,7 +5,7 @@
 		<div class="container-fluid">
 			<div class="row mb-2">
 				<div class="col-sm-6">
-					<h1 class="m-0 text-dark">Hero Slider</h1>
+					<h1 class="m-0 text-dark">Blog</h1>
 				</div>
 				<!-- /.col -->
 				<div class="col-sm-6">
@@ -14,7 +14,7 @@
 							<a href="#">Home</a>
 						</li>
 						<li class="breadcrumb-item active">
-							Hero Slider Baru
+							Edit Data Hero Slider
 						</li>
 					</ol>
 				</div>
@@ -32,21 +32,21 @@
 				<div class="card-header">
 					<div class="row">
 						<div class="col-lg-4">
-							<h5>Hero Slider Baru</h5>
+							<h5>Edit Data Hero Slider</h5>
 						</div>
-						<div class="col-lg-8 text-right">
+						<div class="col-lg-8 text-right"></div>
 					</div>
 				</div>
-			</div>
-			<div class="card-body">
-				{{ range type, message := flash.Data }}
-				<div class="alert alert-{{ type }}">
-					<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+				<div class="card-body">
+					{{ range type, message := flash.Data }}
+					<div class="alert alert-{{ type }}">
+						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+					</div>
+					{{ end }}
+					<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/hero/{{ landingPageBlockID }}" enctype="multipart/form-data">
+						{{ include "_landing_page_block_hero_form" }}
+					</form>
 				</div>
-				{{ end }}
-				<form method="POST" action="{{ baseURL }}/admin/website_blocks/hero" enctype="multipart/form-data">
-					{{ include "_website_block_hero_form" }}
-				</form>
 			</div>
 		</div>
 		<!-- /.container-fluid -->
@@ -58,7 +58,7 @@
 	let baseURL = '{{ baseURL }}/admin/';
 	let imgPreview = false;
 	let imgData = false;
-	let idElement = '';
+	let idElement = '/80';
 
 	function imgChanged(thisContext) {
 		try {

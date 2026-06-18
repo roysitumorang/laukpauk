@@ -1757,14 +1757,20 @@ func init() {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
-		// website_blocks
+		// landing_page_blocks
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE website_blocks (
+			`CREATE TABLE landing_page_blocks (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, name character varying NOT NULL UNIQUE
-				, attributes JSONB NOT NULL
+				, parent_name character varying REFERENCES landing_page_blocks (name)
+				, name character varying UNIQUE
+				, subject character varying
+				, body character varying
+				, link_text character varying
+				, link_url character varying
+				, photo character varying
+				, custom_attributes JSONB
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -1779,101 +1785,49 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON website_blocks (record_status);`,
+			`CREATE INDEX ON landing_page_blocks (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON website_blocks (created_by);`,
+			`CREATE INDEX ON landing_page_blocks (parent_name);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON website_blocks (updated_by);`,
+			`CREATE INDEX ON landing_page_blocks (LOWER(subject));`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON website_blocks (deleted_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		// website_block_items
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE website_block_items (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, record_status integer NOT NULL
-				, website_block_id UUID NOT NULL REFERENCES website_blocks (id)
-				, subject character varying NOT NULL
-				, body character varying NOT NULL
-				, link_text character varying NOT NULL
-				, link_url character varying NOT NULL
-				, photo character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
-				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
-				, deleted_at timestamp with time zone
-				, deletion_reason character varying
-			);`,
+			`CREATE INDEX ON landing_page_blocks (LOWER(body));`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON website_block_items (record_status);`,
+			`CREATE INDEX ON landing_page_blocks (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON website_block_items (website_block_id);`,
+			`CREATE INDEX ON landing_page_blocks (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON website_block_items (LOWER(subject));`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON website_block_items (LOWER(body));`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON website_block_items (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON website_block_items (updated_by);`,
-		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON website_block_items (deleted_by);`,
+			`CREATE INDEX ON landing_page_blocks (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
 			return

@@ -93,15 +93,15 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		compress.New(),
 		rewrite.New(rewrite.Config{
 			Rules: map[string]string{
-				"/admin/auth/*":               "/auth/admin/$1",
-				"/admin":                      "/home/admin",
-				"/admin/articles":             "/articles/admin",
-				"/admin/articles/*":           "/articles/admin/$1",
-				"/admin/blogs":                "/blogs/admin",
-				"/admin/blogs/*":              "/blogs/admin/$1",
-				"/admin/website_blocks/*":     "/website_blocks/admin/$1",
-				"/admin/website_blocks/*/*":   "/website_blocks/admin/$1/$2",
-				"/admin/website_blocks/*/*/*": "/website_blocks/admin/$1/$2/$3",
+				"/admin/auth/*":                    "/auth/admin/$1",
+				"/admin":                           "/home/admin",
+				"/admin/articles":                  "/articles/admin",
+				"/admin/articles/*":                "/articles/admin/$1",
+				"/admin/blogs":                     "/blogs/admin",
+				"/admin/blogs/*":                   "/blogs/admin/$1",
+				"/admin/landing_page_blocks/*":     "/landing_page_blocks/admin/$1",
+				"/admin/landing_page_blocks/*/*":   "/landing_page_blocks/admin/$1/$2",
+				"/admin/landing_page_blocks/*/*/*": "/landing_page_blocks/admin/$1/$2/$3",
 			},
 		}),
 		cors.New(),
@@ -175,7 +175,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewHomeController(q.UserService).Mount(app.Group("/home"))
 	controllers.NewArticleController(q.UserService, q.ArticleService).Mount(app.Group("/articles"))
 	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
-	controllers.NewWebsiteBlockController(q.UserService, q.WebsiteBlockService, q.WebsiteBlockItemService).Mount(app.Group("/website_blocks"))
+	controllers.NewLandingPageBlockController(q.UserService, q.LandingPageBlockService).Mount(app.Group("/landing_page_blocks"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).WriteResponse(c)
 	})

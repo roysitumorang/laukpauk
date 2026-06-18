@@ -30,8 +30,7 @@ type (
 		UserService             services.UserService
 		ArticleService          services.ArticleService
 		BlogService             services.BlogService
-		WebsiteBlockService     services.WebsiteBlockService
-		WebsiteBlockItemService services.WebsiteBlockItemService
+		LandingPageBlockService services.LandingPageBlockService
 	}
 )
 
@@ -72,13 +71,11 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
 	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
-	websiteBlockRepository := repositories.NewWebsiteBlockRepository(dbRead, dbWrite)
-	websiteBlockItemRepository := repositories.NewWebsiteBlockItemRepository(dbRead, dbWrite)
+	landingPageBlockRepository := repositories.NewLandingPageBlockRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
-	websiteBlockService := services.NewWebsiteBlockService(websiteBlockRepository)
-	websiteBlockItemService := services.NewWebsiteBlockItemService(websiteBlockItemRepository)
+	landingPageBlockService := services.NewLandingPageBlockService(landingPageBlockRepository)
 	return &Service{
 		DbWrite:                 dbWrite,
 		Migration:               migration,
@@ -87,8 +84,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		UserService:             userService,
 		ArticleService:          articleService,
 		BlogService:             blogService,
-		WebsiteBlockService:     websiteBlockService,
-		WebsiteBlockItemService: websiteBlockItemService,
+		LandingPageBlockService: landingPageBlockService,
 	}, nil
 }
 

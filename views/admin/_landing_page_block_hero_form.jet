@@ -2,7 +2,7 @@
 <div class="row">
 	<div class="col-lg-4">
 		<label for="heroImage">
-			<img src="{{baseURL}}/{{ if request.Photo }}images/landing-page/hero/{{ request.Photo }}{{ else }}assets/img/upload-icon.png{{ end }}"
+			<img src="{{baseURL}}/{{ if request.Photo }}{{ request.PhotoPath() }}{{ else }}assets/img/upload-icon.png{{ end }}"
 				alt="Gambar Hero Slider"
 				class="w-100 cp"
 				data-toggle="tooltip"
@@ -55,7 +55,7 @@
 		</div>
 		<hr class="mb-4" />
 		<button type="submit" class="btn btn-success mr-1">Simpan Data Hero</button>
-		<a href="{{ baseURL }}/admin/website_blocks/hero" class="btn btn-default ml-1">
+		<a href="{{ baseURL }}/admin/landing_page_blocks/hero" class="btn btn-default ml-1">
 			Back to List Hero
 		</a>
 	</div>
