@@ -102,6 +102,15 @@ func ValidateLandingPageBlockCustomAttributes(
 	case models.LandingPageBlockNameFeature:
 		subject := strings.TrimSpace(response["subject"])
 		response = map[string]string{"subject": subject}
+	case models.LandingPageBlockNameWhy:
+		subject := strings.TrimSpace(response["subject"])
+		linkText := strings.TrimSpace(response["link_text"])
+		linkURL := strings.TrimSpace(response["link_url"])
+		response = map[string]string{
+			"subject":   subject,
+			"link_text": linkText,
+			"link_url":  linkURL,
+		}
 	}
 	return response, nil
 }

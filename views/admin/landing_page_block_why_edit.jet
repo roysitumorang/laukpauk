@@ -1,0 +1,124 @@
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+	<!-- Content Header (Page header) -->
+	<div class="content-header">
+		<div class="container-fluid">
+			<div class="row mb-2">
+				<div class="col-sm-6">
+					<h1 class="m-0 text-dark">Edit Penjelasan</h1>
+				</div>
+				<!-- /.col -->
+				<div class="col-sm-6">
+					<ol class="breadcrumb float-sm-right">
+						<li class="breadcrumb-item">
+							<a href="#">Website</a>
+						</li>
+						<li class="breadcrumb-item active">
+							List Penjelasan
+						</li>
+					</ol>
+				</div>
+				<!-- /.col -->
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content-header -->
+	<!-- Main content -->
+	<div class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="card">
+						<div class="card-header">
+							<div class="row">
+								<div class="col-lg-4">
+									<h5>Edit Penjelasan</h5>
+								</div>
+								<div class="col-lg-8 text-right">
+									<a href="{{ baseURL }}/admin/landing_page_blocks/why">
+										<button class="btn btn-link btn-sm">List Penjelasan</button>
+									</a>
+								</div>
+							</div>
+						</div>
+						<div class="card-body">
+							{{ range type, message := flash.Data }}
+							<div class="alert alert-{{ type }}">
+								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+							</div>
+							{{ end }}
+							<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/why/{{ landingPageBlockID }}" enctype="multipart/form-data">
+								{{ include "_landing_page_block_why_form" }}
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+<script>
+	let baseURL = '{{ baseURL }}/admin/';
+	let imgPreview = false;
+	let imgData = false;
+	let idElement = '/73';
+
+	function imgChanged(thisContext) {
+		try {
+			let el = $(thisContext);
+			let _imgData = el.prop('files')[0];
+			let fileReader = new FileReader();
+			fileReader.readAsDataURL(_imgData);
+			fileReader.onload = (e) => {
+				let imgResult = e.target.result;
+				imgPreview = imgResult;
+				imgData = _imgData;
+				$('#imgPreview').attr('src', imgPreview).addClass('img-thumbnail');
+			}
+		} catch (e) {
+			console.log(e);
+		}
+	}
+	$('#formFiturLaukpauk').on('submit', function(e) {
+		e.preventDefault();
+		let _formData = new FormData();
+		if (imgData !== false) {
+			_formData.append('img', imgData);
+		}
+		_formData.append('title', $('#title').val());
+		_formData.append('content', $('#content').val());
+		$.ajax({
+			url: `${baseURL}Fitur/saveFitur${idElement}`,
+			type: 'POST',
+			data: _formData,
+			processData: false,
+			contentType: false,
+			cache: false,
+			success: function(_decodedRFS) {
+				let _statusSaveFitur = _decodedRFS.statusSaveFitur;
+				let _swalType, _swalMessage;
+				if (_statusSaveFitur) {
+					_swalMessage = 'Berhasil menyimpan data fitur laukpauk!';
+					_swalType = 'success';
+				} else {
+					_swalMessage = 'Gagal menyimpan data fitur laukpauk!';
+					_swalType = 'error';
+				}
+				Swal.fire({
+					title: 'Fitur Laukpauk',
+					html: _swalMessage,
+					type: _swalType
+				}).then(() => {
+					if (_statusSaveFitur) {
+						location.href = `${baseURL}website/fitur`;
+					}
+				});
+			}
+		});
+	});
+</script>

@@ -150,7 +150,7 @@ func (q *LandingPageBlock) Validate() error {
 				*q.Photo == "") {
 			return errors.New("photo: is required")
 		}
-	case LandingPageBlockNameFeature:
+	case LandingPageBlockNameFeature, LandingPageBlockNameWhy:
 		if q.Subject == nil ||
 			*q.Subject == "" {
 			return errors.New("subject: is required")

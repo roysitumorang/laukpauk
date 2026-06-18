@@ -1,0 +1,310 @@
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+	<!-- Content Header (Page header) -->
+	<div class="content-header">
+		<div class="container-fluid">
+			<div class="row mb-2">
+				<div class="col-sm-6">
+					<h1 class="m-0 text-dark">Mengapa Pilih Laukpauk</h1>
+				</div>
+				<!-- /.col -->
+				<div class="col-sm-6">
+					<ol class="breadcrumb float-sm-right">
+						<li class="breadcrumb-item">
+							<a href="#">Website</a>
+						</li>
+						<li class="breadcrumb-item active">
+							Mengapa Pilih Laukpauk
+						</li>
+					</ol>
+				</div>
+				<!-- /.col -->
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content-header -->
+	<!-- Main content -->
+	<div class="content">
+		<div class="container-fluid">
+			<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/why/custom_attributes" id="formButtonTextWhy">
+				<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+				<div class="row">
+					<div class="col-lg-12">
+						<div class="card">
+							<div class="card-body">
+								<h6 class="mb-0">Judul Sekarang</h6>
+								<span class="text-muted text-sm">{{ request.CustomAttributes["subject"] }}</span>
+								<hr />
+								<div class="form-group">
+									<label for="judul">Judul</label>
+									<div class="input-group">
+										<input type="text" name="subject" value="{{ request.CustomAttributes["subject"] }}" placeholder="Mengapa Pilih Laukpauk" class="form-control" />
+									</div>
+								</div>
+							</div>
+							<div class="card-body">
+								<h6 class="mb-0">Button Text Sekarang</h6>
+								<span class="text-muted text-sm">{{ request.CustomAttributes["link_text"] }}</span>
+								<hr />
+								<div class="form-group">
+									<label for="judul">Button Text</label>
+									<div class="input-group">
+										<input type="text" name="link_text" value="{{ request.CustomAttributes["link_text"] }}" placeholder="Gabung Sekarang" class="form-control" />
+									</div>
+								</div>
+							</div>
+							<div class="card-body">
+								<h6 class="mb-0">Button Link Sekarang</h6>
+								<span class="text-muted text-sm">{{ request.CustomAttributes["link_url"] }}</span>
+								<hr />
+								<div class="form-group">
+									<label for="judul">Button Link</label>
+									<div class="input-group">
+										<input type="text" name="link_url" value="{{ request.CustomAttributes["link_url"] }}" placeholder="https://google.com" class="form-control" />
+										<div class="input-group-append">
+											<button type="submit" class="btn btn-success" id="btnSubmitBtnLink">
+												<span class="fa fa-save pr-2"></span>
+												Simpan
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="card">
+						<div class="card-header">
+							<div class="row">
+								<div class="col-lg-4">
+									<h5>Daftar Penjelasan</h5>
+								</div>
+								<div class="col-lg-8 text-right">
+									<a href="{{ baseURL }}/admin/landing_page_blocks/why/new" class="btn btn-link btn-sm">
+										Penjelasan Baru
+									</a>
+								</div>
+							</div>
+						</div>
+						<div class="card-body table-responsive">
+							{{ range type, message := flash.Data }}
+							<div class="alert alert-{{ type }}">
+								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+							</div>
+							{{ end }}
+							{{ if pagination.Info.Total > pagination.Info.Limit }}
+							<ul class="pagination">
+								{{ if pagination.Links.First }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.First }}">First</a></li>
+								{{ end }}
+								{{ if pagination.Links.Previous }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Previous }}">Previous</a></li>
+								{{ end }}
+								{{ if pagination.Links.Current }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Current }}">Current</a></li>
+								{{ end }}
+								{{ if pagination.Links.Next }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Next }}">Next</a></li>
+								{{ end }}
+								{{ if pagination.Links.Last }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Last }}">Last</a></li>
+								{{ end }}
+								<li class="page-item"><a class="page-link" href="#">Total: {{ rows | len }} of {{ pagination.Info.Total }} items , Page: {{ pagination.Info.Page + 1 }} of {{ pagination.Info.Pages }} pages</a></li>
+							</ul>
+							{{ end }}
+							<table class="table table-sm" id="tabelWhy">
+								<thead>
+									<th class="border-top-0 text-center text-bold">No.</th>
+									<th class="border-top-0 text-left text-bold">Gambar</th>
+									<th class="border-top-0 text-left text-bold">Heading & Content</th>
+									<th class="border-top-0 text-center text-bold">Action</th>
+								</thead>
+								<tbody>
+									{{ range _, row := rows }}
+									<tr role="row" class="odd">
+										<td>
+											<p class="mb-0 text-center"><b>{{ row.RowNo }}.</b></p>
+										</td>
+										<td>
+											<a href="{{ baseURL }}/{{ row.PhotoPath() }}" target="_blank">
+												<img src="{{ baseURL }}/{{ row.PhotoPath() }}" alt="{{ row.Subject }}" class="img-circle size-50-50">
+											</a>
+										</td>
+										<td>
+											<h6 class="mb-1 text-bold text-primary">{{ row.Subject }}</h6>
+											<p class="mb-0 text-sm text-muted">{{ row.Body }}</p>
+										</td>
+										<td>
+											<div class="text-center">
+												<a href="{{ baseURL }}/admin/landing_page_blocks/{{ row.ParentName }}/{{ row.ID }}/edit">
+													<span class="fa fa-edit text-warning cp" data-toggle="tooltip" data-placement="top" title="Edit"></span>
+												</a>
+												<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/{{ row.ParentName }}/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+													<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+														<span class="fa fa-trash text-danger cp ml-2"
+														data-toggle="tooltip"
+														data-placement="top"
+														title="Hapus Data Hero Slider"
+														onclick="confirm('Are you sure to delete this item ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
+													</span>
+												</form>
+											</div>
+										</td>
+									</tr>
+									{{ end }}
+								</tbody>
+							</table>
+							{{ if pagination.Info.Total > pagination.Info.Limit }}
+							<ul class="pagination">
+								{{ if pagination.Links.First }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.First }}">First</a></li>
+								{{ end }}
+								{{ if pagination.Links.Previous }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Previous }}">Previous</a></li>
+								{{ end }}
+								{{ if pagination.Links.Current }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Current }}">Current</a></li>
+								{{ end }}
+								{{ if pagination.Links.Next }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Next }}">Next</a></li>
+								{{ end }}
+								{{ if pagination.Links.Last }}
+								<li class="page-item"><a class="page-link" href="{{ pagination.Links.Last }}">Last</a></li>
+								{{ end }}
+								<li class="page-item"><a class="page-link" href="#">Total: {{ rows | len }} of {{ pagination.Info.Total }} items , Page: {{ pagination.Info.Page + 1 }} of {{ pagination.Info.Pages }} pages</a></li>
+							</ul>
+							{{ end }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+<script>
+	let baseURL = '{{ baseURL }}/admin/';
+	let uploadGambarWhy = 'upload/gambar/landing-page-imgs/why';
+	let _tabelWhyOptions = {
+		processing: true,
+		serverSide: true,
+		ajax: {
+			url: `{{ baseURL }}/admin/Why/getWhy${location.search}`,
+			dataSrc: 'listWhy'
+		},
+		columns: [{
+			data: null,
+			render: function(data, type, row, meta) {
+				return `<p class='mb-0 text-center'><b>${meta.row + 1}.</b></p>`;
+			}
+		}, {
+			data: null,
+			render: function(data, type, row, meta) {
+				return `<a href='${baseURL}/${uploadGambarWhy}/${data.img}' target='_blank'>
+					<img src='${baseURL}/${uploadGambarWhy}/${data.img}' alt='${data.title}' class='img-circle size-50-50' />
+				</a>`;
+			}
+		}, {
+			data: null,
+			render: function(data, type, row, meta) {
+				let content = data.content;
+				if (content.length >= 50) {
+					content = `${content.substr(0, 50)}`;
+				}
+				return `<h6 class='mb-1 text-bold text-primary'>${data.title}</h6>
+					<p class='mb-0 text-sm text-muted'>${content} .. <a href='${baseURL}website/why/${data.id}'>selengkapnya</a></p>`;
+			}
+		}, {
+			data: null,
+			render: function(data, type, row, meta) {
+				return `<div class='text-center'>
+						<a href='${baseURL}website/editWhy/${data.id}'>
+							<span class="fa fa-edit text-warning cp"
+								data-toggle='tooltip' data-placement='top' title='Edit'></span>
+						</a>
+						<span class="fa fa-trash text-danger ml-2 cp" onClick='hapusWhy(this)'
+							data-detail-why='${JSON.stringify(data)}'
+							data-toggle='tooltip' data-placement='top' title='Hapus'></span>
+					</div>`;
+			}
+		}]
+	};
+	let _tabelWhy = $('#tabelWhy').DataTable(_tabelWhyOptions);
+
+	function hapusWhy(thisContext) {
+		let _el = $(thisContext);
+		let _detailWhy = JSON.parse(_el.attr('data-detail-why'));
+		Swal.fire({
+			title: 'Mengapa Harus Laukpauk',
+			html: `Apakah anda yakin akan menghapus penjelasan ini ?`,
+			type: 'question',
+			showCancelButton: true,
+			cancelButtonText: 'Batal',
+			showConfirmButton: true,
+			confirmButtonText: 'Ya, lanjutkan!',
+			focusCancel: true
+		}).then((konfirmasi) => {
+			if (konfirmasi.value) {
+				$.ajax({
+					url: `{{ baseURL }}/admin/Why/deleteWhy/${_detailWhy.id}`,
+					success: function(_decodedRFS) {
+						let _statusDelete = _decodedRFS.statusDelete;
+						let _html, _type;
+						if (_statusDelete) {
+							_html = 'Berhasil menghapus penjelasan !';
+							_type = 'success';
+						} else {
+							_html = 'Gagal menghapus penjelasan , silahkan coba lagi!';
+							_type = 'error';
+						}
+						Swal.fire({
+							title: 'Mengapa Harus Laukpauk',
+							html: _html,
+							type: _type
+						}).then(() => {
+							if (_statusDelete) {
+								_tabelWhy.draw();
+							}
+						});
+					}
+				});
+			}
+		});
+	}
+	$('#formJudulWhy, #formButtonTextWhy, #formButtonLinkWhy').on('submit', function(e) {
+		e.preventDefault();
+		let _data = $(this).serialize();
+		$.ajax({
+			url: '{{ baseURL }}/admin/Why/saveProperties',
+			data: _data,
+			type: 'POST',
+			success: function(_decodedRFS) {
+				let _statusSave = _decodedRFS.statusSave;
+				let _type, _message;
+				if (_statusSave) {
+					_type = 'success';
+					_message = 'Berhasil mengubah data !';
+				} else {
+					_type = 'error';
+					_message = 'Gagal mengubah data! Ulangi lagi!';
+				}
+				Swal.fire({
+					title: 'Mengapa Harus Laukpauk',
+					html: _message,
+					type: _type
+				}).then(() => {
+					if (_statusSave) {
+						location.href = `${baseURL}Website/why`;
+					}
+				});
+			}
+		});
+	});
+</script>
