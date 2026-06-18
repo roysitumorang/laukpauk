@@ -36,7 +36,7 @@ type (
 		Photo            *string               `json:"-" form:"photo"`
 		LinkText         *string               `json:"-" form:"link_text"`
 		LinkURL          *string               `json:"-" form:"link_url"`
-		CustomAttributes map[string]string     `json:"-" form:"-"`
+		CustomAttributes map[string]string     `json:"-" form:"custom_attributes"`
 		CreatedBy        uuid.UUID             `json:"-" form:"-"`
 		CreatedAt        time.Time             `json:"-" form:"-"`
 		UpdatedBy        uuid.UUID             `json:"-" form:"-"`
@@ -145,6 +145,22 @@ func (q *LandingPageBlock) Validate() error {
 		if _, err := url.ParseRequestURI(*q.LinkURL); err != nil {
 			return errors.New("link_url: invalid URL")
 		}
+		if q.ID == uuid.Nil &&
+			(q.Photo == nil ||
+				*q.Photo == "") {
+			return errors.New("photo: is required")
+		}
+	case LandingPageBlockNameFeature:
+		if q.Subject == nil ||
+			*q.Subject == "" {
+			return errors.New("subject: is required")
+		}
+		if q.Body == nil ||
+			*q.Body == "" {
+			return errors.New("body: is required")
+		}
+		q.LinkText = nil
+		q.LinkURL = nil
 		if q.ID == uuid.Nil &&
 			(q.Photo == nil ||
 				*q.Photo == "") {

@@ -48,7 +48,7 @@ func FindLandingPageBlocks(ctx context.Context, c fiber.Ctx) (*models.LandingPag
 	return response, nil
 }
 
-func ValidateLandingPageBlock(ctx context.Context, c fiber.Ctx, parentName models.LandingPageBlockName, landingPageBlockIDs ...uuid.UUID) (*models.LandingPageBlock, *multipart.FileHeader, int, error) {
+func ValidateLandingPageBlock(ctx context.Context, c fiber.Ctx, parentName *models.LandingPageBlockName, landingPageBlockIDs ...uuid.UUID) (*models.LandingPageBlock, *multipart.FileHeader, int, error) {
 	ctxt := "LandingPageBlockSanitizer-ValidateLandingPageBlock"
 	var response models.LandingPageBlock
 	err := c.Bind().Body(&response)
@@ -56,30 +56,52 @@ func ValidateLandingPageBlock(ctx context.Context, c fiber.Ctx, parentName model
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBody")
 		return nil, nil, fiberErr.Code, err
 	}
-	response.ParentName = &parentName
+	response.ParentName = parentName
 	if len(landingPageBlockIDs) > 0 {
 		response.ID = landingPageBlockIDs[0]
 	}
-	photo, err := c.FormFile("photo")
-	if err == nil {
-		file, err := photo.Open()
-		if err != nil {
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrOpen")
-			return &response, nil, fiber.StatusBadRequest, err
+	var photo *multipart.FileHeader
+	if parentName != nil {
+		if photo, err = c.FormFile("photo"); err == nil {
+			file, err := photo.Open()
+			if err != nil {
+				helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrOpen")
+				return &response, nil, fiber.StatusBadRequest, err
+			}
+			mtype, err := mimetype.DetectReader(file)
+			if err != nil {
+				helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrDetectReader")
+				return &response, nil, fiber.StatusBadRequest, err
+			}
+			if _, ok := mimeTypes[mtype.String()]; !ok {
+				return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
+			}
+			response.Photo = new(fmt.Sprintf(models.LandingPageBlockPhotoName, *parentName, helper.GenerateSnowflakeID(), mtype.Extension()))
 		}
-		mtype, err := mimetype.DetectReader(file)
-		if err != nil {
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrDetectReader")
-			return &response, nil, fiber.StatusBadRequest, err
-		}
-		if _, ok := mimeTypes[mtype.String()]; !ok {
-			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
-		}
-		response.Photo = new(fmt.Sprintf(models.LandingPageBlockPhotoName, parentName, helper.GenerateSnowflakeID(), mtype.Extension()))
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrValidate")
 		return &response, photo, fiber.StatusBadRequest, err
 	}
 	return &response, photo, fiber.StatusOK, nil
+}
+
+func ValidateLandingPageBlockCustomAttributes(
+	ctx context.Context,
+	c fiber.Ctx,
+	name models.LandingPageBlockName,
+) (map[string]string, error) {
+	ctxt := "LandingPageBlockSanitizer-ValidateLandingPageBlockCustomAttributes"
+	var response map[string]string
+	err := c.Bind().Body(&response)
+	if _, ok := errors.AsType[*fiber.Error](err); ok {
+		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBody")
+		return nil, err
+	}
+	switch name {
+	case models.LandingPageBlockNameFeature:
+		subject := strings.TrimSpace(response["subject"])
+		response = map[string]string{"subject": subject}
+	}
+	return response, nil
 }
