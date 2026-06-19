@@ -17,6 +17,10 @@ func AdminSessionAuth(
 		sess := session.FromContext(c)
 		userID, ok := sess.Get(models.UserID).(uuid.UUID)
 		if !ok {
+			if c.Method() == fiber.MethodGet {
+				sess.Set("next", c.OriginalURL())
+				_ = sess.Session.Save()
+			}
 			return c.Redirect().To("/admin/auth/login")
 		}
 		admins, _, err := userService.FindAdmins(
@@ -25,6 +29,9 @@ func AdminSessionAuth(
 		)
 		if err != nil || len(admins) == 0 {
 			_ = sess.Reset()
+			if c.Method() == fiber.MethodGet {
+				sess.Set("next", c.OriginalURL())
+			}
 			_ = sess.Session.Save()
 			return c.Redirect().To("/admin/auth/login")
 		}

@@ -104,7 +104,13 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRegenerate")
 	}
 	sess.Set(models.UserID, admin.ID)
-	return flash.Redirect(c, sess.Session, "/admin")
+	next, ok := sess.Get("next").(string)
+	if !ok {
+		next = "/admin"
+	} else {
+		sess.Delete("next")
+	}
+	return flash.Redirect(c, sess.Session, next)
 }
 
 func (q *authController) AdminProfile(c fiber.Ctx) error {
