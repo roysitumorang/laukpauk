@@ -97,6 +97,29 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
+							<form method="GET" action="/admin/landing_page_blocks/why">
+								<div class="row">
+									<div class="col-sm-12 col-md-6">
+										<div class="dataTables_length" id="listBlog_length">
+											<label for="limit">
+												Show
+												<select name="limit" id="limit" aria-controls="listBlog" class="custom-select custom-select-sm form-control form-control-sm">
+													{{ range _, limit := limits }}
+													<option value="{{ limit }}"{{ if limit == paginationRequest.Limit }} selected{{ end }}>{{ limit }}</option>
+													{{ end }}
+												</select> entries
+											</label>
+										</div>
+									</div>
+									<div class="col-sm-12 col-md-6">
+										<div id="listBlog_filter" class="dataTables_filter">
+											<label for="q">
+												Search: <input type="text" name="q" id="q" value="{{ paginationRequest.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
+											</label>
+										</div>
+									</div>
+								</div>
+							</form>
 							{{ if pagination.Info.Total > pagination.Info.Limit }}
 							<ul class="pagination">
 								{{ if pagination.Links.First }}

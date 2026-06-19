@@ -457,6 +457,7 @@ func (q *landingPageBlockController) AdminFeatureItemIndex(c fiber.Ctx) (err err
 	}
 	return c.Render("admin/landing_page_block_feature_index", params.Push(
 		"rows", rows,
+		"paginationRequest", paginationRequest,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
 }
@@ -794,6 +795,7 @@ func (q *landingPageBlockController) AdminWhyItemIndex(c fiber.Ctx) (err error) 
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Mengapa Harus Pilih Laukpauk",
 		"limits", models.Limits,
+		"paginationRequest", paginationRequest,
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
@@ -836,6 +838,7 @@ func (q *landingPageBlockController) AdminWhyItemIndex(c fiber.Ctx) (err error) 
 	}
 	return c.Render("admin/landing_page_block_why_index", params.Push(
 		"rows", rows,
+		"paginationRequest", paginationRequest,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
 }
