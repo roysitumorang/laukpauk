@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/services"
-	"go.uber.org/zap"
 )
 
 type (
@@ -38,22 +38,22 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	ctxt := "Router-MakeHandler"
 	dbRead, err := config.GetDbReadOnly(ctx)
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrGetDbReadOnly")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrGetDbReadOnly")
 		return nil, err
 	}
 	dbWrite, err := config.GetDbWriteOnly(ctx)
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrGetDbWriteOnly")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrGetDbWriteOnly")
 		return nil, err
 	}
 	migration := migration.New(dbRead, dbWrite)
 	kafkaService, err := kafka.New(ctx, strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrNew")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
 		return nil, err
 	}
 	if err = kafkaService.Ping(ctx); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrPing")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 		return nil, err
 	}
 	topics := make([]kafka.Topic, len(models.SliceTopics))
@@ -96,7 +96,7 @@ func (q *Service) Consume(ctx context.Context) error {
 			if !ok {
 				err = fmt.Errorf("%v", r)
 			}
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrRecover")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrRecover")
 		}
 	}()
 	for {
@@ -106,19 +106,19 @@ func (q *Service) Consume(ctx context.Context) error {
 		}
 		if errs := fetches.Errors(); len(errs) > 0 {
 			err := errors.New(fmt.Sprint(errs))
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrPollFetches")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPollFetches")
 			return err
 		}
 		records := fetches.Records()
 		if err := q.KafkaService.CommitUncommittedOffsets(ctx); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrCommitUncommittedOffsets")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommitUncommittedOffsets")
 			return err
 		}
 		q.KafkaService.AllowRebalance()
 		for _, record := range records {
 			now := time.Now()
 			duration := time.Since(now)
-			helper.Log(ctx, zap.InfoLevel, fmt.Sprintf("consumed message on topic %s[%d]@%d: %s in %s", record.Topic, record.Partition, record.Offset, record.Value, duration.String()), ctxt, "")
+			helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("consumed message on topic %s[%d]@%d: %s in %s", record.Topic, record.Partition, record.Offset, record.Value, duration.String()), ctxt, "")
 		}
 	}
 }

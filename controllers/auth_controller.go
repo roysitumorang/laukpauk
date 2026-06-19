@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"log/slog"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
@@ -9,7 +11,6 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/sanitizers"
 	"github.com/roysitumorang/laukpauk/services"
-	"go.uber.org/zap"
 )
 
 type (
@@ -70,7 +71,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 	)
 	request, statusCode, err := sanitizers.ValidateAdminLogin(ctx, c)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrValidateAdminLogin")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateAdminLogin")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/auth_login", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -82,7 +83,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 			WithEmail(request.Email),
 	)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindAdmins")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmins")
 		return c.Render("admin/auth_login", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
@@ -101,7 +102,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 		))
 	}
 	if err = sess.Regenerate(); err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRegenerate")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRegenerate")
 	}
 	sess.Set(models.UserID, admin.ID)
 	next, ok := sess.Get("next").(string)
@@ -135,11 +136,11 @@ func (q *authController) AdminLogout(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	if csrfHandler := csrf.HandlerFromContext(c); csrfHandler != nil {
 		if err := csrfHandler.DeleteToken(c); err != nil {
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrDeleteToken")
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteToken")
 		}
 	}
 	if err := sess.Reset(); err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrReset")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
 	return flash.Redirect(c, sess.Session, "/admin/auth/login")
 }

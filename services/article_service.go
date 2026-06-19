@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
-	"go.uber.org/zap"
 )
 
 type (
@@ -48,7 +48,7 @@ func (q *articleService) FindArticles(
 	ctxt := "ArticleService-FindArticles"
 	articles, total, pages, err := q.articleRepository.FindArticles(ctx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindArticles")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticles")
 		return nil, nil, err
 	}
 	n := len(articles)
@@ -65,7 +65,7 @@ func (q *articleService) FindArticles(
 		request.UrlValues,
 	)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrNewPagination")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewPagination")
 		return nil, nil, err
 	}
 	return rows, pagination, nil
@@ -79,7 +79,7 @@ func (q *articleService) CreateArticle(
 	ctxt := "ArticleService-CreateArticle"
 	response, err := q.articleRepository.CreateArticle(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCreateArticle")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateArticle")
 		return nil, err
 	}
 	return response, nil
@@ -92,7 +92,7 @@ func (q *articleService) UpdateArticle(
 	ctxt := "ArticleService-UpdateArticle"
 	response, err := q.articleRepository.UpdateArticle(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrUpdateArticle")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateArticle")
 		return nil, err
 	}
 	return response, nil

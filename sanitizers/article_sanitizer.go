@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"mime/multipart"
 	"net/url"
 	"strconv"
@@ -14,7 +15,6 @@ import (
 	"github.com/gofiber/utils/v2"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
-	"go.uber.org/zap"
 )
 
 func FindArticles(ctx context.Context, c fiber.Ctx) (*models.ArticleFilter, error) {
@@ -22,7 +22,7 @@ func FindArticles(ctx context.Context, c fiber.Ctx) (*models.ArticleFilter, erro
 	response := models.NewArticleFilter()
 	originalURL, err := url.ParseRequestURI(helper.ByteSlice2String(c.Request().URI().FullURI()))
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrParseRequestURI")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
 		return nil, err
 	}
 	var sb strings.Builder
@@ -52,23 +52,23 @@ func ValidateArticle(ctx context.Context, c fiber.Ctx) (*models.Article, *multip
 	var response models.Article
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBody")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, nil, fiberErr.Code, err
 	}
 	if err = (&response).Validate(); err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrValidate")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, nil, fiber.StatusBadRequest, err
 	}
 	photo, err := c.FormFile("photo")
 	if err == nil {
 		file, err := photo.Open()
 		if err != nil {
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrOpen")
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrOpen")
 			return &response, nil, fiber.StatusBadRequest, err
 		}
 		mtype, err := mimetype.DetectReader(file)
 		if err != nil {
-			helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrDetectReader")
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDetectReader")
 			return &response, nil, fiber.StatusBadRequest, err
 		}
 		if _, ok := mimeTypes[mtype.String()]; !ok {

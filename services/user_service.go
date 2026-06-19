@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
-	"go.uber.org/zap"
 )
 
 type (
@@ -37,7 +37,7 @@ func (q *userService) FindAdmins(
 	ctxt := "UserService-FindAdmins"
 	admins, total, pages, err := q.userRepository.FindAdmins(ctx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindAdmins")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmins")
 		return nil, nil, err
 	}
 	n := len(admins)
@@ -54,7 +54,7 @@ func (q *userService) FindAdmins(
 		request.UrlValues,
 	)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrNewPagination")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewPagination")
 		return nil, nil, err
 	}
 	return rows, pagination, nil

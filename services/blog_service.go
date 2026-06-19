@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
-	"go.uber.org/zap"
 )
 
 type (
@@ -48,7 +48,7 @@ func (q *blogService) FindBlogs(
 	ctxt := "BlogService-FindBlogs"
 	blogs, total, pages, err := q.blogRepository.FindBlogs(ctx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindBlogs")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
 		return nil, nil, err
 	}
 	n := len(blogs)
@@ -65,7 +65,7 @@ func (q *blogService) FindBlogs(
 		request.UrlValues,
 	)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrNewPagination")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewPagination")
 		return nil, nil, err
 	}
 	return rows, pagination, nil
@@ -79,7 +79,7 @@ func (q *blogService) CreateBlog(
 	ctxt := "BlogService-CreateBlog"
 	response, err := q.blogRepository.CreateBlog(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCreateBlog")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBlog")
 		return nil, err
 	}
 	return response, nil
@@ -92,7 +92,7 @@ func (q *blogService) UpdateBlog(
 	ctxt := "BlogService-UpdateBlog"
 	response, err := q.blogRepository.UpdateBlog(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrUpdateBlog")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBlog")
 		return nil, err
 	}
 	return response, nil

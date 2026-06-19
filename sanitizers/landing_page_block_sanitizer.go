@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"mime/multipart"
 	"net/url"
 	"strconv"
@@ -15,7 +16,6 @@ import (
 	"github.com/gofiber/utils/v2"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
-	"go.uber.org/zap"
 )
 
 func FindLandingPageBlocks(ctx context.Context, c fiber.Ctx) (*models.LandingPageBlockFilter, error) {
@@ -23,7 +23,7 @@ func FindLandingPageBlocks(ctx context.Context, c fiber.Ctx) (*models.LandingPag
 	response := models.NewLandingPageBlockFilter()
 	originalURL, err := url.ParseRequestURI(helper.ByteSlice2String(c.Request().URI().FullURI()))
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrParseRequestURI")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
 		return nil, err
 	}
 	var sb strings.Builder
@@ -53,7 +53,7 @@ func ValidateLandingPageBlock(ctx context.Context, c fiber.Ctx, parentName *mode
 	var response models.LandingPageBlock
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBody")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, nil, fiberErr.Code, err
 	}
 	response.ParentName = parentName
@@ -65,12 +65,12 @@ func ValidateLandingPageBlock(ctx context.Context, c fiber.Ctx, parentName *mode
 		if photo, err = c.FormFile("photo"); err == nil {
 			file, err := photo.Open()
 			if err != nil {
-				helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrOpen")
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrOpen")
 				return &response, nil, fiber.StatusBadRequest, err
 			}
 			mtype, err := mimetype.DetectReader(file)
 			if err != nil {
-				helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrDetectReader")
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDetectReader")
 				return &response, nil, fiber.StatusBadRequest, err
 			}
 			if _, ok := mimeTypes[mtype.String()]; !ok {
@@ -80,7 +80,7 @@ func ValidateLandingPageBlock(ctx context.Context, c fiber.Ctx, parentName *mode
 		}
 	}
 	if err = (&response).Validate(); err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrValidate")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, photo, fiber.StatusBadRequest, err
 	}
 	return &response, photo, fiber.StatusOK, nil
@@ -95,7 +95,7 @@ func ValidateLandingPageBlockCustomAttributes(
 	var response map[string]string
 	err := c.Bind().Body(&response)
 	if _, ok := errors.AsType[*fiber.Error](err); ok {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBody")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, err
 	}
 	switch name {

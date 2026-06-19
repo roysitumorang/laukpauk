@@ -1,9 +1,10 @@
 package helper
 
 import (
+	"log/slog"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"go.uber.org/zap"
 )
 
 type (
@@ -51,7 +52,7 @@ func (f *FlashMessage) Redirect(c fiber.Ctx, sess *session.Session, location str
 	ctxt := "FlashMessage-Redirect"
 	sess.Set(Flash, f)
 	if err := sess.Save(); err != nil {
-		Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrSave")
+		Capture(ctx, slog.LevelError, err, ctxt, "ErrSave")
 	}
 	redirect := c.Redirect()
 	if len(statusCode) > 0 {
@@ -66,7 +67,7 @@ func (f *FlashMessage) Clear(c fiber.Ctx, sess *session.Session) *FlashMessage {
 	f.Data = map[string]string{}
 	sess.Set(Flash, f)
 	if err := sess.Save(); err != nil {
-		Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrSave")
+		Capture(ctx, slog.LevelError, err, ctxt, "ErrSave")
 	}
 	return f
 }

@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
-	"go.uber.org/zap"
 )
 
 type (
@@ -146,7 +146,7 @@ func (q *userRepository) FindAdmins(
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -195,17 +195,17 @@ func (q *userRepository) FindAdmins(
 	if request.Limit > 0 {
 		totalDecimal, err := decimal.New(total, 0)
 		if err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrNew")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNew")
 			return nil, 0, 0, err
 		}
 		perPageDecimal, err := decimal.New(request.Limit, 0)
 		if err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrNew")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNew")
 			return nil, 0, 0, err
 		}
 		pagesDecimal, err := totalDecimal.Quo(perPageDecimal)
 		if err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrQuo")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuo")
 			return nil, 0, 0, err
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
@@ -220,7 +220,7 @@ func (q *userRepository) FindAdmins(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
@@ -262,7 +262,7 @@ func (q *userRepository) FindAdmins(
 			&admin.AdminLevel,
 			&admin.Photo,
 		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		response = append(response, &admin)

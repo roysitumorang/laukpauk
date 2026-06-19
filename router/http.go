@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"os"
 	"runtime"
@@ -19,7 +20,6 @@ import (
 	"github.com/gofiber/contrib/v3/monitor"
 	fibersentry "github.com/gofiber/contrib/v3/sentry"
 	"github.com/gofiber/contrib/v3/swaggo"
-	fiberzap "github.com/gofiber/contrib/v3/zap"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/extractors"
 	"github.com/gofiber/fiber/v3/middleware/compress"
@@ -40,7 +40,7 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
-	"go.uber.org/zap"
+	slogfiber "github.com/samber/slog-fiber"
 )
 
 const (
@@ -82,9 +82,14 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		recover.New(recover.Config{
 			EnableStackTrace: true,
 		}),
-		fiberzap.New(fiberzap.Config{
-			Logger: helper.GetLogger(),
-		}),
+		slogfiber.NewWithConfig(
+			helper.GetLogger(),
+			slogfiber.Config{
+				WithUserAgent: true,
+				WithRequestID: true,
+				WithClientIP:  true,
+			},
+		),
 		requestid.New(requestid.Config{
 			Next:      nil,
 			Header:    fiber.HeaderXRequestID,
@@ -159,7 +164,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		Get("/env", basicAuth, func(c fiber.Ctx) error {
 			envMap, err := godotenv.Read(".env")
 			if err != nil {
-				helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrRead")
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRead")
 				return helper.NewResponse(fiber.StatusBadRequest).SetMessage(err.Error()).WriteResponse(c)
 			}
 			envMap["GO_VERSION"] = runtime.Version()
@@ -188,7 +193,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	listenerPort := fmt.Sprintf(":%d", port)
 	err := app.Listen(listenerPort)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrListen")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrListen")
 	}
 	return err
 }

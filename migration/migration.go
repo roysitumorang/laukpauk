@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"slices"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
-	"go.uber.org/zap"
 )
 
 type (
@@ -43,7 +43,7 @@ func (m *Migration) Migrate(ctx context.Context) error {
 			"version" bigint NOT NULL PRIMARY KEY
 		)`,
 	); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return err
 	}
 	rows, err := m.dbRead.Query(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
@@ -51,7 +51,7 @@ func (m *Migration) Migrate(ctx context.Context) error {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return err
 	}
 	defer rows.Close()
@@ -59,7 +59,7 @@ func (m *Migration) Migrate(ctx context.Context) error {
 	for rows.Next() {
 		var version int64
 		if err := rows.Scan(&version); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return err
 		}
 		mapVersions[version] = 1
@@ -76,7 +76,7 @@ func (m *Migration) Migrate(ctx context.Context) error {
 	}
 	tx, err := m.dbWrite.Begin(ctx)
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrBegin")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBegin")
 		return err
 	}
 	for _, version := range sortedVersions {
@@ -86,29 +86,29 @@ func (m *Migration) Migrate(ctx context.Context) error {
 		function, ok := Migrations[version]
 		if !ok {
 			err := fmt.Errorf("migration function for version %d not found", version)
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrOK")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrOK")
 			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
+				helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
 			}
 			return err
 		}
 		if err := function(ctx, tx); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrFunction")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFunction")
 			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
+				helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
 			}
 			return err
 		}
 		if _, err := tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES ($1)`, version); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
+				helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
 			}
 			return err
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrCommit")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommit")
 		return err
 	}
 	return nil

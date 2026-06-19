@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
-	"go.uber.org/zap"
 )
 
 type (
@@ -148,7 +148,7 @@ func (q *landingPageBlockRepository) FindLandingPageBlocks(
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -182,17 +182,17 @@ func (q *landingPageBlockRepository) FindLandingPageBlocks(
 	if request.Limit > 0 {
 		totalDecimal, err := decimal.New(total, 0)
 		if err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrNew")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNew")
 			return nil, 0, 0, err
 		}
 		perPageDecimal, err := decimal.New(request.Limit, 0)
 		if err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrNew")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNew")
 			return nil, 0, 0, err
 		}
 		pagesDecimal, err := totalDecimal.Quo(perPageDecimal)
 		if err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrQuo")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuo")
 			return nil, 0, 0, err
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
@@ -207,7 +207,7 @@ func (q *landingPageBlockRepository) FindLandingPageBlocks(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
@@ -234,7 +234,7 @@ func (q *landingPageBlockRepository) FindLandingPageBlocks(
 			&landingPageBlock.DeletedAt,
 			&landingPageBlock.DeletionReason,
 		); err != nil {
-			helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		response = append(response, &landingPageBlock)
@@ -316,9 +316,9 @@ func (q *landingPageBlockRepository) CreateLandingPageBlock(
 		&response.DeletionReason,
 	); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
+			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
 		}
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return new(response), nil
@@ -397,9 +397,9 @@ func (q *landingPageBlockRepository) UpdateLandingPageBlock(
 		&response.DeletionReason,
 	); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, zap.ErrorLevel, errRollback, ctxt, "ErrRollback")
+			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
 		}
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrScan")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return new(response), nil

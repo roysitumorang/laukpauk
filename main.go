@@ -25,6 +25,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -34,7 +35,6 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/router"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -54,21 +54,21 @@ func main() {
 		Short: "run app",
 		Run: func(_ *cobra.Command, _ []string) {
 			if err := godotenv.Load(".env"); err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrLoad")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrLoad")
 				return
 			}
 			if err := helper.InitHelper(); err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrInitHelper")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrInitHelper")
 				return
 			}
 			service, err := router.MakeHandler(ctx)
 			if err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrMakeHandler")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
 				return
 			}
 			helper.InitDbWrite(service.DbWrite)
 			if err := service.Migration.Migrate(ctx); err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrMigrate")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMigrate")
 				return
 			}
 			var g errgroup.Group
@@ -86,7 +86,7 @@ func main() {
 				entryID, err := c.AddFunc("* * * * *", func() {
 					tx, err := helper.BeginTx(ctx)
 					if err != nil {
-						helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrBeginTx")
+						helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 						return
 					}
 					defer func() {
@@ -95,24 +95,24 @@ func main() {
 							errRollback = nil
 						}
 						if errRollback != nil {
-							helper.Log(ctx, zap.ErrorLevel, errRollback.Error(), ctxt, "ErrRollback")
+							helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
 						}
 					}()
 					if err = tx.Commit(ctx); err != nil {
-						helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCommit")
+						helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 					}
 				})
 				if err != nil {
-					helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrAddFunc")
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
 					return err
 				}
-				helper.Log(ctx, zap.InfoLevel, fmt.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
+				helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
 				c.Start()
-				helper.Log(ctx, zap.InfoLevel, "cron: scheduled tasks running!...", ctxt, "")
+				helper.Log(ctx, slog.LevelInfo, "cron: scheduled tasks running!...", ctxt, "")
 				return nil
 			})
 			if err := g.Wait(); err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrWait")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrWait")
 			}
 		},
 	}
@@ -132,16 +132,16 @@ func main() {
 		Run: func(_ *cobra.Command, args []string) {
 			now := time.Now()
 			if err := godotenv.Load(".env"); err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrLoad")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrLoad")
 				return
 			}
 			if err := helper.InitHelper(); err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrInitHelper")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrInitHelper")
 				return
 			}
 			service, err := router.MakeHandler(ctx)
 			if err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrMakeHandler")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
 				return
 			}
 			helper.InitDbWrite(service.DbWrite)
@@ -149,19 +149,19 @@ func main() {
 			switch args[0] {
 			case "new":
 				if err := service.Migration.CreateMigrationFile(ctx); err != nil {
-					helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrCreateMigrationFile")
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCreateMigrationFile")
 					return
 				}
 				activity = "creating"
 			case "run":
 				if err := service.Migration.Migrate(ctx); err != nil {
-					helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrMigrate")
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMigrate")
 					return
 				}
 				activity = "running"
 			}
 			duration := time.Since(now)
-			helper.Log(ctx, zap.InfoLevel, fmt.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
+			helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
 		},
 	}
 	rootCmd := &cobra.Command{Use: config.AppName}
@@ -172,6 +172,6 @@ func main() {
 	)
 	rootCmd.SuggestionsMinimumDistance = 1
 	if err := rootCmd.Execute(); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrExecute")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecute")
 	}
 }

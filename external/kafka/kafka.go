@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.uber.org/zap"
 )
 
 type (
@@ -38,7 +38,7 @@ func New(ctx context.Context, brokers []string) (*KafkaService, error) {
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 	)
 	if err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrNewClient")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNewClient")
 		return nil, err
 	}
 	return &KafkaService{client: client}, nil
@@ -47,7 +47,7 @@ func New(ctx context.Context, brokers []string) (*KafkaService, error) {
 func (s *KafkaService) Ping(ctx context.Context) (err error) {
 	ctxt := "KafkaService-Ping"
 	if err = s.client.Ping(ctx); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrPing")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 	}
 	return
 }
@@ -64,7 +64,7 @@ func (s *KafkaService) Publish(ctx context.Context, request ...Topic) (err error
 		for _, payload := range topic.Payloads {
 			payloadJSON, err := json.Marshal(payload)
 			if err != nil {
-				helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrMarshal")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMarshal")
 				return err
 			}
 			wg.Add(1)
@@ -75,16 +75,16 @@ func (s *KafkaService) Publish(ctx context.Context, request ...Topic) (err error
 			s.client.Produce(ctx, record, func(result *kgo.Record, err error) {
 				defer wg.Done()
 				if err != nil {
-					helper.Capture(ctx, zap.ErrorLevel, fmt.Errorf("publish message failed: %v", err), ctxt, "ErrProduce")
+					helper.Capture(ctx, slog.LevelError, fmt.Errorf("publish message failed: %v", err), ctxt, "ErrProduce")
 					return
 				}
-				helper.Log(ctx, zap.InfoLevel, fmt.Sprintf("published message to topic %s[%d]@%d: %s in %s", result.Topic, result.Partition, result.Offset, result.Value, time.Since(now).String()), ctxt, "")
+				helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("published message to topic %s[%d]@%d: %s in %s", result.Topic, result.Partition, result.Offset, result.Value, time.Since(now).String()), ctxt, "")
 			})
 		}
 	}
 	wg.Wait()
 	if err = s.client.Flush(ctx); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrFlush")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFlush")
 	}
 	return
 }
@@ -96,7 +96,7 @@ func (s *KafkaService) PollFetches(ctx context.Context) kgo.Fetches {
 func (s *KafkaService) CommitUncommittedOffsets(ctx context.Context) (err error) {
 	ctxt := "KafkaService-CommitUncommittedOffsets"
 	if err = s.client.CommitUncommittedOffsets(ctx); err != nil {
-		helper.Capture(ctx, zap.ErrorLevel, err, ctxt, "ErrCommitUncommittedOffsets")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommitUncommittedOffsets")
 	}
 	return
 }

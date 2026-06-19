@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
-	"go.uber.org/zap"
 )
 
 type (
@@ -48,7 +48,7 @@ func (q *landingPageBlockService) FindLandingPageBlocks(
 	ctxt := "LandingPageBlockService-FindLandingPageBlocks"
 	landingPageBlocks, total, pages, err := q.landingPageBlockRepository.FindLandingPageBlocks(ctx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
 		return nil, nil, err
 	}
 	n := len(landingPageBlocks)
@@ -65,7 +65,7 @@ func (q *landingPageBlockService) FindLandingPageBlocks(
 		request.UrlValues,
 	)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrNewPagination")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewPagination")
 		return nil, nil, err
 	}
 	return rows, pagination, nil
@@ -79,7 +79,7 @@ func (q *landingPageBlockService) CreateLandingPageBlock(
 	ctxt := "LandingPageBlockService-CreateLandingPageBlock"
 	response, err := q.landingPageBlockRepository.CreateLandingPageBlock(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrCreateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlock")
 		return nil, err
 	}
 	return response, nil
@@ -92,7 +92,7 @@ func (q *landingPageBlockService) UpdateLandingPageBlock(
 	ctxt := "LandingPageBlockService-UpdateLandingPageBlock"
 	response, err := q.landingPageBlockRepository.UpdateLandingPageBlock(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, zap.ErrorLevel, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
 		return nil, err
 	}
 	return response, nil

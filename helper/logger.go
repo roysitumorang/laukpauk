@@ -4,97 +4,73 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 	"runtime"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/config"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
-	logger     *zap.Logger
+	logger     *slog.Logger
 	InitLogger = sync.OnceFunc(func() {
-		encoderCfg := zap.NewProductionEncoderConfig()
-		encoderCfg.TimeKey = "timestamp"
-		encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
-		logger = zap.Must(zap.Config{
-			Level:             zap.NewAtomicLevelAt(zap.InfoLevel),
-			Development:       false,
-			DisableCaller:     true,
-			DisableStacktrace: true,
-			Sampling:          nil,
-			Encoding:          "json",
-			EncoderConfig:     encoderCfg,
-			OutputPaths: []string{
-				"stderr",
-			},
-			ErrorOutputPaths: []string{
-				"stderr",
-			},
-			InitialFields: map[string]any{},
-		}.Build())
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	})
 )
 
-func GetLogger() *zap.Logger {
+func GetLogger() *slog.Logger {
 	return logger
 }
 
-func logContext(context, scope string) *zap.Logger {
-	defer func() {
-		_ = logger.Sync()
-	}()
-	fields := []zap.Field{
-		zap.String("topic", fmt.Sprintf("%s-service-log", config.AppName)),
-		zap.String("context", context),
-		zap.String("service", config.AppName),
+func logContext(context, scope string) []any {
+	fields := []any{
+		"topic", fmt.Sprintf("%s-service-log", config.AppName),
+		"context", context,
+		"service", config.AppName,
 	}
 	if scope != "" {
-		fields = append(fields, zap.String("scope", scope))
+		fields = append(fields, "scope", scope)
 	}
-	return logger.With(fields...)
+	return fields
 }
 
-func Log(ctx context.Context, level zapcore.Level, message, context, scope string) {
-	entry := logContext(context, scope)
+func Log(ctx context.Context, level slog.Level, message, context, scope string) {
+	entries := logContext(context, scope)
 	switch level {
-	case zap.DebugLevel:
-		entry.Debug(message)
-	case zap.InfoLevel:
-		entry.Info(message)
-	case zap.WarnLevel:
-		entry.Warn(message)
-	case zap.ErrorLevel:
+	case slog.LevelDebug:
+		logger.Debug(message, entries...)
+	case slog.LevelInfo:
+		logger.Info(message, entries...)
+	case slog.LevelWarn:
+		logger.Warn(message, entries...)
+	case slog.LevelError:
 		var name string
 		pc, file, line, _ := runtime.Caller(1)
 		if fn := runtime.FuncForPC(pc); fn != nil {
 			name = fn.Name()
 		}
-		entry.Error(
-			message,
-			zap.String("func", name),
-			zap.String("file", fmt.Sprintf("%s:%d", file, line)),
-			zap.Int("line", line),
+		entries = append(
+			entries,
+			"func", name,
+			"file", fmt.Sprintf("%s:%d", file, line),
+			"line", line,
 		)
-	case zap.FatalLevel:
-		entry.Fatal(message)
-	case zap.PanicLevel:
-		entry.Panic(message)
+		logger.Error(message, entries...)
 	}
 }
 
-func Capture(ctx context.Context, level zapcore.Level, err error, context, scope string) {
-	entry := logContext(context, scope)
+func Capture(ctx context.Context, level slog.Level, err error, context, scope string) {
+	entries := logContext(context, scope)
 	switch level {
-	case zap.DebugLevel:
-		entry.Debug(err.Error())
-	case zap.InfoLevel:
-		entry.Info(err.Error())
-	case zap.WarnLevel:
-		entry.Warn(err.Error())
-	case zap.ErrorLevel:
+	case slog.LevelDebug:
+		logger.Debug(err.Error(), entries...)
+	case slog.LevelInfo:
+		logger.Info(err.Error(), entries...)
+	case slog.LevelWarn:
+		logger.Warn(err.Error(), entries...)
+	case slog.LevelError:
 		// ignoring pgx.ErrNoRows
 		if errors.Is(err, pgx.ErrNoRows) {
 			return
@@ -104,15 +80,12 @@ func Capture(ctx context.Context, level zapcore.Level, err error, context, scope
 		if fn := runtime.FuncForPC(pc); fn != nil {
 			name = fn.Name()
 		}
-		entry.Error(
-			err.Error(),
-			zap.String("func", name),
-			zap.String("file", fmt.Sprintf("%s:%d", file, line)),
-			zap.Int("line", line),
+		entries = append(
+			entries,
+			"func", name,
+			"file", fmt.Sprintf("%s:%d", file, line),
+			"line", line,
 		)
-	case zap.FatalLevel:
-		entry.Fatal(err.Error())
-	case zap.PanicLevel:
-		entry.Panic(err.Error())
+		logger.Error(err.Error(), entries...)
 	}
 }
