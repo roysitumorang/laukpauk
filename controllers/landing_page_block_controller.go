@@ -63,6 +63,9 @@ func (q *landingPageBlockController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminWhyItemEdit).
 		Post("/:id", q.AdminWhyItemUpdate).
 		Post("/:id/delete", q.AdminWhyItemDelete)
+	admin.Group("/commitment").
+		Get("", q.AdminCommitmentIndex).
+		Post("/custom_attributes", q.AdminCommitmentUpdate)
 }
 
 func (q *landingPageBlockController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
@@ -1155,4 +1158,95 @@ func (q *landingPageBlockController) AdminWhyItemDelete(c fiber.Ctx) (err error)
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
 	}
 	return flash.Success("why deleted successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+}
+
+func (q *landingPageBlockController) AdminCommitmentIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageBlockController-AdminCommitmentIndex"
+	flash := helper.NewFlashMessage()
+	sess := session.FromContext(c)
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	csrfToken := csrf.TokenFromContext(c)
+	existing := new(models.LandingPageBlock)
+	request := existing
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Komitmen",
+		"request", request,
+		"existing", existing,
+	)
+	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+		ctx,
+		models.NewLandingPageBlockFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithNames(models.LandingPageBlockNameCommitment),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		return c.Render("admin/landing_page_block_commitment_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if len(landingPageBlocks) == 0 {
+		return c.Render("admin/landing_page_block_commitment_index", params.Push(
+			"flash", "landing page block not found",
+		), "admin/layouts/authenticated")
+	}
+	existing = landingPageBlocks[0]
+	request = existing
+	return c.Render("admin/landing_page_block_commitment_index", params.Push(
+		"request", request,
+		"existing", existing,
+	), "admin/layouts/authenticated")
+}
+
+func (q *landingPageBlockController) AdminCommitmentUpdate(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageBlockController-AdminCommitmentUpdate"
+	flash := helper.NewFlashMessage()
+	sess := session.FromContext(c)
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+		ctx,
+		models.NewLandingPageBlockFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithNames(models.LandingPageBlockNameCommitment),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+	}
+	if len(landingPageBlocks) == 0 {
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+	}
+	landingPageBlock := landingPageBlocks[0]
+	request, err := sanitizers.ValidateLandingPageBlockCustomAttributes(ctx, c, models.LandingPageBlockNameCommitment)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockCustomAttributes")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+	}
+	landingPageBlock.CustomAttributes = request
+	landingPageBlock.UpdatedBy = currentAdmin.ID
+	landingPageBlock.UpdatedAt = time.Now()
+	landingPageBlock.DeletedBy = nil
+	landingPageBlock.DeletedAt = nil
+	landingPageBlock.DeletionReason = nil
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+	}
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, landingPageBlock); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+	}
+	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
 }
