@@ -1,9 +1,10 @@
 package middleware
 
 import (
+	"uuid"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/services"
 )

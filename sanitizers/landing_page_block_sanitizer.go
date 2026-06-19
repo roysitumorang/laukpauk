@@ -8,11 +8,11 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"uuid"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/utils/v2"
-	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"go.uber.org/zap"

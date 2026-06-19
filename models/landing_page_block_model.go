@@ -6,8 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 const (
@@ -145,7 +144,7 @@ func (q *LandingPageBlock) Validate() error {
 		if _, err := url.ParseRequestURI(*q.LinkURL); err != nil {
 			return errors.New("link_url: invalid URL")
 		}
-		if q.ID == uuid.Nil &&
+		if q.ID == uuid.Nil() &&
 			(q.Photo == nil ||
 				*q.Photo == "") {
 			return errors.New("photo: is required")
@@ -161,7 +160,7 @@ func (q *LandingPageBlock) Validate() error {
 		}
 		q.LinkText = nil
 		q.LinkURL = nil
-		if q.ID == uuid.Nil &&
+		if q.ID == uuid.Nil() &&
 			(q.Photo == nil ||
 				*q.Photo == "") {
 			return errors.New("photo: is required")

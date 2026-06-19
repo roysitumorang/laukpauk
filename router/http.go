@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/coregx/coregex"
 	"github.com/dustin/go-humanize"
@@ -32,7 +33,6 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/jet/v3"
 	"github.com/gofiber/utils/v2"
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/controllers"

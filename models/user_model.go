@@ -3,8 +3,7 @@ package models
 import (
 	"net/url"
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 const (
