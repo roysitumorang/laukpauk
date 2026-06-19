@@ -26,12 +26,12 @@ func GetLogger() *slog.Logger {
 
 func logContext(context, scope string) []any {
 	fields := []any{
-		"topic", fmt.Sprintf("%s-service-log", config.AppName),
-		"context", context,
-		"service", config.AppName,
+		slog.String("topic", fmt.Sprintf("%s-service-log", config.AppName)),
+		slog.String("context", context),
+		slog.String("service", config.AppName),
 	}
 	if scope != "" {
-		fields = append(fields, "scope", scope)
+		fields = append(fields, slog.String("scope", scope))
 	}
 	return fields
 }
@@ -53,9 +53,9 @@ func Log(ctx context.Context, level slog.Level, message, context, scope string) 
 		}
 		entries = append(
 			entries,
-			"func", name,
-			"file", fmt.Sprintf("%s:%d", file, line),
-			"line", line,
+			slog.String("func", name),
+			slog.String("file", fmt.Sprintf("%s:%d", file, line)),
+			slog.Int("line", line),
 		)
 		logger.Error(message, entries...)
 	}
@@ -82,9 +82,9 @@ func Capture(ctx context.Context, level slog.Level, err error, context, scope st
 		}
 		entries = append(
 			entries,
-			"func", name,
-			"file", fmt.Sprintf("%s:%d", file, line),
-			"line", line,
+			slog.String("func", name),
+			slog.String("file", fmt.Sprintf("%s:%d", file, line)),
+			slog.Int("line", line),
 		)
 		logger.Error(err.Error(), entries...)
 	}
