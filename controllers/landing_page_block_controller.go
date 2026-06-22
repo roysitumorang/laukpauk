@@ -69,6 +69,9 @@ func (q *landingPageBlockController) Mount(r fiber.Router) {
 	admin.Group("/free-shopping").
 		Get("", q.AdminFreeShoppingIndex).
 		Post("/custom_attributes", q.AdminFreeShoppingUpdate)
+	admin.Group("/kitchen-hero").
+		Get("", q.AdminKitchenHeroIndex).
+		Post("/custom_attributes", q.AdminKitchenHeroUpdate)
 }
 
 func (q *landingPageBlockController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
@@ -1269,7 +1272,7 @@ func (q *landingPageBlockController) AdminFreeShoppingIndex(c fiber.Ctx) (err er
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", "Komitmen",
+		"pageTitle", "Uang Belanja Gratis",
 		"request", request,
 		"existing", existing,
 	)
@@ -1353,4 +1356,105 @@ func (q *landingPageBlockController) AdminFreeShoppingUpdate(c fiber.Ctx) (err e
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
 	}
 	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+}
+
+func (q *landingPageBlockController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageBlockController-AdminKitchenHeroIndex"
+	flash := helper.NewFlashMessage()
+	sess := session.FromContext(c)
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	csrfToken := csrf.TokenFromContext(c)
+	existing := new(models.LandingPageBlock)
+	request := existing
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Pahlawan Dapur",
+		"request", request,
+		"existing", existing,
+	)
+	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+		ctx,
+		models.NewLandingPageBlockFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithNames(models.LandingPageBlockNameKitchenHero),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		return c.Render("admin/landing_page_block_kitchen_hero_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if len(landingPageBlocks) == 0 {
+		return c.Render("admin/landing_page_block_kitchen_hero_index", params.Push(
+			"flash", "landing page block not found",
+		), "admin/layouts/authenticated")
+	}
+	existing = landingPageBlocks[0]
+	request = existing
+	return c.Render("admin/landing_page_block_kitchen_hero_index", params.Push(
+		"request", request,
+		"existing", existing,
+	), "admin/layouts/authenticated")
+}
+
+func (q *landingPageBlockController) AdminKitchenHeroUpdate(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageBlockController-AdminKitchenHeroUpdate"
+	flash := helper.NewFlashMessage()
+	sess := session.FromContext(c)
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+		ctx,
+		models.NewLandingPageBlockFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithNames(models.LandingPageBlockNameKitchenHero),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	}
+	if len(landingPageBlocks) == 0 {
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	}
+	landingPageBlock := landingPageBlocks[0]
+	request, photo, err := sanitizers.ValidateLandingPageBlockCustomAttributes(ctx, c, models.LandingPageBlockNameKitchenHero)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockCustomAttributes")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	}
+	if photo == nil {
+		request["photo"] = landingPageBlock.CustomAttributes["photo"]
+	}
+	landingPageBlock.CustomAttributes = request
+	landingPageBlock.UpdatedBy = currentAdmin.ID
+	landingPageBlock.UpdatedAt = time.Now()
+	landingPageBlock.DeletedBy = nil
+	landingPageBlock.DeletedAt = nil
+	landingPageBlock.DeletionReason = nil
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	}
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, landingPageBlock); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	}
+	if err = q.saveFile(c, photo, models.LandingPageBlockNameKitchenHero, new(request["photo"])); err != nil {
+		if errRollback := tx.Rollback(ctx); errRollback != nil {
+			helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
+		}
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	}
+	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
 }

@@ -146,6 +146,29 @@ func ValidateLandingPageBlockCustomAttributes(
 			"body":    body,
 			"photo":   photoFilename,
 		}
+	case models.LandingPageBlockNameKitchenHero:
+		body := strings.TrimSpace(response["body"])
+		var photoFilename string
+		if photo, err = c.FormFile("photo"); err == nil {
+			file, err := photo.Open()
+			if err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrOpen")
+				return response, nil, err
+			}
+			mtype, err := mimetype.DetectReader(file)
+			if err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDetectReader")
+				return response, nil, err
+			}
+			if _, ok := mimeTypes[mtype.String()]; !ok {
+				return response, nil, errors.New("photo: invalid JPG/PNG file")
+			}
+			photoFilename = fmt.Sprintf(models.LandingPageBlockPhotoName, name, helper.GenerateSnowflakeID(), mtype.Extension())
+		}
+		response = map[string]string{
+			"body":  body,
+			"photo": photoFilename,
+		}
 	}
 	return response, photo, nil
 }
