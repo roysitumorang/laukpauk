@@ -38,6 +38,7 @@ func NewLandingPageBlockController(
 }
 
 func (q *landingPageBlockController) Mount(r fiber.Router) {
+	r.Get("", q.Index)
 	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
 	admin := r.Group("/admin", adminSessionAuth)
 	admin.Group("/hero").
@@ -79,6 +80,59 @@ func (q *landingPageBlockController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminFaqItemEdit).
 		Post("/:id", q.AdminFaqItemUpdate).
 		Post("/:id/delete", q.AdminFaqItemDelete)
+}
+
+func (q *landingPageBlockController) Index(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageBlockController-Index"
+	flash := helper.NewFlashMessage()
+	csrfToken := csrf.TokenFromContext(c)
+	var rows, heroSliders,
+		features []*models.LandingPageBlock
+
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"pageTitle", "Laukpauk | Belanja Sayur Online",
+		"heroSliders", heroSliders,
+		"features", features,
+	)
+	if rows, _, err = q.landingPageBlockService.FindLandingPageBlocks(
+		c,
+		models.NewLandingPageBlockFilter().
+			WithRecordStatus(models.RecordStatusActive),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		return c.Render("landing_page/index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "landing_page/_layout")
+	}
+	mapLandingPageBlocks := map[models.LandingPageBlockName]*models.LandingPageBlock{}
+	for _, row := range rows {
+		if row.ParentName == nil &&
+			row.Name != nil {
+			mapLandingPageBlocks[*row.Name] = row
+		}
+	}
+	for _, row := range rows {
+		if row.ParentName != nil {
+			parent, ok := mapLandingPageBlocks[*row.ParentName]
+			if ok {
+				parent.Items = append(parent.Items, row)
+				mapLandingPageBlocks[*row.ParentName] = parent
+			}
+		}
+	}
+	return c.Render("landing_page/index", params.Push(
+		"hero", mapLandingPageBlocks[models.LandingPageBlockNameHero],
+		"feature", mapLandingPageBlocks[models.LandingPageBlockNameFeature],
+		"why", mapLandingPageBlocks[models.LandingPageBlockNameWhy],
+		"freeShopping", mapLandingPageBlocks[models.LandingPageBlockNameFreeShopping],
+		"commitment", mapLandingPageBlocks[models.LandingPageBlockNameCommitment],
+		"kitchenHero", mapLandingPageBlocks[models.LandingPageBlockNameKitchenHero],
+	), "landing_page/_layout")
 }
 
 func (q *landingPageBlockController) AdminHeroItemIndex(c fiber.Ctx) (err error) {

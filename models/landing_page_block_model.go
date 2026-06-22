@@ -43,6 +43,7 @@ type (
 		DeletedBy        *uuid.UUID            `json:"-" form:"-"`
 		DeletedAt        *time.Time            `json:"-" form:"-"`
 		DeletionReason   *string               `json:"-" form:"-"`
+		Items            []*LandingPageBlock   `json:"-" form:"-"`
 	}
 
 	LandingPageBlockFilter struct {
