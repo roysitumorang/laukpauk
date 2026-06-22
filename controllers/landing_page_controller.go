@@ -253,7 +253,7 @@ func (q *landingPageController) FormContactUs(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"pageTitle", "Hubungi Kami",
+		"pageTitle", "Hubungi Kami | Belanja Sayur Online",
 		"request", request,
 	)
 	return c.Render("landing_page/contact_us", params, "landing_page/_layout")
@@ -270,7 +270,7 @@ func (q *landingPageController) SaveContactUs(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"pageTitle", "Hubungi Kami",
+		"pageTitle", "Hubungi Kami | Belanja Sayur Online",
 		"request", request,
 	)
 	request, statusCode, err := sanitizers.ValidateContactUs(ctx, c)
