@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta http-equiv="x-ua-compatible" content="ie=edge" />
+	<title>Page Not Found</title>
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/fontawesome-free/css/all.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/ionicons/ionicons.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/dist/css/adminlte.min.css" />
+	<!-- Google Font: Source Sans Pro -->
+	<!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700"> -->
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/animate.css/animate.css" />
+	<link rel="shortcut icon" href="{{ baseURL }}/assets/img/laukpauk-icon.png" />
+	<script src="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.css" />
+	<style type="text/css">
+		body {
+			background-color: #fdfdfd;
+		}
+		.h-100vh {
+			height: 100vh !important;
+		}
+		#notice {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+		.ghost-animation {
+			animation: ghostAnimation 2s ease-in-out infinite;
+		}
+		@keyframes ghostAnimation {
+			0% {
+				margin-top: -100px;
+			}
+			50% {
+				margin-top: 0px;
+			}
+			100% {
+				margin-top: -100px;
+			}
+		}
+	</style>
+</head>
+<body class="hold-transition sidebar-mini h-100vh">
+	<div class="wrapper h-100vh">
+		<!-- Content Wrapper. Contains page content -->
+		<div class="text-center" id="notice">
+			<img src="{{ baseURL }}/assets/img/empty.png" alt="Expired Image"
+				class="img-responsive ghost-animation" style="width:250px;"
+				id="imgExpired" />
+			<h1 class="text-danger mt-4 animate__animated animate__fadeInLeft"
+				style="animation-delay:.3s">Page Not Found</h1>
+			<p class="mb-0 mt-2 text-danger animate__animated animate__fadeInRight"
+				style="animation-delay:.5s">
+				Halaman yang anda akses tidak valid, silahkan cek URL anda!
+			</p>
+		</div>
+		<!-- /.content-wrapper -->
+	</div>
+	<!-- ./wrapper -->
+	<!-- REQUIRED SCRIPTS -->
+	<!-- jQuery -->
+	<script src="{{ baseURL }}/assets/plugins/jquery/jquery.min.js"></script>
+	<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon="{'version':'2024.11.0','token':'de04ed05247d400f8cec6262b9dd586f','r':1,'server_timing':{'name':{'cfCacheStatus':true,'cfEdge':true,'cfExtPri':true,'cfL4':true,'cfOrigin':true,'cfSpeedBrain':true},'location_startswith':null}}" crossorigin="anonymous"></script>
+</body>
+</html>

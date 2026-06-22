@@ -182,7 +182,9 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
 	controllers.NewLandingPageBlockController(q.UserService, q.LandingPageBlockService).Mount(app.Group("/landing_page_blocks"))
 	app.Use(func(c fiber.Ctx) error {
-		return helper.NewResponse(fiber.StatusNotFound).WriteResponse(c)
+		return c.Render("404", fiber.Map{
+			"baseURL": c.BaseURL(),
+		})
 	})
 	port := DefaultPort
 	if envPort, ok := os.LookupEnv("PORT"); ok && envPort != "" {
