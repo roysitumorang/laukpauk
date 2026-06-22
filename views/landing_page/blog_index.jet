@@ -1,0 +1,154 @@
+<section id="blog">
+	<div class="container px-xl-5 px-lg-5 px-md-4 px-sm-4 px-4">
+		<div class="col-lg-10 px-xl-5 px-lg-5 m-auto">
+			<div class="col blog">
+				<div class="row d-flex align-items-center">
+					<div class="col-xl-6 col-lg-6 col-xs-12">
+						<div class="blog-header pt-xl-3 pt-lg-3">
+							<div class="blog-title d-block mb-4 mb-xl-5 mb-lg-5">
+								<h1 class="text-bold">Blog</h1>
+								<p class="mb-lg-3 text-sm text-muted">
+									Dapatkan info terbaru, promo, dan voucher di sini
+								</p>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-6 col-lg-6 col-xs-12">
+						<form method="GET" action="{{ baseURL }}/blogs">
+							<div class="input-group pencarian py-2">
+								<input class="form-control border-0" placeholder="Cari artikel di sini" name="q"
+									value="{{ request.Keyword }}" />
+								<div class="input-group-append cp px-3 d-flex">
+									<div class="input-group-text bg-transparent border-0">
+										<button type="submit" class="btn p-0"><span class="bi-search"></span></button>
+									</div>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+				<div class="blog-content pt-3">
+					<div class="row" id="listBlog">
+						{{ range _, row := rows }}
+						<div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 blog-item mb-5">
+							<a href="{{ baseURL }}/read/{{ row.Slug }}" target="_blank">
+								<img src="{{ baseURL }}/images/blog/{{ row.Photo }}" alt="{{ row.Subject }}"
+									class="w-100 d-block m-auto img-blog" />
+							</a>
+							<br />
+							<a href="{{ baseURL }}/read/{{ row.Slug }}" target="_blank">
+								<h4 class="text-black">{{ row.Subject }}</h4>
+							</a>
+							<p class="text-sm text-muted mb-0">
+								Posted {{ row.CreatedAt.Format("Mon, 2 Jan 2006 MST") }}
+							</p>
+						</div>
+						{{ end }}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+<link rel="stylesheet" href="{{ baseURL }}/assets/css/custom-landing-page-style.css" />
+<script>
+	let _baseURL            =   "{{ baseURL }}/";
+	let _uploadGambarBlog   =   "upload/gambar/blog";
+
+	let _drawState      =   1;
+	let _lengthState    =   10;
+	let _startState     =   _drawState * _lengthState;
+
+	let _isAllLoaded    =   false;
+
+	$(window).on("scroll", function(){
+	    if(!_isAllLoaded){
+		let _listBlogHeight =   $("#listBlog").height();
+		let _scrollTop      =   $(window).scrollTop();
+
+		let _30PersenListBlogHeight =   0.3 *_listBlogHeight;
+
+		if(_scrollTop >= (_listBlogHeight - _30PersenListBlogHeight)){
+		    let _selectQS   =    "id, foto, title, permalink, createdBy, createdAt";
+
+		    let _searchQS   =   "";
+		    let _urlSP  =   new URLSearchParams(location.search);
+		    let _search =   _urlSP.get("search[value]");
+		    if(_search != null){
+			_searchQS   =   `&search[value]=${_search}`;
+		    }
+
+		    $.ajax({
+			async       :   false,
+			url         :   `{{ baseURL }}/Blog/getBlog?start=${_startState}&length=${_lengthState}&draw=${_drawState}&selectQS=${_selectQS}${_searchQS}`,
+			success     :   function(_decodedRFS){
+			    let _listBlog   =   _decodedRFS.listBlog;
+
+			    if(_listBlog.length >= 1){
+				_drawBlog(_listBlog);
+
+				_drawState++;
+				_startState =   _drawState * _lengthState;
+			    }else{
+				_isAllLoaded    =   true;
+			    }
+			}
+		    });
+		}
+	    }else{
+		console.log("All Data has been loaded!");
+	    }
+	});
+
+	function _drawBlog(listBlog){
+	    let _blogHTML   =   listBlog.map(function(blog, index){
+
+		let _link           =   blog.permalink;
+		let _foto           =   blog.foto;
+		let _title          =   blog.title;
+		let _creatorNama    =   blog.creatorNama;
+		let _createdAt      =   blog.createdAt;
+
+		return  `<div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 blog-item mb-5">
+			    <a href="${_link}" target="_blank">
+				<img src="${_baseURL}${_uploadGambarBlog}/${_foto}" alt="${_title}"
+				    class="w-100 d-block uploadGambarBlogm-auto img-blog" />
+			    </a>
+			    <br />
+			    <a href="${_link}" target="_blank">
+				<h4 class="text-black">${_title}</h4>
+			    </a>
+			    <p class="text-sm text-muted mb-0">
+				Posted by ${_creatorNama}, ${_createdAt}
+			    </p>
+			</div>`;
+	    });
+
+	    $("#listBlog").append(_blogHTML);
+	}
+</script>
+<style type="text/css">
+	.img-blog{
+	border-radius: 10px;
+	box-shadow: 0 8px 24px rgb(38 37 37 / 25%);
+	}
+	.pencarian{
+	border:1px solid #8b8a8a;
+	overflow: hidden;
+	border-radius: 50px;
+	box-shadow: 0 4px 20px rgb(38 37 37 / 25%);
+	}
+	.pencarian > ::placeholder{
+	margin: 0;
+	font-size:1rem!important;
+	}
+	.pencarian > input:focus{
+	outline: none;
+	box-shadow: none !important;
+	}
+	.pencarian > input{
+	margin-left: 15px;
+	font-size:.875rem !important;
+	}
+</style>
+

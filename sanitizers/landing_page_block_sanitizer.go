@@ -180,3 +180,26 @@ func ValidateLandingPageBlockCustomAttributes(
 	}
 	return response, photo, nil
 }
+
+func ValidateContactUs(
+	ctx context.Context,
+	c fiber.Ctx,
+) (
+	*models.ContactUs,
+	int,
+	error,
+) {
+	ctxt := "LandingPageBlockSanitizer-ValidateContactUs"
+	var request models.ContactUs
+	err := c.Bind().Body(&request)
+	response := new(request)
+	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
+		return response, fiberErr.Code, err
+	}
+	if err = response.Validate(); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
+		return response, fiber.StatusBadRequest, err
+	}
+	return response, fiber.StatusOK, nil
+}

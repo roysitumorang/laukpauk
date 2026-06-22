@@ -20,6 +20,7 @@ require (
 	github.com/govalues/decimal v0.1.36
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
+	github.com/nyaruka/phonenumbers v1.8.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/slog-fiber v1.22.2
 	github.com/spf13/cobra v1.10.2
@@ -82,4 +83,5 @@ require (
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/tools v0.46.0 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )

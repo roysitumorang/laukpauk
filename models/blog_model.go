@@ -35,6 +35,7 @@ type (
 	BlogFilter struct {
 		BlogIDs      []uuid.UUID
 		RecordStatus []RecordStatus
+		Slugs        []string
 		Keyword,
 		PaginationURL string
 		Limit,
@@ -54,6 +55,11 @@ func (q *BlogFilter) WithBlogIDs(blogIDs ...uuid.UUID) *BlogFilter {
 
 func (q *BlogFilter) WithRecordStatus(recordStatus ...RecordStatus) *BlogFilter {
 	q.RecordStatus = recordStatus
+	return q
+}
+
+func (q *BlogFilter) WithSlugs(slugs ...string) *BlogFilter {
+	q.Slugs = slugs
 	return q
 }
 

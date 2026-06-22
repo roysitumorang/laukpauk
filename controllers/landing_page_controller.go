@@ -24,21 +24,30 @@ type (
 	landingPageController struct {
 		userService             services.UserService
 		landingPageBlockService services.LandingPageBlockService
+		blogService             services.BlogService
 	}
 )
 
 func NewLandingPageController(
 	userService services.UserService,
 	landingPageBlockService services.LandingPageBlockService,
+	blogService services.BlogService,
 ) *landingPageController {
 	return new(landingPageController{
 		userService:             userService,
 		landingPageBlockService: landingPageBlockService,
+		blogService:             blogService,
 	})
 }
 
 func (q *landingPageController) Mount(r fiber.Router) {
-	r.Get("", q.Index)
+	r.Get("", q.Index).
+		Get("/blogs", q.BlogIndex).
+		Get("/blogs/:id", q.BlogShow).
+		Get("/contact-us", q.FormContactUs).
+		Post("/contact-us", q.SaveContactUs).
+		Get("/faq", q.FaqIndex).
+		Get("/privacy-policy", q.PrivacyPolicy)
 	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
 	admin := r.Group("/admin/blocks", adminSessionAuth)
 	admin.Group("/hero").
@@ -144,6 +153,175 @@ func (q *landingPageController) Index(c fiber.Ctx) (err error) {
 		"freeShopping", mapLandingPageBlocks[models.LandingPageBlockNameFreeShopping],
 		"commitment", mapLandingPageBlocks[models.LandingPageBlockNameCommitment],
 		"kitchenHero", mapLandingPageBlocks[models.LandingPageBlockNameKitchenHero],
+	), "landing_page/_layout")
+}
+
+func (q *landingPageController) BlogIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageController-BlogIndex"
+	flash := helper.NewFlashMessage()
+	sess := session.FromContext(c)
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	csrfToken := csrf.TokenFromContext(c)
+	request := new(models.BlogFilter)
+	rows := []*models.Blog{}
+	pagination := new(models.Pagination)
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Blog | Belanja Sayur Online",
+		"limits", models.Limits,
+		"request", request,
+		"rows", rows,
+		"pagination", pagination,
+	)
+	if request, err = sanitizers.FindBlogs(ctx, c); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
+		return c.Render("landing_page/blog_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "landing_page/_layout")
+	}
+	request = request.WithRecordStatus(models.RecordStatusActive)
+	if rows, pagination, err = q.blogService.FindBlogs(
+		c,
+		request,
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
+		return c.Render("landing_page/blog_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "landing_page/_layout")
+	}
+	return c.Render("landing_page/blog_index", params.Push(
+		"request", request,
+		"rows", rows,
+		"pagination", pagination,
+	), "landing_page/_layout")
+}
+
+func (q *landingPageController) BlogShow(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageController-BlogShow"
+	flash := helper.NewFlashMessage()
+	sess := session.FromContext(c)
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	csrfToken := csrf.TokenFromContext(c)
+	var blog *models.Blog
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Blog | Belanja Sayur Online",
+		"blog", blog,
+	)
+	request := models.NewBlogFilter().
+		WithRecordStatus(models.RecordStatusActive)
+	slug := c.Params("id")
+	if blogID, err := uuid.Parse(slug); err == nil {
+		request = request.WithBlogIDs(blogID)
+	} else {
+		request = request.WithSlugs(slug)
+	}
+	blogs, _, err := q.blogService.FindBlogs(
+		c,
+		request,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/blogs")
+	}
+	if len(blogs) == 0 {
+		return flash.Danger("blog not found").Redirect(c, sess.Session, "/blogs")
+	}
+	blog = blogs[0]
+	return c.Render("landing_page/blog_show", params.Push(
+		"pageTitle", fmt.Sprintf("%s | Belanja Sayur Online", blog.Subject),
+		"blog", blog,
+	), "landing_page/_layout")
+}
+
+func (q *landingPageController) FormContactUs(c fiber.Ctx) (err error) {
+	flash := helper.NewFlashMessage()
+	csrfToken := csrf.TokenFromContext(c)
+	request := new(models.ContactUs)
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"pageTitle", "Hubungi Kami",
+		"request", request,
+	)
+	return c.Render("landing_page/contact_us", params, "landing_page/_layout")
+}
+
+func (q *landingPageController) SaveContactUs(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageController-SaveContactUs"
+	flash := helper.NewFlashMessage()
+	csrfToken := csrf.TokenFromContext(c)
+	request := new(models.ContactUs)
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"pageTitle", "Hubungi Kami",
+		"request", request,
+	)
+	request, statusCode, err := sanitizers.ValidateContactUs(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateContactUs")
+		c.Response().SetStatusCode(statusCode)
+		return c.Render("landing_page/contact_us", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request,
+		), "landing_page/_layout")
+	}
+	return c.Render("landing_page/contact_us", params.Push(
+		"flash", flash.Success("your message submitted successfully, we will contact you shortly"),
+		"request", request,
+	), "landing_page/_layout")
+}
+
+func (q *landingPageController) FaqIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "LandingPageController-FaqIndex"
+	flash := helper.NewFlashMessage()
+	csrfToken := csrf.TokenFromContext(c)
+	var rows []*models.LandingPageBlockItem
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"pageTitle", "Bantuan | Belanja Sayur Online",
+		"rows", rows,
+	)
+	if rows, _, err = q.landingPageBlockService.FindLandingPageBlockItems(
+		c,
+		models.NewLandingPageBlockItemFilter().
+			WithRecordStatus(models.RecordStatusActive).
+			WithLandingPageBlockNames(models.LandingPageBlockNameFAQ),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return c.Render("landing_page/faq", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "landing_page/_layout")
+	}
+	return c.Render("landing_page/faq", params.Push(
+		"rows", rows,
+	))
+}
+
+func (q *landingPageController) PrivacyPolicy(c fiber.Ctx) (err error) {
+	return c.Render("landing_page/privacy_policy", models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"pageTitle", "Kebijakan Privasi | Belanja Sayur Online",
 	), "landing_page/_layout")
 }
 

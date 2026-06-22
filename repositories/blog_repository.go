@@ -86,6 +86,20 @@ func (q *blogRepository) FindBlogs(
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.Slugs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("slug IN (")
+		for i, slug := range request.Slugs {
+			params = append(params, slug)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = sb.WriteString("$")
+			_, _ = sb.WriteString(strconv.Itoa(len(params)))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = sb.WriteString("%%")
@@ -101,7 +115,7 @@ func (q *blogRepository) FindBlogs(
 	sb.Reset()
 	_, _ = sb.WriteString(
 		`SELECT COUNT(1)
-        FROM blogs`,
+        	FROM blogs`,
 	)
 	if len(conds) > 0 {
 		_, _ = sb.WriteString(" WHERE")

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 	"uuid"
+
+	"github.com/nyaruka/phonenumbers"
 )
 
 const (
@@ -79,6 +81,14 @@ type (
 		Limit,
 		Page int64
 		UrlValues url.Values
+	}
+
+	ContactUs struct {
+		RowNo       int64     `json:"-" form:"-"`
+		ID          uuid.UUID `json:"-" form:"-"`
+		Name        string    `json:"name" form:"name"`
+		MobilePhone string    `json:"mobile_phone" form:"mobile_phone"`
+		Message     string    `json:"message" form:"message"`
 	}
 )
 
@@ -241,4 +251,22 @@ func (q *LandingPageBlockItem) PhotoPath() *string {
 	var sb strings.Builder
 	_, _ = fmt.Fprintf(&sb, LandingPageBlockPhotoPath, q.LandingPageBlockName, *q.Photo)
 	return new(sb.String())
+}
+
+func (q *ContactUs) Validate() error {
+	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
+		return errors.New("name: is required")
+	}
+	if q.MobilePhone = strings.TrimSpace(q.MobilePhone); q.MobilePhone == "" {
+		return errors.New("mobile_phone: is required")
+	}
+	mobilePhone, err := phonenumbers.Parse(q.MobilePhone, "ID")
+	if err != nil {
+		return fmt.Errorf("mobile_phone: %w", err)
+	}
+	q.MobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
+	if q.Message = strings.TrimSpace(q.Message); q.Message == "" {
+		return errors.New("message: is required")
+	}
+	return nil
 }
