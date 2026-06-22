@@ -182,6 +182,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
 	controllers.NewLandingPageBlockController(q.UserService, q.LandingPageBlockService).Mount(app.Group("/landing_page_blocks"))
 	app.Use(func(c fiber.Ctx) error {
+		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{
 			"baseURL": c.BaseURL(),
 		})
