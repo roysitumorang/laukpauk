@@ -1,0 +1,231 @@
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+	<!-- Content Header (Page header) -->
+	<div class="content-header">
+		<div class="container-fluid">
+			<div class="row mb-2">
+				<div class="col-sm-6">
+					<h1 class="m-0 text-dark">Uang Belanja Gratis</h1>
+				</div>
+				<!-- /.col -->
+				<div class="col-sm-6">
+					<ol class="breadcrumb float-sm-right">
+						<li class="breadcrumb-item">
+							<a href="#">Website</a>
+						</li>
+						<li class="breadcrumb-item active">
+							Uang Belanja Gratis
+						</li>
+					</ol>
+				</div>
+				<!-- /.col -->
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content-header -->
+	<!-- Main content -->
+	<div class="content">
+		<div class="container-fluid">
+			{{ range type, message := flash.Data }}
+			<div class="alert alert-{{ type }}">
+				<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+			</div>
+			{{ end }}
+			<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/free-shopping/custom_attributes" enctype="multipart/form-data">
+				<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+				<div class="row">
+					<div class="col-lg-12">
+						<div class="card">
+							<div class="card-header">
+								<h5>Judul</h5>
+							</div>
+							<div class="card-body">
+								<h6>Judul Sekarang</h6>
+								<span class="text-muted text-sm">{{ existing.CustomAttributes["subject"] }}</span>
+								<hr />
+								<div class="form-group">
+									<label for="subject">Judul Baru</label>
+									<input type="text"
+										name="subject"
+										value="{{ request.CustomAttributes["subject"] }}"
+										id="subject"
+										class="form-control mb-2"
+										placeholder="Kami Selalu Mencoba Memperluas Kapasitas Kami" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-12">
+						<div class="card">
+							<div class="card-header">
+								<h5>Content</h5>
+							</div>
+							<div class="card-body">
+								<div class="form-group">
+									<label for="body">Content</label>
+									<textarea
+										name="body"
+										id="body"
+										class="form-control mb-2"
+										placeholder="Content">{{ request.CustomAttributes["body"] }}</textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-12">
+						<div class="card">
+							<div class="card-header">
+								<h5>Content</h5>
+							</div>
+							<div class="card-body">
+								{{ if existing.CustomAttributes["photo"] }}
+								<h6>Gambar Sekarang</h6>
+								<img src="{{ baseURL }}/images/landing-page/free-shopping/{{ existing.CustomAttributes["photo"] }}" class="img-fluid" alt="Gambar Sekarang" />
+								<hr />
+								{{ end }}
+								<label for="photo">
+									<img src="{{ baseURL }}/assets/img/upload-icon.png"
+										alt="Foto User"
+										class="w-100 cp img-thumbnail"
+										data-toggle="tooltip"
+										data-placement="top"
+										title="Klik Gambar untuk Memilih Gambar"
+										id="photo_preview" />
+									<input type="file"
+										name="photo"
+										id="photo"
+										onchange="imgChanged(this)" />
+								</label>
+								<hr />
+								<button type="submit" class="btn btn-success" id="btnSubmitContent">
+									<span class="fa fa-save pr-2"></span>
+									Simpan
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+<script src="{{ baseURL }}/assets/plugins/summernote-0.8.18/summernote.min.js"></script>
+<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/summernote-0.8.18/summernote.min.css" />
+<script src="{{ baseURL }}/assets/plugins/summernote-0.8.18/summernote-bs4.min.js"></script>
+<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/summernote-0.8.18/summernote-bs4.min.css" />
+<script>
+	let baseURL = "{{ baseURL }}/admin/";
+	let uBGPreview = false;
+	let uBGData = false;
+
+	function imgChanged(thisContext) {
+		let el = $(thisContext);
+		let imgData = el.prop("files")[0];
+		let fileReader = new FileReader();
+		fileReader.readAsDataURL(imgData);
+		fileReader.onload = (e) => {
+			let imgResult = e.target.result;
+			uBGPreview = imgResult;
+			uBGData = imgData;
+			$("#photo_preview").attr("src", uBGPreview).addClass("img-thumbnail");
+		}
+	}
+	$("#body").summernote({
+		toolbar: _summernoteCustomToolbar
+	});
+	$("#formImg").on("submit", function(e) {
+		e.preventDefault();
+		let _formData = new FormData();
+		_formData.append("img", uBGData);
+		$.ajax({
+			url: "{{ baseURL }}/admin/UangBelanjaGratis/saveImage",
+			data: _formData,
+			type: "POST",
+			cache: false,
+			processData: false,
+			contentType: false,
+			success: function(_decodedRFS) {
+				let _statusSaveImage = _decodedRFS.statusSaveImage;
+				let _type = "error";
+				let _message = "Gagal menyimpan gambar! Silahkan coba lagi!";
+				if (_statusSaveImage) {
+					_type = "success";
+					_message = "Berhasil menyimpan gambar!";
+				}
+				Swal.fire({
+					title: "Uang Belanja Gratis",
+					html: _message,
+					type: _type
+				}).then(() => {
+					if (_statusSaveImage) {
+						location.reload();
+					}
+				});
+			}
+		});
+	});
+	$("#formContent").on("submit", function(e) {
+		e.preventDefault();
+		let _content = $("#content").val();
+		let _formData = `content=${_content}`;
+		$.ajax({
+			url: "{{ baseURL }}/admin/UangBelanjaGratis/saveContent",
+			data: _formData,
+			type: "POST",
+			success: function(_decodedRFS) {
+				let _statusSaveContent = _decodedRFS.statusSaveContent;
+				let _type = "error";
+				let _message = "Gagal menyimpan content! Silahkan coba lagi!";
+				if (_statusSaveContent) {
+					_type = "success";
+					_message = "Berhasil menyimpan content!";
+				}
+				Swal.fire({
+					title: "Uang Belanja Gratis",
+					html: _message,
+					type: _type
+				}).then(() => {
+					if (_statusSaveContent) {
+						location.reload();
+					}
+				});
+			}
+		});
+	});
+	$("#formJudul").on("submit", function(e) {
+		e.preventDefault();
+		let _formData = $(this).serialize();
+		$.ajax({
+			url: "{{ baseURL }}/admin/UangBelanjaGratis/saveJudul",
+			data: _formData,
+			type: "POST",
+			success: function(_decodedRFS) {
+				let _statusSaveJudul = _decodedRFS.statusSaveJudul;
+				let _type = "error";
+				let _message = "Gagal menyimpan judul! Silahkan coba lagi!";
+				if (_statusSaveJudul) {
+					_type = "success";
+					_message = "Berhasil menyimpan judul!";
+				}
+				Swal.fire({
+					title: "Uang Belanja Gratis",
+					html: _message,
+					type: _type
+				}).then(() => {
+					if (_statusSaveJudul) {
+						location.reload();
+					}
+				});
+			}
+		});
+	});
+</script>
