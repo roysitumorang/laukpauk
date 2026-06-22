@@ -21,49 +21,49 @@ import (
 )
 
 type (
-	landingPageBlockController struct {
+	landingPageController struct {
 		userService             services.UserService
 		landingPageBlockService services.LandingPageBlockService
 	}
 )
 
-func NewLandingPageBlockController(
+func NewLandingPageController(
 	userService services.UserService,
 	landingPageBlockService services.LandingPageBlockService,
-) *landingPageBlockController {
-	return new(landingPageBlockController{
+) *landingPageController {
+	return new(landingPageController{
 		userService:             userService,
 		landingPageBlockService: landingPageBlockService,
 	})
 }
 
-func (q *landingPageBlockController) Mount(r fiber.Router) {
+func (q *landingPageController) Mount(r fiber.Router) {
 	r.Get("", q.Index)
 	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
-	admin := r.Group("/admin", adminSessionAuth)
+	admin := r.Group("/admin/blocks", adminSessionAuth)
 	admin.Group("/hero").
 		Get("", q.AdminHeroItemIndex).
-		Get("/new", q.AdminHeroItemNew).
-		Post("", q.AdminHeroItemCreate).
-		Get("/:id/edit", q.AdminHeroItemEdit).
-		Post("/:id", q.AdminHeroItemUpdate).
-		Post("/:id/delete", q.AdminHeroItemDelete)
+		Get("/items/new", q.AdminHeroItemNew).
+		Post("/items", q.AdminHeroItemCreate).
+		Get("/items/:id/edit", q.AdminHeroItemEdit).
+		Post("/items/:id", q.AdminHeroItemUpdate).
+		Post("/items/:id/delete", q.AdminHeroItemDelete)
 	admin.Group("/feature").
 		Get("", q.AdminFeatureItemIndex).
 		Post("/custom_attributes", q.AdminFeatureUpdate).
-		Get("/new", q.AdminFeatureItemNew).
-		Post("", q.AdminFeatureItemCreate).
-		Get("/:id/edit", q.AdminFeatureItemEdit).
-		Post("/:id", q.AdminFeatureItemUpdate).
-		Post("/:id/delete", q.AdminFeatureItemDelete)
+		Get("/items/new", q.AdminFeatureItemNew).
+		Post("/items", q.AdminFeatureItemCreate).
+		Get("/items/:id/edit", q.AdminFeatureItemEdit).
+		Post("/items/:id", q.AdminFeatureItemUpdate).
+		Post("/items/:id/delete", q.AdminFeatureItemDelete)
 	admin.Group("/why").
 		Get("", q.AdminWhyItemIndex).
 		Post("/custom_attributes", q.AdminWhyUpdate).
-		Get("/new", q.AdminWhyItemNew).
-		Post("", q.AdminWhyItemCreate).
-		Get("/:id/edit", q.AdminWhyItemEdit).
-		Post("/:id", q.AdminWhyItemUpdate).
-		Post("/:id/delete", q.AdminWhyItemDelete)
+		Get("/items/new", q.AdminWhyItemNew).
+		Post("/items", q.AdminWhyItemCreate).
+		Get("/items/:id/edit", q.AdminWhyItemEdit).
+		Post("/items/:id", q.AdminWhyItemUpdate).
+		Post("/items/:id/delete", q.AdminWhyItemDelete)
 	admin.Group("/commitment").
 		Get("", q.AdminCommitmentIndex).
 		Post("/custom_attributes", q.AdminCommitmentUpdate)
@@ -75,55 +75,67 @@ func (q *landingPageBlockController) Mount(r fiber.Router) {
 		Post("/custom_attributes", q.AdminKitchenHeroUpdate)
 	admin.Group("/faq").
 		Get("", q.AdminFaqItemIndex).
-		Get("/new", q.AdminFaqItemNew).
-		Post("", q.AdminFaqItemCreate).
-		Get("/:id/edit", q.AdminFaqItemEdit).
-		Post("/:id", q.AdminFaqItemUpdate).
-		Post("/:id/delete", q.AdminFaqItemDelete)
+		Get("/items/new", q.AdminFaqItemNew).
+		Post("/items", q.AdminFaqItemCreate).
+		Get("/items/:id/edit", q.AdminFaqItemEdit).
+		Post("/items/:id", q.AdminFaqItemUpdate).
+		Post("/items/:id/delete", q.AdminFaqItemDelete)
 }
 
-func (q *landingPageBlockController) Index(c fiber.Ctx) (err error) {
+func (q *landingPageController) Index(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-Index"
+	ctxt := "LandingPageController-Index"
 	flash := helper.NewFlashMessage()
 	csrfToken := csrf.TokenFromContext(c)
-	var rows, heroSliders,
-		features []*models.LandingPageBlock
-
+	var hero,
+		feature,
+		why,
+		freeShopping,
+		commitment,
+		kitchenHero *models.LandingPageBlock
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"pageTitle", "Laukpauk | Belanja Sayur Online",
-		"heroSliders", heroSliders,
-		"features", features,
+		"hero", hero,
+		"feature", feature,
+		"why", why,
+		"freeShopping", freeShopping,
+		"commitment", commitment,
+		"kitchenHero", kitchenHero,
 	)
-	if rows, _, err = q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
 		c,
 		models.NewLandingPageBlockFilter().
 			WithRecordStatus(models.RecordStatusActive),
-	); err != nil {
+	)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
 		return c.Render("landing_page/index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "landing_page/_layout")
 	}
 	mapLandingPageBlocks := map[models.LandingPageBlockName]*models.LandingPageBlock{}
-	for _, row := range rows {
-		if row.ParentName == nil &&
-			row.Name != nil {
-			mapLandingPageBlocks[*row.Name] = row
-		}
+	for _, row := range landingPageBlocks {
+		mapLandingPageBlocks[row.Name] = row
 	}
-	for _, row := range rows {
-		if row.ParentName != nil {
-			parent, ok := mapLandingPageBlocks[*row.ParentName]
-			if ok {
-				parent.Items = append(parent.Items, row)
-				mapLandingPageBlocks[*row.ParentName] = parent
-			}
-		}
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
+		c,
+		models.NewLandingPageBlockItemFilter().
+			WithRecordStatus(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		return c.Render("landing_page/index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "landing_page/_layout")
+	}
+	for _, row := range landingPageBlockItems {
+		landingPageBlock := mapLandingPageBlocks[row.LandingPageBlockName]
+		landingPageBlock.Items = append(landingPageBlock.Items, row)
+		mapLandingPageBlocks[row.LandingPageBlockName] = landingPageBlock
 	}
 	return c.Render("landing_page/index", params.Push(
 		"hero", mapLandingPageBlocks[models.LandingPageBlockNameHero],
@@ -135,15 +147,15 @@ func (q *landingPageBlockController) Index(c fiber.Ctx) (err error) {
 	), "landing_page/_layout")
 }
 
-func (q *landingPageBlockController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminHeroItemIndex"
+	ctxt := "LandingPageController-AdminHeroItemIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlockFilter)
-	rows := []*models.LandingPageBlock{}
+	request := new(models.LandingPageBlockItemFilter)
+	rows := []*models.LandingPageBlockItem{}
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -157,19 +169,19 @@ func (q *landingPageBlockController) AdminHeroItemIndex(c fiber.Ctx) (err error)
 		"rows", rows,
 		"pagination", pagination,
 	)
-	if request, err = sanitizers.FindLandingPageBlocks(ctx, c); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+	if request, err = sanitizers.FindLandingPageBlockItems(ctx, c); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_hero_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	request = request.WithRecordStatus(models.RecordStatusActive).
-		WithParentNames(models.LandingPageBlockNameHero)
-	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlocks(
+		WithLandingPageBlockNames(models.LandingPageBlockNameHero)
+	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlockItems(
 		c,
 		request,
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_hero_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -181,14 +193,12 @@ func (q *landingPageBlockController) AdminHeroItemIndex(c fiber.Ctx) (err error)
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminHeroItemNew(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroItemNew(c fiber.Ctx) (err error) {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock{
-		Subject:  new(""),
-		Body:     new(""),
+	request := new(models.LandingPageBlockItem{
 		LinkText: new(""),
 		LinkURL:  new(""),
 	})
@@ -204,14 +214,14 @@ func (q *landingPageBlockController) AdminHeroItemNew(c fiber.Ctx) (err error) {
 	return c.Render("admin/landing_page_block_hero_new", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminHeroItemCreate"
+	ctxt := "LandingPageController-AdminHeroItemCreate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock)
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -221,9 +231,9 @@ func (q *landingPageBlockController) AdminHeroItemCreate(c fiber.Ctx) (err error
 		"pageTitle", "Add New Hero Slider",
 		"request", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameHero))
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameHero)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_hero_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -245,8 +255,8 @@ func (q *landingPageBlockController) AdminHeroItemCreate(c fiber.Ctx) (err error
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.CreateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlock")
+	if _, err = q.landingPageBlockService.CreateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_hero_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
@@ -269,36 +279,36 @@ func (q *landingPageBlockController) AdminHeroItemCreate(c fiber.Ctx) (err error
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("hero slider created successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+	return flash.Success("landing page block item created successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 }
 
-func (q *landingPageBlockController) AdminHeroItemEdit(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroItemEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminHeroItemEdit"
+	ctxt := "LandingPageController-AdminHeroItemEdit"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("hero slider not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameHero).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameHero).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("hero slider not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -307,39 +317,39 @@ func (q *landingPageBlockController) AdminHeroItemEdit(c fiber.Ctx) (err error) 
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Hero Slider",
 		"request", request,
-		"landingPageBlockID", request.ID,
+		"landingPageBlockItemID", request.ID,
 	)
 	return c.Render("admin/landing_page_block_hero_edit", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminHeroItemUpdate"
+	ctxt := "LandingPageController-AdminHeroItemUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("hero slider not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameHero).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameHero).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("hero slider not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("hero slider not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	landingPageBlock := landingPageBlocks[0]
-	request := new(models.LandingPageBlock)
+	landingPageBlockItem := landingPageBlockItems[0]
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -348,26 +358,26 @@ func (q *landingPageBlockController) AdminHeroItemUpdate(c fiber.Ctx) (err error
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Hero Slider",
 		"request", request,
-		"landingPageBlockID", landingPageBlock.ID,
+		"landingPageBlockItemID", landingPageBlockItem.ID,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameHero), landingPageBlock.ID)
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameHero, landingPageBlockItem.ID)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_hero_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	request.ID = landingPageBlock.ID
-	request.RecordStatus = landingPageBlock.RecordStatus
+	request.ID = landingPageBlockItem.ID
+	request.RecordStatus = landingPageBlockItem.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	if photo == nil {
-		request.Photo = landingPageBlock.Photo
+		request.Photo = landingPageBlockItem.Photo
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -377,8 +387,8 @@ func (q *landingPageBlockController) AdminHeroItemUpdate(c fiber.Ctx) (err error
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_hero_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
@@ -401,35 +411,35 @@ func (q *landingPageBlockController) AdminHeroItemUpdate(c fiber.Ctx) (err error
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("hero slider updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+	return flash.Success("landing page block item updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 }
 
-func (q *landingPageBlockController) AdminHeroItemDelete(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroItemDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminHeroItemDelete"
+	ctxt := "LandingPageController-AdminHeroItemDelete"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("hero slider not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameHero).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameHero).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("hero slider not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -437,20 +447,20 @@ func (q *landingPageBlockController) AdminHeroItemDelete(c fiber.Ctx) (err error
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 	}
-	return flash.Success("hero slider deleted successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/hero")
+	return flash.Success("landing page block item deleted successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/hero")
 }
 
-func (q *landingPageBlockController) saveFile(c fiber.Ctx, file *multipart.FileHeader, parentName models.LandingPageBlockName, filename *string) error {
+func (q *landingPageController) saveFile(c fiber.Ctx, file *multipart.FileHeader, parentName models.LandingPageBlockName, filename *string) error {
 	if file == nil ||
 		filename == nil {
 		return nil
@@ -466,16 +476,17 @@ func (q *landingPageBlockController) saveFile(c fiber.Ctx, file *multipart.FileH
 	return c.SaveFile(file, sb.String())
 }
 
-func (q *landingPageBlockController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFeatureItemIndex"
+	ctxt := "LandingPageController-AdminFeatureItemIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	paginationRequest := new(models.LandingPageBlockFilter)
-	rows := []*models.LandingPageBlock{}
+	paginationRequest := new(models.LandingPageBlockItemFilter)
+	rows := []*models.LandingPageBlockItem{}
 	request := new(models.LandingPageBlock)
+	existing := request
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -486,7 +497,9 @@ func (q *landingPageBlockController) AdminFeatureItemIndex(c fiber.Ctx) (err err
 		"pageTitle", "Fitur Laukpauk",
 		"limits", models.Limits,
 		"request", request,
+		"existing", existing,
 		"rows", rows,
+		"paginationRequest", paginationRequest,
 		"pagination", pagination,
 	)
 	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
@@ -507,20 +520,24 @@ func (q *landingPageBlockController) AdminFeatureItemIndex(c fiber.Ctx) (err err
 		), "admin/layouts/authenticated")
 	}
 	request = landingPageBlocks[0]
-	params.Push("request", request)
-	if paginationRequest, err = sanitizers.FindLandingPageBlocks(ctx, c); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+	existing = request
+	params.Push(
+		"request", request,
+		"existing", existing,
+	)
+	if paginationRequest, err = sanitizers.FindLandingPageBlockItems(ctx, c); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_feature_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	paginationRequest = paginationRequest.WithRecordStatus(models.RecordStatusActive).
-		WithParentNames(models.LandingPageBlockNameFeature)
-	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlocks(
+		WithLandingPageBlockNames(models.LandingPageBlockNameFeature)
+	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlockItems(
 		c,
 		paginationRequest,
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_feature_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -532,9 +549,9 @@ func (q *landingPageBlockController) AdminFeatureItemIndex(c fiber.Ctx) (err err
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminFeatureUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFeatureUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFeatureUpdate"
+	ctxt := "LandingPageController-AdminFeatureUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -546,16 +563,16 @@ func (q *landingPageBlockController) AdminFeatureUpdate(c fiber.Ctx) (err error)
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
 	if len(landingPageBlocks) == 0 {
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
 	landingPageBlock := landingPageBlocks[0]
 	request, _, err := sanitizers.ValidateLandingPageBlockCustomAttributes(ctx, c, models.LandingPageBlockNameFeature)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockCustomAttributes")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
 	landingPageBlock.CustomAttributes = request
 	landingPageBlock.UpdatedBy = currentAdmin.ID
@@ -566,28 +583,25 @@ func (q *landingPageBlockController) AdminFeatureUpdate(c fiber.Ctx) (err error)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
 	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, landingPageBlock); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	return flash.Success("feature subject updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 }
 
-func (q *landingPageBlockController) AdminFeatureItemNew(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFeatureItemNew(c fiber.Ctx) (err error) {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock{
-		Subject: new(""),
-		Body:    new(""),
-	})
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -600,14 +614,14 @@ func (q *landingPageBlockController) AdminFeatureItemNew(c fiber.Ctx) (err error
 	return c.Render("admin/landing_page_block_feature_new", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminFeatureItemCreate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFeatureItemCreate"
+	ctxt := "LandingPageController-AdminFeatureItemCreate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock)
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -617,9 +631,9 @@ func (q *landingPageBlockController) AdminFeatureItemCreate(c fiber.Ctx) (err er
 		"pageTitle", "Add New Fitur",
 		"request", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameFeature))
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameFeature)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_feature_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -641,8 +655,8 @@ func (q *landingPageBlockController) AdminFeatureItemCreate(c fiber.Ctx) (err er
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.CreateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlock")
+	if _, err = q.landingPageBlockService.CreateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_feature_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
@@ -665,36 +679,36 @@ func (q *landingPageBlockController) AdminFeatureItemCreate(c fiber.Ctx) (err er
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("feature created successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	return flash.Success("landing page block item created successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 }
 
-func (q *landingPageBlockController) AdminFeatureItemEdit(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFeatureItemEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFeatureItemEdit"
+	ctxt := "LandingPageController-AdminFeatureItemEdit"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameFeature).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameFeature).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -703,39 +717,39 @@ func (q *landingPageBlockController) AdminFeatureItemEdit(c fiber.Ctx) (err erro
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Fitur Laukpauk",
 		"request", request,
-		"landingPageBlockID", request.ID,
+		"landingPageBlockItemID", request.ID,
 	)
 	return c.Render("admin/landing_page_block_feature_edit", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFeatureItemUpdate"
+	ctxt := "LandingPageController-AdminFeatureItemUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameFeature).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameFeature).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	landingPageBlock := landingPageBlocks[0]
-	request := new(models.LandingPageBlock)
+	landingPageBlockItem := landingPageBlockItems[0]
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -744,26 +758,26 @@ func (q *landingPageBlockController) AdminFeatureItemUpdate(c fiber.Ctx) (err er
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Fitur Laukpauk",
 		"request", request,
-		"landingPageBlockID", landingPageBlock.ID,
+		"landingPageBlockItemID", landingPageBlockItem.ID,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameFeature), landingPageBlock.ID)
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameFeature, landingPageBlockItem.ID)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_feature_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	request.ID = landingPageBlock.ID
-	request.RecordStatus = landingPageBlock.RecordStatus
+	request.ID = landingPageBlockItem.ID
+	request.RecordStatus = landingPageBlockItem.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	if photo == nil {
-		request.Photo = landingPageBlock.Photo
+		request.Photo = landingPageBlockItem.Photo
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -773,8 +787,8 @@ func (q *landingPageBlockController) AdminFeatureItemUpdate(c fiber.Ctx) (err er
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_feature_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
@@ -797,35 +811,35 @@ func (q *landingPageBlockController) AdminFeatureItemUpdate(c fiber.Ctx) (err er
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("feature updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	return flash.Success("landing page block item updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 }
 
-func (q *landingPageBlockController) AdminFeatureItemDelete(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFeatureItemDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFeatureItemDelete"
+	ctxt := "LandingPageController-AdminFeatureItemDelete"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameFeature).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameFeature).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("feature not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -833,28 +847,28 @@ func (q *landingPageBlockController) AdminFeatureItemDelete(c fiber.Ctx) (err er
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 	}
-	return flash.Success("feature deleted successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/feature")
+	return flash.Success("landing page block item deleted successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/feature")
 }
 
-func (q *landingPageBlockController) AdminWhyItemIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminWhyItemIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminWhyItemIndex"
+	ctxt := "LandingPageController-AdminWhyItemIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	paginationRequest := new(models.LandingPageBlockFilter)
-	rows := []*models.LandingPageBlock{}
+	paginationRequest := new(models.LandingPageBlockItemFilter)
+	rows := []*models.LandingPageBlockItem{}
 	request := new(models.LandingPageBlock)
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
@@ -889,19 +903,19 @@ func (q *landingPageBlockController) AdminWhyItemIndex(c fiber.Ctx) (err error) 
 	}
 	request = landingPageBlocks[0]
 	params.Push("request", request)
-	if paginationRequest, err = sanitizers.FindLandingPageBlocks(ctx, c); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+	if paginationRequest, err = sanitizers.FindLandingPageBlockItems(ctx, c); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_why_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	paginationRequest = paginationRequest.WithRecordStatus(models.RecordStatusActive).
-		WithParentNames(models.LandingPageBlockNameWhy)
-	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlocks(
+		WithLandingPageBlockNames(models.LandingPageBlockNameWhy)
+	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlockItems(
 		c,
 		paginationRequest,
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_why_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -913,9 +927,9 @@ func (q *landingPageBlockController) AdminWhyItemIndex(c fiber.Ctx) (err error) 
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminWhyUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminWhyUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminWhyUpdate"
+	ctxt := "LandingPageController-AdminWhyUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -927,16 +941,16 @@ func (q *landingPageBlockController) AdminWhyUpdate(c fiber.Ctx) (err error) {
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
 	if len(landingPageBlocks) == 0 {
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
 	landingPageBlock := landingPageBlocks[0]
 	request, _, err := sanitizers.ValidateLandingPageBlockCustomAttributes(ctx, c, models.LandingPageBlockNameWhy)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockCustomAttributes")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
 	landingPageBlock.CustomAttributes = request
 	landingPageBlock.UpdatedBy = currentAdmin.ID
@@ -947,28 +961,25 @@ func (q *landingPageBlockController) AdminWhyUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
 	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, landingPageBlock); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	return flash.Success("why subject updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 }
 
-func (q *landingPageBlockController) AdminWhyItemNew(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminWhyItemNew(c fiber.Ctx) (err error) {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock{
-		Subject: new(""),
-		Body:    new(""),
-	})
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -981,14 +992,14 @@ func (q *landingPageBlockController) AdminWhyItemNew(c fiber.Ctx) (err error) {
 	return c.Render("admin/landing_page_block_why_new", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminWhyItemCreate"
+	ctxt := "LandingPageController-AdminWhyItemCreate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock)
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -998,9 +1009,9 @@ func (q *landingPageBlockController) AdminWhyItemCreate(c fiber.Ctx) (err error)
 		"pageTitle", "Penjelasan Baru",
 		"request", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameWhy))
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameWhy)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_why_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -1022,8 +1033,8 @@ func (q *landingPageBlockController) AdminWhyItemCreate(c fiber.Ctx) (err error)
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.CreateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlock")
+	if _, err = q.landingPageBlockService.CreateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_why_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
@@ -1046,36 +1057,36 @@ func (q *landingPageBlockController) AdminWhyItemCreate(c fiber.Ctx) (err error)
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("why created successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	return flash.Success("landing page block item created successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 }
 
-func (q *landingPageBlockController) AdminWhyItemEdit(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminWhyItemEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminWhyItemEdit"
+	ctxt := "LandingPageController-AdminWhyItemEdit"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameWhy).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameWhy).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -1084,39 +1095,39 @@ func (q *landingPageBlockController) AdminWhyItemEdit(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Penjelasan",
 		"request", request,
-		"landingPageBlockID", request.ID,
+		"landingPageBlockItemID", request.ID,
 	)
 	return c.Render("admin/landing_page_block_why_edit", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminWhyItemUpdate"
+	ctxt := "LandingPageController-AdminWhyItemUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameWhy).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameWhy).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	landingPageBlock := landingPageBlocks[0]
-	request := new(models.LandingPageBlock)
+	landingPageBlockItem := landingPageBlockItems[0]
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -1125,26 +1136,26 @@ func (q *landingPageBlockController) AdminWhyItemUpdate(c fiber.Ctx) (err error)
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Penjelasan",
 		"request", request,
-		"landingPageBlockID", landingPageBlock.ID,
+		"landingPageBlockItemID", landingPageBlockItem.ID,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameWhy), landingPageBlock.ID)
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameWhy, landingPageBlockItem.ID)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_why_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	request.ID = landingPageBlock.ID
-	request.RecordStatus = landingPageBlock.RecordStatus
+	request.ID = landingPageBlockItem.ID
+	request.RecordStatus = landingPageBlockItem.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	if photo == nil {
-		request.Photo = landingPageBlock.Photo
+		request.Photo = landingPageBlockItem.Photo
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -1154,8 +1165,8 @@ func (q *landingPageBlockController) AdminWhyItemUpdate(c fiber.Ctx) (err error)
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_why_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
@@ -1178,35 +1189,35 @@ func (q *landingPageBlockController) AdminWhyItemUpdate(c fiber.Ctx) (err error)
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("why updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	return flash.Success("landing page block item updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 }
 
-func (q *landingPageBlockController) AdminWhyItemDelete(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminWhyItemDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminWhyItemDelete"
+	ctxt := "LandingPageController-AdminWhyItemDelete"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameWhy).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameWhy).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("why not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -1214,22 +1225,22 @@ func (q *landingPageBlockController) AdminWhyItemDelete(c fiber.Ctx) (err error)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 	}
-	return flash.Success("why deleted successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/why")
+	return flash.Success("landing page block item deleted successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/why")
 }
 
-func (q *landingPageBlockController) AdminCommitmentIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminCommitmentIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminCommitmentIndex"
+	ctxt := "LandingPageController-AdminCommitmentIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -1271,9 +1282,9 @@ func (q *landingPageBlockController) AdminCommitmentIndex(c fiber.Ctx) (err erro
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminCommitmentUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminCommitmentUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminCommitmentUpdate"
+	ctxt := "LandingPageController-AdminCommitmentUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -1285,16 +1296,16 @@ func (q *landingPageBlockController) AdminCommitmentUpdate(c fiber.Ctx) (err err
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/commitment")
 	}
 	if len(landingPageBlocks) == 0 {
-		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/commitment")
 	}
 	landingPageBlock := landingPageBlocks[0]
 	request, _, err := sanitizers.ValidateLandingPageBlockCustomAttributes(ctx, c, models.LandingPageBlockNameCommitment)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockCustomAttributes")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/commitment")
 	}
 	landingPageBlock.CustomAttributes = request
 	landingPageBlock.UpdatedBy = currentAdmin.ID
@@ -1305,22 +1316,22 @@ func (q *landingPageBlockController) AdminCommitmentUpdate(c fiber.Ctx) (err err
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/commitment")
 	}
 	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, landingPageBlock); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/commitment")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/commitment")
 	}
-	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/commitment")
+	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/commitment")
 }
 
-func (q *landingPageBlockController) AdminFreeShoppingIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFreeShoppingIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFreeShoppingIndex"
+	ctxt := "LandingPageController-AdminFreeShoppingIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -1362,9 +1373,9 @@ func (q *landingPageBlockController) AdminFreeShoppingIndex(c fiber.Ctx) (err er
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFreeShoppingUpdate"
+	ctxt := "LandingPageController-AdminFreeShoppingUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -1376,16 +1387,16 @@ func (q *landingPageBlockController) AdminFreeShoppingUpdate(c fiber.Ctx) (err e
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 	}
 	if len(landingPageBlocks) == 0 {
-		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 	}
 	landingPageBlock := landingPageBlocks[0]
 	request, photo, err := sanitizers.ValidateLandingPageBlockCustomAttributes(ctx, c, models.LandingPageBlockNameFreeShopping)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockCustomAttributes")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 	}
 	if photo == nil {
 		request["photo"] = landingPageBlock.CustomAttributes["photo"]
@@ -1399,29 +1410,29 @@ func (q *landingPageBlockController) AdminFreeShoppingUpdate(c fiber.Ctx) (err e
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 	}
 	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, landingPageBlock); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 	}
 	if err = q.saveFile(c, photo, models.LandingPageBlockNameFreeShopping, new(request["photo"])); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
 			helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
 		}
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 	}
-	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/free-shopping")
+	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/free-shopping")
 }
 
-func (q *landingPageBlockController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminKitchenHeroIndex"
+	ctxt := "LandingPageController-AdminKitchenHeroIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -1463,9 +1474,9 @@ func (q *landingPageBlockController) AdminKitchenHeroIndex(c fiber.Ctx) (err err
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminKitchenHeroUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminKitchenHeroUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminKitchenHeroUpdate"
+	ctxt := "LandingPageController-AdminKitchenHeroUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
@@ -1477,16 +1488,16 @@ func (q *landingPageBlockController) AdminKitchenHeroUpdate(c fiber.Ctx) (err er
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 	}
 	if len(landingPageBlocks) == 0 {
-		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+		return flash.Danger("landing page block not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 	}
 	landingPageBlock := landingPageBlocks[0]
 	request, photo, err := sanitizers.ValidateLandingPageBlockCustomAttributes(ctx, c, models.LandingPageBlockNameKitchenHero)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockCustomAttributes")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 	}
 	if photo == nil {
 		request["photo"] = landingPageBlock.CustomAttributes["photo"]
@@ -1500,35 +1511,35 @@ func (q *landingPageBlockController) AdminKitchenHeroUpdate(c fiber.Ctx) (err er
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 	}
 	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, landingPageBlock); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 	}
 	if err = q.saveFile(c, photo, models.LandingPageBlockNameKitchenHero, new(request["photo"])); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
 			helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
 		}
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 	}
-	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/kitchen-hero")
+	return flash.Success("landing page block updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/kitchen-hero")
 }
 
-func (q *landingPageBlockController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFaqItemIndex"
+	ctxt := "LandingPageController-AdminFaqItemIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	paginationRequest := new(models.LandingPageBlockFilter)
-	rows := []*models.LandingPageBlock{}
+	paginationRequest := new(models.LandingPageBlockItemFilter)
+	rows := []*models.LandingPageBlockItem{}
 	request := new(models.LandingPageBlock)
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
@@ -1563,19 +1574,19 @@ func (q *landingPageBlockController) AdminFaqItemIndex(c fiber.Ctx) (err error) 
 	}
 	request = landingPageBlocks[0]
 	params.Push("request", request)
-	if paginationRequest, err = sanitizers.FindLandingPageBlocks(ctx, c); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+	if paginationRequest, err = sanitizers.FindLandingPageBlockItems(ctx, c); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_faq_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	paginationRequest = paginationRequest.WithRecordStatus(models.RecordStatusActive).
-		WithParentNames(models.LandingPageBlockNameFAQ)
-	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlocks(
+		WithLandingPageBlockNames(models.LandingPageBlockNameFAQ)
+	if rows, pagination, err = q.landingPageBlockService.FindLandingPageBlockItems(
 		c,
 		paginationRequest,
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
 		return c.Render("admin/landing_page_block_faq_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -1587,15 +1598,12 @@ func (q *landingPageBlockController) AdminFaqItemIndex(c fiber.Ctx) (err error) 
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminFaqItemNew(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFaqItemNew(c fiber.Ctx) (err error) {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock{
-		Subject: new(""),
-		Body:    new(""),
-	})
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -1608,14 +1616,14 @@ func (q *landingPageBlockController) AdminFaqItemNew(c fiber.Ctx) (err error) {
 	return c.Render("admin/landing_page_block_faq_new", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminWhyItemCreate"
+	ctxt := "LandingPageController-AdminWhyItemCreate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.LandingPageBlock)
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -1625,9 +1633,9 @@ func (q *landingPageBlockController) AdminFaqItemCreate(c fiber.Ctx) (err error)
 		"pageTitle", "Data Bantuan Baru",
 		"request", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameFAQ))
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameFAQ)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_faq_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -1649,8 +1657,8 @@ func (q *landingPageBlockController) AdminFaqItemCreate(c fiber.Ctx) (err error)
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.CreateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlock")
+	if _, err = q.landingPageBlockService.CreateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_faq_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
@@ -1673,36 +1681,36 @@ func (q *landingPageBlockController) AdminFaqItemCreate(c fiber.Ctx) (err error)
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("landing page block item created successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+	return flash.Success("landing page block item created successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 }
 
-func (q *landingPageBlockController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFaqItemEdit"
+	ctxt := "LandingPageController-AdminFaqItemEdit"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameFAQ).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameFAQ).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -1711,39 +1719,39 @@ func (q *landingPageBlockController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Data Bantuan",
 		"request", request,
-		"landingPageBlockID", request.ID,
+		"landingPageBlockItemID", request.ID,
 	)
 	return c.Render("admin/landing_page_block_faq_edit", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageBlockController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFaqItemUpdate"
+	ctxt := "LandingPageController-AdminFaqItemUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameFAQ).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameFAQ).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	landingPageBlock := landingPageBlocks[0]
-	request := new(models.LandingPageBlock)
+	landingPageBlockItem := landingPageBlockItems[0]
+	request := new(models.LandingPageBlockItem)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -1752,26 +1760,26 @@ func (q *landingPageBlockController) AdminFaqItemUpdate(c fiber.Ctx) (err error)
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Data Bantuan",
 		"request", request,
-		"landingPageBlockID", landingPageBlock.ID,
+		"landingPageBlockItemID", landingPageBlockItem.ID,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlock(ctx, c, new(models.LandingPageBlockNameFAQ), landingPageBlock.ID)
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageBlockItem(ctx, c, models.LandingPageBlockNameFAQ, landingPageBlockItem.ID)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlock")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageBlockItem")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/landing_page_block_faq_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	request.ID = landingPageBlock.ID
-	request.RecordStatus = landingPageBlock.RecordStatus
+	request.ID = landingPageBlockItem.ID
+	request.RecordStatus = landingPageBlockItem.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	if photo == nil {
-		request.Photo = landingPageBlock.Photo
+		request.Photo = landingPageBlockItem.Photo
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -1781,8 +1789,8 @@ func (q *landingPageBlockController) AdminFaqItemUpdate(c fiber.Ctx) (err error)
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
 		return c.Render("admin/landing_page_block_faq_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
@@ -1805,35 +1813,35 @@ func (q *landingPageBlockController) AdminFaqItemUpdate(c fiber.Ctx) (err error)
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("landing page block item updated successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+	return flash.Success("landing page block item updated successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 }
 
-func (q *landingPageBlockController) AdminFaqItemDelete(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminFaqItemDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageBlockController-AdminFaqItemDelete"
+	ctxt := "LandingPageController-AdminFaqItemDelete"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	landingPageBlockID, err := uuid.Parse(c.Params("id"))
+	landingPageBlockItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	landingPageBlocks, _, err := q.landingPageBlockService.FindLandingPageBlocks(
+	landingPageBlockItems, _, err := q.landingPageBlockService.FindLandingPageBlockItems(
 		ctx,
-		models.NewLandingPageBlockFilter().
+		models.NewLandingPageBlockItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithParentNames(models.LandingPageBlockNameFAQ).
-			WithLandingPageBlockIDs(landingPageBlockID),
+			WithLandingPageBlockNames(models.LandingPageBlockNameFAQ).
+			WithLandingPageBlockItemIDs(landingPageBlockItemID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlocks")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageBlockItems")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	if len(landingPageBlocks) == 0 {
-		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+	if len(landingPageBlockItems) == 0 {
+		return flash.Danger("landing page block item not found").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	request := landingPageBlocks[0]
+	request := landingPageBlockItems[0]
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -1841,15 +1849,15 @@ func (q *landingPageBlockController) AdminFaqItemDelete(c fiber.Ctx) (err error)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	if _, err = q.landingPageBlockService.UpdateLandingPageBlock(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlock")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+	if _, err = q.landingPageBlockService.UpdateLandingPageBlockItem(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageBlockItem")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 	}
-	return flash.Success("landing page block item deleted successfully").Redirect(c, sess.Session, "/admin/landing_page_blocks/faq")
+	return flash.Success("landing page block item deleted successfully").Redirect(c, sess.Session, "/admin/landing_page/blocks/faq")
 }

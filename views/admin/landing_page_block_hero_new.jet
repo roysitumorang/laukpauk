@@ -44,7 +44,7 @@
 					<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 				</div>
 				{{ end }}
-				<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/hero" enctype="multipart/form-data">
+				<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/hero/items" enctype="multipart/form-data">
 					{{ include "_landing_page_block_hero_form" }}
 				</form>
 			</div>

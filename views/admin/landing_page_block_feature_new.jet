@@ -37,7 +37,7 @@
 									<h5>Fitur Baru Laukpauk</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/landing_page_blocks/feature">
+									<a href="{{ baseURL }}/admin/landing_page/blocks/feature">
 										<button class="btn btn-link btn-sm">List Fitur Laukpauk</button>
 									</a>
 								</div>
@@ -49,7 +49,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/feature" enctype="multipart/form-data">
+							<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/feature/items" enctype="multipart/form-data">
 								{{ include "_landing_page_block_feature_form" }}
 							</form>
 						</div>

@@ -1763,14 +1763,8 @@ func init() {
 			`CREATE TABLE landing_page_blocks (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, parent_name character varying REFERENCES landing_page_blocks (name)
-				, name character varying UNIQUE
-				, subject character varying
-				, body character varying
-				, link_text character varying
-				, link_url character varying
-				, photo character varying
-				, custom_attributes JSONB
+				, name character varying NOT NULL UNIQUE
+				, custom_attributes JSONB NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -1792,27 +1786,6 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_blocks (parent_name);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON landing_page_blocks (LOWER(subject));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON landing_page_blocks (LOWER(body));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
 			`CREATE INDEX ON landing_page_blocks (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1828,6 +1801,79 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON landing_page_blocks (deleted_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// landing_page_block_items
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE landing_page_block_items (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
+				, landing_page_block_name character varying NOT NULL REFERENCES landing_page_blocks (name)
+				, subject character varying NOT NULL
+				, body character varying NOT NULL
+				, link_text character varying
+				, link_url character varying
+				, photo character varying
+				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_at timestamp with time zone NOT NULL
+				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_at timestamp with time zone NOT NULL
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON landing_page_block_items (record_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON landing_page_block_items (landing_page_block_name);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON landing_page_block_items (LOWER(subject));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON landing_page_block_items (LOWER(body));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON landing_page_block_items (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON landing_page_block_items (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON landing_page_block_items (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

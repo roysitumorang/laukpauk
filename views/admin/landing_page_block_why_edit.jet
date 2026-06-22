@@ -37,7 +37,7 @@
 									<h5>Edit Penjelasan</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/landing_page_blocks/why">
+									<a href="{{ baseURL }}/admin/landing_page/blocks/why">
 										<button class="btn btn-link btn-sm">List Penjelasan</button>
 									</a>
 								</div>
@@ -49,7 +49,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/why/{{ landingPageBlockID }}" enctype="multipart/form-data">
+							<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/why/items/{{ landingPageBlockItemID }}" enctype="multipart/form-data">
 								{{ include "_landing_page_block_why_form" }}
 							</form>
 						</div>

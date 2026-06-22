@@ -28,7 +28,7 @@
 	<!-- Main content -->
 	<div class="content">
 		<div class="container-fluid">
-			<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/why/custom_attributes" id="formButtonTextWhy">
+			<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/why/custom_attributes" id="formButtonTextWhy">
 				<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 				<div class="row">
 					<div class="col-lg-12">
@@ -85,7 +85,7 @@
 									<h5>Daftar Penjelasan</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/landing_page_blocks/why/new" class="btn btn-link btn-sm">
+									<a href="{{ baseURL }}/admin/landing_page/blocks/why/items/new" class="btn btn-link btn-sm">
 										Penjelasan Baru
 									</a>
 								</div>
@@ -97,7 +97,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="GET" action="/admin/landing_page_blocks/why">
+							<form method="GET" action="/admin/landing_page/blocks/why">
 								<div class="row">
 									<div class="col-sm-12 col-md-6">
 										<div class="dataTables_length" id="listBlog_length">
@@ -164,10 +164,10 @@
 										</td>
 										<td>
 											<div class="text-center">
-												<a href="{{ baseURL }}/admin/landing_page_blocks/{{ row.ParentName }}/{{ row.ID }}/edit">
+												<a href="{{ baseURL }}/admin/landing_page/blocks/{{ row.LandingPageBlockName }}/items/{{ row.ID }}/edit">
 													<span class="fa fa-edit text-warning cp" data-toggle="tooltip" data-placement="top" title="Edit"></span>
 												</a>
-												<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/{{ row.ParentName }}/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+												<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/{{ row.LandingPageBlockName }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 													<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 														<span class="fa fa-trash text-danger cp ml-2"
 														data-toggle="tooltip"

@@ -33,7 +33,7 @@
 				<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 			</div>
 			{{ end }}
-			<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/kitchen-hero/custom_attributes" enctype="multipart/form-data">
+			<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/kitchen-hero/custom_attributes" enctype="multipart/form-data">
 				<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 				<div class="row">
 					<div class="col-lg-12">

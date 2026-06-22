@@ -37,7 +37,7 @@
 									<h5>Edit Data Bantuan</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/landing_page_blocks/faq">
+									<a href="{{ baseURL }}/admin/landing_page/blocks/faq">
 										<button class="btn btn-link btn-sm">List Data Bantuan</button>
 									</a>
 								</div>
@@ -49,7 +49,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/landing_page_blocks/faq/{{ landingPageBlockID }}" enctype="multipart/form-data">
+							<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/faq/items/{{ landingPageBlockItemID }}" enctype="multipart/form-data">
 								{{ include "_landing_page_block_faq_form" }}
 							</form>
 						</div>
@@ -64,7 +64,7 @@
 <!-- /.content-wrapper -->
 <script>
 	let baseURL = '{{ baseURL }}/admin/';
-	let idElement = '/{{ landingPageBlockID }}';
+	let idElement = '/{{ landingPageBlockItemID }}';
 	$('#content').summernote({
 		toolbar: _summernoteCustomToolbar
 	});
