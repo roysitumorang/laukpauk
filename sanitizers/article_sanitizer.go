@@ -20,7 +20,7 @@ import (
 func FindArticles(ctx context.Context, c fiber.Ctx) (*models.ArticleFilter, error) {
 	ctxt := "ArticleSanitizer-FindArticles"
 	response := models.NewArticleFilter()
-	originalURL, err := url.ParseRequestURI(helper.ByteSlice2String(c.Request().URI().FullURI()))
+	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
 		return nil, err

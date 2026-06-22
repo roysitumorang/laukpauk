@@ -21,7 +21,7 @@ import (
 func FindLandingPageBlockItems(ctx context.Context, c fiber.Ctx) (*models.LandingPageBlockItemFilter, error) {
 	ctxt := "LandingPageBlockSanitizer-FindLandingPageBlockItems"
 	response := models.NewLandingPageBlockItemFilter()
-	originalURL, err := url.ParseRequestURI(helper.ByteSlice2String(c.Request().URI().FullURI()))
+	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
 		return nil, err
