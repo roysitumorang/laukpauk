@@ -17,7 +17,7 @@ var (
 	logger     *slog.Logger
 	InitLogger = sync.OnceFunc(func() {
 		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			AddSource: true,
+			AddSource: false,
 		}))
 	})
 )
