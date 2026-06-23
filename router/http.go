@@ -53,6 +53,10 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	// Create a new engine
 	engine := jet.New("./views", ".jet")
 	engine.Debug(debug)
+	if debug {
+		engine.ShouldReload = true
+		engine.Verbose = true
+	}
 	engine.AddFunc("Comma", func(v int64) string {
 		return humanize.Comma(v)
 	})
