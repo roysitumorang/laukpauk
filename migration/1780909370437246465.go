@@ -123,6 +123,7 @@ func init() {
 			ctx,
 			`CREATE TABLE bazaars (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, name character varying NOT NULL
 				, address character varying NOT NULL
 				, photo character varying NOT NULL
@@ -132,9 +133,9 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -142,7 +143,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON bazaars (record_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON bazaars USING GiST(coordinates);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON bazaars (bazaar_type);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -163,7 +178,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON bazaars (deactivated_by);`,
+			`CREATE INDEX ON bazaars (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -176,7 +191,7 @@ func init() {
 				, address character varying NOT NULL
 				, banner character varying NOT NULL
 				, bio character varying NOT NULL
-				, bazaar_id UUID NOT NULL REFERENCES bazaars (id)
+				, bazaar_id UUID REFERENCES bazaars (id)
 				, open_on_sunday BOOLEAN NOT NULL DEFAULT FALSE
 				, open_on_monday BOOLEAN NOT NULL DEFAULT FALSE
 				, open_on_tuesday BOOLEAN NOT NULL DEFAULT FALSE
@@ -215,16 +230,24 @@ func init() {
 			ctx,
 			`CREATE TABLE product_categories (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, name character varying NOT NULL
 				, photo character varying NOT NULL
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON product_categories (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -252,7 +275,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON product_categories (deactivated_by);`,
+			`CREATE INDEX ON product_categories (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -264,7 +287,7 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, product_category_id UUID NOT NULL REFERENCES product_categories (id)
 				, minimum_transaction bigint NOT NULL
-				, discount bigint NOT NULL
+				, amount bigint NOT NULL
 				, effective_date_start timestamp with time zone NOT NULL
 				, effective_date_end timestamp with time zone NOT NULL
 				, description character varying NOT NULL
@@ -313,8 +336,10 @@ func init() {
 			ctx,
 			`CREATE TABLE products (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, seller_id UUID NOT NULL REFERENCES users (id)
-				, product_category_id UUID NOT NULL REFERENCES product_categories (id)
+				, product_category_id UUID REFERENCES product_categories (id)
+				, product_type character varying NOT NULL
 				, name character varying NOT NULL
 				, photo character varying NOT NULL
 				, short_description character varying NOT NULL
@@ -325,10 +350,17 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON products (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -343,6 +375,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON products (product_category_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON products (product_type);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -384,7 +423,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON products (deactivated_by);`,
+			`CREATE INDEX ON products (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -394,19 +433,21 @@ func init() {
 			ctx,
 			`CREATE TABLE product_variants (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, product_id UUID NOT NULL REFERENCES products (id)
+				, record_status integer NOT NULL
+				, product_id UUID REFERENCES products (id)
 				, unit_of_measurement character varying NOT NULL
 				, price bigint NOT NULL
 				, discount bigint NOT NULL
 				, price_type character varying NOT NULL
 				, price_variant_percentage NUMERIC(10, 2) NOT NULL
+				, description character varying NOT NULL
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 				, UNIQUE (unit_of_measurement, product_id)
 			);`,
 		); err != nil {
@@ -415,7 +456,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON product_variants (record_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON product_variants (product_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON product_variants (LOWER(unit_of_measurement));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -436,7 +491,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON product_variants (deactivated_by);`,
+			`CREATE INDEX ON product_variants (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -730,6 +785,7 @@ func init() {
 			ctx,
 			`CREATE TABLE vouchers (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, code character varying NOT NULL
 				, photo character varying NOT NULL
 				, name character varying NOT NULL
@@ -745,10 +801,38 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers (record_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers (LOWER(code));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers (LOWER(description));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -769,7 +853,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON vouchers (deactivated_by);`,
+			`CREATE INDEX ON vouchers (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1101,6 +1185,7 @@ func init() {
 			ctx,
 			`CREATE TABLE shipping_plans (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, name character varying NOT NULL
 				, transaction_time_start TIME WITH TIME ZONE NOT NULL
 				, transaction_time_end TIME WITH TIME ZONE NOT NULL
@@ -1108,18 +1193,25 @@ func init() {
 				, shipping_time_start TIME WITH TIME ZONE NOT NULL
 				, shipping_time_end TIME WITH TIME ZONE NOT NULL
 				, shipping_time_description character varying NOT NULL
+				, period character varying NOT NULL
 				, daily_quota bigint NOT NULL
 				, ordinal_number bigint NOT NULL UNIQUE
 				, shipping_type character varying NOT NULL
-				, description character varying NOT NULL
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON shipping_plans (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1147,7 +1239,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON shipping_plans (deactivated_by);`,
+			`CREATE INDEX ON shipping_plans (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1311,6 +1403,7 @@ func init() {
 			ctx,
 			`CREATE TABLE payment_methods (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, channel_code character VARYING NOT NULL UNIQUE
 				, ordinal_number bigint NOT NULL UNIQUE
 				, business_id character varying NOT NULL
@@ -1321,10 +1414,17 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON payment_methods (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1345,7 +1445,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON payment_methods (deactivated_by);`,
+			`CREATE INDEX ON payment_methods (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1355,8 +1455,6 @@ func init() {
 			ctx,
 			`CREATE TABLE transactions (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, bazaar_id UUID NOT NULL REFERENCES bazaars (id)
-				, seller_id UUID NOT NULL REFERENCES users (id)
 				, buyer_id UUID NOT NULL REFERENCES users (id)
 				, transaction_no character varying NOT NULL UNIQUE
 				, down_payment bigint NOT NULL
@@ -1392,24 +1490,10 @@ func init() {
 				, unique_code bigint NOT NULL UNIQUE
 				, minimum_point bigint NOT NULL
 				, point_deduction bigint NOT NULL
-				, promo_id UUID REFERENCES promos (id)
-				, promo_discount bigint
+				, product_category_discount_amount bigint NOT NULL
+				, promo_discount bigint NOT NULL
 				, created_at timestamp with time zone NOT NULL
 			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transactions (bazaar_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transactions (seller_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1456,22 +1540,18 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transactions (promo_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		// transaction_items
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE transaction_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, transaction_id UUID NOT NULL REFERENCES transactions (id)
-				, product_variant_id UUID NOT NULL REFERENCES product_variants (id)
-				, product_id UUID NOT NULL REFERENCES products (id)
-				, promo_id UUID NOT NULL REFERENCES promos (id)
+				, transaction_id UUID REFERENCES transactions (id)
+				, bazaar_id UUID NOT NULL REFERENCES bazaars (id)
+				, seller_id UUID NOT NULL REFERENCES users (id)
+				, product_variant_id UUID REFERENCES product_variants (id)
+				, product_id UUID REFERENCES products (id)
+				, product_type character varying NOT NULL
+				, promo_id UUID REFERENCES promos (id)
 				, promo_discount bigint NOT NULL
 				, price bigint NOT NULL
 				, discount bigint NOT NULL
@@ -1489,6 +1569,20 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transaction_items (transaction_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transaction_items (bazaar_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transaction_items (seller_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
