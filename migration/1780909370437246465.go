@@ -2186,6 +2186,62 @@ func init() {
 			`CREATE INDEX ON invoices (seller_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// messages
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE messages (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, name character varying NOT NULL
+				, mobile_phone character varying NOT NULL
+				, body character varying NOT NULL
+				, created_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON messages (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON messages (mobile_phone);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// message_receipts
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE message_receipts (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, message_id UUID NOT NULL REFERENCES messages (id)
+				, user_id UUID NOT NULL REFERENCES users (id)
+				, read_at timestamp with time zone NOT NULL
+				, UNIQUE (message_id, user_id)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON message_receipts (message_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON message_receipts (user_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		}
 		return
 	}

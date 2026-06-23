@@ -31,6 +31,7 @@ type (
 		ArticleService          services.ArticleService
 		BlogService             services.BlogService
 		LandingPageBlockService services.LandingPageBlockService
+		MessageService          services.MessageService
 	}
 )
 
@@ -72,10 +73,12 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
 	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
 	landingPageBlockRepository := repositories.NewLandingPageBlockRepository(dbRead, dbWrite)
+	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
 	landingPageBlockService := services.NewLandingPageBlockService(landingPageBlockRepository)
+	messageService := services.NewMessageService(messageRepository)
 	return &Service{
 		DbWrite:                 dbWrite,
 		Migration:               migration,
@@ -85,6 +88,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		ArticleService:          articleService,
 		BlogService:             blogService,
 		LandingPageBlockService: landingPageBlockService,
+		MessageService:          messageService,
 	}, nil
 }
 

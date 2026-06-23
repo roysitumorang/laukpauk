@@ -25,6 +25,7 @@ type (
 		userService             services.UserService
 		landingPageBlockService services.LandingPageBlockService
 		blogService             services.BlogService
+		messageService          services.MessageService
 	}
 )
 
@@ -32,11 +33,13 @@ func NewLandingPageController(
 	userService services.UserService,
 	landingPageBlockService services.LandingPageBlockService,
 	blogService services.BlogService,
+	messageService services.MessageService,
 ) *landingPageController {
 	return new(landingPageController{
 		userService:             userService,
 		landingPageBlockService: landingPageBlockService,
 		blogService:             blogService,
+		messageService:          messageService,
 	})
 }
 
@@ -44,8 +47,8 @@ func (q *landingPageController) Mount(r fiber.Router) {
 	r.Get("", q.Index).
 		Get("/blogs", q.BlogIndex).
 		Get("/blogs/:id", q.BlogShow).
-		Get("/contact-us", q.FormContactUs).
-		Post("/contact-us", q.SaveContactUs).
+		Get("/contact-us", q.NewMessage).
+		Post("/contact-us", q.CreateMessage).
 		Get("/faq", q.FaqIndex).
 		Get("/privacy-policy", q.PrivacyPolicy)
 	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
@@ -244,10 +247,10 @@ func (q *landingPageController) BlogShow(c fiber.Ctx) (err error) {
 	), "landing_page/_layout")
 }
 
-func (q *landingPageController) FormContactUs(c fiber.Ctx) (err error) {
+func (q *landingPageController) NewMessage(c fiber.Ctx) (err error) {
 	flash := helper.NewFlashMessage()
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.ContactUs)
+	request := new(models.Message)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -256,15 +259,15 @@ func (q *landingPageController) FormContactUs(c fiber.Ctx) (err error) {
 		"pageTitle", "Hubungi Kami | Belanja Sayur Online",
 		"request", request,
 	)
-	return c.Render("landing_page/contact_us", params, "landing_page/_layout")
+	return c.Render("landing_page/message", params, "landing_page/_layout")
 }
 
-func (q *landingPageController) SaveContactUs(c fiber.Ctx) (err error) {
+func (q *landingPageController) CreateMessage(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageController-SaveContactUs"
+	ctxt := "LandingPageController-CreateMessage"
 	flash := helper.NewFlashMessage()
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.ContactUs)
+	request := new(models.Message)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -273,16 +276,39 @@ func (q *landingPageController) SaveContactUs(c fiber.Ctx) (err error) {
 		"pageTitle", "Hubungi Kami | Belanja Sayur Online",
 		"request", request,
 	)
-	request, statusCode, err := sanitizers.ValidateContactUs(ctx, c)
+	request, statusCode, err := sanitizers.ValidateMessage(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateContactUs")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateMessage")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("landing_page/contact_us", params.Push(
+		return c.Render("landing_page/message", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 		), "landing_page/_layout")
 	}
-	return c.Render("landing_page/contact_us", params.Push(
+	request.CreatedAt = time.Now()
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return c.Render("landing_page/message", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request,
+		), "landing_page/_layout")
+	}
+	if _, err = q.messageService.CreateMessage(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateMessage")
+		return c.Render("landing_page/message", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request,
+		), "landing_page/_layout")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return c.Render("landing_page/message", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request,
+		), "landing_page/_layout")
+	}
+	return c.Render("landing_page/message", params.Push(
 		"flash", flash.Success("your message submitted successfully, we will contact you shortly"),
 		"request", request,
 	), "landing_page/_layout")

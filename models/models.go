@@ -5,11 +5,6 @@ import (
 )
 
 type (
-	Message struct {
-		Action string `json:"action"`
-		ID     string `json:"id"`
-	}
-
 	Map map[string]any
 
 	RecordStatus int

@@ -84,6 +84,7 @@ func (q *blogService) CreateBlog(
 	}
 	return response, nil
 }
+
 func (q *blogService) UpdateBlog(
 	ctx context.Context,
 	tx pgx.Tx,
