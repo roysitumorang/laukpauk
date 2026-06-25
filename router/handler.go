@@ -23,15 +23,15 @@ import (
 
 type (
 	Service struct {
-		DbWrite                 *pgxpool.Pool
-		Migration               *migration.Migration
-		KafkaService            *kafka.KafkaService
-		Storage                 fiber.Storage
-		UserService             services.UserService
-		ArticleService          services.ArticleService
-		BlogService             services.BlogService
-		LandingPageBlockService services.LandingPageBlockService
-		MessageService          services.MessageService
+		DbWrite        *pgxpool.Pool
+		Migration      *migration.Migration
+		KafkaService   *kafka.KafkaService
+		Storage        fiber.Storage
+		UserService    services.UserService
+		ArticleService services.ArticleService
+		BlogService    services.BlogService
+		BlockService   services.BlockService
+		MessageService services.MessageService
 	}
 )
 
@@ -72,23 +72,23 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
 	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
-	landingPageBlockRepository := repositories.NewLandingPageBlockRepository(dbRead, dbWrite)
+	blockRepository := repositories.NewBlockRepository(dbRead, dbWrite)
 	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
-	landingPageBlockService := services.NewLandingPageBlockService(landingPageBlockRepository)
+	blockService := services.NewBlockService(blockRepository)
 	messageService := services.NewMessageService(messageRepository)
 	return &Service{
-		DbWrite:                 dbWrite,
-		Migration:               migration,
-		KafkaService:            kafkaService,
-		Storage:                 storage,
-		UserService:             userService,
-		ArticleService:          articleService,
-		BlogService:             blogService,
-		LandingPageBlockService: landingPageBlockService,
-		MessageService:          messageService,
+		DbWrite:        dbWrite,
+		Migration:      migration,
+		KafkaService:   kafkaService,
+		Storage:        storage,
+		UserService:    userService,
+		ArticleService: articleService,
+		BlogService:    blogService,
+		BlockService:   blockService,
+		MessageService: messageService,
 	}, nil
 }
 

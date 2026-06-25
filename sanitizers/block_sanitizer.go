@@ -18,9 +18,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindLandingPageBlockItems(ctx context.Context, c fiber.Ctx) (*models.LandingPageBlockItemFilter, error) {
-	ctxt := "LandingPageBlockSanitizer-FindLandingPageBlockItems"
-	response := models.NewLandingPageBlockItemFilter()
+func FindBlockItems(ctx context.Context, c fiber.Ctx) (*models.BlockItemFilter, error) {
+	ctxt := "BlockSanitizer-FindBlockItems"
+	response := models.NewBlockItemFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -48,27 +48,27 @@ func FindLandingPageBlockItems(ctx context.Context, c fiber.Ctx) (*models.Landin
 	return response, nil
 }
 
-func ValidateLandingPageBlockItem(
+func ValidateBlockItem(
 	ctx context.Context,
 	c fiber.Ctx,
-	landingPageBlockName models.LandingPageBlockName,
-	landingPageBlockItemIDs ...uuid.UUID,
+	blockName models.BlockName,
+	blockItemIDs ...uuid.UUID,
 ) (
-	*models.LandingPageBlockItem,
+	*models.BlockItem,
 	*multipart.FileHeader,
 	int,
 	error,
 ) {
-	ctxt := "LandingPageBlockSanitizer-ValidateLandingPageBlockItem"
-	var response models.LandingPageBlockItem
+	ctxt := "BlockSanitizer-ValidateBlockItem"
+	var response models.BlockItem
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, nil, fiberErr.Code, err
 	}
-	response.LandingPageBlockName = landingPageBlockName
-	if len(landingPageBlockItemIDs) > 0 {
-		response.ID = landingPageBlockItemIDs[0]
+	response.BlockName = blockName
+	if len(blockItemIDs) > 0 {
+		response.ID = blockItemIDs[0]
 	}
 	photo, err := c.FormFile("photo")
 	if err == nil {
@@ -85,7 +85,7 @@ func ValidateLandingPageBlockItem(
 		if _, ok := mimeTypes[mtype.String()]; !ok {
 			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
 		}
-		response.Photo = new(fmt.Sprintf(models.LandingPageBlockPhotoName, landingPageBlockName, helper.GenerateSnowflakeID(), mtype.Extension()))
+		response.Photo = new(fmt.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension()))
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
@@ -94,26 +94,26 @@ func ValidateLandingPageBlockItem(
 	return &response, photo, fiber.StatusOK, nil
 }
 
-func ValidateLandingPageBlockCustomAttributes(
+func ValidateBlockCustomAttributes(
 	ctx context.Context,
 	c fiber.Ctx,
-	name models.LandingPageBlockName,
+	blockName models.BlockName,
 ) (
 	response map[string]string,
 	photo *multipart.FileHeader,
 	err error,
 ) {
-	ctxt := "LandingPageBlockSanitizer-ValidateLandingPageBlockCustomAttributes"
+	ctxt := "BlockSanitizer-ValidateBlockCustomAttributes"
 	err = c.Bind().Body(&response)
 	if _, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, nil, err
 	}
-	switch name {
-	case models.LandingPageBlockNameFeature:
+	switch blockName {
+	case models.BlockNameFeature:
 		subject := strings.TrimSpace(response["subject"])
 		response = map[string]string{"subject": subject}
-	case models.LandingPageBlockNameWhy:
+	case models.BlockNameWhy:
 		subject := strings.TrimSpace(response["subject"])
 		linkText := strings.TrimSpace(response["link_text"])
 		linkURL := strings.TrimSpace(response["link_url"])
@@ -122,14 +122,14 @@ func ValidateLandingPageBlockCustomAttributes(
 			"link_text": linkText,
 			"link_url":  linkURL,
 		}
-	case models.LandingPageBlockNameCommitment:
+	case models.BlockNameCommitment:
 		subject := strings.TrimSpace(response["subject"])
 		body := strings.TrimSpace(response["body"])
 		response = map[string]string{
 			"subject": subject,
 			"body":    body,
 		}
-	case models.LandingPageBlockNameFreeShopping:
+	case models.BlockNameFreeShopping:
 		subject := strings.TrimSpace(response["subject"])
 		body := strings.TrimSpace(response["body"])
 		var photoFilename string
@@ -147,14 +147,14 @@ func ValidateLandingPageBlockCustomAttributes(
 			if _, ok := mimeTypes[mtype.String()]; !ok {
 				return response, nil, errors.New("photo: invalid JPG/PNG file")
 			}
-			photoFilename = fmt.Sprintf(models.LandingPageBlockPhotoName, name, helper.GenerateSnowflakeID(), mtype.Extension())
+			photoFilename = fmt.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension())
 		}
 		response = map[string]string{
 			"subject": subject,
 			"body":    body,
 			"photo":   photoFilename,
 		}
-	case models.LandingPageBlockNameKitchenHero:
+	case models.BlockNameKitchenHero:
 		body := strings.TrimSpace(response["body"])
 		var photoFilename string
 		if photo, err = c.FormFile("photo"); err == nil {
@@ -171,7 +171,7 @@ func ValidateLandingPageBlockCustomAttributes(
 			if _, ok := mimeTypes[mtype.String()]; !ok {
 				return response, nil, errors.New("photo: invalid JPG/PNG file")
 			}
-			photoFilename = fmt.Sprintf(models.LandingPageBlockPhotoName, name, helper.GenerateSnowflakeID(), mtype.Extension())
+			photoFilename = fmt.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension())
 		}
 		response = map[string]string{
 			"body":  body,

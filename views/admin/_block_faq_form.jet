@@ -19,7 +19,7 @@
 		</div>
 		<hr class="mb-4" />
 		<button type="submit" class="btn btn-success mr-1">Simpan Data Bantuan</button>
-		<a href="{{ baseURL }}/admin/landing_page/blocks/faq" class="btn btn-default ml-1">
+		<a href="{{ baseURL }}/admin/blocks/faq" class="btn btn-default ml-1">
 			Back to List Bantuan
 		</a>
 	</div>

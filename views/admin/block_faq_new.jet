@@ -37,7 +37,7 @@
 									<h5>Data Bantuan Baru</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/landing_page/blocks/faq">
+									<a href="{{ baseURL }}/admin/blocks/faq">
 										<button class="btn btn-link btn-sm">List Data Bantuan</button>
 									</a>
 								</div>
@@ -49,8 +49,8 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/faq/items" enctype="multipart/form-data">
-								{{ include "_landing_page_block_faq_form" }}
+							<form method="POST" action="{{ baseURL }}/admin/blocks/faq/items" enctype="multipart/form-data">
+								{{ include "_block_faq_form" }}
 							</form>
 						</div>
 					</div>

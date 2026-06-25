@@ -102,21 +102,21 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		compress.New(),
 		rewrite.New(rewrite.Config{
 			Rules: map[string]string{
-				"/admin/auth/*":                    "/auth/admin/$1",
-				"/admin":                           "/home/admin",
-				"/admin/articles":                  "/articles/admin",
-				"/admin/articles/*":                "/articles/admin/$1",
-				"/admin/blogs":                     "/blogs/admin",
-				"/admin/blogs/*":                   "/blogs/admin/$1",
-				"/admin/landing_page/blocks/*":     "/landing_page/admin/blocks/$1",
-				"/admin/landing_page/blocks/*/*":   "/landing_page/admin/blocks/$1/$2",
-				"/admin/landing_page/blocks/*/*/*": "/landing_page/admin/blocks/$1/$2/$3",
-				"/":                                "/landing_page",
-				"/blogs":                           "/landing_page/blogs",
-				"/read/*":                          "/landing_page/blogs/$1",
-				"/contact-us":                      "/landing_page/contact-us",
-				"/faq":                             "/landing_page/faq",
-				"/privacy-policy":                  "/landing_page/privacy-policy",
+				"/admin/auth/*":       "/auth/admin/$1",
+				"/admin":              "/home/admin",
+				"/admin/articles":     "/articles/admin",
+				"/admin/articles/*":   "/articles/admin/$1",
+				"/admin/blogs":        "/blogs/admin",
+				"/admin/blogs/*":      "/blogs/admin/$1",
+				"/admin/blocks/*":     "/blocks/admin/$1",
+				"/admin/blocks/*/*":   "/blocks/admin/$1/$2",
+				"/admin/blocks/*/*/*": "/blocks/admin/$1/$2/$3",
+				"/":                   "/blocks",
+				"/blogs":              "/blocks/blogs",
+				"/read/*":             "/blocks/blogs/$1",
+				"/contact-us":         "/blocks/contact-us",
+				"/faq":                "/blocks/faq",
+				"/privacy-policy":     "/blocks/privacy-policy",
 			},
 		}),
 		cors.New(),
@@ -190,7 +190,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewHomeController(q.UserService).Mount(app.Group("/home"))
 	controllers.NewArticleController(q.UserService, q.ArticleService).Mount(app.Group("/articles"))
 	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
-	controllers.NewLandingPageController(q.UserService, q.LandingPageBlockService, q.BlogService, q.MessageService).Mount(app.Group("/landing_page"))
+	controllers.NewBlockController(q.UserService, q.BlockService, q.BlogService, q.MessageService).Mount(app.Group("/blocks"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{

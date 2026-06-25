@@ -5,16 +5,16 @@
 		<div class="container-fluid">
 			<div class="row mb-2">
 				<div class="col-sm-6">
-					<h1 class="m-0 text-dark">Edit Fitur Laukpauk</h1>
+					<h1 class="m-0 text-dark">Blog</h1>
 				</div>
 				<!-- /.col -->
 				<div class="col-sm-6">
 					<ol class="breadcrumb float-sm-right">
 						<li class="breadcrumb-item">
-							<a href="#">Website</a>
+							<a href="#">Home</a>
 						</li>
 						<li class="breadcrumb-item active">
-							Fitur Laukpauk
+							Edit Data Hero Slider
 						</li>
 					</ol>
 				</div>
@@ -28,32 +28,24 @@
 	<!-- Main content -->
 	<div class="content">
 		<div class="container-fluid">
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="card">
-						<div class="card-header">
-							<div class="row">
-								<div class="col-lg-4">
-									<h5>Edit Fitur Laukpauk</h5>
-								</div>
-								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/landing_page/blocks/feature">
-										<button class="btn btn-link btn-sm">List Fitur Laukpauk</button>
-									</a>
-								</div>
-							</div>
+			<div class="card">
+				<div class="card-header">
+					<div class="row">
+						<div class="col-lg-4">
+							<h5>Edit Data Hero Slider</h5>
 						</div>
-						<div class="card-body">
-							{{ range type, message := flash.Data }}
-							<div class="alert alert-{{ type }}">
-								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
-							</div>
-							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/landing_page/blocks/feature/items/{{ landingPageBlockItemID }}" enctype="multipart/form-data">
-								{{ include "_landing_page_block_feature_form" }}
-							</form>
-						</div>
+						<div class="col-lg-8 text-right"></div>
 					</div>
+				</div>
+				<div class="card-body">
+					{{ range type, message := flash.Data }}
+					<div class="alert alert-{{ type }}">
+						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+					</div>
+					{{ end }}
+					<form method="POST" action="{{ baseURL }}/admin/blocks/hero/items/{{ blockItemID }}" enctype="multipart/form-data">
+						{{ include "_block_hero_form" }}
+					</form>
 				</div>
 			</div>
 		</div>
@@ -66,7 +58,7 @@
 	let baseURL = '{{ baseURL }}/admin/';
 	let imgPreview = false;
 	let imgData = false;
-	let idElement = '/73';
+	let idElement = '/80';
 
 	function imgChanged(thisContext) {
 		try {
@@ -84,38 +76,40 @@
 			console.log(e);
 		}
 	}
-	$('#formFiturLaukpauk').on('submit', function(e) {
+	$('#formheroSlider').on('submit', function(e) {
 		e.preventDefault();
 		let _formData = new FormData();
 		if (imgData !== false) {
 			_formData.append('img', imgData);
 		}
-		_formData.append('title', $('#title').val());
+		_formData.append('heading', $('#heading').val());
 		_formData.append('content', $('#content').val());
+		_formData.append('buttonText', $('#buttonText').val());
+		_formData.append('buttonLink', $('#buttonLink').val());
 		$.ajax({
-			url: `${baseURL}Fitur/saveFitur${idElement}`,
+			url: `${baseURL}Hero/saveHero${idElement}`,
 			type: 'POST',
 			data: _formData,
 			processData: false,
 			contentType: false,
 			cache: false,
 			success: function(_decodedRFS) {
-				let _statusSaveFitur = _decodedRFS.statusSaveFitur;
+				let _statusSaveHero = _decodedRFS.statusSaveHero;
 				let _swalType, _swalMessage;
-				if (_statusSaveFitur) {
-					_swalMessage = 'Berhasil menyimpan data fitur laukpauk!';
+				if (_statusSaveHero) {
+					_swalMessage = 'Berhasil menyimpan data hero slider!';
 					_swalType = 'success';
 				} else {
-					_swalMessage = 'Gagal menyimpan data fitur laukpauk!';
+					_swalMessage = 'Gagal menyimpan data hero slider!';
 					_swalType = 'error';
 				}
 				Swal.fire({
-					title: 'Fitur Laukpauk',
+					title: 'Hero Slider',
 					html: _swalMessage,
 					type: _swalType
 				}).then(() => {
-					if (_statusSaveFitur) {
-						location.href = `${baseURL}website/fitur`;
+					if (_statusSaveHero) {
+						location.href = `${baseURL}website/hero`;
 					}
 				});
 			}

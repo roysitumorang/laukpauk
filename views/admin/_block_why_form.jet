@@ -38,7 +38,7 @@
 		</div>
 		<hr class="mb-4" />
 		<button type="submit" class="btn btn-success mr-1">Simpan Data Penjelasan</button>
-		<a href="{{ baseURL }}/admin/landing_page/blocks/why" class="btn btn-default ml-1">
+		<a href="{{ baseURL }}/admin/blocks/why" class="btn btn-default ml-1">
 			Back to List Penjelasan
 		</a>
 	</div>

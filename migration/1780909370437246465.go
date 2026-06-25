@@ -1851,10 +1851,10 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// landing_page_blocks
+		// blocks
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE landing_page_blocks (
+			`CREATE TABLE blocks (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, name character varying NOT NULL UNIQUE
@@ -1873,39 +1873,39 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_blocks (record_status);`,
+			`CREATE INDEX ON blocks (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_blocks (created_by);`,
+			`CREATE INDEX ON blocks (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_blocks (updated_by);`,
+			`CREATE INDEX ON blocks (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_blocks (deleted_by);`,
+			`CREATE INDEX ON blocks (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// landing_page_block_items
+		// block_items
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE landing_page_block_items (
+			`CREATE TABLE block_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, landing_page_block_name character varying NOT NULL REFERENCES landing_page_blocks (name)
+				, block_name character varying NOT NULL REFERENCES blocks (name)
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
 				, link_text character varying
@@ -1925,49 +1925,49 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_block_items (record_status);`,
+			`CREATE INDEX ON block_items (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_block_items (landing_page_block_name);`,
+			`CREATE INDEX ON block_items (block_name);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_block_items (LOWER(subject));`,
+			`CREATE INDEX ON block_items (LOWER(subject));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_block_items (LOWER(body));`,
+			`CREATE INDEX ON block_items (LOWER(body));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_block_items (created_by);`,
+			`CREATE INDEX ON block_items (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_block_items (updated_by);`,
+			`CREATE INDEX ON block_items (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON landing_page_block_items (deleted_by);`,
+			`CREATE INDEX ON block_items (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

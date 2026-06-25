@@ -15,63 +15,63 @@ import (
 )
 
 type (
-	LandingPageBlockRepository interface {
-		FindLandingPageBlocks(
+	BlockRepository interface {
+		FindBlocks(
 			ctx context.Context,
-			request *models.LandingPageBlockFilter,
-		) ([]*models.LandingPageBlock, int64, int64, error)
-		UpdateLandingPageBlock(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.LandingPageBlock,
-		) (*models.LandingPageBlock, error)
-		FindLandingPageBlockItems(
-			ctx context.Context,
-			request *models.LandingPageBlockItemFilter,
-		) ([]*models.LandingPageBlockItem, int64, int64, error)
-		CreateLandingPageBlockItem(
+			request *models.BlockFilter,
+		) ([]*models.Block, int64, int64, error)
+		UpdateBlock(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.LandingPageBlockItem,
-		) (*models.LandingPageBlockItem, error)
-		UpdateLandingPageBlockItem(
+			request *models.Block,
+		) (*models.Block, error)
+		FindBlockItems(
+			ctx context.Context,
+			request *models.BlockItemFilter,
+		) ([]*models.BlockItem, int64, int64, error)
+		CreateBlockItem(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.LandingPageBlockItem,
-		) (*models.LandingPageBlockItem, error)
+			request *models.BlockItem,
+		) (*models.BlockItem, error)
+		UpdateBlockItem(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.BlockItem,
+		) (*models.BlockItem, error)
 	}
 
-	landingPageBlockRepository struct {
+	blockRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewLandingPageBlockRepository(
+func NewBlockRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) LandingPageBlockRepository {
-	return new(landingPageBlockRepository{
+) BlockRepository {
+	return new(blockRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	})
 }
 
-func (q *landingPageBlockRepository) FindLandingPageBlocks(
+func (q *blockRepository) FindBlocks(
 	ctx context.Context,
-	request *models.LandingPageBlockFilter,
-) ([]*models.LandingPageBlock, int64, int64, error) {
-	ctxt := "LandingPageBlockRepository-FindLandingPageBlocks"
+	request *models.BlockFilter,
+) ([]*models.Block, int64, int64, error) {
+	ctxt := "BlockRepository-FindBlocks"
 	var (
 		params []any
 		conds  []string
 		sb     strings.Builder
 	)
-	if len(request.LandingPageBlockIDs) > 0 {
+	if len(request.BlockIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
-		for i, landingPageBlockID := range request.LandingPageBlockIDs {
-			params = append(params, landingPageBlockID)
+		for i, blockID := range request.BlockIDs {
+			params = append(params, blockID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -124,7 +124,7 @@ func (q *landingPageBlockRepository) FindLandingPageBlocks(
 	sb.Reset()
 	_, _ = sb.WriteString(
 		`SELECT COUNT(1)
-        	FROM landing_page_blocks`,
+        	FROM blocks`,
 	)
 	if len(conds) > 0 {
 		_, _ = sb.WriteString(" WHERE")
@@ -197,41 +197,41 @@ func (q *landingPageBlockRepository) FindLandingPageBlocks(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.LandingPageBlock
+	var response []*models.Block
 	for rows.Next() {
-		var landingPageBlock models.LandingPageBlock
+		var block models.Block
 		if err = rows.Scan(
-			&landingPageBlock.RowNo,
-			&landingPageBlock.ID,
-			&landingPageBlock.RecordStatus,
-			&landingPageBlock.Name,
-			&landingPageBlock.CustomAttributes,
-			&landingPageBlock.CreatedBy,
-			&landingPageBlock.CreatedAt,
-			&landingPageBlock.UpdatedBy,
-			&landingPageBlock.UpdatedAt,
-			&landingPageBlock.DeletedBy,
-			&landingPageBlock.DeletedAt,
-			&landingPageBlock.DeletionReason,
+			&block.RowNo,
+			&block.ID,
+			&block.RecordStatus,
+			&block.Name,
+			&block.CustomAttributes,
+			&block.CreatedBy,
+			&block.CreatedAt,
+			&block.UpdatedBy,
+			&block.UpdatedAt,
+			&block.DeletedBy,
+			&block.DeletedAt,
+			&block.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
-		response = append(response, &landingPageBlock)
+		response = append(response, &block)
 	}
 	return response, total, pages, nil
 }
 
-func (q *landingPageBlockRepository) UpdateLandingPageBlock(
+func (q *blockRepository) UpdateBlock(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.LandingPageBlock,
-) (*models.LandingPageBlock, error) {
-	ctxt := "LandingPageBlockRepository-UpdateLandingPageBlock"
-	var response models.LandingPageBlock
+	request *models.Block,
+) (*models.Block, error) {
+	ctxt := "BlockRepository-UpdateBlock"
+	var response models.Block
 	if err := tx.QueryRow(
 		ctx,
-		`UPDATE landing_page_blocks SET
+		`UPDATE blocks SET
 			record_status = $1
 			, custom_attributes = $2
 			, updated_by = $3
@@ -281,21 +281,21 @@ func (q *landingPageBlockRepository) UpdateLandingPageBlock(
 	return new(response), nil
 }
 
-func (q *landingPageBlockRepository) FindLandingPageBlockItems(
+func (q *blockRepository) FindBlockItems(
 	ctx context.Context,
-	request *models.LandingPageBlockItemFilter,
-) ([]*models.LandingPageBlockItem, int64, int64, error) {
-	ctxt := "LandingPageBlockRepository-FindLandingPageBlockItems"
+	request *models.BlockItemFilter,
+) ([]*models.BlockItem, int64, int64, error) {
+	ctxt := "BlockRepository-FindBlockItems"
 	var (
 		params []any
 		conds  []string
 		sb     strings.Builder
 	)
-	if len(request.LandingPageBlockItemIDs) > 0 {
+	if len(request.BlockItemIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
-		for i, landingPageBlockItemID := range request.LandingPageBlockItemIDs {
-			params = append(params, landingPageBlockItemID)
+		for i, blockItemID := range request.BlockItemIDs {
+			params = append(params, blockItemID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -305,11 +305,11 @@ func (q *landingPageBlockRepository) FindLandingPageBlockItems(
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.LandingPageBlockNames) > 0 {
+	if len(request.BlockNames) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("landing_page_block_name IN (")
-		for i, landingPageBlockName := range request.LandingPageBlockNames {
-			params = append(params, landingPageBlockName)
+		_, _ = sb.WriteString("block_name IN (")
+		for i, blockName := range request.BlockNames {
+			params = append(params, blockName)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -351,7 +351,7 @@ func (q *landingPageBlockRepository) FindLandingPageBlockItems(
 	sb.Reset()
 	_, _ = sb.WriteString(
 		`SELECT COUNT(1)
-		FROM landing_page_block_items`,
+		FROM block_items`,
 	)
 	if len(conds) > 0 {
 		_, _ = sb.WriteString(" WHERE")
@@ -379,7 +379,7 @@ func (q *landingPageBlockRepository) FindLandingPageBlockItems(
 		`ROW_NUMBER() OVER (ORDER BY id DESC) AS row_no
 		, id
 		, record_status
-		, landing_page_block_name
+		, block_name
 		, subject
 		, body
 		, link_text
@@ -428,47 +428,47 @@ func (q *landingPageBlockRepository) FindLandingPageBlockItems(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.LandingPageBlockItem
+	var response []*models.BlockItem
 	for rows.Next() {
-		var landingPageBlockItem models.LandingPageBlockItem
+		var blockItem models.BlockItem
 		if err = rows.Scan(
-			&landingPageBlockItem.RowNo,
-			&landingPageBlockItem.ID,
-			&landingPageBlockItem.RecordStatus,
-			&landingPageBlockItem.LandingPageBlockName,
-			&landingPageBlockItem.Subject,
-			&landingPageBlockItem.Body,
-			&landingPageBlockItem.LinkText,
-			&landingPageBlockItem.LinkURL,
-			&landingPageBlockItem.Photo,
-			&landingPageBlockItem.CreatedBy,
-			&landingPageBlockItem.CreatedAt,
-			&landingPageBlockItem.UpdatedBy,
-			&landingPageBlockItem.UpdatedAt,
-			&landingPageBlockItem.DeletedBy,
-			&landingPageBlockItem.DeletedAt,
-			&landingPageBlockItem.DeletionReason,
+			&blockItem.RowNo,
+			&blockItem.ID,
+			&blockItem.RecordStatus,
+			&blockItem.BlockName,
+			&blockItem.Subject,
+			&blockItem.Body,
+			&blockItem.LinkText,
+			&blockItem.LinkURL,
+			&blockItem.Photo,
+			&blockItem.CreatedBy,
+			&blockItem.CreatedAt,
+			&blockItem.UpdatedBy,
+			&blockItem.UpdatedAt,
+			&blockItem.DeletedBy,
+			&blockItem.DeletedAt,
+			&blockItem.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
-		response = append(response, &landingPageBlockItem)
+		response = append(response, &blockItem)
 	}
 	return response, total, pages, nil
 }
 
-func (q *landingPageBlockRepository) CreateLandingPageBlockItem(
+func (q *blockRepository) CreateBlockItem(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.LandingPageBlockItem,
-) (*models.LandingPageBlockItem, error) {
-	ctxt := "LandingPageBlockRepository-CreateLandingPageBlockItem"
-	var response models.LandingPageBlockItem
+	request *models.BlockItem,
+) (*models.BlockItem, error) {
+	ctxt := "BlockRepository-CreateBlockItem"
+	var response models.BlockItem
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO landing_page_block_items (
+		`INSERT INTO block_items (
 			record_status
-			, landing_page_block_name
+			, block_name
 			, subject
 			, body
 			, link_text
@@ -481,7 +481,7 @@ func (q *landingPageBlockRepository) CreateLandingPageBlockItem(
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id
 			, record_status
-			, landing_page_block_name
+			, block_name
 			, subject
 			, body
 			, link_text
@@ -495,7 +495,7 @@ func (q *landingPageBlockRepository) CreateLandingPageBlockItem(
 			, deleted_at
 			, deletion_reason`,
 		request.RecordStatus,
-		request.LandingPageBlockName,
+		request.BlockName,
 		request.Subject,
 		request.Body,
 		request.LinkText,
@@ -508,7 +508,7 @@ func (q *landingPageBlockRepository) CreateLandingPageBlockItem(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.LandingPageBlockName,
+		&response.BlockName,
 		&response.Subject,
 		&response.Body,
 		&response.LinkText,
@@ -531,16 +531,16 @@ func (q *landingPageBlockRepository) CreateLandingPageBlockItem(
 	return new(response), nil
 }
 
-func (q *landingPageBlockRepository) UpdateLandingPageBlockItem(
+func (q *blockRepository) UpdateBlockItem(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.LandingPageBlockItem,
-) (*models.LandingPageBlockItem, error) {
-	ctxt := "LandingPageBlockRepository-UpdateLandingPageBlockItem"
-	var response models.LandingPageBlockItem
+	request *models.BlockItem,
+) (*models.BlockItem, error) {
+	ctxt := "BlockRepository-UpdateBlockItem"
+	var response models.BlockItem
 	if err := tx.QueryRow(
 		ctx,
-		`UPDATE landing_page_block_items SET
+		`UPDATE block_items SET
 			record_status = $1
 			, subject = $2
 			, body = $3
@@ -555,7 +555,7 @@ func (q *landingPageBlockRepository) UpdateLandingPageBlockItem(
 		WHERE id = $12
 		RETURNING id
 			, record_status
-			, landing_page_block_name
+			, block_name
 			, subject
 			, body
 			, link_text
@@ -583,7 +583,7 @@ func (q *landingPageBlockRepository) UpdateLandingPageBlockItem(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.LandingPageBlockName,
+		&response.BlockName,
 		&response.Subject,
 		&response.Body,
 		&response.LinkText,
