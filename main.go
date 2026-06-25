@@ -129,6 +129,11 @@ func main() {
 				Name:  "migration",
 				Usage: "new/run migration",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.Args().Len() == 0 ||
+						(cmd.Args().First() != "new" &&
+							cmd.Args().First() != "run") {
+						return errors.New("requires a parameter: new | run")
+					}
 					now := time.Now()
 					err := godotenv.Load(".env")
 					if err != nil {
@@ -159,8 +164,6 @@ func main() {
 							return err
 						}
 						activity = "running"
-					default:
-						return errors.New("requires an option: new | run")
 					}
 					duration := time.Since(now)
 					helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
