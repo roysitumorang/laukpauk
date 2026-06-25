@@ -1,0 +1,181 @@
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+	<!-- Content Header (Page header) -->
+	<div class="content-header">
+		<div class="container-fluid">
+			<div class="row mb-2">
+				<div class="col-sm-6">
+					<h1 class="m-0 text-dark">Pasar</h1>
+				</div>
+				<!-- /.col -->
+				<div class="col-sm-6">
+					<ol class="breadcrumb float-sm-right">
+						<li class="breadcrumb-item">
+							<a href="#">Home</a>
+						</li>
+						<li class="breadcrumb-item active">
+							Pasar Baru
+						</li>
+					</ol>
+				</div>
+				<!-- /.col -->
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content-header -->
+	<!-- Main content -->
+	<div class="content">
+		<div class="container-fluid">
+			<div class="card">
+				<div class="card-header">
+					<div class="row">
+						<div class="col-lg-4">
+							<h5>Pasar Baru</h5>
+						</div>
+						<div class="col-lg-8 text-right">
+						</div>
+					</div>
+				</div>
+				<div class="card-body">
+					{{ range type, message := flash.Data }}
+					<div class="alert alert-{{ type }}">
+						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+					</div>
+					{{ end }}
+					<form method="POST" action="{{ baseURL }}/admin/bazaars" enctype="multipart/form-data" id="formPasar">
+						{{ include "_article_form" }}
+					</form>
+				</div>
+			</div>
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+<script>
+	let baseURL = "{{ baseURL }}/admin/";
+	let pasarImgPreview = false;
+	let pasarImgData = false;
+	let selectedMetodePemilihan = "koordinatmanual";
+	let latitude = "";
+	let longitude = "";
+
+	function pasarImgChanged(thisContext) {
+		let el = $(thisContext);
+		let imgData = el.prop("files")[0];
+		let fileReader = new FileReader();
+		fileReader.readAsDataURL(imgData);
+		fileReader.onload = (e) => {
+			let imgResult = e.target.result;
+			pasarImgPreview = imgResult;
+			pasarImgData = imgData;
+			$("#pasarImgPreview").attr("src", pasarImgPreview).addClass("img-thumbnail");
+		}
+	}
+
+	$("#formPasar").on("submit", function(e) {
+		e.preventDefault();
+		let dataPasar = new FormData();
+		dataPasar.append("pasarImg", pasarImgData);
+		dataPasar.append("nama", $("#nama").val());
+		dataPasar.append("alamat", $("#alamat").val());
+		dataPasar.append("latitude", latitude);
+		dataPasar.append("longitude", longitude);
+
+		$.ajax({
+			url: `${baseURL}pasar/save`,
+			data: dataPasar,
+			type: "POST",
+			processData: false,
+			cache: false,
+			contentType: false,
+			success: function(responseFromServer) {
+				let rFS = JSON.parse(responseFromServer);
+				let action = "Menambah";
+				let swalText = `<span class="text-danger">Gagal ${action} pasar</span>`;
+				let swalType = "error";
+				if (rFS.statusSave) {
+					swalText = `<span class="text-success">Berhasil ${action} pasar</span>`;
+					swalType = "success";
+				}
+				Swal.fire({
+					title: "Penambahan Pasar Baru",
+					html: swalText,
+					type: swalType
+				}).then(() => {
+					if (rFS.statusSave) {
+						location.href = `{{ baseURL }}/admin/pasar`;
+					}
+				});
+			}
+		})
+	});
+
+	function metodePemilihanKoordinatChanged(thisContext) {
+		let el = $(thisContext);
+		selectedMetodePemilihan = el.val();
+		selectedMetodePemilihan = selectedMetodePemilihan.toLowerCase();
+		renderMetodePemilihanKoordinatHTML();
+	}
+
+	function renderMetodePemilihanKoordinatHTML() {
+		if (selectedMetodePemilihan === "koordinatmanual") {
+			let html = `<div class="input-group" id="koordinat">
+			<input type="text" class="form-control" placeholder="Latitude" id="latitude"
+				value=""
+				onKeyup="latitudeChanged(this)" onChange="latitudeChanged(this)" />
+			<input type="text" class="form-control" placeholder="Longitude" id="longitude"
+				value=""
+				onKeyup="longitudeChanged(this)" onChange="longitudeChanged(this)" />
+			</div>`;
+			$("#metodePemilihanKoordinatHTML").css("height", "auto");
+			$("#metodePemilihanKoordinatHTML").html(html);
+		} else {
+			$("#metodePemilihanKoordinatHTML").css("height", "500px");
+			function initMap() {
+				const myLatlng = { lat: -6.208774, lng: 106.842178 };
+				const map = new google.maps.Map(document.getElementById("metodePemilihanKoordinatHTML"), {
+					zoom: 4,
+					center: myLatlng,
+				});
+				// Create the initial InfoWindow.
+				let infoWindow = new google.maps.InfoWindow({
+					content: "Silahkan klik di dalam peta ini untuk menentukan lokasi pasar !",
+					position: myLatlng,
+				});
+				infoWindow.open(map);
+				// Configure the click listener.
+				map.addListener("click", (mapsMouseEvent) => {
+					// Close the current InfoWindow.
+					infoWindow.close();
+					// Create a new InfoWindow.
+					infoWindow = new google.maps.InfoWindow({
+						position: mapsMouseEvent.latLng,
+					});
+					let latAndLong = mapsMouseEvent.latLng.toJSON();
+					latitude = latAndLong.lat;
+					longitude = latAndLong.lng;
+					infoWindow.setContent(
+						JSON.stringify(`Latitude: ${latitude} | Longitude: ${longitude}`, null, 2)
+					);
+					infoWindow.open(map);
+				});
+			}
+			initMap();
+		}
+	}
+	renderMetodePemilihanKoordinatHTML();
+
+	function latitudeChanged(thisContext) {
+		let el = $(thisContext);
+		latitude = el.val().trim();
+	}
+
+	function longitudeChanged(thisContext) {
+		let el = $(thisContext);
+		longitude = el.val().trim();
+	}
+</script>

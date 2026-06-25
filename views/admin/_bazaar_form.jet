@@ -1,0 +1,43 @@
+<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+<div class="row">
+	<div class="col-lg-4">
+		<label for="pasarImg">
+			<img src="{{ baseURL }}/{{ if request.Photo }}images/bazaar/{{ request.Photo }}{{ else}}assets/img/upload-icon.png{{ end }}"
+				alt="Foto Pasar" data-toggle="tooltip"
+				class="w-100 cp"
+				data-placement="left" title="Klik Gambar untuk Memilih Gambar"
+				onerror="this.src="{{ baseURL }}/assets/img/no-image.png""
+				id="pasarImgPreview" />
+			<input type="file" name="photo" id="pasarImg" onChange="pasarImgChanged(this)"
+				style="display:block;" />
+		</label>
+	</div>
+	<div class="col-lg-8">
+		<div class="form-group">
+			<label for="nama" class="label-title">Nama Pasar</label>
+			<input type="text" name="name" value="{{ request.Name }}" id="name" class="form-control"
+				placeholder="Nama Pasar" />
+		</div>
+		<div class="form-group">
+			<label for="alamat" class="label-title">Alamat Pasar</label>
+			<textarea name="address" class="form-control" id="alamat"
+				placeholder="Nama Pasar">{{ request.Address }}</textarea>
+		</div>
+		<div class="form-group">
+			<label for="metodePemilihanKoordinat" class="label-title">Metode Pemilihan Koordinat Pasar</label>
+			<div class="input-group">
+				<select name="metodePemilihanKoordinat" id="metodePemilihanKoordinat" class="form-control"
+					onChange="metodePemilihanKoordinatChanged(this)">
+					<option value="koordinatManual">Koordinat Manual</option>
+					<option value="pinGmaps">Pin GMAPS</option>
+				</select>
+			</div>
+			<div id="metodePemilihanKoordinatHTML" class="w-100 mt-3"></div>
+		</div>
+		<hr />
+		<button type="submit" class="btn btn-success mr-1">Simpan Data Pasar</button>
+		<a href="{{ baseURL }}/admin/bazaars" class="btn btn-default ml-1">
+			Back to List Pasar
+		</a>
+	</div>
+</div>

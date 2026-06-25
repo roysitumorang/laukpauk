@@ -150,6 +150,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON bazaars (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON bazaars USING GiST(coordinates);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
