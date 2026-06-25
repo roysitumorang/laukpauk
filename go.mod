@@ -13,7 +13,7 @@ require (
 	github.com/gofiber/contrib/v3/sentry v1.1.7
 	github.com/gofiber/contrib/v3/swaggo v1.0.7
 	github.com/gofiber/fiber/v3 v3.3.0
-	github.com/gofiber/storage/valkey v0.2.8
+	github.com/gofiber/storage/valkey v0.3.0
 	github.com/gofiber/template/jet/v3 v3.0.5
 	github.com/gofiber/utils/v2 v2.1.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -25,7 +25,7 @@ require (
 	github.com/samber/slog-fiber v1.22.2
 	github.com/sqids/sqids-go v0.4.1
 	github.com/swaggo/swag v1.16.6
-	github.com/twmb/franz-go v1.21.3
+	github.com/twmb/franz-go v1.21.4
 	github.com/urfave/cli/v3 v3.10.0
 	golang.org/x/crypto v0.53.0
 	golang.org/x/sync v0.21.0
