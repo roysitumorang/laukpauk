@@ -1164,58 +1164,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// payment_methods
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE payment_methods (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, record_status integer NOT NULL
-				, channel_code character VARYING NOT NULL UNIQUE
-				, ordinal_number bigint NOT NULL UNIQUE
-				, business_id character varying NOT NULL
-				, name character varying NOT NULL
-				, channel_type character varying NOT NULL
-				, minimum_transaction bigint NOT NULL
-				, created_by UUID REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
-				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
-				, deleted_at timestamp with time zone
-				, deletion_reason character varying
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON payment_methods (record_status);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON payment_methods (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON payment_methods (updated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON payment_methods (deleted_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		// transactions
 		if _, err = tx.Exec(
 			ctx,
@@ -1230,10 +1178,6 @@ func init() {
 				, recipient_name character varying NOT NULL
 				, recipient_mobile_phone character varying NOT NULL
 				, buyer_note character varying NOT NULL
-				, payment_method_id UUID NOT NULL REFERENCES payment_methods (id)
-				, payment_method_name character varying NOT NULL
-				, payment_method_channel_code character varying NOT NULL
-				, payment_method_extra_data character varying
 				, payment_no character varying
 				, payment_status character varying NOT NULL
 				, shipping_status character varying NOT NULL
@@ -1273,13 +1217,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (voucher_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transactions (payment_method_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
