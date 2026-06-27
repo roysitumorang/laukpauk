@@ -229,6 +229,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE UNIQUE INDEX products_unique_category_product_type_name_idx ON products (product_category_id, product_type, LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON products (stock_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

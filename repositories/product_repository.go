@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -61,7 +63,7 @@ func (q *productRepository) FindProducts(
 	if len(request.ProductCategoryIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("product_category_id IN (")
-		for i, productCategoryID := range request.ProductIDs {
+		for i, productCategoryID := range request.ProductCategoryIDs {
 			params = append(params, productCategoryID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -114,10 +116,24 @@ func (q *productRepository) FindProducts(
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.StockStatus) > 0 {
+	if len(request.Names) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("name IN (")
+		for i, name := range request.Names {
+			params = append(params, strings.ToLower(name))
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = sb.WriteString("$")
+			_, _ = sb.WriteString(strconv.Itoa(len(params)))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.StockStatuses) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("stock_status IN (")
-		for i, stockStatus := range request.StockStatus {
+		for i, stockStatus := range request.StockStatuses {
 			params = append(params, stockStatus)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -175,7 +191,7 @@ func (q *productRepository) FindProducts(
 		, product_type
 		, name
 		, photo
-		, decription
+		, description
 		, stock_status
 		, pinned
 		, created_by
@@ -266,7 +282,7 @@ func (q *productRepository) CreateProduct(
 			, product_type
 			, name
 			, photo
-			, decription
+			, description
 			, stock_status
 			, pinned
 			, created_by
@@ -280,7 +296,7 @@ func (q *productRepository) CreateProduct(
 			, product_type
 			, name
 			, photo
-			, decription
+			, description
 			, stock_status
 			, pinned
 			, created_by
@@ -344,7 +360,7 @@ func (q *productRepository) UpdateProduct(
 			, product_type = $3
 			, name = $4
 			, photo = $5
-			, decription = $6
+			, description = $6
 			, stock_status = $7
 			, pinned = $8
 			, updated_by = $9
@@ -359,7 +375,7 @@ func (q *productRepository) UpdateProduct(
 			, product_type
 			, name
 			, photo
-			, decription
+			, description
 			, stock_status
 			, pinned
 			, created_by
@@ -404,7 +420,15 @@ func (q *productRepository) UpdateProduct(
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
 			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
 		}
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation {
+			switch pgxErr.ConstraintName {
+			case "products_unique_category_product_type_name_idx":
+				err = models.ErrUniqueProductCategoryProductTypeNameViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return new(response), nil

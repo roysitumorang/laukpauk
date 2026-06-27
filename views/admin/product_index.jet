@@ -5,7 +5,7 @@
 		<div class="container-fluid">
 			<div class="row mb-2">
 				<div class="col-sm-6">
-					<h1 class="m-0 text-dark">Pasar</h1>
+					<h1 class="m-0 text-dark">Produk</h1>
 				</div>
 				<!-- /.col -->
 				<div class="col-sm-6">
@@ -14,7 +14,7 @@
 							<a href="#">Home</a>
 						</li>
 						<li class="breadcrumb-item active">
-							List Data Pasar
+							List Data Produk
 						</li>
 					</ol>
 				</div>
@@ -28,46 +28,34 @@
 	<!-- Main content -->
 	<div class="content">
 		<div class="container-fluid">
-			<!--
-			<div class="card">
-				<div class="card-body">
-					<div class="row">
-						<div class="col-lg-4">
-							<button class="btn btn-success mr-1">
-								<span class="fa fa-plus-circle mr-2"></span>
-								Add New Pasar
-							</button>
-							<button class="btn btn-default ml-1">
-								<span class="fa fa-filter"></span>
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-			-->
 			<div class="card">
 				<div class="card-header">
 					<div class="row">
 						<div class="col-lg-4">
-							<h5>Data Pasar</h5>
+							<h5>Data Produk</h5>
 						</div>
 						<div class="col-lg-8 text-right">
-							<a href="{{ baseURL }}/admin/bazaars/new" data-toggle="tooltip"
-								data-placement="top" title="Tambah Pasar Baru">
-								Add New Pasar
+							<a href="{{ baseURL }}/admin/products/new" data-toggle="tooltip"
+								data-placement="top" title="Tambah Produk Baru">
+								Add New Products
 							</a>
 						</div>
 					</div>
 				</div>
 				<div class="card-body">
 					<div class="col-lg-12 table-responsive">
-						<form method="GET" action="/admin/bazaars">
+						{{ range type, message := flash.Data }}
+						<div class="alert alert-{{ type }}">
+							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+						</div>
+						{{ end }}
+						<form method="GET" action="/admin/products">
 							<div class="row">
 								<div class="col-sm-12 col-md-6">
-									<div class="dataTables_length" id="listArtikel_length">
-										<label>
+									<div class="dataTables_length" id="listBlog_length">
+										<label for="limit">
 											Show
-											<select name="limit" aria-controls="listArtikel" class="custom-select custom-select-sm form-control form-control-sm">
+											<select name="limit" id="limit" aria-controls="listBlog" class="custom-select custom-select-sm form-control form-control-sm">
 												{{ range _, limit := limits }}
 												<option value="{{ limit }}"{{ if limit == request.Limit }} selected{{ end }}>{{ limit }}</option>
 												{{ end }}
@@ -76,9 +64,9 @@
 									</div>
 								</div>
 								<div class="col-sm-12 col-md-6">
-									<div id="listArtikel_filter" class="dataTables_filter">
-										<label>
-											Search: <input type="text" name="q" value="{{ request.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
+									<div id="listBlog_filter" class="dataTables_filter">
+										<label for="q">
+											Search: <input type="text" name="q" id="q" value="{{ request.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
 										</label>
 									</div>
 								</div>
@@ -104,70 +92,59 @@
 							<li class="page-item"><a class="page-link" href="#">Total: {{ rows | len }} of {{ pagination.Info.Total }} items , Page: {{ pagination.Info.Page + 1 }} of {{ pagination.Info.Pages }} pages</a></li>
 						</ul>
 						{{ end }}
-						<table class="table-sm table table-striped" id="listPasar">
+						<table class="table-sm table" id="userProducts">
 							<thead>
 								<tr>
 									<th class="border-top-0 text-center">No.</th>
-									<th class="border-top-0 text-left">Pasar</th>
-									<th class="border-top-0 text-left">Jenis Pasar</th>
-									<th class="border-top-0 text-left">Posisi</th>
-									<th class="border-top-0 text-left">Tanggal Join</th>
+									<th class="border-top-0 text-left">Produk</th>
+									<th class="border-top-0 text-left">Keterangan</th>
 									<th class="border-top-0 text-center">Opsi</th>
 								</tr>
 							</thead>
 							<tbody>
 								{{ range _, row := rows }}
 								<tr class="text-sm tr-parent">
-									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
-									<td class="vam text-left">
+									<td class="vam text-center"><b>1.</b></td>
+									<td class="text-left">
 										<div class="row">
-											<div class="col-lg-3 text-center">
-												<a href="{{ baseURL }}/images/bazaar/{{ row.Photo }}" target="_blank">
-													<img src="{{ baseURL }}/images/compress/bazaar/{{ row.Photo }}"
-														alt="{{ row.Name }}"
-														class="img-circle" style="width:50px; height:50px;"
+											<div class="col-lg-4 text-center">
+												<a href="{{ baseURL }}/images/product/{{ row.Photo }}" target="_blank">
+													<img src="{{ baseURL }}/images/product/compress/{{ row.Photo }}"
+														class="img-circle cp" style="width:50px; height:50px;"
 														onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 												</a>
 											</div>
-											<div class="col-lg-9">
-												<h6 class="text-primary mb-1 text-bold">{{ row.Name }}</h6>
-												<p class="text-muted text-sm mb-0">{{ row.Address }}/p>
+											<div class="col-lg-8">
+												<h6 class="text-info mb-1">
+													<b>{{ row.Name }}</b>
+												</h6>
+												<p class="text-sm text-muted mb-0">{{ row.ProductCategory.Name }}</p>
 											</div>
 										</div>
 									</td>
-									<td class="vam text-left">
-										<b class="text-info">{{ row.HumanizedBazaarType() }}</b>
-									</td>
-									<td class="vam text-left">
-										<p class="mb-1">
-											<span class="badge badge-info">Latitude : {{ row.Latitude }}</span>
-										</p>
-										<p class="mb-0">
-											<span class="badge badge-primary">Longitude : {{ row.Longitude }}</span>
-										</p>
-									</td>
-									<td class="vam text-left">
-										{{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}
-										<span class="fa fa-info-circle text-info ml-1 cp"
-											data-toggle="tooltip" data-placement="top"
-											title="{{ if row.CreatedAt.Before(row.UpdatedAt) }}Terakhir di update {{ row.UpdatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}{{ else }}Belum Pernah diperbaharui{{ end }}">
-										</span>
+									<td class="text-left">
+										{{ if row.Description }}
+										{{ row.Description }}
+										{{ else }}
+										<i class="text-muted">Tanpa Keterangan</i>
+										{{ end }}
 									</td>
 									<td class="vam text-center">
-										<a href="{{ baseURL }}/admin/bazaars/{{ row.ID }}/edit">
-											<span class="fa fa-edit text-warning cp mr-2"
-												data-toggle="tooltip"
-												data-placement="top"
-												title="Edit Data Pasar">
-											</span>
+										<a href="{{ baseURL }}/admin/products/{{ row.ID }}/edit">
+											<span class="fa fa-edit text-warning cp" data-toggle="tooltip"
+											data-placement="top" title="Edit Data Produk"></span>
 										</a>
-										<form method="POST" action="{{ baseURL }}/admin/bazaars/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+										<a href="{{ baseURL }}/admin/products/{{ row.ID }}">
+											<span class="fa fa-list text-primary cp mr-3 ml-3" data-toggle="tooltip"
+											data-placement="top" title="Detail Data Produk"></span>
+										</a>
+										<form method="POST" action="{{ baseURL }}/admin/products/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-											<span class="fa fa-trash text-danger cp ml-2"
+												<span class="fa fa-trash text-danger cp ml-2"
 												data-toggle="tooltip"
 												data-placement="top"
-												title="Hapus Data Pasar"
-												onclick="confirm('Are you sure to delete this bazaar ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
+												title="Hapus Data Produk"
+												onclick="confirm('Are you sure to delete this item ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
 											</span>
 										</form>
 									</td>
@@ -205,12 +182,12 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-	function deletePasar(thisContext, eventContext, namaPasar) {
+	function deleteProductUser(thisContext, eventContext, namaProduk) {
 		eventContext.preventDefault();
 		let el = $(thisContext);
 		Swal.fire({
-			title: "Konfirmasi Hapus Pasar",
-			html: `Apakah anda yakin akan menghapus pasar <b class="text-danger">${namaPasar}</b> ?`,
+			title: "Konfirmasi Hapus Produk",
+			html: `Apakah anda yakin akan menghapus produk <b class="text-danger">${namaProduk}</b> ?`,
 			type: "question",
 			showConfirmButton: true,
 			showCancelButton: true,
@@ -219,24 +196,24 @@
 			focusCancel: true
 		}).then((konfirmasi) => {
 			if (konfirmasi.value) {
-				let idPasar = el.attr("idPasar");
+				let idProduk = el.attr("idProduk");
 				$.ajax({
-					url: `{{ baseURL }}/admin/pasar/delete/${idPasar}`,
+					url: `{{ baseURL }}/admin/user/deleteProduct/${idProduk}`,
 					success: function(responseFromServer) {
 						let rFS = JSON.parse(responseFromServer);
-						let swalText = `<span class="text-danger">Gagal menghapus pasar ${namaPasar} !</span>`;
+						let swalText = `<span class="text-danger">Gagal menghapus produk ${namaProduk} !</span>`;
 						let swalType = "error";
-						if (rFS.statusDeletePasar) {
-							swalText = `<span class="text-success">Berhasil menghapus pasar ${namaPasar} !</span>`;
+						if (rFS.statusDeleteProduk) {
+							swalText = `<span class="text-success">Berhasil menghapus produk ${namaProduk} !</span>`;
 							swalType = "success";
 						}
 						Swal.fire({
-							title: "Penghapusan Data Pasar",
+							title: "Penghapusan Data Produk Penjual",
 							html: swalText,
 							type: swalType
 						}).then(() => {
-							if (rFS.statusDeletePasar) {
-								location.reload();
+							if (rFS.statusDeleteProduk) {
+								el.parents(".tr-parent").remove();
 							}
 						});
 					}
@@ -244,5 +221,5 @@
 			}
 		})
 	}
-	$("#listPasar").DataTable();
+	$("#userProducts").DataTable();
 </script>

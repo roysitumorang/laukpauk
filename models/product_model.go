@@ -8,13 +8,36 @@ import (
 	"uuid"
 )
 
+var (
+	ErrUniqueProductCategoryProductTypeNameViolation = errors.New("name: already exists")
+
+	ProductTypes = []ProductType{ProductTypeStandalone, ProductTypeBundled}
+
+	MapProductTypes = map[ProductType]struct{}{
+		ProductTypeStandalone: {},
+		ProductTypeBundled:    {},
+	}
+
+	StockStatuses    = []StockStatus{StockStatusInStock, StockStatusOutOfStock}
+	MapStockStatuses = map[StockStatus]struct{}{
+		StockStatusInStock:    {},
+		StockStatusOutOfStock: {},
+	}
+)
+
+const (
+	ProductPhotoName         = "product-%d%s"
+	ProductPhotoPath         = "./images/product/%s"
+	ProductPhotoCompressPath = "./images/product/compress/%s"
+)
+
 const (
 	ProductTypeStandalone ProductType = iota
 	ProductTypeBundled
 )
 const (
-	StockStatusOutOfStock StockStatus = iota
-	StockStatusInStock
+	StockStatusInStock StockStatus = iota
+	StockStatusOutOfStock
 )
 
 type (
@@ -25,14 +48,14 @@ type (
 		RowNo             int64           `json:"-" form:"-"`
 		ID                uuid.UUID       `json:"-" form:"-"`
 		RecordStatus      RecordStatus    `json:"-" form:"-"`
-		ProductCategoryID uuid.UUID       `json:"-" form:"-"`
+		ProductCategoryID uuid.UUID       `json:"-" form:"product_category_id"`
 		ProductCategory   ProductCategory `json:"-" form:"-"`
-		ProductType       ProductType     `json:"-" form:"-"`
-		Name              string          `json:"-" form:"-"`
-		Photo             string          `json:"-" form:"-"`
-		Description       string          `json:"-" form:"-"`
-		StockStatus       StockStatus     `json:"-" form:"-"`
-		Pinned            bool            `json:"-" form:"-"`
+		ProductType       ProductType     `json:"-" form:"product_type"`
+		Name              string          `json:"-" form:"name"`
+		Photo             string          `json:"-" form:"photo"`
+		Description       string          `json:"-" form:"description"`
+		StockStatus       StockStatus     `json:"-" form:"stock_status"`
+		Pinned            bool            `json:"-" form:"pinned"`
 		CreatedBy         uuid.UUID       `json:"-" form:"-"`
 		CreatedAt         time.Time       `json:"-" form:"-"`
 		UpdatedBy         uuid.UUID       `json:"-" form:"-"`
@@ -45,9 +68,10 @@ type (
 	ProductFilter struct {
 		ProductCategoryIDs,
 		ProductIDs []uuid.UUID
-		RecordStatus []RecordStatus
-		ProductTypes []ProductType
-		StockStatus  []StockStatus
+		RecordStatus  []RecordStatus
+		ProductTypes  []ProductType
+		Names         []string
+		StockStatuses []StockStatus
 		Keyword,
 		PaginationURL string
 		Limit,
@@ -80,8 +104,13 @@ func (q *ProductFilter) WithProductTypes(productTypes ...ProductType) *ProductFi
 	return q
 }
 
-func (q *ProductFilter) WithStockStatus(stockStatus ...StockStatus) *ProductFilter {
-	q.StockStatus = stockStatus
+func (q *ProductFilter) WithNames(names ...string) *ProductFilter {
+	q.Names = names
+	return q
+}
+
+func (q *ProductFilter) WithStockStatus(stockStatuses ...StockStatus) *ProductFilter {
+	q.StockStatuses = stockStatuses
 	return q
 }
 
@@ -111,15 +140,29 @@ func (q *ProductFilter) WithUrlValues(urlValues url.Values) *ProductFilter {
 }
 
 func (q *Product) Validate() error {
+	if q.ProductCategoryID.Compare(uuid.Nil()) == 0 {
+		return errors.New("product_category_id: is required")
+	}
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
+	}
+	if _, ok := MapProductTypes[q.ProductType]; !ok {
+		return errors.New("product_type: invalid")
+	}
+	if _, ok := MapStockStatuses[q.StockStatus]; !ok {
+		return errors.New("stock_status: invalid")
 	}
 	q.Description = strings.TrimSpace(q.Description)
 	return nil
 }
 
-func (q *Product) HumanizeProductType() string {
-	switch q.ProductType {
+func (q *Product) SetPhoto(photo string) *Product {
+	q.Photo = photo
+	return q
+}
+
+func (q ProductType) String() string {
+	switch q {
 	case ProductTypeBundled:
 		return "paket"
 	case ProductTypeStandalone:
@@ -129,8 +172,8 @@ func (q *Product) HumanizeProductType() string {
 	}
 }
 
-func (q *Product) HumanizeStockStatus() string {
-	switch q.StockStatus {
+func (q StockStatus) String() string {
+	switch q {
 	case StockStatusInStock:
 		return "tersedia"
 	case StockStatusOutOfStock:
