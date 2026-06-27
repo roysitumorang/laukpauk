@@ -229,7 +229,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX products_unique_category_product_type_name_idx ON products (product_category_id, product_type, LOWER(name));`,
+			`CREATE UNIQUE INDEX products_unique_category_id_name_idx ON products (product_category_id, LOWER(name));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

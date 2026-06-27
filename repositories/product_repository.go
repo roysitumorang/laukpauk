@@ -88,6 +88,20 @@ func (q *productRepository) FindProducts(
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.ExcludedProductIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedProductID := range request.ExcludedProductIDs {
+			params = append(params, excludedProductID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = sb.WriteString("$")
+			_, _ = sb.WriteString(strconv.Itoa(len(params)))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if len(request.RecordStatus) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("record_status IN (")
@@ -118,7 +132,7 @@ func (q *productRepository) FindProducts(
 	}
 	if len(request.Names) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("name IN (")
+		_, _ = sb.WriteString("LOWER(name) IN (")
 		for i, name := range request.Names {
 			params = append(params, strings.ToLower(name))
 			if i > 0 {
@@ -423,8 +437,8 @@ func (q *productRepository) UpdateProduct(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "products_unique_category_product_type_name_idx":
-				err = models.ErrUniqueProductCategoryProductTypeNameViolation
+			case "products_unique_category_id_name_idx":
+				err = models.ErrUniqueProductCategoryIdNameViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

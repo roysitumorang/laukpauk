@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrUniqueProductCategoryProductTypeNameViolation = errors.New("name: already exists")
+	ErrUniqueProductCategoryIdNameViolation = errors.New("name: already exists")
 
 	ProductTypes = []ProductType{ProductTypeStandalone, ProductTypeBundled}
 
@@ -67,7 +67,8 @@ type (
 
 	ProductFilter struct {
 		ProductCategoryIDs,
-		ProductIDs []uuid.UUID
+		ProductIDs,
+		ExcludedProductIDs []uuid.UUID
 		RecordStatus  []RecordStatus
 		ProductTypes  []ProductType
 		Names         []string
@@ -91,6 +92,11 @@ func (q *ProductFilter) WithProductCategoryIDs(productCategoryIDs ...uuid.UUID) 
 
 func (q *ProductFilter) WithProductIDs(productIDs ...uuid.UUID) *ProductFilter {
 	q.ProductIDs = productIDs
+	return q
+}
+
+func (q *ProductFilter) WithExcludedProductIDs(excludedProductIDs ...uuid.UUID) *ProductFilter {
+	q.ExcludedProductIDs = excludedProductIDs
 	return q
 }
 
