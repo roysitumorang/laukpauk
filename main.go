@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -51,7 +52,9 @@ func main() {
 				Aliases: []string{"v"},
 				Usage:   "print version",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					fmt.Printf("Version: %s\nCommit: %s\nBuild: %s\n", config.Version, config.Commit, config.Build)
+					var sb strings.Builder
+					fmt.Fprintf(&sb, "Version: %s\nCommit: %s\nBuild: %s\n", config.Version, config.Commit, config.Build)
+					_, _ = os.Stdout.WriteString(sb.String())
 					return nil
 				},
 			},
