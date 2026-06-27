@@ -1464,10 +1464,10 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, buyer_id UUID NOT NULL REFERENCES users (id)
 				, transaction_no character varying NOT NULL UNIQUE
-				, down_payment bigint NOT NULL
+				, payment_amount bigint NOT NULL
 				, voucher_id UUID REFERENCES vouchers (id)
 				, voucher_type character varying
-				, voucher_amount bigint
+				, voucher_amount bigint NOT NULL
 				, recipient_name character varying NOT NULL
 				, recipient_mobile_phone character varying NOT NULL
 				, buyer_note character varying NOT NULL
@@ -1494,7 +1494,7 @@ func init() {
 				, shipping_timeline character varying NOT NULL
 				, refunded_shipping_cost bigint NOT NULL
 				, refunded_transaction_cost bigint NOT NULL
-				, unique_code bigint NOT NULL UNIQUE
+				, unique_code character varying NOT NULL UNIQUE
 				, minimum_point bigint NOT NULL
 				, point_deduction bigint NOT NULL
 				, product_category_discount_amount bigint NOT NULL
