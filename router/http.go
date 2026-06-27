@@ -193,7 +193,6 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewArticleController(q.UserService, q.ArticleService).Mount(app.Group("/articles"))
 	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
 	controllers.NewBlockController(q.UserService, q.BlockService, q.BlogService, q.MessageService).Mount(app.Group("/blocks"))
-	controllers.NewBazaarController(q.UserService, q.BazaarService).Mount(app.Group("/bazaars"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{

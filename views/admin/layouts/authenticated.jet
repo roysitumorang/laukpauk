@@ -262,29 +262,6 @@
 						</li>
 						<li class="nav-item has-treeview">
 							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-store"></i>
-								<p>
-									Pasar
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview">
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/bazaars" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Pasar</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/bazaars/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Pasar Baru</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview">
-							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-shopping-cart"></i>
 								<p>
 									Transaksi
@@ -409,29 +386,6 @@
 									<a href="{{ baseURL }}/admin/admins/new" class="nav-link">
 										<i class="fa fa-user-plus nav-icon"></i>
 										<p>Administrator Baru</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-dollar-sign"></i>
-								<p>
-									Diskon Kategori
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview">
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/product_category_discounts" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Diskon Kategori</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/product_category_discounts/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Add Diskon Kategori</p>
 									</a>
 								</li>
 							</ul>

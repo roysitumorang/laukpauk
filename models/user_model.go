@@ -7,9 +7,8 @@ import (
 )
 
 const (
-	UserTypeAdmin  UserType = "admin"
-	UserTypeSeller UserType = "seller"
-	UserTypeBuyer  UserType = "buyer"
+	UserTypeAdmin UserType = "admin"
+	UserTypeBuyer UserType = "buyer"
 
 	AdminLevelAdmin      AdminLevel = "admin"
 	AdminLevelSuperAdmin AdminLevel = "superadmin"
