@@ -279,3 +279,9 @@ func GetLoginLockoutDuration() time.Duration {
 func GetAccessTokenAge() time.Duration {
 	return accessTokenAge
 }
+
+func Sprintf(format string, a ...any) string {
+	var sb strings.Builder
+	_, _ = fmt.Fprintf(&sb, format, a...)
+	return sb.String()
+}

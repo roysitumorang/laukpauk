@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"log/slog"
 	"mime/multipart"
 	"os"
@@ -304,7 +303,7 @@ func (q *productController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", fmt.Sprintf("Edit Data Produk|%s", product.Name),
+		"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
 		"request", request,
 		"product", product,
 		"productCategories", productCategories,
@@ -361,7 +360,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", fmt.Sprintf("Edit Data Produk|%s", product.Name),
+		"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
 		"request", request,
 		"product", product,
 		"productCategories", productCategories,
@@ -512,8 +511,8 @@ func (q *productController) saveFile(c fiber.Ctx, file *multipart.FileHeader, fi
 	if file == nil {
 		return nil
 	}
-	if err := c.SaveFile(file, fmt.Sprintf(models.ProductPhotoPath, filename)); err != nil {
+	if err := c.SaveFile(file, helper.Sprintf(models.ProductPhotoPath, filename)); err != nil {
 		return err
 	}
-	return c.SaveFile(file, fmt.Sprintf(models.ProductPhotoCompressPath, filename))
+	return c.SaveFile(file, helper.Sprintf(models.ProductPhotoCompressPath, filename))
 }

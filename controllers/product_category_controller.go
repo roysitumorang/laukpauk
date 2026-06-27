@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"log/slog"
 	"mime/multipart"
 	"os"
@@ -255,7 +254,7 @@ func (q *productCategoryController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", fmt.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
+		"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
 		"request", request,
 		"productCategory", productCategory,
 	)
@@ -295,7 +294,7 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", fmt.Sprintf("Edit Data Artikel|%s", productCategory.Name),
+		"pageTitle", helper.Sprintf("Edit Data Artikel|%s", productCategory.Name),
 		"request", request,
 		"productCategory", productCategory,
 	)
@@ -402,8 +401,8 @@ func (q *productCategoryController) saveFile(c fiber.Ctx, file *multipart.FileHe
 	if file == nil {
 		return nil
 	}
-	if err := c.SaveFile(file, fmt.Sprintf(models.ProductCategoryPhotoPath, filename)); err != nil {
+	if err := c.SaveFile(file, helper.Sprintf(models.ProductCategoryPhotoPath, filename)); err != nil {
 		return err
 	}
-	return c.SaveFile(file, fmt.Sprintf(models.ProductCategoryPhotoCompressPath, filename))
+	return c.SaveFile(file, helper.Sprintf(models.ProductCategoryPhotoCompressPath, filename))
 }

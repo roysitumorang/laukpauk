@@ -3,7 +3,6 @@ package sanitizers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"mime/multipart"
 	"net/url"
@@ -85,7 +84,7 @@ func ValidateBlockItem(
 		if _, ok := mimeTypes[mtype.String()]; !ok {
 			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
 		}
-		response.Photo = new(fmt.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension()))
+		response.Photo = new(helper.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension()))
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
@@ -147,7 +146,7 @@ func ValidateBlockCustomAttributes(
 			if _, ok := mimeTypes[mtype.String()]; !ok {
 				return response, nil, errors.New("photo: invalid JPG/PNG file")
 			}
-			photoFilename = fmt.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension())
+			photoFilename = helper.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension())
 		}
 		response = map[string]string{
 			"subject": subject,
@@ -171,7 +170,7 @@ func ValidateBlockCustomAttributes(
 			if _, ok := mimeTypes[mtype.String()]; !ok {
 				return response, nil, errors.New("photo: invalid JPG/PNG file")
 			}
-			photoFilename = fmt.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension())
+			photoFilename = helper.Sprintf(models.BlockPhotoName, blockName, helper.GenerateSnowflakeID(), mtype.Extension())
 		}
 		response = map[string]string{
 			"body":  body,

@@ -3,7 +3,6 @@ package helper
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
@@ -28,7 +27,7 @@ func GetLogger() *slog.Logger {
 
 func logContext(context, scope string) []any {
 	fields := []any{
-		slog.String("topic", fmt.Sprintf("%s-service-log", config.AppName)),
+		slog.String("topic", Sprintf("%s-service-log", config.AppName)),
 		slog.String("context", context),
 		slog.String("service", config.AppName),
 	}
@@ -56,7 +55,7 @@ func Log(ctx context.Context, level slog.Level, message, context, scope string) 
 		entries = append(
 			entries,
 			slog.String("func", name),
-			slog.String("file", fmt.Sprintf("%s:%d", file, line)),
+			slog.String("file", Sprintf("%s:%d", file, line)),
 			slog.Int("line", line),
 		)
 		logger.Error(message, entries...)
@@ -85,7 +84,7 @@ func Capture(ctx context.Context, level slog.Level, err error, context, scope st
 		entries = append(
 			entries,
 			slog.String("func", name),
-			slog.String("file", fmt.Sprintf("%s:%d", file, line)),
+			slog.String("file", Sprintf("%s:%d", file, line)),
 			slog.Int("line", line),
 		)
 		logger.Error(err.Error(), entries...)

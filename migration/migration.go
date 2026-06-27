@@ -116,8 +116,8 @@ func (m *Migration) Migrate(ctx context.Context) error {
 
 func (m *Migration) CreateMigrationFile(_ context.Context) error {
 	now := time.Now().UTC().UnixNano()
-	filepath := fmt.Sprintf("./migration/%d.go", now)
-	content := fmt.Sprintf(
+	filepath := helper.Sprintf("./migration/%d.go", now)
+	content := helper.Sprintf(
 		`package migration
 
 import (

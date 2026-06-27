@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"log/slog"
 	"mime/multipart"
 	"os"
@@ -213,7 +212,7 @@ func (q *blogController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", fmt.Sprintf("Edit Data Blog|%s", request.Subject),
+		"pageTitle", helper.Sprintf("Edit Data Blog|%s", request.Subject),
 		"request", request,
 		"blogID", request.ID,
 	)
@@ -253,7 +252,7 @@ func (q *blogController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", fmt.Sprintf("Edit Data Blog|%s", blog.Subject),
+		"pageTitle", helper.Sprintf("Edit Data Blog|%s", blog.Subject),
 		"request", request,
 		"blogID", blog.ID,
 	)
@@ -361,8 +360,8 @@ func (q *blogController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filen
 	if file == nil {
 		return nil
 	}
-	if err := c.SaveFile(file, fmt.Sprintf(models.BlogPhotoPath, filename)); err != nil {
+	if err := c.SaveFile(file, helper.Sprintf(models.BlogPhotoPath, filename)); err != nil {
 		return err
 	}
-	return c.SaveFile(file, fmt.Sprintf(models.BlogPhotoCompressPath, filename))
+	return c.SaveFile(file, helper.Sprintf(models.BlogPhotoCompressPath, filename))
 }

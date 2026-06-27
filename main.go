@@ -113,7 +113,7 @@ func main() {
 							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
 							return err
 						}
-						helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
+						helper.Log(ctx, slog.LevelInfo, helper.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
 						c.Start()
 						helper.Log(ctx, slog.LevelInfo, "cron: scheduled tasks running!...", ctxt, "")
 						return nil
@@ -166,7 +166,7 @@ func main() {
 						activity = "running"
 					}
 					duration := time.Since(now)
-					helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
+					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
 					return nil
 				},
 			},

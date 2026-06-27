@@ -3,7 +3,6 @@ package sanitizers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"mime/multipart"
 	"net/url"
@@ -74,7 +73,7 @@ func ValidateBlog(ctx context.Context, c fiber.Ctx) (*models.Blog, *multipart.Fi
 		if _, ok := mimeTypes[mtype.String()]; !ok {
 			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
 		}
-		response.Photo = fmt.Sprintf(models.BlogPhotoName, helper.GenerateSnowflakeID(), mtype.Extension())
+		response.Photo = helper.Sprintf(models.BlogPhotoName, helper.GenerateSnowflakeID(), mtype.Extension())
 	}
 	return &response, photo, fiber.StatusOK, nil
 }

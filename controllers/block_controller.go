@@ -242,7 +242,7 @@ func (q *blockController) BlogShow(c fiber.Ctx) (err error) {
 	}
 	blog = blogs[0]
 	return c.Render("block/blog_show", params.Push(
-		"pageTitle", fmt.Sprintf("%s | Belanja Sayur Online", blog.Subject),
+		"pageTitle", helper.Sprintf("%s | Belanja Sayur Online", blog.Subject),
 		"blog", blog,
 	), "block/_layout")
 }

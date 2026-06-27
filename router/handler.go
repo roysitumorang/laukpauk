@@ -130,7 +130,7 @@ func (q *Service) Consume(ctx context.Context) error {
 		for _, record := range records {
 			now := time.Now()
 			duration := time.Since(now)
-			helper.Log(ctx, slog.LevelInfo, fmt.Sprintf("consumed message on topic %s[%d]@%d: %s in %s", record.Topic, record.Partition, record.Offset, record.Value, duration.String()), ctxt, "")
+			helper.Log(ctx, slog.LevelInfo, helper.Sprintf("consumed message on topic %s[%d]@%d: %s in %s", record.Topic, record.Partition, record.Offset, record.Value, duration.String()), ctxt, "")
 		}
 	}
 }
