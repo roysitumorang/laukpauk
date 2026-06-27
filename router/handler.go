@@ -23,15 +23,16 @@ import (
 
 type (
 	Service struct {
-		DbWrite        *pgxpool.Pool
-		Migration      *migration.Migration
-		KafkaService   *kafka.KafkaService
-		Storage        fiber.Storage
-		UserService    services.UserService
-		ArticleService services.ArticleService
-		BlogService    services.BlogService
-		BlockService   services.BlockService
-		MessageService services.MessageService
+		DbWrite                *pgxpool.Pool
+		Migration              *migration.Migration
+		KafkaService           *kafka.KafkaService
+		Storage                fiber.Storage
+		UserService            services.UserService
+		ArticleService         services.ArticleService
+		BlogService            services.BlogService
+		BlockService           services.BlockService
+		MessageService         services.MessageService
+		ProductCategoryService services.ProductCategoryService
 	}
 )
 
@@ -74,21 +75,24 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
 	blockRepository := repositories.NewBlockRepository(dbRead, dbWrite)
 	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
+	productCategoryRepository := repositories.NewProductCategoryRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
 	blockService := services.NewBlockService(blockRepository)
 	messageService := services.NewMessageService(messageRepository)
+	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	return &Service{
-		DbWrite:        dbWrite,
-		Migration:      migration,
-		KafkaService:   kafkaService,
-		Storage:        storage,
-		UserService:    userService,
-		ArticleService: articleService,
-		BlogService:    blogService,
-		BlockService:   blockService,
-		MessageService: messageService,
+		DbWrite:                dbWrite,
+		Migration:              migration,
+		KafkaService:           kafkaService,
+		Storage:                storage,
+		UserService:            userService,
+		ArticleService:         articleService,
+		BlogService:            blogService,
+		BlockService:           blockService,
+		MessageService:         messageService,
+		ProductCategoryService: productCategoryService,
 	}, nil
 }
 

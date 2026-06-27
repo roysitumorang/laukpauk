@@ -8,11 +8,17 @@ type (
 	Map map[string]any
 
 	RecordStatus int
+	DiscountType int
 )
 
 const (
 	RecordStatusActive  RecordStatus = 1
 	RecordStatusDeleted RecordStatus = -1
+)
+
+const (
+	DiscountTypeFlat DiscountType = iota
+	DiscountTypePercentage
 )
 
 var (
