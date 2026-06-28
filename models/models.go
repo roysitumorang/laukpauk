@@ -12,8 +12,8 @@ type (
 )
 
 const (
-	RecordStatusActive  RecordStatus = 1
-	RecordStatusDeleted RecordStatus = -1
+	RecordStatusActive RecordStatus = iota
+	RecordStatusDeleted
 )
 
 const (
