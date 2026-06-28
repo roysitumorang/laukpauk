@@ -11,13 +11,23 @@ import (
 func init() {
 	Migrations[1780909370437246465] = func(ctx context.Context, tx pgx.Tx) (err error) {
 		ctxt := "Migration-1780909370437246465"
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE COLLATION IF NOT EXISTS natural_sort (
+				PROVIDER = 'icu'
+				, LOCALE = 'en-US-u-kn-true'
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// users
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE users (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, user_type character varying NOT NULL
-				, name character varying NOT NULL
+				, name character varying NOT NULL COLLATE "natural_sort"
 				, confirmation_token character varying UNIQUE
 				, confirmed_at timestamp with time zone
 				, unconfirmed_mobile_phone character varying
@@ -124,7 +134,7 @@ func init() {
 			`CREATE TABLE product_categories (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, name character varying NOT NULL
+				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
@@ -182,7 +192,7 @@ func init() {
 				, record_status integer NOT NULL
 				, product_category_id UUID REFERENCES product_categories (id)
 				, product_type integer NOT NULL
-				, name character varying NOT NULL
+				, name character varying NOT NULL COLLATE "natural_sort"
 				, photo character varying NOT NULL
 				, description character varying NOT NULL
 				, stock_status integer NOT NULL
@@ -222,14 +232,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON products (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE UNIQUE INDEX products_unique_category_id_name_idx ON products (product_category_id, LOWER(name));`,
+			`CREATE UNIQUE INDEX product_categories_unique_idx ON products (LOWER(name));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

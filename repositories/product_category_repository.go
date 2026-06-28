@@ -339,11 +339,9 @@ func (q *productCategoryRepository) UpdateProductCategory(
 			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
 		}
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation {
-			switch pgxErr.ConstraintName {
-			case "product_categories_unique_name_idx":
-				err = models.ErrUniqueProductCategoryNameViolation
-			}
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "product_categories_unique_name_idx" {
+			err = models.ErrUniqueProductCategoryNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}

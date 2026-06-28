@@ -163,9 +163,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	params.Push(
-		"productCategories", productCategories,
-	)
+	params.Push("productCategories", productCategories)
 	request, photo, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
@@ -187,13 +185,12 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
 		return c.Render("admin/product_new", params.Push(
-			"flash", flash.Danger("product_category_id: is required"),
+			"flash", flash.Danger("product_category_id: not found"),
 		), "admin/layouts/authenticated")
 	}
 	products, _, err := q.productService.FindProducts(
 		ctx,
 		models.NewProductFilter().
-			WithProductCategoryIDs(request.ProductCategoryID).
 			WithNames(request.Name),
 	)
 	if err != nil {
@@ -215,7 +212,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		product := products[0]
 		if product.RecordStatus == models.RecordStatusActive {
 			return c.Render("admin/product_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueProductCategoryIdNameViolation.Error()),
+				"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
 		request.ID = product.ID
@@ -377,9 +374,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	params.Push(
-		"productCategories", productCategories,
-	)
+	params.Push("productCategories", productCategories)
 	request, photo, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
@@ -392,22 +387,19 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = product.Photo
 	}
-	params.Push(
-		"request", request,
-	)
+	params.Push("request", request)
 	mapProductCategoryIDs := map[uuid.UUID]struct{}{}
 	for _, productCategory := range productCategories {
 		mapProductCategoryIDs[productCategory.ID] = struct{}{}
 	}
 	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
 		return c.Render("admin/product_edit", params.Push(
-			"flash", flash.Danger("product_category_id: is required"),
+			"flash", flash.Danger("product_category_id: not found"),
 		), "admin/layouts/authenticated")
 	}
 	if products, _, err = q.productService.FindProducts(
 		ctx,
 		models.NewProductFilter().
-			WithProductCategoryIDs(request.ProductCategoryID).
 			WithNames(request.Name).
 			WithExcludedProductIDs(product.ID),
 	); err != nil {
@@ -418,7 +410,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	}
 	if len(products) > 0 {
 		return c.Render("admin/product_edit", params.Push(
-			"flash", flash.Danger(models.ErrUniqueProductCategoryIdNameViolation.Error()),
+			"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
 		), "admin/layouts/authenticated")
 	}
 	request.ID = product.ID
@@ -428,9 +420,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	params.Push(
-		"request", request,
-	)
+	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")

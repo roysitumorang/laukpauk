@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrUniqueProductCategoryIdNameViolation = errors.New("name: already exists")
+	ErrUniqueProductNameViolation = errors.New("name: already exists")
 
 	ProductTypes = []ProductType{ProductTypeStandalone, ProductTypeBundled}
 
