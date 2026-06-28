@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"log/slog"
 	"mime/multipart"
 	"os"
@@ -74,10 +75,9 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request = request.WithRecordStatus(models.RecordStatusActive)
 	if rows, pagination, err = q.productCategoryService.FindProductCategories(
 		c,
-		request,
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
 		return c.Render("admin/product_category_index", params.Push(
@@ -143,13 +143,13 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 		"request", request,
 		"productCategory", request,
 	)
-	productCategories, _, err := q.productCategoryService.FindProductCategories(
+	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
 		models.NewProductCategoryFilter().
 			WithNames(request.Name),
 	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -163,8 +163,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO")
 	}
-	if len(productCategories) > 0 {
-		productCategory := productCategories[0]
+	if productCategory != nil {
 		if productCategory.RecordStatus == models.RecordStatusActive {
 			return c.Render("admin/product_category_new", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductCategoryNameViolation.Error()),
@@ -233,20 +232,18 @@ func (q *productCategoryController) AdminEdit(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("product category not found").Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	productCategories, _, err := q.productCategoryService.FindProductCategories(
+	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
 		models.NewProductCategoryFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(productCategoryID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+		if !errors.Is(err, models.ErrProductCategoryNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	if len(productCategories) == 0 {
-		return flash.Danger("product category not found").Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	productCategory := productCategories[0]
 	request := productCategory
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -273,20 +270,18 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("product category not found").Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	productCategories, _, err := q.productCategoryService.FindProductCategories(
+	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
 		models.NewProductCategoryFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(productCategoryID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
-		return flash.Danger("product category not found").Redirect(c, sess.Session, "/admin/product_categories")
+		if !errors.Is(err, models.ErrProductCategoryNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		}
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	if len(productCategories) == 0 {
-		return flash.Danger("product category not found").Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	productCategory := productCategories[0]
 	request := new(models.ProductCategory)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -307,6 +302,25 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 			"request", request,
 		), "admin/layouts/authenticated")
 	}
+	if productCategory.Name != request.Name {
+		otherProductCategory, err := q.productCategoryService.FindProductCategory(
+			ctx,
+			models.NewProductCategoryFilter().
+				WithNames(request.Name).
+				WithExcludedProductCategoryIDs(productCategory.ID),
+		)
+		if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+			return c.Render("admin/product_category_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if otherProductCategory != nil {
+			return c.Render("admin/product_category_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniqueProductCategoryNameViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
 	request.ID = productCategory.ID
 	request.RecordStatus = productCategory.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
@@ -317,19 +331,18 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = productCategory.Photo
 	}
+	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if _, err = q.productCategoryService.UpdateProductCategory(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
@@ -339,14 +352,12 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("product category updated successfully").Redirect(c, sess.Session, "/admin/product_categories")
@@ -363,20 +374,19 @@ func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("product category not found").Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	productCategories, _, err := q.productCategoryService.FindProductCategories(
+	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
 		models.NewProductCategoryFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(productCategoryID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+		if !errors.Is(err, models.ErrProductCategoryNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	if len(productCategories) == 0 {
-		return flash.Danger("product category not found").Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	request := productCategories[0]
+	request := productCategory
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -394,7 +404,7 @@ func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	return flash.Success("product category deactivated successfully").Redirect(c, sess.Session, "/admin/product_categories")
+	return flash.Success("product category deleted successfully").Redirect(c, sess.Session, "/admin/product_categories")
 }
 
 func (q *productCategoryController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {

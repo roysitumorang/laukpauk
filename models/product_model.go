@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	ErrProductNotFound            = errors.New("product not found")
 	ErrUniqueProductNameViolation = errors.New("name: already exists")
 
 	ProductTypes = []ProductType{ProductTypeStandalone, ProductTypeBundled}
@@ -29,6 +30,9 @@ const (
 	ProductPhotoName         = "product-%d%s"
 	ProductPhotoPath         = "./images/product/%s"
 	ProductPhotoCompressPath = "./images/product/compress/%s"
+
+	SortProductsByID   = "id"
+	SortProductsByName = "name"
 )
 
 const (
@@ -69,12 +73,13 @@ type (
 		ProductCategoryIDs,
 		ProductIDs,
 		ExcludedProductIDs []uuid.UUID
-		RecordStatus  []RecordStatus
-		ProductTypes  []ProductType
-		Names         []string
-		StockStatuses []StockStatus
+		RecordStatuses []RecordStatus
+		ProductTypes   []ProductType
+		Names          []string
+		StockStatuses  []StockStatus
 		Keyword,
 		PaginationURL string
+		SortBy []SortBy
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -100,8 +105,8 @@ func (q *ProductFilter) WithExcludedProductIDs(excludedProductIDs ...uuid.UUID) 
 	return q
 }
 
-func (q *ProductFilter) WithRecordStatus(recordStatus ...RecordStatus) *ProductFilter {
-	q.RecordStatus = recordStatus
+func (q *ProductFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *ProductFilter {
+	q.RecordStatuses = recordStatuses
 	return q
 }
 
@@ -127,6 +132,11 @@ func (q *ProductFilter) WithKeyword(keyword string) *ProductFilter {
 
 func (q *ProductFilter) WithPaginationURL(paginationURL string) *ProductFilter {
 	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *ProductFilter) WithSortBy(sortBy ...SortBy) *ProductFilter {
+	q.SortBy = sortBy
 	return q
 }
 

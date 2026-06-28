@@ -9,6 +9,12 @@ type (
 
 	RecordStatus int
 	DiscountType int
+	SortOrder    string
+
+	SortBy struct {
+		Field string
+		Order SortOrder
+	}
 )
 
 const (
@@ -21,6 +27,11 @@ const (
 	DiscountTypePercentage
 )
 
+const (
+	SortOrderAsc  = "ASC"
+	SortOrderDesc = "DESC"
+)
+
 var (
 	MapLimits        = map[int64]int{10: 1, 25: 1, 50: 1, 100: 1}
 	Limits           = []int64{10, 25, 50, 100}
@@ -29,6 +40,10 @@ var (
 	SlugRegex        = regexp.MustCompile("^[a-z0-9-]+$")
 	SliceTopics      = []string{}
 	MapTopics        = map[string]struct{}{}
+	DefaultSortBy    = SortBy{
+		Field: "id",
+		Order: SortOrderDesc,
+	}
 )
 
 func NewMap() *Map {

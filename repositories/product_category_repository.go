@@ -3,8 +3,8 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 
 	"github.com/govalues/decimal"
@@ -22,6 +22,10 @@ type (
 			ctx context.Context,
 			request *models.ProductCategoryFilter,
 		) ([]*models.ProductCategory, int64, int64, error)
+		FindProductCategory(
+			ctx context.Context,
+			request *models.ProductCategoryFilter,
+		) (*models.ProductCategory, error)
 		CreateProductCategory(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -55,80 +59,10 @@ func (q *productCategoryRepository) FindProductCategories(
 	request *models.ProductCategoryFilter,
 ) ([]*models.ProductCategory, int64, int64, error) {
 	ctxt := "ProductCategoryRepository-FindProductCategories"
-	var (
-		params []any
-		conds  []string
-		sb     strings.Builder
-	)
-	if len(request.ProductCategoryIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("id IN (")
-		for i, productCategoryID := range request.ProductCategoryIDs {
-			params = append(params, productCategoryID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.RecordStatus) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("record_status IN (")
-		for i, recordStatus := range request.RecordStatus {
-			params = append(params, recordStatus)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.Names) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) IN (")
-		for i, name := range request.Names {
-			params = append(params, strings.ToLower(name))
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if request.Keyword != "" {
-		sb.Reset()
-		_, _ = sb.WriteString("%%")
-		_, _ = sb.WriteString(strings.ToLower(request.Keyword))
-		_, _ = sb.WriteString("%%")
-		params = append(params, sb.String())
-		n := strconv.Itoa(len(params))
-		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) LIKE $")
-		_, _ = sb.WriteString(n)
-		conds = append(conds, sb.String())
-	}
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = sb.WriteString(
-		`SELECT COUNT(1)
-		FROM product_categories`,
-	)
-	if len(conds) > 0 {
-		_, _ = sb.WriteString(" WHERE")
-		for i, cond := range conds {
-			if i > 0 {
-				_, _ = sb.WriteString(" AND")
-			}
-			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(cond)
-		}
-	}
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM product_categories %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -142,8 +76,7 @@ func (q *productCategoryRepository) FindProductCategories(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`ROW_NUMBER() OVER (ORDER BY id DESC) AS row_no
-		, id
+		`id
 		, record_status
 		, name
 		, description
@@ -158,7 +91,19 @@ func (q *productCategoryRepository) FindProductCategories(
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
+	sortBy := request.SortBy
+	if len(sortBy) == 0 {
+		sortBy = append(sortBy, models.DefaultSortBy)
+	}
+	_, _ = sb.WriteString(" ORDER BY")
+	for i, item := range sortBy {
+		if i > 0 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Order)
+	}
 	pages := int64(1)
+	var offset int64
 	if request.Limit > 0 {
 		totalDecimal, err := decimal.New(total, 0)
 		if err != nil {
@@ -176,11 +121,8 @@ func (q *productCategoryRepository) FindProductCategories(
 			return nil, 0, 0, err
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
-		offset := request.Page * request.Limit
-		_, _ = sb.WriteString(" LIMIT ")
-		_, _ = sb.WriteString(strconv.FormatInt(request.Limit, 10))
-		_, _ = sb.WriteString(" OFFSET ")
-		_, _ = sb.WriteString(strconv.FormatInt(offset, 10))
+		offset = request.Page * request.Limit
+		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -195,7 +137,6 @@ func (q *productCategoryRepository) FindProductCategories(
 	for rows.Next() {
 		var productCategory models.ProductCategory
 		if err = rows.Scan(
-			&productCategory.RowNo,
 			&productCategory.ID,
 			&productCategory.RecordStatus,
 			&productCategory.Name,
@@ -212,9 +153,63 @@ func (q *productCategoryRepository) FindProductCategories(
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
-		response = append(response, &productCategory)
+		offset++
+		productCategory.RowNo = offset
+		response = append(response, new(productCategory))
 	}
 	return response, total, pages, nil
+}
+
+func (q *productCategoryRepository) FindProductCategory(
+	ctx context.Context,
+	request *models.ProductCategoryFilter,
+) (*models.ProductCategory, error) {
+	ctxt := "ProductCategoryRepository-FindProductCategory"
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(
+		&sb,
+		`SELECT
+			id
+			, record_status
+			, name
+			, description
+			, photo
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM product_categories %s`,
+		condition,
+	)
+	query := sb.String()
+	var response models.ProductCategory
+	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Name,
+		&response.Description,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrProductCategoryNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	return new(response), nil
 }
 
 func (q *productCategoryRepository) CreateProductCategory(
@@ -348,4 +343,81 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		return nil, err
 	}
 	return new(response), nil
+}
+
+func (q *productCategoryRepository) buildCondition(request *models.ProductCategoryFilter, sb *strings.Builder) (condition string, params []any) {
+	var conds []string
+	if len(request.ProductCategoryIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id IN (")
+		for i, productCategoryID := range request.ProductCategoryIDs {
+			params = append(params, productCategoryID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ExcludedProductCategoryIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedProductCategoryID := range request.ExcludedProductCategoryIDs {
+			params = append(params, excludedProductCategoryID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.RecordStatuses) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("record_status IN (")
+		for i, recordStatus := range request.RecordStatuses {
+			params = append(params, recordStatus)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.Names) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("LOWER(name) IN (")
+		for i, name := range request.Names {
+			params = append(params, strings.ToLower(name))
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if request.Keyword != "" {
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		params = append(params, sb.String())
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		conds = append(conds, sb.String())
+	}
+	if len(conds) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("WHERE")
+		for i, cond := range conds {
+			if i > 0 {
+				_, _ = sb.WriteString(" AND")
+			}
+			_, _ = sb.WriteString(" ")
+			_, _ = sb.WriteString(cond)
+		}
+		condition = sb.String()
+	}
+	return
 }

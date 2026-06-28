@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
@@ -16,6 +17,10 @@ type (
 			ctx context.Context,
 			request *models.ProductFilter,
 		) ([]*models.Product, *models.Pagination, error)
+		FindProduct(
+			ctx context.Context,
+			request *models.ProductFilter,
+		) (*models.Product, error)
 		CreateProduct(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -69,6 +74,18 @@ func (q *productService) FindProducts(
 		return nil, nil, err
 	}
 	return rows, pagination, nil
+}
+
+func (q *productService) FindProduct(
+	ctx context.Context,
+	request *models.ProductFilter,
+) (*models.Product, error) {
+	ctxt := "ProductService-FindProduct"
+	response, err := q.productRepository.FindProduct(ctx, request)
+	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	}
+	return response, err
 }
 
 func (q *productService) CreateProduct(

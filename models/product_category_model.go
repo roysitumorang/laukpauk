@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	ErrProductCategoryNotFound            = errors.New("product category not found")
 	ErrUniqueProductCategoryNameViolation = errors.New("name: already exists")
 )
 
@@ -16,6 +17,9 @@ const (
 	ProductCategoryPhotoName         = "product-category-%d%s"
 	ProductCategoryPhotoPath         = "./images/product_category/%s"
 	ProductCategoryPhotoCompressPath = "./images/product_category/compress/%s"
+
+	SortProductCategoriesByID   = "id"
+	SortProductCategoriesByName = "name"
 )
 
 type (
@@ -36,11 +40,13 @@ type (
 	}
 
 	ProductCategoryFilter struct {
-		ProductCategoryIDs []uuid.UUID
-		RecordStatus       []RecordStatus
-		Names              []string
+		ProductCategoryIDs,
+		ExcludedProductCategoryIDs []uuid.UUID
+		RecordStatuses []RecordStatus
+		Names          []string
 		Keyword,
 		PaginationURL string
+		SortBy []SortBy
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -56,8 +62,13 @@ func (q *ProductCategoryFilter) WithProductCategoryIDs(productCategoryIDs ...uui
 	return q
 }
 
-func (q *ProductCategoryFilter) WithRecordStatus(recordStatus ...RecordStatus) *ProductCategoryFilter {
-	q.RecordStatus = recordStatus
+func (q *ProductCategoryFilter) WithExcludedProductCategoryIDs(excludedProductCategoryIDs ...uuid.UUID) *ProductCategoryFilter {
+	q.ExcludedProductCategoryIDs = excludedProductCategoryIDs
+	return q
+}
+
+func (q *ProductCategoryFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *ProductCategoryFilter {
+	q.RecordStatuses = recordStatuses
 	return q
 }
 
@@ -73,6 +84,11 @@ func (q *ProductCategoryFilter) WithKeyword(keyword string) *ProductCategoryFilt
 
 func (q *ProductCategoryFilter) WithPaginationURL(paginationURL string) *ProductCategoryFilter {
 	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *ProductCategoryFilter) WithSortBy(sortBy ...SortBy) *ProductCategoryFilter {
+	q.SortBy = sortBy
 	return q
 }
 
