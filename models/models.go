@@ -71,3 +71,10 @@ func (q *Map) Delete(key string) *Map {
 func (q *Map) Size() int {
 	return len(*q)
 }
+
+func (q RecordStatus) String() string {
+	if q == RecordStatusDeleted {
+		return "deleted"
+	}
+	return "active"
+}

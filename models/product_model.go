@@ -178,23 +178,15 @@ func (q *Product) SetPhoto(photo string) *Product {
 }
 
 func (q ProductType) String() string {
-	switch q {
-	case ProductTypeBundled:
+	if q == ProductTypeBundled {
 		return "paket"
-	case ProductTypeStandalone:
-		fallthrough
-	default:
-		return "non paket"
 	}
+	return "non paket"
 }
 
 func (q StockStatus) String() string {
-	switch q {
-	case StockStatusInStock:
-		return "tersedia"
-	case StockStatusOutOfStock:
-		fallthrough
-	default:
+	if q == StockStatusOutOfStock {
 		return "tidak tersedia"
 	}
+	return "tersedia"
 }
