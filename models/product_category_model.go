@@ -6,11 +6,18 @@ import (
 	"strings"
 	"time"
 	"uuid"
+
+	"github.com/roysitumorang/laukpauk/helper"
 )
 
 var (
 	ErrProductCategoryNotFound            = errors.New("product category not found")
 	ErrUniqueProductCategoryNameViolation = errors.New("name: already exists")
+
+	MapProductCategorySortings = map[string]struct{}{
+		SortingFieldID:   {},
+		SortingFieldName: {},
+	}
 )
 
 const (
@@ -46,7 +53,8 @@ type (
 		Names          []string
 		Keyword,
 		PaginationURL string
-		SortBy []SortBy
+		Sortings    []Sorting
+		MapSortings *Map
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -54,7 +62,10 @@ type (
 )
 
 func NewProductCategoryFilter() *ProductCategoryFilter {
-	return new(ProductCategoryFilter{UrlValues: url.Values{}})
+	return new(ProductCategoryFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
+	})
 }
 
 func (q *ProductCategoryFilter) WithProductCategoryIDs(productCategoryIDs ...uuid.UUID) *ProductCategoryFilter {
@@ -87,8 +98,12 @@ func (q *ProductCategoryFilter) WithPaginationURL(paginationURL string) *Product
 	return q
 }
 
-func (q *ProductCategoryFilter) WithSortBy(sortBy ...SortBy) *ProductCategoryFilter {
-	q.SortBy = sortBy
+func (q *ProductCategoryFilter) WithSortings(sortings ...Sorting) *ProductCategoryFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
 	return q
 }
 

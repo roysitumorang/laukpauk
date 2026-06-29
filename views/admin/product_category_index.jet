@@ -56,7 +56,7 @@
 						{{ end }}
 						<form method="GET" action="/admin/product_categories">
 							<div class="row">
-								<div class="col-sm-12 col-md-6">
+								<div class="col-sm-4 col-md-6">
 									<div class="dataTables_length" id="listBlog_length">
 										<label for="limit">
 											Show
@@ -68,10 +68,22 @@
 										</label>
 									</div>
 								</div>
-								<div class="col-sm-12 col-md-6">
+								<div class="col-sm-4 col-md-6">
 									<div id="listBlog_filter" class="dataTables_filter">
 										<label for="q">
 											Search: <input type="text" name="q" id="q" value="{{ request.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
+										</label>
+									</div>
+								</div>
+								<div class="col-sm-4 col-md-6">
+									<div class="dataTables_length" id="listBlog_length">
+										<label for="limit">
+											Sort by
+											<select name="sort_by" multiple id="sort_by" aria-controls="listBlog" class="custom-select custom-select-sm form-control form-control-sm">
+												{{ range _, sorting := sortings }}
+												<option value="{{ sorting.String() }}"{{ if request.MapSortings.Contains(sorting.String()) }} selected{{ end }}>{{ sorting.Label }}</option>
+												{{ end }}
+											</select>
 										</label>
 									</div>
 								</div>

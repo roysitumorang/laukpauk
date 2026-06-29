@@ -68,6 +68,28 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
+		"sortings", []models.Sorting{
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Newest-Oldest",
+			},
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Oldest-Newest",
+			},
+			{
+				Field:     models.SortingFieldName,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Name A-Z",
+			},
+			{
+				Field:     models.SortingFieldName,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Name Z-A",
+			},
+		},
 	)
 	if request, err = sanitizers.FindProductCategories(ctx, c); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")

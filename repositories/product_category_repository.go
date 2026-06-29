@@ -91,7 +91,7 @@ func (q *productCategoryRepository) FindProductCategories(
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
-	sortBy := request.SortBy
+	sortBy := request.Sortings
 	if len(sortBy) == 0 {
 		sortBy = append(sortBy, models.DefaultSortBy)
 	}
@@ -100,7 +100,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Order)
+		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64

@@ -2,18 +2,22 @@ package models
 
 import (
 	"regexp"
+	"strings"
+
+	"github.com/roysitumorang/laukpauk/helper"
 )
 
 type (
 	Map map[string]any
 
-	RecordStatus int
-	DiscountType int
-	SortOrder    string
+	RecordStatus     int
+	DiscountType     int
+	SortingDirection string
 
-	SortBy struct {
-		Field string
-		Order SortOrder
+	Sorting struct {
+		Field     string
+		Direction SortingDirection
+		Label     string
 	}
 )
 
@@ -28,21 +32,24 @@ const (
 )
 
 const (
-	SortOrderAsc  = "ASC"
-	SortOrderDesc = "DESC"
+	SortingFieldID   = "id"
+	SortingFieldName = "name"
+
+	SortingDirectionAsc  SortingDirection = "ASC"
+	SortingDirectionDesc SortingDirection = "DESC"
 )
 
 var (
-	MapLimits        = map[int64]int{10: 1, 25: 1, 50: 1, 100: 1}
+	MapLimits        = map[int64]struct{}{10: {}, 25: {}, 50: {}, 100: {}}
 	Limits           = []int64{10, 25, 50, 100}
 	PhoneNumberRegex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
 	UsernameRegex    = regexp.MustCompile("[^a-z0-9]+")
 	SlugRegex        = regexp.MustCompile("^[a-z0-9-]+$")
 	SliceTopics      = []string{}
 	MapTopics        = map[string]struct{}{}
-	DefaultSortBy    = SortBy{
-		Field: "id",
-		Order: SortOrderDesc,
+	DefaultSortBy    = Sorting{
+		Field:     SortingFieldID,
+		Direction: SortingDirectionDesc,
 	}
 )
 
@@ -72,9 +79,30 @@ func (q *Map) Size() int {
 	return len(*q)
 }
 
+func (q *Map) Contains(key string) bool {
+	_, ok := (*q)[key]
+	return ok
+}
+
+func (q *Map) Clear() {
+	clear(*q)
+}
+
 func (q RecordStatus) String() string {
 	if q == RecordStatusDeleted {
 		return "deleted"
 	}
 	return "active"
+}
+
+func (q Sorting) String() string {
+	return helper.Sprintf("%s:%s", q.Field, strings.ToLower(q.Direction.String()))
+}
+
+func (q SortingDirection) String() string {
+	return string(q)
+}
+
+func (q SortingDirection) Equal(v string) bool {
+	return strings.EqualFold(q.String(), v)
 }

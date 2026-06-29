@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 	"uuid"
+
+	"github.com/roysitumorang/laukpauk/helper"
 )
 
 var (
@@ -24,15 +26,17 @@ var (
 		StockStatusInStock:    {},
 		StockStatusOutOfStock: {},
 	}
+
+	MapProductSortings = map[string]struct{}{
+		SortingFieldID:   {},
+		SortingFieldName: {},
+	}
 )
 
 const (
 	ProductPhotoName         = "product-%d%s"
 	ProductPhotoPath         = "./images/product/%s"
 	ProductPhotoCompressPath = "./images/product/compress/%s"
-
-	SortProductsByID   = "id"
-	SortProductsByName = "name"
 )
 
 const (
@@ -79,7 +83,8 @@ type (
 		StockStatuses  []StockStatus
 		Keyword,
 		PaginationURL string
-		SortBy []SortBy
+		Sortings    []Sorting
+		MapSortings *Map
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -87,7 +92,10 @@ type (
 )
 
 func NewProductFilter() *ProductFilter {
-	return new(ProductFilter{UrlValues: url.Values{}})
+	return new(ProductFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
+	})
 }
 
 func (q *ProductFilter) WithProductCategoryIDs(productCategoryIDs ...uuid.UUID) *ProductFilter {
@@ -135,8 +143,12 @@ func (q *ProductFilter) WithPaginationURL(paginationURL string) *ProductFilter {
 	return q
 }
 
-func (q *ProductFilter) WithSortBy(sortBy ...SortBy) *ProductFilter {
-	q.SortBy = sortBy
+func (q *ProductFilter) WithSortings(sortings ...Sorting) *ProductFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
 	return q
 }
 

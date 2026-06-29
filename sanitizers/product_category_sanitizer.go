@@ -28,20 +28,46 @@ func FindProductCategories(ctx context.Context, c fiber.Ctx) (*models.ProductCat
 	_, _ = sb.WriteString(c.BaseURL())
 	_, _ = sb.WriteString(originalURL.Path)
 	urlValues := originalURL.Query()
-	response = response.WithPaginationURL(sb.String())
+	response.WithPaginationURL(sb.String())
 	if keyword := strings.TrimSpace(c.Query("q")); keyword != "" {
 		urlValues.Set("q", keyword)
-		response = response.WithKeyword(keyword)
+		response.WithKeyword(keyword)
+	}
+	if sortBy := urlValues["sort_by"]; len(sortBy) > 0 {
+		var sortings []models.Sorting
+		for _, sorting := range sortBy {
+			if !strings.Contains(sorting, ":") {
+				if _, ok := models.MapProductCategorySortings[sorting]; ok {
+					sortings = append(sortings, models.Sorting{
+						Field:     sorting,
+						Direction: models.SortingDirectionAsc,
+					})
+				}
+			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
+				field, order := items[0], items[1]
+				if _, ok := models.MapProductCategorySortings[field]; ok &&
+					(models.SortingDirectionAsc.Equal(order) ||
+						models.SortingDirectionDesc.Equal(order)) {
+					sortings = append(sortings, models.Sorting{
+						Field:     field,
+						Direction: models.SortingDirection(order),
+					})
+				}
+			}
+		}
+		response.WithSortings(sortings...)
+	} else {
+		response.WithSortings(models.DefaultSortBy)
 	}
 	limit, _ := utils.ParseInt(c.Query("limit"))
 	if _, ok := models.MapLimits[limit]; !ok {
 		limit = models.Limits[0]
 	}
 	urlValues.Set("limit", strconv.FormatInt(limit, 10))
-	response = response.WithLimit(limit)
+	response.WithLimit(limit)
 	page, _ := utils.ParseInt(c.Query("page"))
 	page = max(page, 0)
-	response = response.WithPage(page).
+	response.WithPage(page).
 		WithUrlValues(urlValues)
 	return response, nil
 }

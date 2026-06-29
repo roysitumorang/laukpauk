@@ -71,6 +71,28 @@ func (q *productController) AdminIndex(c fiber.Ctx) (err error) {
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
+		"sortings", []models.Sorting{
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Newest-Oldest",
+			},
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Oldest-Newest",
+			},
+			{
+				Field:     models.SortingFieldName,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Name A-Z",
+			},
+			{
+				Field:     models.SortingFieldName,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Name Z-A",
+			},
+		},
 	)
 	if request, err = sanitizers.FindProducts(ctx, c); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
@@ -120,9 +142,9 @@ func (q *productController) AdminNew(c fiber.Ctx) (err error) {
 		ctx,
 		models.NewProductCategoryFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithSortBy(models.SortBy{
-				Field: models.SortProductCategoriesByName,
-				Order: models.SortOrderAsc,
+			WithSortings(models.Sorting{
+				Field:     models.SortProductCategoriesByName,
+				Direction: models.SortingDirectionAsc,
 			}),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
@@ -161,9 +183,9 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		ctx,
 		models.NewProductCategoryFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithSortBy(models.SortBy{
-				Field: models.SortProductCategoriesByName,
-				Order: models.SortOrderAsc,
+			WithSortings(models.Sorting{
+				Field:     models.SortProductCategoriesByName,
+				Direction: models.SortingDirectionAsc,
 			}),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
@@ -316,9 +338,9 @@ func (q *productController) AdminEdit(c fiber.Ctx) (err error) {
 		ctx,
 		models.NewProductCategoryFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithSortBy(models.SortBy{
-				Field: models.SortProductCategoriesByName,
-				Order: models.SortOrderAsc,
+			WithSortings(models.Sorting{
+				Field:     models.SortProductCategoriesByName,
+				Direction: models.SortingDirectionAsc,
 			}),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
@@ -373,9 +395,9 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		ctx,
 		models.NewProductCategoryFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithSortBy(models.SortBy{
-				Field: models.SortProductCategoriesByName,
-				Order: models.SortOrderAsc,
+			WithSortings(models.Sorting{
+				Field:     models.SortProductCategoriesByName,
+				Direction: models.SortingDirectionAsc,
 			}),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
