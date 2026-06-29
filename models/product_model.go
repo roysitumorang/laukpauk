@@ -177,11 +177,19 @@ func (q *Product) SetPhoto(photo string) *Product {
 	return q
 }
 
+func (q ProductType) Int() int {
+	return int(q)
+}
+
 func (q ProductType) String() string {
 	if q == ProductTypeBundled {
 		return "paket"
 	}
 	return "non paket"
+}
+
+func (q StockStatus) Int() int {
+	return int(q)
 }
 
 func (q StockStatus) String() string {
