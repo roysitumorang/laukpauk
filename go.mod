@@ -27,7 +27,7 @@ require (
 	github.com/sqids/sqids-go v0.4.1
 	github.com/swaggo/swag v1.16.6
 	github.com/twmb/franz-go v1.21.4
-	github.com/urfave/cli/v3 v3.10.0
+	github.com/urfave/cli/v3 v3.10.1
 	golang.org/x/crypto v0.53.0
 	golang.org/x/sync v0.21.0
 )
@@ -41,7 +41,7 @@ require (
 	github.com/coregx/ahocorasick v0.2.1 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-openapi/jsonpointer v0.23.1 // indirect
+	github.com/go-openapi/jsonpointer v0.23.2 // indirect
 	github.com/go-openapi/jsonreference v0.21.6 // indirect
 	github.com/go-openapi/spec v0.22.6 // indirect
 	github.com/go-openapi/swag/conv v0.26.1 // indirect
