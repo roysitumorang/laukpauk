@@ -7,20 +7,26 @@ import (
 	"uuid"
 )
 
+const (
+	PriceTypeAbsolute PriceType = iota
+	PriceTypeRelative
+)
+
 type (
+	PriceType int
+
 	ProductVariant struct {
 		RowNo                   int64        `json:"-" form:"-"`
 		ID                      uuid.UUID    `json:"-" form:"-"`
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
 		Product                 Product      `json:"-" form:"-"`
-		MetricUnitID            uuid.UUID    `json:"-" form:"-"`
-		MetricUnit              MetricUnit   `json:"-" form:"-"`
-		MeasureMin              float64      `json:"-" form:"-"`
-		MeasureMax              float64      `json:"-" form:"-"`
+		MeasureUnit             string       `json:"-" form:"-"`
 		Price                   int64        `json:"-" form:"-"`
+		PriceType               PriceType    `json:"-" form:"-"`
+		PriceVariantPercentage  float64      `json:"-" form:"-"`
 		DiscountType            DiscountType `json:"-" form:"-"`
-		DiscountAmount          int64        `json:"-" form:"-"`
+		DiscountRate            int64        `json:"-" form:"-"`
 		DiscountMinimumQuantity int64        `json:"-" form:"-"`
 		Description             string       `json:"-" form:"-"`
 		CreatedBy               uuid.UUID    `json:"-" form:"-"`
@@ -35,8 +41,8 @@ type (
 	ProductVariantFilter struct {
 		ProductIDs,
 		ProductVariantIDs []uuid.UUID
-		RecordStatus  []RecordStatus
-		PaginationURL string
+		RecordStatuses []RecordStatus
+		PaginationURL  string
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -57,8 +63,8 @@ func (q *ProductVariantFilter) WithProductVariantIDs(productVariantIDs ...uuid.U
 	return q
 }
 
-func (q *ProductVariantFilter) WithRecordStatus(recordStatus ...RecordStatus) *ProductVariantFilter {
-	q.RecordStatus = recordStatus
+func (q *ProductVariantFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *ProductVariantFilter {
+	q.RecordStatuses = recordStatuses
 	return q
 }
 
@@ -83,30 +89,27 @@ func (q *ProductVariantFilter) WithUrlValues(urlValues url.Values) *ProductVaria
 }
 
 func (q *ProductVariant) Validate() error {
-	q.MeasureMin = max(0, q.MeasureMin)
-	q.MeasureMax = max(0, q.MeasureMax)
 	q.Price = max(0, q.Price)
-	q.DiscountAmount = max(0, q.DiscountAmount)
+	if q.PriceType == PriceTypeRelative {
+		q.PriceVariantPercentage = min(max(0, q.PriceVariantPercentage), 100)
+	} else {
+		q.PriceVariantPercentage = 100
+	}
+	q.DiscountRate = max(0, q.DiscountRate)
 	q.DiscountMinimumQuantity = max(0, q.DiscountMinimumQuantity)
-	if q.MeasureMax == 0 {
-		return errors.New("measure_max: is required")
-	}
-	if q.MeasureMax < q.MeasureMin {
-		return errors.New("measure_max: should exceed measure_min")
-	}
 	if q.Price == 0 {
 		return errors.New("price: is required")
 	}
 	return nil
 }
 
-func (q *ProductVariant) HumanizeDiscountType() string {
-	switch q.DiscountType {
-	case DiscountTypePercentage:
-		return "persentase"
-	case DiscountTypeFlat:
-		fallthrough
-	default:
-		return "cash"
+func (q PriceType) Int() int {
+	return int(q)
+}
+
+func (q PriceType) String() string {
+	if q == PriceTypeRelative {
+		return "tidak pas"
 	}
+	return "pas"
 }

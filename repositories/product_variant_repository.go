@@ -86,10 +86,10 @@ func (q *productVariantRepository) FindProductVariants(
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.RecordStatus) > 0 {
+	if len(request.RecordStatuses) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("record_status IN (")
-		for i, recordStatus := range request.RecordStatus {
+		for i, recordStatus := range request.RecordStatuses {
 			params = append(params, recordStatus)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -132,11 +132,12 @@ func (q *productVariantRepository) FindProductVariants(
 		, id
 		, record_status
 		, product_id
-		, metric_unit_id
-		, measure_min
-		, measure_max
+		, measure_unit
+		, price
+		, price_type
+		, price_variant_percentage
 		, discount_type
-		, discount_amount
+		, discount_rate
 		, discount_minimum_quantity
 		, description
 		, created_by
@@ -190,11 +191,12 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ID,
 			&productVariant.RecordStatus,
 			&productVariant.ProductID,
-			&productVariant.MetricUnitID,
-			&productVariant.MeasureMin,
-			&productVariant.MeasureMax,
+			&productVariant.MeasureUnit,
+			&productVariant.Price,
+			&productVariant.PriceType,
+			&productVariant.PriceVariantPercentage,
 			&productVariant.DiscountType,
-			&productVariant.DiscountAmount,
+			&productVariant.DiscountRate,
 			&productVariant.DiscountMinimumQuantity,
 			&productVariant.Description,
 			&productVariant.CreatedBy,
@@ -222,29 +224,31 @@ func (q *productVariantRepository) CreateProductVariant(
 	var response models.ProductVariant
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO productVariant_variants (
+		`INSERT INTO product_variants (
 			record_status
 			, product_id
-			, metric_unit_id
-			, measure_min
-			, measure_max
+			, measure_unit
+			, price
+			, price_type
+			, price_variant_percentage
 			, discount_type
-			, discount_amount
+			, discount_rate
 			, discount_minimum_quantity
 			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id
 			, record_status
 			, product_id
-			, metric_unit_id
-			, measure_min
-			, measure_max
+			, measure_unit
+			, price
+			, price_type
+			, price_variant_percentage
 			, discount_type
-			, discount_amount
+			, discount_rate
 			, discount_minimum_quantity
 			, description
 			, created_by
@@ -256,11 +260,12 @@ func (q *productVariantRepository) CreateProductVariant(
 			, deletion_reason`,
 		request.RecordStatus,
 		request.ProductID,
-		request.MetricUnitID,
-		request.MeasureMin,
-		request.MeasureMax,
+		request.MeasureUnit,
+		request.Price,
+		request.PriceType,
+		request.PriceVariantPercentage,
 		request.DiscountType,
-		request.DiscountAmount,
+		request.DiscountRate,
 		request.DiscountMinimumQuantity,
 		request.Description,
 		request.CreatedBy,
@@ -271,11 +276,12 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
-		&response.MetricUnitID,
-		&response.MeasureMin,
-		&response.MeasureMax,
+		&response.MeasureUnit,
+		&response.Price,
+		&response.PriceType,
+		&response.PriceVariantPercentage,
 		&response.DiscountType,
-		&response.DiscountAmount,
+		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
 		&response.Description,
 		&response.CreatedBy,
@@ -306,26 +312,29 @@ func (q *productVariantRepository) UpdateProductVariant(
 		ctx,
 		`UPDATE product_variants SET
 			record_status = $1
-			, measure_min = $2
-			, measure_max = $3
-			, discount_type = $4
-			, discount_amount = $5
-			, discount_minimum_quantity = $6
-			, description = $7
-			, updated_by = $8
-			, updated_at = $9
-			, deleted_by = $10
-			, deleted_at = $11
-			, deletion_reason = $12
-		WHERE id = $13
+			, measure_unit = $2
+			, price = $3
+			, price_type = $4
+			, price_variant_percentage = $5
+			, discount_type = $6
+			, discount_rate = $7
+			, discount_minimum_quantity = $8
+			, description = $9
+			, updated_by = $10
+			, updated_at = $11
+			, deleted_by = $12
+			, deleted_at = $13
+			, deletion_reason = $14
+		WHERE id = $15
 		RETURNING id
 			, record_status
 			, product_id
-			, metric_unit_id
-			, measure_min
-			, measure_max
+			, measure_unit
+			, price
+			, price_type
+			, price_variant_percentage
 			, discount_type
-			, discount_amount
+			, discount_rate
 			, discount_minimum_quantity
 			, description
 			, created_by
@@ -336,10 +345,12 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, deleted_at
 			, deletion_reason`,
 		request.RecordStatus,
-		request.MeasureMin,
-		request.MeasureMax,
+		request.MeasureUnit,
+		request.Price,
+		request.PriceType,
+		request.PriceVariantPercentage,
 		request.DiscountType,
-		request.DiscountAmount,
+		request.DiscountRate,
 		request.DiscountMinimumQuantity,
 		request.Description,
 		request.UpdatedBy,
@@ -352,11 +363,12 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
-		&response.MetricUnitID,
-		&response.MeasureMin,
-		&response.MeasureMax,
+		&response.MeasureUnit,
+		&response.Price,
+		&response.PriceType,
+		&response.PriceVariantPercentage,
 		&response.DiscountType,
-		&response.DiscountAmount,
+		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
 		&response.Description,
 		&response.CreatedBy,

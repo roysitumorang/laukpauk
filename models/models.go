@@ -27,7 +27,7 @@ const (
 )
 
 const (
-	DiscountTypeFlat DiscountType = iota
+	DiscountTypeFixedAmount DiscountType = iota
 	DiscountTypePercentage
 )
 
@@ -105,4 +105,15 @@ func (q SortingDirection) String() string {
 
 func (q SortingDirection) Equal(v string) bool {
 	return strings.EqualFold(q.String(), v)
+}
+
+func (q DiscountType) Int() int {
+	return int(q)
+}
+
+func (q DiscountType) String() string {
+	if q == DiscountTypePercentage {
+		return "persentase"
+	}
+	return "cash"
 }
