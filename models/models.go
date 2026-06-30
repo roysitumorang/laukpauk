@@ -51,6 +51,11 @@ var (
 		Field:     SortingFieldID,
 		Direction: SortingDirectionDesc,
 	}
+	DiscountTypes    = []DiscountType{DiscountTypeFixedAmount, DiscountTypePercentage}
+	MapDiscountTypes = map[DiscountType]struct{}{
+		DiscountTypeFixedAmount: {},
+		DiscountTypePercentage:  {},
+	}
 )
 
 func NewMap() *Map {
@@ -116,4 +121,8 @@ func (q DiscountType) String() string {
 		return "persentase"
 	}
 	return "cash"
+}
+
+func (q DiscountType) Equal(v DiscountType) bool {
+	return q.Int() == v.Int()
 }

@@ -501,8 +501,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(" AND")
 			}
-			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(cond)
+			_, _ = fmt.Fprintf(sb, " %s", cond)
 		}
 		condition = sb.String()
 	}

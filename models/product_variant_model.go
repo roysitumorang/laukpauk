@@ -3,8 +3,23 @@ package models
 import (
 	"errors"
 	"net/url"
+	"strings"
 	"time"
 	"uuid"
+
+	"github.com/roysitumorang/laukpauk/helper"
+)
+
+var (
+	ErrProductVariantNotFound                   = errors.New("product variant not found")
+	ErrUniqueProductVariantMeasureUnitViolation = errors.New("measure_unit: already exists")
+
+	PriceTypes = []PriceType{PriceTypeAbsolute, PriceTypeRelative}
+
+	MapPriceTypes = map[PriceType]struct{}{
+		PriceTypeAbsolute: {},
+		PriceTypeRelative: {},
+	}
 )
 
 const (
@@ -21,14 +36,14 @@ type (
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
 		Product                 Product      `json:"-" form:"-"`
-		MeasureUnit             string       `json:"-" form:"-"`
-		Price                   int64        `json:"-" form:"-"`
-		PriceType               PriceType    `json:"-" form:"-"`
-		PriceVariantPercentage  float64      `json:"-" form:"-"`
-		DiscountType            DiscountType `json:"-" form:"-"`
-		DiscountRate            int64        `json:"-" form:"-"`
-		DiscountMinimumQuantity int64        `json:"-" form:"-"`
-		Description             string       `json:"-" form:"-"`
+		MeasureUnit             string       `json:"measure_unit" form:"measure_unit"`
+		Price                   int64        `json:"price" form:"price"`
+		PriceType               PriceType    `json:"price_type" form:"price_type"`
+		PriceVariantPercentage  float64      `json:"price_variant_percentage" form:"price_variant_percentage"`
+		DiscountType            DiscountType `json:"discount_type" form:"discount_type"`
+		DiscountRate            int64        `json:"discount_rate" form:"discount_rate"`
+		DiscountMinimumQuantity int64        `json:"discount_minimum_quantity" form:"discount_minimum_quantity"`
+		Description             string       `json:"description" form:"description"`
 		CreatedBy               uuid.UUID    `json:"-" form:"-"`
 		CreatedAt               time.Time    `json:"-" form:"-"`
 		UpdatedBy               uuid.UUID    `json:"-" form:"-"`
@@ -40,9 +55,13 @@ type (
 
 	ProductVariantFilter struct {
 		ProductIDs,
-		ProductVariantIDs []uuid.UUID
+		ProductVariantIDs,
+		ExcludedProductVariantIDs []uuid.UUID
 		RecordStatuses []RecordStatus
+		MeasureUnits   []string
 		PaginationURL  string
+		Sortings       []Sorting
+		MapSortings    *Map
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -50,7 +69,10 @@ type (
 )
 
 func NewProductVariantFilter() *ProductVariantFilter {
-	return new(ProductVariantFilter{UrlValues: url.Values{}})
+	return new(ProductVariantFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
+	})
 }
 
 func (q *ProductVariantFilter) WithProductIDs(productIDs ...uuid.UUID) *ProductVariantFilter {
@@ -63,13 +85,32 @@ func (q *ProductVariantFilter) WithProductVariantIDs(productVariantIDs ...uuid.U
 	return q
 }
 
+func (q *ProductVariantFilter) WithExcludedProductVariantIDs(excludedProductVariantIDs ...uuid.UUID) *ProductVariantFilter {
+	q.ExcludedProductVariantIDs = excludedProductVariantIDs
+	return q
+}
+
 func (q *ProductVariantFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *ProductVariantFilter {
 	q.RecordStatuses = recordStatuses
 	return q
 }
 
+func (q *ProductVariantFilter) WithMeasureUnits(measureUnits ...string) *ProductVariantFilter {
+	q.MeasureUnits = measureUnits
+	return q
+}
+
 func (q *ProductVariantFilter) WithPaginationURL(paginationURL string) *ProductVariantFilter {
 	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *ProductVariantFilter) WithSortings(sortings ...Sorting) *ProductVariantFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
 	return q
 }
 
@@ -97,8 +138,17 @@ func (q *ProductVariant) Validate() error {
 	}
 	q.DiscountRate = max(0, q.DiscountRate)
 	q.DiscountMinimumQuantity = max(0, q.DiscountMinimumQuantity)
+	if q.MeasureUnit = strings.TrimSpace(q.MeasureUnit); q.MeasureUnit == "" {
+		return errors.New("measure_unit: is required")
+	}
 	if q.Price == 0 {
 		return errors.New("price: is required")
+	}
+	if _, ok := MapPriceTypes[q.PriceType]; !ok {
+		return errors.New("price_type: not found")
+	}
+	if _, ok := MapDiscountTypes[q.DiscountType]; !ok {
+		return errors.New("discount_type: not found")
 	}
 	return nil
 }
@@ -112,4 +162,8 @@ func (q PriceType) String() string {
 		return "tidak pas"
 	}
 	return "pas"
+}
+
+func (q PriceType) Equal(v PriceType) bool {
+	return q.Int() == v.Int()
 }

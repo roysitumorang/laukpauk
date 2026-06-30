@@ -3,8 +3,8 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 
 	"github.com/govalues/decimal"
@@ -20,6 +20,10 @@ type (
 			ctx context.Context,
 			request *models.ProductVariantFilter,
 		) ([]*models.ProductVariant, int64, int64, error)
+		FindProductVariant(
+			ctx context.Context,
+			request *models.ProductVariantFilter,
+		) (*models.ProductVariant, error)
 		CreateProductVariant(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -53,68 +57,10 @@ func (q *productVariantRepository) FindProductVariants(
 	request *models.ProductVariantFilter,
 ) ([]*models.ProductVariant, int64, int64, error) {
 	ctxt := "ProductVariantRepository-FindProductVariants"
-	var (
-		params []any
-		conds  []string
-		sb     strings.Builder
-	)
-	if len(request.ProductIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("product_id IN (")
-		for i, productID := range request.ProductIDs {
-			params = append(params, productID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.ProductVariantIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("id IN (")
-		for i, productVariantID := range request.ProductVariantIDs {
-			params = append(params, productVariantID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.RecordStatuses) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("record_status IN (")
-		for i, recordStatus := range request.RecordStatuses {
-			params = append(params, recordStatus)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = sb.WriteString(
-		`SELECT COUNT(1)
-		FROM product_variants`,
-	)
-	if len(conds) > 0 {
-		_, _ = sb.WriteString(" WHERE")
-		for i, cond := range conds {
-			if i > 0 {
-				_, _ = sb.WriteString(" AND")
-			}
-			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(cond)
-		}
-	}
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM product_variants %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -128,8 +74,7 @@ func (q *productVariantRepository) FindProductVariants(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`ROW_NUMBER() OVER (ORDER BY id DESC) AS row_no
-		, id
+		`id
 		, record_status
 		, product_id
 		, measure_unit
@@ -150,7 +95,19 @@ func (q *productVariantRepository) FindProductVariants(
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
+	sortBy := request.Sortings
+	if len(sortBy) == 0 {
+		sortBy = append(sortBy, models.DefaultSortBy)
+	}
+	_, _ = sb.WriteString(" ORDER BY")
+	for i, item := range sortBy {
+		if i > 0 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+	}
 	pages := int64(1)
+	var offset int64
 	if request.Limit > 0 {
 		totalDecimal, err := decimal.New(total, 0)
 		if err != nil {
@@ -168,11 +125,8 @@ func (q *productVariantRepository) FindProductVariants(
 			return nil, 0, 0, err
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
-		offset := request.Page * request.Limit
-		_, _ = sb.WriteString(" LIMIT ")
-		_, _ = sb.WriteString(strconv.FormatInt(request.Limit, 10))
-		_, _ = sb.WriteString(" OFFSET ")
-		_, _ = sb.WriteString(strconv.FormatInt(offset, 10))
+		offset = request.Page * request.Limit
+		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -187,7 +141,6 @@ func (q *productVariantRepository) FindProductVariants(
 	for rows.Next() {
 		var productVariant models.ProductVariant
 		if err = rows.Scan(
-			&productVariant.RowNo,
 			&productVariant.ID,
 			&productVariant.RecordStatus,
 			&productVariant.ProductID,
@@ -210,9 +163,75 @@ func (q *productVariantRepository) FindProductVariants(
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
+		offset++
+		productVariant.RowNo = offset
 		response = append(response, &productVariant)
 	}
 	return response, total, pages, nil
+}
+
+func (q *productVariantRepository) FindProductVariant(
+	ctx context.Context,
+	request *models.ProductVariantFilter,
+) (*models.ProductVariant, error) {
+	ctxt := "ProductVariantRepository-FindProductVariant"
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(
+		&sb,
+		`SELECT
+			id
+			, record_status
+			, product_id
+			, measure_unit
+			, price
+			, price_type
+			, price_variant_percentage
+			, discount_type
+			, discount_rate
+			, discount_minimum_quantity
+			, description
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM product_variants %s`,
+		condition,
+	)
+	query := sb.String()
+	var response models.ProductVariant
+	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.ProductID,
+		&response.MeasureUnit,
+		&response.Price,
+		&response.PriceType,
+		&response.PriceVariantPercentage,
+		&response.DiscountType,
+		&response.DiscountRate,
+		&response.DiscountMinimumQuantity,
+		&response.Description,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrProductVariantNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	return new(response), nil
 }
 
 func (q *productVariantRepository) CreateProductVariant(
@@ -386,4 +405,72 @@ func (q *productVariantRepository) UpdateProductVariant(
 		return nil, err
 	}
 	return new(response), nil
+}
+
+func (q *productVariantRepository) buildCondition(request *models.ProductVariantFilter, sb *strings.Builder) (condition string, params []any) {
+	var conds []string
+	if len(request.ProductIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("product_id IN (")
+		for i, productID := range request.ProductIDs {
+			params = append(params, productID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ProductVariantIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id IN (")
+		for i, productVariantID := range request.ProductVariantIDs {
+			params = append(params, productVariantID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.RecordStatuses) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("record_status IN (")
+		for i, recordStatus := range request.RecordStatuses {
+			params = append(params, recordStatus)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.MeasureUnits) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("LOWER(measure_unit) IN (")
+		for i, measureUnit := range request.MeasureUnits {
+			params = append(params, strings.ToLower(measureUnit))
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(conds) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("WHERE")
+		for i, cond := range conds {
+			if i > 0 {
+				_, _ = sb.WriteString(" AND")
+			}
+			_, _ = fmt.Fprintf(sb, " %s", cond)
+		}
+		condition = sb.String()
+	}
+	return
 }

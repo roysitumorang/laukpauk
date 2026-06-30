@@ -197,7 +197,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
 	controllers.NewBlockController(q.UserService, q.BlockService, q.BlogService, q.MessageService).Mount(app.Group("/blocks"))
 	controllers.NewProductCategoryController(q.UserService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
-	controllers.NewProductController(q.UserService, q.ProductCategoryService, q.ProductService).Mount(app.Group("/products"))
+	controllers.NewProductController(q.UserService, q.ProductCategoryService, q.ProductService, q.ProductVariantService).Mount(app.Group("/products"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{

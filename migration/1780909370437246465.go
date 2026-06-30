@@ -316,6 +316,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON product_variants (LOWER(measure_unit));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON product_variants (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

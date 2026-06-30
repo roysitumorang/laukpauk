@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -34,15 +35,18 @@ type (
 	}
 
 	productService struct {
-		productRepository repositories.ProductRepository
+		productRepository         repositories.ProductRepository
+		productCategoryRepository repositories.ProductCategoryRepository
 	}
 )
 
 func NewProductService(
 	productRepository repositories.ProductRepository,
+	productCategoryRepository repositories.ProductCategoryRepository,
 ) ProductService {
 	return new(productService{
-		productRepository: productRepository,
+		productRepository:         productRepository,
+		productCategoryRepository: productCategoryRepository,
 	})
 }
 
@@ -60,6 +64,33 @@ func (q *productService) FindProducts(
 	rows := make([]*models.Product, n)
 	if n > 0 {
 		copy(rows, products)
+		var productCategoryIDs []uuid.UUID
+		mapProductCategoryIDs := map[uuid.UUID]struct{}{}
+		for _, product := range products {
+			if _, ok := mapProductCategoryIDs[product.ProductCategoryID]; !ok {
+				productCategoryIDs = append(productCategoryIDs, product.ProductCategoryID)
+				mapProductCategoryIDs[product.ProductCategoryID] = struct{}{}
+			}
+		}
+		productCategories, _, _, err := q.productCategoryRepository.FindProductCategories(
+			ctx,
+			models.NewProductCategoryFilter().
+				WithProductCategoryIDs(productCategoryIDs...),
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+			return nil, nil, err
+		}
+		mapProductCategories := map[uuid.UUID]*models.ProductCategory{}
+		for _, productCategory := range productCategories {
+			mapProductCategories[productCategory.ID] = productCategory
+		}
+		for i, row := range rows {
+			if productCategory, ok := mapProductCategories[row.ProductCategoryID]; ok && productCategory != nil {
+				row.ProductCategory = *productCategory
+			}
+			rows[i] = row
+		}
 	}
 	pagination, err := models.NewPagination(
 		total,
@@ -82,8 +113,23 @@ func (q *productService) FindProduct(
 ) (*models.Product, error) {
 	ctxt := "ProductService-FindProduct"
 	response, err := q.productRepository.FindProduct(ctx, request)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		if !errors.Is(err, models.ErrProductNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+		}
+		return response, err
+	}
+	productCategory, err := q.productCategoryRepository.FindProductCategory(
+		ctx,
+		models.NewProductCategoryFilter().
+			WithProductCategoryIDs(response.ProductCategoryID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		return response, err
+	}
+	if productCategory != nil {
+		response.ProductCategory = *productCategory
 	}
 	return response, err
 }

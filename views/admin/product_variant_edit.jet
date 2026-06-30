@@ -1,0 +1,214 @@
+<!-- Content Wrapper. Contains page content -->
+<div class="content-wrapper">
+	<!-- Content Header (Page header) -->
+	<div class="content-header">
+		<div class="container-fluid">
+			<div class="row mb-2">
+				<div class="col-sm-6">
+					<h1 class="m-0 text-dark">Produk</h1>
+				</div>
+				<!-- /.col -->
+				<div class="col-sm-6">
+					<ol class="breadcrumb float-sm-right">
+						<li class="breadcrumb-item">
+							<a href="#">Home</a>
+						</li>
+						<li class="breadcrumb-item active">
+							Detail Produk
+						</li>
+					</ol>
+				</div>
+				<!-- /.col -->
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content-header -->
+	<!-- Main content -->
+	<div class="content">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="card">
+						<div class="card-header">
+							<div class="row">
+								<div class="col-lg-4">
+									<h5>Detail Produk</h5>
+									{{ product.Name }}
+								</div>
+								<div class="col-lg-8 text-right"></div>
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="row">
+								<div class="col-lg-4 text-center">
+									<img src="{{ baseURL }}/images/product/{{ product.Photo }}"
+										alt="{{ product.Name }}" class="img-circle"
+										style="width:170px; height:170px;"
+										onerror="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+								</div>
+								<div class="col-lg-8">
+									<h2 class="text-primary text-bold mb-3">
+										{{ product.Name }}
+									</h2>
+									<div class="table-responsive">
+										<table class="table table-sm">
+											<tr class="text-sm">
+												<td class="border-top-0 text-left">Kategori Produk</td>
+												<td class="border-top-0 text-left">{{ product.ProductCategory.Name }}</td>
+											</tr>
+											<tr class="text-sm">
+												<td class="border-top-0 text-left">Stok</td>
+												<td class="border-top-0 text-left">
+													<span class="badge badge-success">
+														{{ product.StockStatus.String() }}
+													</span>
+												</td>
+											</tr>
+											<tr class="text-sm">
+												<td class="border-top-0 text-left">Keterangan</td>
+												<td class="border-top-0 text-left">{{ product.Description }}</td>
+											</tr>
+											<tr class="text-sm">
+												<td class="border-top-0 text-left">Dibuat</td>
+												<td class="border-top-0 text-left">
+													{{ product.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 ") }}
+												</td>
+											</tr>
+											<tr class="text-sm">
+												<td class="border-top-0 text-left">Terakhir Diperbaharui</td>
+												<td class="border-top-0 text-left">
+													{{ product.UpdatedAt.Format("Mon, 2 Jan 2006 15:04:05 ") }}
+												</td>
+											</tr>
+										</table>
+										<hr />
+										<a href="{{ baseURL }}/admin/products">
+											<button class="btn btn-default">
+												Back to List Product
+											</button>
+										</a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="card">
+						<div class="card-header">
+							<div class="row">
+								<div class="col-lg-10">
+									<h5>Edit Varian Produk</h5>
+									{{ product.Name }}
+								</div>
+								<div class="col-lg-2 text-right cp">
+									<span class="fa fa-info-circle text-info animate__animated animate__fadeIn animate__infinite" data-toggle="tooltip"
+										data-placement="top" title="Jika persentase harga variasi belum ditentukan, maka satuan (harga) yang bersangkutan tidak akan berpengaruh ketika menggunakan fitur Variasi Harga Massal"></span>
+								</div>
+							</div>
+						</div>
+						<div class="card-body">
+							{{ range type, message := flash.Data }}
+							<div class="alert alert-{{ type }}">
+								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+							</div>
+							{{ end }}
+							<form method="POST" action="{{ baseURL }}/admin/products/{{ product.ID }}/variants/{{ productVariant.ID}}">
+								{{ include "_product_variant_form" }}
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- /.container-fluid -->
+	</div>
+	<!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+<script>
+	let baseURL = "{{ baseURL }}/admin/";
+	let namaProduk = "TERI NASI BESAR";
+	let idProduk = "40538";
+
+	function deleteHargaProduk(thisContext, namaHarga) {
+		let el = $(thisContext);
+		Swal.fire({
+			title: `Konfirmasi Penghapusan Harga Produk`,
+			html: `Apakah anda yakin akan menghapus harga produk <b class="text-primary">${namaHarga}</b> dari produk <b class="text-primary">${namaProduk}</b>?`,
+			type: "question",
+			showConfirmButton: true,
+			showCancelButton: true,
+			cancelButtonText: "Batal",
+			confirmButtonText: "Ya, Lanjutkan !",
+			focusCancel: true
+		}).then((konfirmasi) => {
+			if (konfirmasi.value) {
+				let idHargaProduk = el.attr("idHargaProduk");
+				$.ajax({
+					url: `{{ baseURL }}/admin/produk/deleteHarga/${idHargaProduk}`,
+					success: function(responseFromServer) {
+						let rFS = JSON.parse(responseFromServer);
+						let swalText = `<span class="text-danger">Gagal menghapus harga produk dari Produk ini !</span>`;
+						let swalType = "error";
+						if (rFS.statusDeleteHarga) {
+							swalText = `<span class="text-success">Berhasil menghapus harga produk dari Produk ini !</span>`;
+							swalType = "success";
+						}
+						Swal.fire({
+							title: `Penghapusan Harga Produk dari Produk`,
+							html: swalText,
+							type: swalType
+						}).then(() => {
+							if (rFS.statusDeleteHarga) {
+								location.reload();
+							}
+						});
+					}
+				})
+			}
+		});
+	}
+
+	function toggleFormAddSatuan() {
+		$("#formAddSatuan").toggle(500);
+	}
+	$("#formAddSatuan").on("submit", function(e) {
+		e.preventDefault();
+		let action = `Menambah`;
+		let formData = {
+			idProduk,
+			nama: $("#namaHarga").val(),
+			jenis: $("#jenisHarga").val(),
+			keterangan: $("#keterangan").val(),
+			harga: $("#harga").val(),
+			diskon: $("#diskon").val(),
+			persentaseHargaVariasi: $("#persentaseHargaVariasi").val()
+		};
+		$.ajax({
+			url: `{{ baseURL }}/admin/produk/saveHarga`,
+			data: formData,
+			type: "POST",
+			success: function(responseFromServer) {
+				let rFS = JSON.parse(responseFromServer);
+				let swalText = `<span class="text-danger">Gagal ${action} harga produk ke produk ini !</span>`;
+				let swalType = "error";
+				if (rFS.statusSaveHarga) {
+					swalText = `<span class="text-success">Berhasil ${action} harga produk ke produk ini !</span>`;
+					swalType = "success";
+				}
+				Swal.fire({
+					title: `Penambahan Harga Produk`,
+					html: swalText,
+					type: swalType
+				}).then(() => {
+					if (rFS.statusSaveHarga) {
+						location.reload();
+					}
+				});
+			}
+		})
+	});
+</script>
