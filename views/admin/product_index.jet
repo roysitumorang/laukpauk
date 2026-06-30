@@ -116,7 +116,7 @@
 							<tbody>
 								{{ range _, row := rows }}
 								<tr class="text-sm tr-parent">
-									<td class="vam text-center"><b>1.</b></td>
+									<td class="vam text-center"><b>{{ row.RowNo }}.</b></td>
 									<td class="text-left">
 										<div class="row">
 											<div class="col-lg-4 text-center">
