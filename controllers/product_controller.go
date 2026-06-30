@@ -761,22 +761,11 @@ func (q *productController) AdminEditVariant(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("product variant not found").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
-	product, err := q.productService.FindProduct(
-		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
-	)
-	if err != nil {
-		if !errors.Is(err, models.ErrProductNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
-		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
 	productVariant, err := q.productVariantService.FindProductVariant(
 		ctx,
 		models.NewProductVariantFilter().
 			WithRecordStatuses(models.RecordStatusActive).
+			WithProductIDs(productID).
 			WithProductVariantIDs(productVariantID),
 	)
 	if err != nil {
@@ -785,6 +774,7 @@ func (q *productController) AdminEditVariant(c fiber.Ctx) (err error) {
 		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
+	product := productVariant.Product
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -818,20 +808,11 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("product variant not found").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
-	product, err := q.productService.FindProduct(
-		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
-	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
 	productVariant, err := q.productVariantService.FindProductVariant(
 		ctx,
 		models.NewProductVariantFilter().
 			WithRecordStatuses(models.RecordStatusActive).
+			WithProductIDs(productID).
 			WithProductVariantIDs(productVariantID),
 	)
 	if err != nil {
@@ -840,6 +821,7 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
+	product := productVariant.Product
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -884,7 +866,7 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 	}
 	request.ID = productVariant.ID
 	request.RecordStatus = productVariant.RecordStatus
-	request.ProductID = product.ID
+	request.ProductID = productVariant.ID
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
@@ -928,30 +910,21 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("product variant not found").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
-	product, err := q.productService.FindProduct(
-		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
-	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
 	productVariant, err := q.productVariantService.FindProductVariant(
 		ctx,
 		models.NewProductVariantFilter().
 			WithRecordStatuses(models.RecordStatusActive).
+			WithProductIDs(productID).
 			WithProductVariantIDs(productVariantID),
 	)
 	if err != nil {
 		if !errors.Is(err, models.ErrProductVariantNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
 		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
 	if productVariant == nil {
-		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
 	request := productVariant
 	request.RecordStatus = models.RecordStatusDeleted
@@ -961,15 +934,15 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
 	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 	}
-	return flash.Success("product variant deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+	return flash.Success("product variant deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
 }

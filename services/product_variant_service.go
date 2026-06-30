@@ -86,8 +86,8 @@ func (q *productVariantService) FindProductVariants(
 			mapProducts[product.ID] = product
 		}
 		for i, row := range rows {
-			if product, ok := mapProducts[row.ProductID]; ok && product != nil {
-				row.Product = *product
+			if product, ok := mapProducts[row.ProductID]; ok {
+				row.Product = product
 			}
 			rows[i] = row
 		}
@@ -128,9 +128,7 @@ func (q *productVariantService) FindProductVariant(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		return response, err
 	}
-	if product != nil {
-		response.Product = *product
-	}
+	response.Product = product
 	return response, err
 }
 

@@ -86,8 +86,8 @@ func (q *productService) FindProducts(
 			mapProductCategories[productCategory.ID] = productCategory
 		}
 		for i, row := range rows {
-			if productCategory, ok := mapProductCategories[row.ProductCategoryID]; ok && productCategory != nil {
-				row.ProductCategory = *productCategory
+			if productCategory, ok := mapProductCategories[row.ProductCategoryID]; ok {
+				row.ProductCategory = productCategory
 			}
 			rows[i] = row
 		}
@@ -129,7 +129,7 @@ func (q *productService) FindProduct(
 		return response, err
 	}
 	if productCategory != nil {
-		response.ProductCategory = *productCategory
+		response.ProductCategory = productCategory
 	}
 	return response, err
 }

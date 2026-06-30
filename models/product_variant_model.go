@@ -35,15 +35,15 @@ type (
 		ID                      uuid.UUID    `json:"-" form:"-"`
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
-		Product                 Product      `json:"-" form:"-"`
-		MeasureUnit             string       `json:"measure_unit" form:"measure_unit"`
-		Price                   int64        `json:"price" form:"price"`
-		PriceType               PriceType    `json:"price_type" form:"price_type"`
-		PriceVariantPercentage  float64      `json:"price_variant_percentage" form:"price_variant_percentage"`
-		DiscountType            DiscountType `json:"discount_type" form:"discount_type"`
-		DiscountRate            int64        `json:"discount_rate" form:"discount_rate"`
-		DiscountMinimumQuantity int64        `json:"discount_minimum_quantity" form:"discount_minimum_quantity"`
-		Description             string       `json:"description" form:"description"`
+		Product                 *Product     `json:"-" form:"-"`
+		MeasureUnit             string       `json:"-" form:"measure_unit"`
+		Price                   int64        `json:"-" form:"price"`
+		PriceType               PriceType    `json:"-" form:"price_type"`
+		PriceVariantPercentage  float64      `json:"-" form:"price_variant_percentage"`
+		DiscountType            DiscountType `json:"-" form:"discount_type"`
+		DiscountRate            int64        `json:"-" form:"discount_rate"`
+		DiscountMinimumQuantity int64        `json:"-" form:"discount_minimum_quantity"`
+		Description             string       `json:"-" form:"description"`
 		CreatedBy               uuid.UUID    `json:"-" form:"-"`
 		CreatedAt               time.Time    `json:"-" form:"-"`
 		UpdatedBy               uuid.UUID    `json:"-" form:"-"`

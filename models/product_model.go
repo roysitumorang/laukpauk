@@ -53,24 +53,24 @@ type (
 	StockStatus int
 
 	Product struct {
-		RowNo             int64           `json:"-" form:"-"`
-		ID                uuid.UUID       `json:"-" form:"-"`
-		RecordStatus      RecordStatus    `json:"-" form:"-"`
-		ProductCategoryID uuid.UUID       `json:"-" form:"product_category_id"`
-		ProductCategory   ProductCategory `json:"-" form:"-"`
-		ProductType       ProductType     `json:"-" form:"product_type"`
-		Name              string          `json:"-" form:"name"`
-		Photo             string          `json:"-" form:"photo"`
-		Description       string          `json:"-" form:"description"`
-		StockStatus       StockStatus     `json:"-" form:"stock_status"`
-		Pinned            bool            `json:"-" form:"pinned"`
-		CreatedBy         uuid.UUID       `json:"-" form:"-"`
-		CreatedAt         time.Time       `json:"-" form:"-"`
-		UpdatedBy         uuid.UUID       `json:"-" form:"-"`
-		UpdatedAt         time.Time       `json:"-" form:"-"`
-		DeletedBy         *uuid.UUID      `json:"-" form:"-"`
-		DeletedAt         *time.Time      `json:"-" form:"-"`
-		DeletionReason    *string         `json:"-" form:"-"`
+		RowNo             int64            `json:"-" form:"-"`
+		ID                uuid.UUID        `json:"-" form:"-"`
+		RecordStatus      RecordStatus     `json:"-" form:"-"`
+		ProductCategoryID uuid.UUID        `json:"-" form:"product_category_id"`
+		ProductCategory   *ProductCategory `json:"-" form:"-"`
+		ProductType       ProductType      `json:"-" form:"product_type"`
+		Name              string           `json:"-" form:"name"`
+		Photo             string           `json:"-" form:"photo"`
+		Description       string           `json:"-" form:"description"`
+		StockStatus       StockStatus      `json:"-" form:"stock_status"`
+		Pinned            bool             `json:"-" form:"pinned"`
+		CreatedBy         uuid.UUID        `json:"-" form:"-"`
+		CreatedAt         time.Time        `json:"-" form:"-"`
+		UpdatedBy         uuid.UUID        `json:"-" form:"-"`
+		UpdatedAt         time.Time        `json:"-" form:"-"`
+		DeletedBy         *uuid.UUID       `json:"-" form:"-"`
+		DeletedAt         *time.Time       `json:"-" form:"-"`
+		DeletionReason    *string          `json:"-" form:"-"`
 	}
 
 	ProductFilter struct {
