@@ -285,3 +285,13 @@ func Sprintf(format string, a ...any) string {
 	_, _ = fmt.Fprintf(&sb, format, a...)
 	return sb.String()
 }
+
+func TruncateString(s string, maxLength int) string {
+	if len(s) <= maxLength {
+		return s
+	}
+	if maxLength <= 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.StringData(s), maxLength)
+}
