@@ -35,7 +35,6 @@ type (
 		ID                      uuid.UUID    `json:"-" form:"-"`
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
-		Product                 *Product     `json:"-" form:"-"`
 		MeasureUnit             string       `json:"-" form:"measure_unit"`
 		Price                   int64        `json:"-" form:"price"`
 		PriceType               PriceType    `json:"-" form:"price_type"`

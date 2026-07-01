@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -64,33 +63,6 @@ func (q *productVariantService) FindProductVariants(
 	rows := make([]*models.ProductVariant, n)
 	if n > 0 {
 		copy(rows, productVariants)
-		var productIDs []uuid.UUID
-		mapProductIDs := map[uuid.UUID]struct{}{}
-		for _, productVariant := range productVariants {
-			if _, ok := mapProductIDs[productVariant.ProductID]; !ok {
-				productIDs = append(productIDs, productVariant.ProductID)
-				mapProductIDs[productVariant.ProductID] = struct{}{}
-			}
-		}
-		products, _, _, err := q.productRepository.FindProducts(
-			ctx,
-			models.NewProductFilter().
-				WithProductIDs(productIDs...),
-		)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
-			return nil, nil, err
-		}
-		mapProducts := map[uuid.UUID]*models.Product{}
-		for _, product := range products {
-			mapProducts[product.ID] = product
-		}
-		for i, row := range rows {
-			if product, ok := mapProducts[row.ProductID]; ok {
-				row.Product = product
-			}
-			rows[i] = row
-		}
 	}
 	pagination, err := models.NewPagination(
 		total,
@@ -113,22 +85,9 @@ func (q *productVariantService) FindProductVariant(
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantService-FindProductVariant"
 	response, err := q.productVariantRepository.FindProductVariant(ctx, request)
-	if err != nil {
-		if !errors.Is(err, models.ErrProductVariantNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-		}
-		return response, err
+	if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
 	}
-	product, err := q.productRepository.FindProduct(
-		ctx,
-		models.NewProductFilter().
-			WithProductIDs(response.ProductID),
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
-		return response, err
-	}
-	response.Product = product
 	return response, err
 }
 
