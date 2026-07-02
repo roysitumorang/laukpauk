@@ -664,35 +664,21 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// sms
+		// sms_messages
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE sms (
+			`CREATE TABLE sms_messages (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, body character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON sms (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		// sms_users
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE sms_users (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, sms_id UUID NOT NULL REFERENCES sms (id)
 				, user_id UUID NOT NULL REFERENCES users (id)
 				, mobile_phone character varying NOT NULL
-				, UNIQUE (sms_id, user_id)
+				, message_type integer NOT NULL
+				, body character varying NOT NULL
+				, delivery_status character varying
+				, message_id bigint
+				, created_by UUID REFERENCES users (id)
+				, created_at timestamp with time zone NOT NULL
+				, updated_at timestamp with time zone NOT NULL
+				, sent_at timestamp with time zone
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -700,14 +686,35 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON sms_users (sms_id);`,
+			`CREATE INDEX ON sms_messages (user_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON sms_users (user_id);`,
+			`CREATE INDEX ON sms_messages (message_type);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sms_messages (delivery_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sms_messages (message_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sms_messages (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

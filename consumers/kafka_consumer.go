@@ -52,7 +52,7 @@ func (s *KafkaConsumer) Ping(ctx context.Context) (err error) {
 	return
 }
 
-func (s *KafkaConsumer) Publish(ctx context.Context, request ...KafkaTopic) (err error) {
+func (s *KafkaConsumer) Publish(ctx context.Context, request ...models.TopicRequest) (err error) {
 	ctxt := "KafkaConsumer-Publish"
 	n := len(request)
 	if n == 0 {
@@ -61,7 +61,7 @@ func (s *KafkaConsumer) Publish(ctx context.Context, request ...KafkaTopic) (err
 	now := time.Now()
 	var wg sync.WaitGroup
 	for _, topic := range request {
-		for _, payload := range topic.Payloads {
+		for _, payload := range topic.Messages {
 			payloadJSON, err := json.Marshal(payload)
 			if err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMarshal")
@@ -69,7 +69,7 @@ func (s *KafkaConsumer) Publish(ctx context.Context, request ...KafkaTopic) (err
 			}
 			wg.Add(1)
 			record := &kgo.Record{
-				Topic: topic.Name,
+				Topic: topic.Topic.String(),
 				Value: payloadJSON,
 			}
 			s.client.Produce(ctx, record, func(result *kgo.Record, err error) {

@@ -3,11 +3,26 @@ package models
 import (
 	"regexp"
 	"strings"
+	"uuid"
 
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 type (
+	Topic      string
+	TopicEvent string
+
+	TopicMessage struct {
+		Topic Topic      `json:"topic"`
+		Event TopicEvent `json:"event"`
+		ID    uuid.UUID  `json:"id"`
+	}
+
+	TopicRequest struct {
+		Topic    Topic
+		Messages []TopicMessage
+	}
+
 	Map map[string]any
 
 	RecordStatus     int
@@ -45,9 +60,13 @@ var (
 	PhoneNumberRegex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
 	UsernameRegex    = regexp.MustCompile("[^a-z0-9]+")
 	SlugRegex        = regexp.MustCompile("^[a-z0-9-]+$")
-	SliceTopics      = []string{}
-	MapTopics        = map[string]struct{}{}
-	DefaultSortBy    = Sorting{
+	SliceTopics      = []string{
+		TopicSms.String(),
+	}
+	MapTopics = map[Topic]struct{}{
+		TopicSms: {},
+	}
+	DefaultSortBy = Sorting{
 		Field:     SortingFieldID,
 		Direction: SortingDirectionDesc,
 	}
@@ -57,6 +76,10 @@ var (
 		DiscountTypePercentage:  {},
 	}
 )
+
+func (q Topic) String() string {
+	return string(q)
+}
 
 func NewMap() *Map {
 	return new(Map{})

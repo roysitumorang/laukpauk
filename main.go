@@ -30,11 +30,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/router"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -94,22 +94,36 @@ func main() {
 						))
 						// run every minute
 						entryID, err := c.AddFunc("* * * * *", func() {
-							tx, err := helper.BeginTx(ctx)
+							smsMessages, _, err := service.SmsMessageService.FindSmsMessages(
+								ctx,
+								models.NewSmsMessageFilter().
+									WithDeliveryStatusBlank(),
+							)
 							if err != nil {
-								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSmsMessages")
 								return
 							}
-							defer func() {
-								errRollback := tx.Rollback(ctx)
-								if errors.Is(errRollback, pgx.ErrTxClosed) {
-									errRollback = nil
+							n := len(smsMessages)
+							if n == 0 {
+								return
+							}
+							messages := make([]models.TopicMessage, n)
+							for i, smsMessage := range smsMessages {
+								messages[i] = models.TopicMessage{
+									Topic: models.TopicSms,
+									Event: models.TopicSmsEventCheckReport,
+									ID:    smsMessage.ID,
 								}
-								if errRollback != nil {
-									helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
-								}
-							}()
-							if err = tx.Commit(ctx); err != nil {
-								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+							}
+							if err = service.KafkaConsumer.Publish(
+								ctx,
+								models.TopicRequest{
+									Topic:    models.TopicSms,
+									Messages: messages,
+								},
+							); err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
+								return
 							}
 						})
 						if err != nil {

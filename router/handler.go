@@ -38,6 +38,7 @@ type (
 		ProductCategoryService services.ProductCategoryService
 		ProductService         services.ProductService
 		ProductVariantService  services.ProductVariantService
+		SmsMessageService      services.SmsMessageService
 	}
 )
 
@@ -63,11 +64,11 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 		return nil, err
 	}
-	topics := make([]consumers.KafkaTopic, len(models.SliceTopics))
+	topics := make([]models.TopicRequest, len(models.SliceTopics))
 	for i, topic := range models.SliceTopics {
-		topics[i] = consumers.KafkaTopic{
-			Name:     topic,
-			Payloads: []map[string]any{},
+		topics[i] = models.TopicRequest{
+			Topic:    models.Topic(topic),
+			Messages: []models.TopicMessage{},
 		}
 	}
 	_ = kafkaConsumer.Publish(ctx, topics...)
@@ -106,6 +107,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productCategoryRepository := repositories.NewProductCategoryRepository(dbRead, dbWrite)
 	productRepository := repositories.NewProductRepository(dbRead, dbWrite)
 	productVariantRepository := repositories.NewProductVariantRepository(dbRead, dbWrite)
+	smsMessageRepository := repositories.NewSmsMessageRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
@@ -114,6 +116,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	productService := services.NewProductService(productRepository, productCategoryRepository)
 	productVariantService := services.NewProductVariantService(productVariantRepository, productRepository)
+	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaConsumer, zenzivaConsumer)
 	return &Service{
 		DbWrite:                dbWrite,
 		Migration:              migration,
@@ -129,6 +132,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		ProductCategoryService: productCategoryService,
 		ProductService:         productService,
 		ProductVariantService:  productVariantService,
+		SmsMessageService:      smsMessageService,
 	}, nil
 }
 

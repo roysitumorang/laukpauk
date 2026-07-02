@@ -17,18 +17,8 @@ const (
 	ZenzivaMessageTypeOtp
 )
 
-const (
-	ZenzivaDeliveryStatusSent ZenzivaDeliveryStatus = iota
-	ZenzivaDeliveryStatusPending
-	ZenzivaDeliveryStatusFailed
-	ZenzivaDeliveryStatusRejected
-	ZenzivaDeliveryStatusError
-	ZenzivaDeliveryStatusUndeliverable
-)
-
 type (
-	ZenzivaMessageType    int
-	ZenzivaDeliveryStatus int
+	ZenzivaMessageType int
 
 	ZenzivaConsumer struct {
 		baseURL,
@@ -53,13 +43,13 @@ type (
 	}
 
 	ZenzivaReport struct {
-		Status         int                   `json:"status,string"`
-		MessageID      int64                 `json:"messageId,string"`
-		Date           string                `json:"date"`
-		Time           string                `json:"time"`
-		Dest           string                `json:"dest"`
-		Message        string                `json:"msg"`
-		DeliveryStatus ZenzivaDeliveryStatus `json:"msg-status"`
+		Status         int    `json:"status,string"`
+		MessageID      int64  `json:"messageId,string"`
+		Date           string `json:"date"`
+		Time           string `json:"time"`
+		Dest           string `json:"dest"`
+		Message        string `json:"msg"`
+		DeliveryStatus string `json:"msg-status"`
 	}
 
 	ZenzivaBalance struct {
@@ -88,8 +78,16 @@ func NewZenzivaConsumer(
 	})
 }
 
-func (q *ZenzivaConsumer) Send(ctx context.Context, messageType ZenzivaMessageType, to, message string) (*int64, error) {
-	ctxt := "ZenzivaConsumer-Send"
+func (q *ZenzivaConsumer) SendSMS(ctx context.Context, to, message string) (*int64, error) {
+	return q.send(ctx, ZensivaMessageTypeSms, to, message)
+}
+
+func (q *ZenzivaConsumer) SendOTP(ctx context.Context, to, message string) (*int64, error) {
+	return q.send(ctx, ZenzivaMessageTypeOtp, to, message)
+}
+
+func (q *ZenzivaConsumer) send(ctx context.Context, messageType ZenzivaMessageType, to, message string) (*int64, error) {
+	ctxt := "ZenzivaConsumer-send"
 	var sb strings.Builder
 	requestBody, err := json.Marshal(ZenzivaRequest{
 		UserKey: q.userKey,
@@ -124,7 +122,7 @@ func (q *ZenzivaConsumer) Send(ctx context.Context, messageType ZenzivaMessageTy
 	return new(response.MessageID), nil
 }
 
-func (q *ZenzivaConsumer) CheckReport(ctx context.Context, messageID int64) (*ZenzivaReport, error) {
+func (q *ZenzivaConsumer) CheckReport(ctx context.Context, messageID int64) (*string, error) {
 	ctxt := "ZenzivaConsumer-CheckReport"
 	var sb strings.Builder
 	req := fasthttp.AcquireRequest()
@@ -146,7 +144,7 @@ func (q *ZenzivaConsumer) CheckReport(ctx context.Context, messageID int64) (*Ze
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
 	}
-	return new(response), nil
+	return new(strings.ToLower(response.DeliveryStatus)), nil
 }
 
 func (q *ZenzivaConsumer) CheckBalance(ctx context.Context) (*ZenzivaBalance, error) {
@@ -172,29 +170,6 @@ func (q *ZenzivaConsumer) CheckBalance(ctx context.Context) (*ZenzivaBalance, er
 		return nil, err
 	}
 	return new(response), nil
-}
-
-func (q ZenzivaDeliveryStatus) Int() int {
-	return int(q)
-}
-
-func (q ZenzivaDeliveryStatus) String() string {
-	if q == ZenzivaDeliveryStatusPending {
-		return "Pending"
-	}
-	if q == ZenzivaDeliveryStatusFailed {
-		return "Failed"
-	}
-	if q == ZenzivaDeliveryStatusRejected {
-		return "Rejected"
-	}
-	if q == ZenzivaDeliveryStatusError {
-		return "Error"
-	}
-	if q == ZenzivaDeliveryStatusUndeliverable {
-		return "Undeliverable"
-	}
-	return "Sent"
 }
 
 func (q ZenzivaMessageType) Int() int {
