@@ -1,9 +1,18 @@
 package models
 
 import (
+	"errors"
 	"net/url"
+	"strings"
 	"time"
 	"uuid"
+
+	"github.com/roysitumorang/laukpauk/helper"
+)
+
+var (
+	ErrAdminNotFound = errors.New("admin not found")
+	ErrBuyerNotFound = errors.New("buyer not found")
 )
 
 const (
@@ -58,8 +67,17 @@ type (
 		Photo      string     `json:"-" form:"-"`
 	}
 
+	Buyer struct {
+		User
+		ReferralCode string     `json:"-" form:"-"`
+		Photo        string     `json:"-" form:"-"`
+		Address      string     `json:"-" form:"-"`
+		ReferencedBy *uuid.UUID `json:"-" form:"-"`
+	}
+
 	UserFilter struct {
-		UserIDs []uuid.UUID
+		UserIDs   []uuid.UUID
+		UserTypes []UserType
 		Login,
 		Keyword,
 		Username,
@@ -67,6 +85,8 @@ type (
 		MobilePhone,
 		PasswordResetToken,
 		PaginationURL string
+		Sortings    []Sorting
+		MapSortings *Map
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -74,11 +94,19 @@ type (
 )
 
 func NewUserFilter() *UserFilter {
-	return new(UserFilter{UrlValues: url.Values{}})
+	return new(UserFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
+	})
 }
 
 func (q *UserFilter) WithUserIDs(userIDs ...uuid.UUID) *UserFilter {
 	q.UserIDs = userIDs
+	return q
+}
+
+func (q *UserFilter) WithUserTypes(userTypes ...UserType) *UserFilter {
+	q.UserTypes = userTypes
 	return q
 }
 
@@ -114,6 +142,15 @@ func (q *UserFilter) WithPasswordResetToken(passwordResetToken string) *UserFilt
 
 func (q *UserFilter) WithPaginationURL(paginationURL string) *UserFilter {
 	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *UserFilter) WithSortings(sortings ...Sorting) *UserFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
 	return q
 }
 

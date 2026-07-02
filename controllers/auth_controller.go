@@ -77,24 +77,25 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 			"flash", flash.Danger(err.Error()),
 		))
 	}
-	admins, _, err := q.userService.FindAdmins(
+	admin, err := q.userService.FindAdmin(
 		ctx,
 		models.NewUserFilter().
 			WithEmail(request.Email),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmins")
+		if err != models.ErrAdminNotFound {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+		}
 		return c.Render("admin/auth_login", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
-	if len(admins) == 0 ||
-		admins[0].EncryptedPassword == nil {
+	if admin == nil ||
+		admin.EncryptedPassword == nil {
 		return c.Render("admin/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	admin := admins[0]
 	encryptedPassword := helper.String2ByteSlice(*admin.EncryptedPassword)
 	if !helper.MatchedHashAndPassword(encryptedPassword, helper.String2ByteSlice(request.Password)) {
 		return c.Render("admin/auth_login", params.Push(
