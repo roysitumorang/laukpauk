@@ -19,7 +19,7 @@ func AdminSessionAuth(
 		if !ok {
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
-				_ = sess.Session.Save()
+				_ = sess.Session.SaveWithContext(ctx)
 			}
 			return c.Redirect().To("/admin/auth/login")
 		}
@@ -28,16 +28,16 @@ func AdminSessionAuth(
 			models.NewUserFilter().WithUserIDs(userID),
 		)
 		if err != nil || len(admins) == 0 {
-			_ = sess.Reset()
+			_ = sess.ResetWithContext(ctx)
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
 			}
-			_ = sess.Session.Save()
+			_ = sess.Session.SaveWithContext(ctx)
 			return c.Redirect().To("/admin/auth/login")
 		}
 		currentAdmin := admins[0]
 		sess.Set(models.CurrentAdmin, currentAdmin)
-		_ = sess.Session.Save()
+		_ = sess.Session.SaveWithContext(ctx)
 		return c.Next()
 	}
 }

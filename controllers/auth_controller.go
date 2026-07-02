@@ -101,7 +101,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	if err = sess.Regenerate(); err != nil {
+	if err = sess.RegenerateWithContext(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRegenerate")
 	}
 	sess.Set(models.UserID, admin.ID)
@@ -139,7 +139,7 @@ func (q *authController) AdminLogout(c fiber.Ctx) error {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteToken")
 		}
 	}
-	if err := sess.Reset(); err != nil {
+	if err := sess.ResetWithContext(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
 	return flash.Redirect(c, sess.Session, "/admin/auth/login")
