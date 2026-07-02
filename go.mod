@@ -14,7 +14,7 @@ require (
 	github.com/gofiber/contrib/v3/swaggo v1.0.7
 	github.com/gofiber/fiber/v3 v3.3.0
 	github.com/gofiber/storage/valkey v0.3.0
-	github.com/gofiber/template/jet/v3 v3.0.5
+	github.com/gofiber/template/jet/v3 v3.0.6
 	github.com/gofiber/utils/v2 v2.1.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
