@@ -1,4 +1,4 @@
-package fcm
+package consumers
 
 import (
 	"context"
@@ -21,58 +21,58 @@ import (
 )
 
 type (
-	FcmService struct {
-		BaseURL string
-		Client  *fasthttp.Client
+	FcmConsumer struct {
+		baseURL string
+		client  *fasthttp.Client
 	}
 
-	Notification struct {
+	FcmNotification struct {
 		Title string `json:"title"`
 		Body  string `json:"body"`
 		Image string `json:"image,omitempty"`
 	}
 
-	Request struct {
+	FcmRequest struct {
 		Token        string            `json:"token"`
-		Notification Notification      `json:"notification"`
+		Notification FcmNotification   `json:"notification"`
 		Data         map[string]string `json:"data"`
 	}
 
-	Response struct {
+	FcmResponse struct {
 		Name string `json:"name"`
 	}
 
-	ServiceAccount struct {
+	FcmConsumerAccount struct {
 		PrivateKeyID string `json:"private_key_id"`
 		PrivateKey   string `json:"private_key"`
 		ClientEmail  string `json:"client_email"`
 		TokenURI     string `json:"token_uri"`
 	}
 
-	TokenResponse struct {
+	FcmTokenResponse struct {
 		AccessToken string `json:"access_token"`
 		ExpiresIn   int    `json:"expires_in"`
 		TokenType   string `json:"token_type"`
 	}
 )
 
-func NewFcmService(
+func NewFcmConsumer(
 	projectID string,
 	timeout time.Duration,
-) *FcmService {
+) *FcmConsumer {
 	var sb strings.Builder
 	_, _ = fmt.Fprintf(&sb, "https://fcm.googleapis.com/v1/projects/%s/messages:send", projectID)
-	return new(FcmService{
-		BaseURL: sb.String(),
-		Client: new(fasthttp.Client{
+	return new(FcmConsumer{
+		baseURL: sb.String(),
+		client: new(fasthttp.Client{
 			ReadTimeout:  timeout,
 			WriteTimeout: timeout,
 		}),
 	})
 }
 
-func (q *FcmService) Send(ctx context.Context, token, title, body, image string, data map[string]string) (*string, error) {
-	ctxt := "FcmService-Send"
+func (q *FcmConsumer) Send(ctx context.Context, token, title, body, image string, data map[string]string) (*string, error) {
+	ctxt := "FcmConsumer-Send"
 	bearerToken, err := q.CreateOauth2Token(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrTokenSource")
@@ -80,9 +80,9 @@ func (q *FcmService) Send(ctx context.Context, token, title, body, image string,
 	}
 	var sb strings.Builder
 	_, _ = fmt.Fprintf(&sb, "Bearer %s", bearerToken.AccessToken)
-	requestBody, err := json.Marshal(Request{
+	requestBody, err := json.Marshal(FcmRequest{
 		Token: token,
-		Notification: Notification{
+		Notification: FcmNotification{
 			Title: title,
 			Body:  body,
 			Image: image,
@@ -99,16 +99,16 @@ func (q *FcmService) Send(ctx context.Context, token, title, body, image string,
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	req.SetRequestURI(q.BaseURL)
+	req.SetRequestURI(q.baseURL)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType("application/json")
 	req.Header.Set("Authorization", sb.String())
 	req.SetBodyRaw(requestBody)
-	if err = q.Client.Do(req, resp); err != nil {
+	if err = q.client.Do(req, resp); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
 		return nil, err
 	}
-	var response Response
+	var response FcmResponse
 	if err = json.Unmarshal(resp.Body(), &response); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
@@ -116,14 +116,14 @@ func (q *FcmService) Send(ctx context.Context, token, title, body, image string,
 	return new(response.Name), nil
 }
 
-func (q *FcmService) CreateOauth2Token(ctx context.Context) (*TokenResponse, error) {
-	ctxt := "FcmService-CreateOauth2Token"
+func (q *FcmConsumer) CreateOauth2Token(ctx context.Context) (*FcmTokenResponse, error) {
+	ctxt := "FcmConsumer-CreateOauth2Token"
 	jsonBytes, err := base64.StdEncoding.DecodeString(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecodeString")
 		return nil, err
 	}
-	var sa ServiceAccount
+	var sa FcmConsumerAccount
 	if err = json.Unmarshal(jsonBytes, &sa); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
@@ -169,7 +169,7 @@ func (q *FcmService) CreateOauth2Token(ctx context.Context) (*TokenResponse, err
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType("application/x-www-form-urlencoded")
 	req.SetBodyRaw(helper.String2ByteSlice(data.Encode()))
-	if err = q.Client.Do(req, resp); err != nil {
+	if err = q.client.Do(req, resp); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (q *FcmService) CreateOauth2Token(ctx context.Context) (*TokenResponse, err
 	if resp.StatusCode() != fasthttp.StatusOK {
 		return nil, fmt.Errorf("failed to obtain token. status: %d, response: %s", resp.StatusCode(), helper.ByteSlice2String(respBody))
 	}
-	var tokenResp TokenResponse
+	var tokenResp FcmTokenResponse
 	if err = json.Unmarshal(respBody, &tokenResp); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err

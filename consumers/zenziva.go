@@ -1,4 +1,4 @@
-package sms
+package consumers
 
 import (
 	"context"
@@ -13,89 +13,89 @@ import (
 )
 
 const (
-	MessageTypeSms MessageType = iota
-	MessageTypeOtp
+	ZensivaMessageTypeSms ZenzivaMessageType = iota
+	ZenzivaMessageTypeOtp
 )
 
 const (
-	DeliveryStatusSent DeliveryStatus = iota
-	DeliveryStatusPending
-	DeliveryStatusFailed
-	DeliveryStatusRejected
-	DeliveryStatusError
-	DeliveryStatusUndeliverable
+	ZenzivaDeliveryStatusSent ZenzivaDeliveryStatus = iota
+	ZenzivaDeliveryStatusPending
+	ZenzivaDeliveryStatusFailed
+	ZenzivaDeliveryStatusRejected
+	ZenzivaDeliveryStatusError
+	ZenzivaDeliveryStatusUndeliverable
 )
 
 type (
-	MessageType    int
-	DeliveryStatus int
+	ZenzivaMessageType    int
+	ZenzivaDeliveryStatus int
 
-	ZenzivaService struct {
-		BaseURL,
-		UserKey,
-		ApiKey string
-		MessageMaxLength int
-		Client           *fasthttp.Client
+	ZenzivaConsumer struct {
+		baseURL,
+		userKey,
+		apiKey string
+		messageMaxLength int
+		client           *fasthttp.Client
 	}
 
-	Request struct {
+	ZenzivaRequest struct {
 		UserKey string `json:"userkey"`
 		PassKey string `json:"passkey"`
 		To      string `json:"to"`
 		Message string `json:"message"`
 	}
 
-	Response struct {
+	ZenzivaResponse struct {
 		MessageID int64  `json:"messageId,string"`
 		To        string `json:"to"`
 		Status    int    `json:"status,string"`
 		Text      string `json:"text"`
 	}
 
-	Report struct {
-		Status         int            `json:"status,string"`
-		MessageID      int64          `json:"messageId,string"`
-		Date           string         `json:"date"`
-		Time           string         `json:"time"`
-		Dest           string         `json:"dest"`
-		Message        string         `json:"msg"`
-		DeliveryStatus DeliveryStatus `json:"msg-status"`
+	ZenzivaReport struct {
+		Status         int                   `json:"status,string"`
+		MessageID      int64                 `json:"messageId,string"`
+		Date           string                `json:"date"`
+		Time           string                `json:"time"`
+		Dest           string                `json:"dest"`
+		Message        string                `json:"msg"`
+		DeliveryStatus ZenzivaDeliveryStatus `json:"msg-status"`
 	}
 
-	Balance struct {
+	ZenzivaBalance struct {
 		Balance int64  `json:"balance,string"`
 		Status  int    `json:"status,string"`
 		Text    string `json:"text"`
 	}
 )
 
-func NewZenzivaService(
+func NewZenzivaConsumer(
 	baseURL,
 	userKey,
 	apiKey string,
 	messageMaxLength int,
 	timeout time.Duration,
-) *ZenzivaService {
-	return new(ZenzivaService{
-		BaseURL:          baseURL,
-		UserKey:          userKey,
-		ApiKey:           apiKey,
-		MessageMaxLength: messageMaxLength,
-		Client: new(fasthttp.Client{
+) *ZenzivaConsumer {
+	return new(ZenzivaConsumer{
+		baseURL:          baseURL,
+		userKey:          userKey,
+		apiKey:           apiKey,
+		messageMaxLength: messageMaxLength,
+		client: new(fasthttp.Client{
 			ReadTimeout:  timeout,
 			WriteTimeout: timeout,
 		}),
 	})
 }
 
-func (q *ZenzivaService) Send(ctx context.Context, messageType MessageType, to, message string) (*int64, error) {
-	ctxt := "ZenzivaService-Send"
+func (q *ZenzivaConsumer) Send(ctx context.Context, messageType ZenzivaMessageType, to, message string) (*int64, error) {
+	ctxt := "ZenzivaConsumer-Send"
 	var sb strings.Builder
-	requestBody, err := json.Marshal(Request{
-		UserKey: q.UserKey,
-		PassKey: q.ApiKey,
+	requestBody, err := json.Marshal(ZenzivaRequest{
+		UserKey: q.userKey,
+		PassKey: q.apiKey,
 		To:      to,
-		Message: helper.TruncateString(message, q.MessageMaxLength),
+		Message: helper.TruncateString(message, q.messageMaxLength),
 	})
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrMarshal")
@@ -107,16 +107,16 @@ func (q *ZenzivaService) Send(ctx context.Context, messageType MessageType, to, 
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	_, _ = fmt.Fprintf(&sb, "%s/masking/api/%s/", q.BaseURL, messageType.String())
+	_, _ = fmt.Fprintf(&sb, "%s/masking/api/%s/", q.baseURL, messageType.String())
 	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType("application/json")
 	req.SetBodyRaw(requestBody)
-	if err = q.Client.Do(req, resp); err != nil {
+	if err = q.client.Do(req, resp); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
 		return nil, err
 	}
-	var response Response
+	var response ZenzivaResponse
 	if err = json.Unmarshal(resp.Body(), &response); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
@@ -124,8 +124,8 @@ func (q *ZenzivaService) Send(ctx context.Context, messageType MessageType, to, 
 	return new(response.MessageID), nil
 }
 
-func (q *ZenzivaService) CheckReport(ctx context.Context, messageID int64) (*Report, error) {
-	ctxt := "ZenzivaService-CheckReport"
+func (q *ZenzivaConsumer) CheckReport(ctx context.Context, messageID int64) (*ZenzivaReport, error) {
+	ctxt := "ZenzivaConsumer-CheckReport"
 	var sb strings.Builder
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -133,15 +133,15 @@ func (q *ZenzivaService) CheckReport(ctx context.Context, messageID int64) (*Rep
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	_, _ = fmt.Fprintf(&sb, "%s/masking/api/report/?userkey=%s&passkey=%s&messageId=%d", q.BaseURL, q.UserKey, q.ApiKey, messageID)
+	_, _ = fmt.Fprintf(&sb, "%s/masking/api/report/?userkey=%s&passkey=%s&messageId=%d", q.baseURL, q.userKey, q.apiKey, messageID)
 	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodGet)
-	err := q.Client.Do(req, resp)
+	err := q.client.Do(req, resp)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
 		return nil, err
 	}
-	var response Report
+	var response ZenzivaReport
 	if err = json.Unmarshal(resp.Body(), &response); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
@@ -149,8 +149,8 @@ func (q *ZenzivaService) CheckReport(ctx context.Context, messageID int64) (*Rep
 	return new(response), nil
 }
 
-func (q *ZenzivaService) CheckBalance(ctx context.Context) (*Balance, error) {
-	ctxt := "ZenzivaService-CheckBalance"
+func (q *ZenzivaConsumer) CheckBalance(ctx context.Context) (*ZenzivaBalance, error) {
+	ctxt := "ZenzivaConsumer-CheckBalance"
 	var sb strings.Builder
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -158,15 +158,15 @@ func (q *ZenzivaService) CheckBalance(ctx context.Context) (*Balance, error) {
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	_, _ = fmt.Fprintf(&sb, "%s/api/balance/?userkey=%s&passkey=%s", q.BaseURL, q.UserKey, q.ApiKey)
+	_, _ = fmt.Fprintf(&sb, "%s/api/balance/?userkey=%s&passkey=%s", q.baseURL, q.userKey, q.apiKey)
 	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodGet)
-	err := q.Client.Do(req, resp)
+	err := q.client.Do(req, resp)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
 		return nil, err
 	}
-	var response Balance
+	var response ZenzivaBalance
 	if err = json.Unmarshal(resp.Body(), &response); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
@@ -174,35 +174,35 @@ func (q *ZenzivaService) CheckBalance(ctx context.Context) (*Balance, error) {
 	return new(response), nil
 }
 
-func (q DeliveryStatus) Int() int {
+func (q ZenzivaDeliveryStatus) Int() int {
 	return int(q)
 }
 
-func (q DeliveryStatus) String() string {
-	if q == DeliveryStatusPending {
+func (q ZenzivaDeliveryStatus) String() string {
+	if q == ZenzivaDeliveryStatusPending {
 		return "Pending"
 	}
-	if q == DeliveryStatusFailed {
+	if q == ZenzivaDeliveryStatusFailed {
 		return "Failed"
 	}
-	if q == DeliveryStatusRejected {
+	if q == ZenzivaDeliveryStatusRejected {
 		return "Rejected"
 	}
-	if q == DeliveryStatusError {
+	if q == ZenzivaDeliveryStatusError {
 		return "Error"
 	}
-	if q == DeliveryStatusUndeliverable {
+	if q == ZenzivaDeliveryStatusUndeliverable {
 		return "Undeliverable"
 	}
 	return "Sent"
 }
 
-func (q MessageType) Int() int {
+func (q ZenzivaMessageType) Int() int {
 	return int(q)
 }
 
-func (q MessageType) String() string {
-	if q == MessageTypeOtp {
+func (q ZenzivaMessageType) String() string {
+	if q == ZenzivaMessageTypeOtp {
 		return "sendOTP"
 	}
 	return "sendsms"

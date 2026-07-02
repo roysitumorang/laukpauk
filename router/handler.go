@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/gofiber/storage/valkey"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/config"
-	"github.com/roysitumorang/laukpauk/external/kafka"
+	"github.com/roysitumorang/laukpauk/consumers"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migration"
 	"github.com/roysitumorang/laukpauk/models"
@@ -25,7 +26,9 @@ type (
 	Service struct {
 		DbWrite                *pgxpool.Pool
 		Migration              *migration.Migration
-		KafkaService           *kafka.KafkaService
+		KafkaConsumer          *consumers.KafkaConsumer
+		FcmConsumer            *consumers.FcmConsumer
+		ZenzivaConsumer        *consumers.ZenzivaConsumer
 		Storage                fiber.Storage
 		UserService            services.UserService
 		ArticleService         services.ArticleService
@@ -51,23 +54,46 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		return nil, err
 	}
 	migration := migration.New(dbRead, dbWrite)
-	kafkaService, err := kafka.New(ctx, strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
+	kafkaConsumer, err := consumers.NewKafkaConsumer(ctx, strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewKafkaConsumer")
 		return nil, err
 	}
-	if err = kafkaService.Ping(ctx); err != nil {
+	if err = kafkaConsumer.Ping(ctx); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 		return nil, err
 	}
-	topics := make([]kafka.Topic, len(models.SliceTopics))
+	topics := make([]consumers.KafkaTopic, len(models.SliceTopics))
 	for i, topic := range models.SliceTopics {
-		topics[i] = kafka.Topic{
+		topics[i] = consumers.KafkaTopic{
 			Name:     topic,
 			Payloads: []map[string]any{},
 		}
 	}
-	_ = kafkaService.Publish(ctx, topics...)
+	_ = kafkaConsumer.Publish(ctx, topics...)
+	fcmTimeoutDuration, err := time.ParseDuration(os.Getenv("FCM_TIMEOUT_DURATION"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
+		return nil, err
+	}
+	fcmConsumer := consumers.NewFcmConsumer(os.Getenv("FIREBASE_PROJECT_ID"), fcmTimeoutDuration)
+	zenzivaMessageMaxLength, err := strconv.Atoi(os.Getenv("ZENZIVA_MESSAGE_MAX_LENGTH"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAtoi")
+		return nil, err
+	}
+	zenzivaTimeoutDuration, err := time.ParseDuration(os.Getenv("ZENZIVA_TIMEOUT_DURATION"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
+		return nil, err
+	}
+	zenzivaConsumer := consumers.NewZenzivaConsumer(
+		os.Getenv("ZENZIVA_BASE_URL"),
+		os.Getenv("ZENZIVA_USER_KEY"),
+		os.Getenv("ZENZIVA_API_KEY"),
+		zenzivaMessageMaxLength,
+		zenzivaTimeoutDuration,
+	)
 	storage := valkey.New(valkey.Config{
 		URL: os.Getenv("REDIS_URL"),
 	})
@@ -91,7 +117,9 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	return &Service{
 		DbWrite:                dbWrite,
 		Migration:              migration,
-		KafkaService:           kafkaService,
+		KafkaConsumer:          kafkaConsumer,
+		FcmConsumer:            fcmConsumer,
+		ZenzivaConsumer:        zenzivaConsumer,
 		Storage:                storage,
 		UserService:            userService,
 		ArticleService:         articleService,
@@ -116,7 +144,7 @@ func (q *Service) Consume(ctx context.Context) error {
 		}
 	}()
 	for {
-		fetches := q.KafkaService.PollFetches(ctx)
+		fetches := q.KafkaConsumer.PollFetches(ctx)
 		if fetches.IsClientClosed() {
 			return nil
 		}
@@ -126,11 +154,11 @@ func (q *Service) Consume(ctx context.Context) error {
 			return err
 		}
 		records := fetches.Records()
-		if err := q.KafkaService.CommitUncommittedOffsets(ctx); err != nil {
+		if err := q.KafkaConsumer.CommitUncommittedOffsets(ctx); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommitUncommittedOffsets")
 			return err
 		}
-		q.KafkaService.AllowRebalance()
+		q.KafkaConsumer.AllowRebalance()
 		for _, record := range records {
 			now := time.Now()
 			duration := time.Since(now)

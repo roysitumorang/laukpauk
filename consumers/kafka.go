@@ -1,4 +1,4 @@
-package kafka
+package consumers
 
 import (
 	"context"
@@ -15,18 +15,18 @@ import (
 )
 
 type (
-	KafkaService struct {
+	KafkaConsumer struct {
 		client *kgo.Client
 	}
 
-	Topic struct {
+	KafkaTopic struct {
 		Name     string
 		Payloads []map[string]any
 	}
 )
 
-func New(ctx context.Context, brokers []string) (*KafkaService, error) {
-	ctxt := "KafkaService-New"
+func NewKafkaConsumer(ctx context.Context, brokers []string) (*KafkaConsumer, error) {
+	ctxt := "KafkaConsumer-NewKafkaConsumer"
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumerGroup(config.AppName),
@@ -41,19 +41,19 @@ func New(ctx context.Context, brokers []string) (*KafkaService, error) {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNewClient")
 		return nil, err
 	}
-	return &KafkaService{client: client}, nil
+	return &KafkaConsumer{client: client}, nil
 }
 
-func (s *KafkaService) Ping(ctx context.Context) (err error) {
-	ctxt := "KafkaService-Ping"
+func (s *KafkaConsumer) Ping(ctx context.Context) (err error) {
+	ctxt := "KafkaConsumer-Ping"
 	if err = s.client.Ping(ctx); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 	}
 	return
 }
 
-func (s *KafkaService) Publish(ctx context.Context, request ...Topic) (err error) {
-	ctxt := "KafkaService-Publish"
+func (s *KafkaConsumer) Publish(ctx context.Context, request ...KafkaTopic) (err error) {
+	ctxt := "KafkaConsumer-Publish"
 	n := len(request)
 	if n == 0 {
 		return
@@ -89,18 +89,18 @@ func (s *KafkaService) Publish(ctx context.Context, request ...Topic) (err error
 	return
 }
 
-func (s *KafkaService) PollFetches(ctx context.Context) kgo.Fetches {
+func (s *KafkaConsumer) PollFetches(ctx context.Context) kgo.Fetches {
 	return s.client.PollFetches(ctx)
 }
 
-func (s *KafkaService) CommitUncommittedOffsets(ctx context.Context) (err error) {
-	ctxt := "KafkaService-CommitUncommittedOffsets"
+func (s *KafkaConsumer) CommitUncommittedOffsets(ctx context.Context) (err error) {
+	ctxt := "KafkaConsumer-CommitUncommittedOffsets"
 	if err = s.client.CommitUncommittedOffsets(ctx); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommitUncommittedOffsets")
 	}
 	return
 }
 
-func (s *KafkaService) AllowRebalance() {
+func (s *KafkaConsumer) AllowRebalance() {
 	s.client.AllowRebalance()
 }
