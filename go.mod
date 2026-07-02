@@ -12,7 +12,7 @@ require (
 	github.com/gofiber/contrib/v3/monitor v1.1.0
 	github.com/gofiber/contrib/v3/sentry v1.1.7
 	github.com/gofiber/contrib/v3/swaggo v1.0.7
-	github.com/gofiber/fiber/v3 v3.3.0
+	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/storage/valkey v0.3.0
 	github.com/gofiber/template/jet/v3 v3.0.6
 	github.com/gofiber/utils/v2 v2.1.1
