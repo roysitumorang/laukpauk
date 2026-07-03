@@ -10,7 +10,7 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func ValidateProductVariant(ctx context.Context, c fiber.Ctx) (*models.ProductVariant, int, error) {
+func ValidateProductVariant(ctx context.Context, c fiber.Ctx, productBasePrice int64) (*models.ProductVariant, int, error) {
 	ctxt := "ProductVariantSanitizer-ValidateProductVariant"
 	var response models.ProductVariant
 	err := c.Bind().Body(&response)
@@ -18,7 +18,7 @@ func ValidateProductVariant(ctx context.Context, c fiber.Ctx) (*models.ProductVa
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, fiberErr.Code, err
 	}
-	if err = (&response).Validate(); err != nil {
+	if err = (&response).Validate(productBasePrice); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, fiber.StatusBadRequest, err
 	}

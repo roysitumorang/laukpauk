@@ -59,6 +59,10 @@
 												<td class="border-top-0 text-left">{{ product.ProductCategoryName }}</td>
 											</tr>
 											<tr class="text-sm">
+												<td class="border-top-0 text-left">Harga Dasar</td>
+												<td class="border-top-0 text-left">Rp. {{ product.BasePrice | Comma }}</td>
+											</tr>
+											<tr class="text-sm">
 												<td class="border-top-0 text-left">Stok</td>
 												<td class="border-top-0 text-left">
 													<span class="badge badge-success">
@@ -125,8 +129,9 @@
 									<thead>
 										<tr>
 											<th class="text-center">No.</th>
-											<th class="text-left">Nama Harga</th>
+											<th class="text-left">Satuan &amp; Harga</th>
 											<th class="text-left">Jenis Harga</th>
+											<th class="text-left">Diskon &amp; Minimum Quantity</th>
 											<th class="text-left">Keterangan</th>
 											<th class="text-center">Opsi</th>
 										</tr>
@@ -140,6 +145,22 @@
 												<span class="text-bold text-success">Rp. {{ row.Price | Comma }}</span>
 											</td>
 											<td class="vam text-left">{{ row.PriceType.String() }}</td>
+											<td class="vam text-left">
+												<h5 class="text-primary mb-1">
+													{{ if row.DiscountType.Equal(discountTypePercentage) }}
+													{{ row.DiscountRate | Comma }} %
+													{{ else }}
+													Rp. {{ row.DiscountRate | Comma }}
+													{{ end }}
+												</h5>
+												<span class="text-bold text-success">
+													{{ if row.DiscountMinimumQuantity }}
+													{{ row.DiscountMinimumQuantity | Comma }}
+													{{ else }}
+													-
+													{{ end }}
+												</span>
+											</td>
 											<td class="vam text-left">
 												{{ if row.Description }}
 												{{ row.Description }}

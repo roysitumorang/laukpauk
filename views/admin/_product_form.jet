@@ -50,6 +50,11 @@
 			<input type="checkbox" name="pinned" id="pinned" class="mr-2"{{ if request.Pinned }} checked{{ end }} />
 			<label for="pinned" class="label-title cp">Superior</label>
 		</div>
+		<div class="form-group">
+			<label for="base_price" class="label-title">Harga Dasar</label>
+			<input type="number" name="base_price" value="{{ request.BasePrice }}" min="0" class="form-control input" id="base_price"
+				placeholder="Harga Dasar" />
+		</div>
 		<hr class="mb-4" />
 		<button type="submit" class="btn btn-success mr-1">
 			Simpan  Data Produk

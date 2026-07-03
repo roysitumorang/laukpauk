@@ -7,6 +7,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/govalues/decimal"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -42,6 +43,8 @@ type (
 		DiscountType            DiscountType `json:"-" form:"discount_type"`
 		DiscountRate            int64        `json:"-" form:"discount_rate"`
 		DiscountMinimumQuantity int64        `json:"-" form:"discount_minimum_quantity"`
+		DiscountAmount          int64        `json:"-" form:"-"`
+		SalePrice               int64        `json:"-" form:"-"`
 		Description             string       `json:"-" form:"description"`
 		CreatedBy               uuid.UUID    `json:"-" form:"-"`
 		CreatedAt               time.Time    `json:"-" form:"-"`
@@ -58,6 +61,7 @@ type (
 		ExcludedProductVariantIDs []uuid.UUID
 		RecordStatuses []RecordStatus
 		MeasureUnits   []string
+		PriceTypes     []PriceType
 		PaginationURL  string
 		Sortings       []Sorting
 		MapSortings    *Map
@@ -99,6 +103,11 @@ func (q *ProductVariantFilter) WithMeasureUnits(measureUnits ...string) *Product
 	return q
 }
 
+func (q *ProductVariantFilter) WithPriceTypes(priceTypes ...PriceType) *ProductVariantFilter {
+	q.PriceTypes = priceTypes
+	return q
+}
+
 func (q *ProductVariantFilter) WithPaginationURL(paginationURL string) *ProductVariantFilter {
 	q.PaginationURL = paginationURL
 	return q
@@ -128,26 +137,75 @@ func (q *ProductVariantFilter) WithUrlValues(urlValues url.Values) *ProductVaria
 	return q
 }
 
-func (q *ProductVariant) Validate() error {
-	q.Price = max(0, q.Price)
-	if q.PriceType == PriceTypeRelative {
-		q.PriceVariantPercentage = min(max(0, q.PriceVariantPercentage), 100)
-	} else {
-		q.PriceVariantPercentage = 100
-	}
-	q.DiscountRate = max(0, q.DiscountRate)
-	q.DiscountMinimumQuantity = max(0, q.DiscountMinimumQuantity)
+func (q *ProductVariant) Validate(productBasePrice int64) error {
 	if q.MeasureUnit = strings.TrimSpace(q.MeasureUnit); q.MeasureUnit == "" {
 		return errors.New("measure_unit: is required")
 	}
-	if q.Price == 0 {
-		return errors.New("price: is required")
-	}
-	if _, ok := MapPriceTypes[q.PriceType]; !ok {
+	switch q.PriceType {
+	case PriceTypeAbsolute:
+		q.PriceVariantPercentage = 0
+		if q.Price < 1 {
+			return errors.New("price: requires a positive integer minimum 1")
+		}
+	case PriceTypeRelative:
+		if q.PriceVariantPercentage < 1 || q.PriceVariantPercentage > 99 {
+			return errors.New("price_variant_percentage: requires a positive decimal minimum 0 maximum 99")
+		}
+		basePrice, err := decimal.New(productBasePrice, 0)
+		if err != nil {
+			return err
+		}
+		variantPercentage, err := decimal.NewFromFloat64(q.PriceVariantPercentage)
+		if err != nil {
+			return err
+		}
+		price, err := basePrice.Mul(variantPercentage)
+		if err != nil {
+			return err
+		}
+		if price, err = price.Quo(decimal.Hundred); err != nil {
+			return err
+		}
+		q.Price, _, _ = price.Ceil(0).Int64(0)
+	default:
 		return errors.New("price_type: not found")
 	}
-	if _, ok := MapDiscountTypes[q.DiscountType]; !ok {
+	switch q.DiscountType {
+	case DiscountTypeFixedAmount:
+		if q.DiscountRate < 0 {
+			return errors.New("discount_rate: requires a positive integer minimum 0")
+		}
+		if q.DiscountRate >= q.Price {
+			return errors.New("discount_rate: cannot equal or exceed price")
+		}
+		q.DiscountAmount = q.DiscountRate
+		q.SalePrice = q.Price - q.DiscountAmount
+	case DiscountTypePercentage:
+		if q.DiscountRate < 0 || q.DiscountRate > 99 {
+			return errors.New("discount_rate: requires a positive integer minimum 0 maximum 99")
+		}
+		price, err := decimal.New(q.Price, 0)
+		if err != nil {
+			return err
+		}
+		discountRate, err := decimal.New(q.DiscountRate, 0)
+		if err != nil {
+			return err
+		}
+		discount, err := price.Mul(discountRate)
+		if err != nil {
+			return err
+		}
+		if discount, err = discount.Quo(decimal.Hundred); err != nil {
+			return err
+		}
+		q.DiscountAmount, _, _ = discount.Ceil(0).Int64(0)
+		q.SalePrice = q.Price - q.DiscountAmount
+	default:
 		return errors.New("discount_type: not found")
+	}
+	if q.DiscountMinimumQuantity < 0 {
+		return errors.New("discount_minimum_quantity: requires a positive integer minimum 0")
 	}
 	return nil
 }

@@ -84,6 +84,8 @@ func (q *productVariantRepository) FindProductVariants(
 		, discount_type
 		, discount_rate
 		, discount_minimum_quantity
+		, discount_amount
+		, sale_price
 		, description
 		, created_by
 		, created_at
@@ -151,6 +153,8 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.DiscountType,
 			&productVariant.DiscountRate,
 			&productVariant.DiscountMinimumQuantity,
+			&productVariant.DiscountAmount,
+			&productVariant.SalePrice,
 			&productVariant.Description,
 			&productVariant.CreatedBy,
 			&productVariant.CreatedAt,
@@ -191,6 +195,8 @@ func (q *productVariantRepository) FindProductVariant(
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
 			, description
 			, created_by
 			, created_at
@@ -215,6 +221,8 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
+		&response.DiscountAmount,
+		&response.SalePrice,
 		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -253,12 +261,14 @@ func (q *productVariantRepository) CreateProductVariant(
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
 			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id
 			, record_status
 			, product_id
@@ -269,6 +279,8 @@ func (q *productVariantRepository) CreateProductVariant(
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
 			, description
 			, created_by
 			, created_at
@@ -286,6 +298,8 @@ func (q *productVariantRepository) CreateProductVariant(
 		request.DiscountType,
 		request.DiscountRate,
 		request.DiscountMinimumQuantity,
+		request.DiscountAmount,
+		request.SalePrice,
 		request.Description,
 		request.CreatedBy,
 		request.CreatedAt,
@@ -302,6 +316,8 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
+		&response.DiscountAmount,
+		&response.SalePrice,
 		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -338,13 +354,15 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, discount_type = $6
 			, discount_rate = $7
 			, discount_minimum_quantity = $8
-			, description = $9
-			, updated_by = $10
-			, updated_at = $11
-			, deleted_by = $12
-			, deleted_at = $13
-			, deletion_reason = $14
-		WHERE id = $15
+			, discount_amount = $9
+			, sale_price = $10
+			, description = $11
+			, updated_by = $12
+			, updated_at = $13
+			, deleted_by = $14
+			, deleted_at = $15
+			, deletion_reason = $16
+		WHERE id = $17
 		RETURNING id
 			, record_status
 			, product_id
@@ -355,6 +373,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
 			, description
 			, created_by
 			, created_at
@@ -371,6 +391,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 		request.DiscountType,
 		request.DiscountRate,
 		request.DiscountMinimumQuantity,
+		request.DiscountAmount,
+		request.SalePrice,
 		request.Description,
 		request.UpdatedBy,
 		request.UpdatedAt,
@@ -389,6 +411,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
+		&response.DiscountAmount,
+		&response.SalePrice,
 		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -453,6 +477,19 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 		_, _ = sb.WriteString("LOWER(measure_unit) IN (")
 		for i, measureUnit := range request.MeasureUnits {
 			params = append(params, strings.ToLower(measureUnit))
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.PriceTypes) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("price_type IN (")
+		for i, priceType := range request.PriceTypes {
+			params = append(params, priceType)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
