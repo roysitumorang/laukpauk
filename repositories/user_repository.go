@@ -558,8 +558,8 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 	if len(request.UserTypes) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("u.user_type IN (")
-		for i, userID := range request.UserIDs {
-			params = append(params, userID)
+		for i, userType := range request.UserTypes {
+			params = append(params, userType)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -577,9 +577,7 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = sb.WriteString("%%")
-		_, _ = sb.WriteString(strings.ToLower(request.Keyword))
-		_, _ = sb.WriteString("%%")
+		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		n := len(params)
 		sb.Reset()
