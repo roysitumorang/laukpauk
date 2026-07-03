@@ -56,7 +56,7 @@
 										<table class="table table-sm">
 											<tr class="text-sm">
 												<td class="border-top-0 text-left">Kategori Produk</td>
-												<td class="border-top-0 text-left">{{ productCategory.Name }}</td>
+												<td class="border-top-0 text-left">{{ product.ProductCategoryName }}</td>
 											</tr>
 											<tr class="text-sm">
 												<td class="border-top-0 text-left">Stok</td>

@@ -56,7 +56,7 @@
 										<table class="table table-sm">
 											<tr class="text-sm">
 												<td class="border-top-0 text-left">Kategori Produk</td>
-												<td class="border-top-0 text-left">{{ productCategory.Name }}</td>
+												<td class="border-top-0 text-left">{{ product.ProductCategoryName }}</td>
 											</tr>
 											<tr class="text-sm">
 												<td class="border-top-0 text-left">Stok</td>
@@ -115,7 +115,6 @@
 									<span class="cp fa fa-plus-circle mr-2"></span> Tambah Varian Produk Baru
 								</label>
 							</a>
-							<hr class="mb-3" />
 							<div class="table-responsive">
 								{{ range type, message := flash.Data }}
 								<div class="alert alert-{{ type }}">

@@ -62,7 +62,7 @@ func (q *productRepository) FindProducts(
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM products %s", condition)
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM products p JOIN product_categories c ON p.product_category_id = c.id %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -76,22 +76,23 @@ func (q *productRepository) FindProducts(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`id
-		, record_status
-		, product_category_id
-		, product_type
-		, name
-		, photo
-		, description
-		, stock_status
-		, pinned
-		, created_by
-		, created_at
-		, updated_by
-		, updated_at
-		, deleted_by
-		, deleted_at
-		, deletion_reason`,
+		`p.id
+		, p.record_status
+		, p.product_category_id
+		, c.name
+		, p.product_type
+		, p.name
+		, p.photo
+		, p.description
+		, p.stock_status
+		, p.pinned
+		, p.created_by
+		, p.created_at
+		, p.updated_by
+		, p.updated_at
+		, p.deleted_by
+		, p.deleted_at
+		, p.deletion_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -104,7 +105,7 @@ func (q *productRepository) FindProducts(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(&sb, " p.%s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -144,6 +145,7 @@ func (q *productRepository) FindProducts(
 			&product.ID,
 			&product.RecordStatus,
 			&product.ProductCategoryID,
+			&product.ProductCategoryName,
 			&product.ProductType,
 			&product.Name,
 			&product.Photo,
@@ -179,23 +181,25 @@ func (q *productRepository) FindProduct(
 	_, _ = fmt.Fprintf(
 		&sb,
 		`SELECT
-			id
-			, record_status
-			, product_category_id
-			, product_type
-			, name
-			, photo
-			, description
-			, stock_status
-			, pinned
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason
-		FROM products %s`,
+			p.id
+			, p.record_status
+			, p.product_category_id
+			, c.name
+			, p.product_type
+			, p.name
+			, p.photo
+			, p.description
+			, p.stock_status
+			, p.pinned
+			, p.created_by
+			, p.created_at
+			, p.updated_by
+			, p.updated_at
+			, p.deleted_by
+			, p.deleted_at
+			, p.deletion_reason
+		FROM products p
+		JOIN product_categories c ON p.product_category_id = c.id %s`,
 		condition,
 	)
 	query := sb.String()
@@ -204,6 +208,7 @@ func (q *productRepository) FindProduct(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
 		&response.Photo,
@@ -237,36 +242,43 @@ func (q *productRepository) CreateProduct(
 	var response models.Product
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO products (
-			record_status
-			, product_category_id
-			, product_type
-			, name
-			, photo
-			, description
-			, stock_status
-			, pinned
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		RETURNING id
-			, record_status
-			, product_category_id
-			, product_type
-			, name
-			, photo
-			, description
-			, stock_status
-			, pinned
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
+		`WITH p AS (
+			INSERT INTO products (
+				record_status
+				, product_category_id
+				, product_type
+				, name
+				, photo
+				, description
+				, stock_status
+				, pinned
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			RETURNING *
+		)
+		SELECT
+			p.id
+			, p.record_status
+			, p.product_category_id
+			, c.name
+			, p.product_type
+			, p.name
+			, p.photo
+			, p.description
+			, p.stock_status
+			, p.pinned
+			, p.created_by
+			, p.created_at
+			, p.updated_by
+			, p.updated_at
+			, p.deleted_by
+			, p.deleted_at
+			, p.deletion_reason
+		FROM p
+		JOIN product_categories c ON p.product_category_id = c.id`,
 		request.RecordStatus,
 		request.ProductCategoryID,
 		request.ProductType,
@@ -283,6 +295,7 @@ func (q *productRepository) CreateProduct(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
 		&response.Photo,
@@ -315,37 +328,44 @@ func (q *productRepository) UpdateProduct(
 	var response models.Product
 	if err := tx.QueryRow(
 		ctx,
-		`UPDATE products SET
-			record_status = $1
-			, product_category_id = $2
-			, product_type = $3
-			, name = $4
-			, photo = $5
-			, description = $6
-			, stock_status = $7
-			, pinned = $8
-			, updated_by = $9
-			, updated_at = $10
-			, deleted_by = $11
-			, deleted_at = $12
-			, deletion_reason = $13
-		WHERE id = $14
-		RETURNING id
-			, record_status
-			, product_category_id
-			, product_type
-			, name
-			, photo
-			, description
-			, stock_status
-			, pinned
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
+		`WITH p AS (
+			UPDATE products SET
+				record_status = $1
+				, product_category_id = $2
+				, product_type = $3
+				, name = $4
+				, photo = $5
+				, description = $6
+				, stock_status = $7
+				, pinned = $8
+				, updated_by = $9
+				, updated_at = $10
+				, deleted_by = $11
+				, deleted_at = $12
+				, deletion_reason = $13
+			WHERE id = $14
+			RETURNING *
+		)
+		SELECT
+			p.id
+			, p.record_status
+			, p.product_category_id
+			, c.name
+			, p.product_type
+			, p.name
+			, p.photo
+			, p.description
+			, p.stock_status
+			, p.pinned
+			, p.created_by
+			, p.created_at
+			, p.updated_by
+			, p.updated_at
+			, p.deleted_by
+			, p.deleted_at
+			, p.deletion_reason
+		FROM p
+		JOIN product_categories c ON p.product_category_id = c.id`,
 		request.RecordStatus,
 		request.ProductCategoryID,
 		request.ProductType,
@@ -364,6 +384,7 @@ func (q *productRepository) UpdateProduct(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
 		&response.Photo,
@@ -397,7 +418,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	var conds []string
 	if len(request.ProductCategoryIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("product_category_id IN (")
+		_, _ = sb.WriteString("p.product_category_id IN (")
 		for i, productCategoryID := range request.ProductCategoryIDs {
 			params = append(params, productCategoryID)
 			if i > 0 {
@@ -410,7 +431,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if len(request.ProductIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("id IN (")
+		_, _ = sb.WriteString("p.id IN (")
 		for i, productID := range request.ProductIDs {
 			params = append(params, productID)
 			if i > 0 {
@@ -423,7 +444,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if len(request.ExcludedProductIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("id NOT IN (")
+		_, _ = sb.WriteString("p.id NOT IN (")
 		for i, excludedProductID := range request.ExcludedProductIDs {
 			params = append(params, excludedProductID)
 			if i > 0 {
@@ -436,7 +457,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if len(request.RecordStatuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("record_status IN (")
+		_, _ = sb.WriteString("p.record_status IN (")
 		for i, recordStatus := range request.RecordStatuses {
 			params = append(params, recordStatus)
 			if i > 0 {
@@ -449,7 +470,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if len(request.ProductTypes) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("product_type IN (")
+		_, _ = sb.WriteString("p.product_type IN (")
 		for i, productType := range request.ProductTypes {
 			params = append(params, productType)
 			if i > 0 {
@@ -462,7 +483,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if len(request.Names) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) IN (")
+		_, _ = sb.WriteString("LOWER(p.name) IN (")
 		for i, name := range request.Names {
 			params = append(params, strings.ToLower(name))
 			if i > 0 {
@@ -475,7 +496,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if len(request.StockStatuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("stock_status IN (")
+		_, _ = sb.WriteString("p.stock_status IN (")
 		for i, stockStatus := range request.StockStatuses {
 			params = append(params, stockStatus)
 			if i > 0 {
@@ -491,7 +512,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "LOWER(p.name) LIKE $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
