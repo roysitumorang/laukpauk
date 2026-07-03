@@ -116,6 +116,9 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 				"/admin/products":               "/products/admin",
 				"/admin/products/*":             "/products/admin/$1",
 				"/admin/products/*/*":           "/products/admin/$1/$2",
+				"/admin/settings":               "/settings/admin",
+				"/admin/settings/*":             "/settings/admin/$1",
+				"/admin/settings/*/*":           "/settings/admin/$1/$2",
 				"/":                             "/blocks",
 				"/blogs":                        "/blocks/blogs",
 				"/read/*":                       "/blocks/blogs/$1",
@@ -198,6 +201,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewBlockController(q.UserService, q.BlockService, q.BlogService, q.MessageService).Mount(app.Group("/blocks"))
 	controllers.NewProductCategoryController(q.UserService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
 	controllers.NewProductController(q.UserService, q.ProductCategoryService, q.ProductService, q.ProductVariantService).Mount(app.Group("/products"))
+	controllers.NewSettingController(q.UserService, q.SettingService).Mount(app.Group("/settings"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{

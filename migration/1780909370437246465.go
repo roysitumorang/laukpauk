@@ -280,7 +280,7 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, product_id UUID NOT NULL REFERENCES products (id)
-				, measure_unit character varying NOT NULL
+				, measure_unit character varying NOT NULL COLLATE "natural_sort"
 				, price bigint NOT NULL
 				, price_type integer NOT NULL
 				, price_variant_percentage numeric(5, 2) NOT NULL
@@ -634,12 +634,13 @@ func init() {
 			ctx,
 			`CREATE TABLE settings (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, key character varying NOT NULL
+				, active BOOLEAN NOT NULL
+				, key character varying NOT NULL COLLATE "natural_sort"
 				, value character varying NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -648,7 +649,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON settings (LOWER(key));`,
+			`CREATE INDEX ON settings (active);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE UNIQUE INDEX settings_unique_key_idx ON settings (LOWER(key));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
