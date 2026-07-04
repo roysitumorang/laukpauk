@@ -16,11 +16,11 @@ func ValidateAdminLogin(ctx context.Context, c fiber.Ctx) (*models.AdminLoginReq
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
-		return nil, fiberErr.Code, err
+		return &response, fiberErr.Code, err
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
-		return nil, fiber.StatusBadRequest, err
+		return &response, fiber.StatusBadRequest, err
 	}
 	return &response, fiber.StatusOK, nil
 }

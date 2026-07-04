@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"log/slog"
 
 	"github.com/gofiber/fiber/v3"
@@ -37,8 +38,12 @@ func (q *authController) Mount(r fiber.Router) {
 }
 
 func (q *authController) AdminNewLogin(c fiber.Ctx) error {
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	if sess.Get(models.UserID) != nil {
 		return flash.Redirect(c, sess.Session, "/admin")
 	}
@@ -56,10 +61,13 @@ func (q *authController) AdminNewLogin(c fiber.Ctx) error {
 func (q *authController) AdminLogin(c fiber.Ctx) error {
 	ctx := c.Context()
 	ctxt := "AuthController-AdminLogin"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	if sess.Get(models.UserID) != nil {
-		return flash.Redirect(c, sess.Session, "/admin")
+		return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin")
 	}
 	csrfToken := csrf.TokenFromContext(c)
 	params := models.NewMap().Push(
@@ -70,6 +78,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 		"request", new(models.AdminLoginRequest),
 	)
 	request, statusCode, err := sanitizers.ValidateAdminLogin(ctx, c)
+	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateAdminLogin")
 		c.Response().SetStatusCode(statusCode)
@@ -83,7 +92,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 			WithEmail(request.Email),
 	)
 	if err != nil {
-		if err != models.ErrAdminNotFound {
+		if !errors.Is(err, models.ErrAdminNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
 		}
 		return c.Render("admin/auth_login", params.Push(
@@ -112,13 +121,17 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 	} else {
 		sess.Delete("next")
 	}
-	return flash.Redirect(c, sess.Session, next)
+	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, next)
 }
 
 func (q *authController) AdminProfile(c fiber.Ctx) error {
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -133,8 +146,11 @@ func (q *authController) AdminProfile(c fiber.Ctx) error {
 func (q *authController) AdminLogout(c fiber.Ctx) error {
 	ctx := c.Context()
 	ctxt := "AuthController-AdminLogout"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	if csrfHandler := csrf.HandlerFromContext(c); csrfHandler != nil {
 		if err := csrfHandler.DeleteToken(c); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteToken")
@@ -143,5 +159,5 @@ func (q *authController) AdminLogout(c fiber.Ctx) error {
 	if err := sess.ResetWithContext(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
-	return flash.Redirect(c, sess.Session, "/admin/auth/login")
+	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin/auth/login")
 }
