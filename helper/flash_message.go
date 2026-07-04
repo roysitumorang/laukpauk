@@ -51,8 +51,8 @@ func (f *FlashMessage) Redirect(c fiber.Ctx, sess *session.Session, location str
 	ctx := c.Context()
 	ctxt := "FlashMessage-Redirect"
 	sess.Set(Flash, f)
-	if err := sess.Save(); err != nil {
-		Capture(ctx, slog.LevelError, err, ctxt, "ErrSave")
+	if err := sess.SaveWithContext(ctx); err != nil {
+		Capture(ctx, slog.LevelError, err, ctxt, "ErrSaveWithContext")
 	}
 	redirect := c.Redirect()
 	if len(statusCode) > 0 {
@@ -64,10 +64,10 @@ func (f *FlashMessage) Redirect(c fiber.Ctx, sess *session.Session, location str
 func (f *FlashMessage) Clear(c fiber.Ctx, sess *session.Session) *FlashMessage {
 	ctx := c.Context()
 	ctxt := "FlashMessage-Clear"
-	f.Data = map[string]string{}
+	clear(f.Data)
 	sess.Set(Flash, f)
-	if err := sess.Save(); err != nil {
-		Capture(ctx, slog.LevelError, err, ctxt, "ErrSave")
+	if err := sess.SaveWithContext(ctx); err != nil {
+		Capture(ctx, slog.LevelError, err, ctxt, "ErrSaveWithContext")
 	}
 	return f
 }

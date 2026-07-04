@@ -52,9 +52,13 @@ func (q *articleController) Mount(r fiber.Router) {
 func (q *articleController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ArticleController-AdminIndex"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.ArticleFilter)
 	rows := []*models.Article{}
@@ -119,9 +123,13 @@ func (q *articleController) AdminIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *articleController) AdminNew(c fiber.Ctx) (err error) {
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Article)
 	params := models.NewMap().Push(
@@ -139,9 +147,12 @@ func (q *articleController) AdminNew(c fiber.Ctx) (err error) {
 func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ArticleController-AdminCreate"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Article)
 	params := models.NewMap().Push(
@@ -206,15 +217,21 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("article created successfully").Redirect(c, sess.Session, "/admin/articles")
+	return flash.Clear(c, sess.Session).
+		Success("article created successfully").
+		Redirect(c, sess.Session, "/admin/articles")
 }
 
 func (q *articleController) AdminEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ArticleController-AdminEdit"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	articleID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -252,9 +269,12 @@ func (q *articleController) AdminEdit(c fiber.Ctx) (err error) {
 func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ArticleController-AdminUpdate"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	csrfToken := csrf.TokenFromContext(c)
 	articleID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -339,19 +359,24 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("article updated successfully").Redirect(c, sess.Session, "/admin/articles")
+	return flash.Clear(c, sess.Session).
+		Success("article updated successfully").
+		Redirect(c, sess.Session, "/admin/articles")
 }
 
 func (q *articleController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ArticleController-AdminDelete"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	articleID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
+		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
 	article, err := q.articleService.FindArticle(
 		ctx,
@@ -394,7 +419,9 @@ func (q *articleController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	return flash.Success("article deleted successfully").Redirect(c, sess.Session, "/admin/articles")
+	return flash.Clear(c, sess.Session).
+		Success("article deleted successfully").
+		Redirect(c, sess.Session, "/admin/articles")
 }
 
 func (q *articleController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
