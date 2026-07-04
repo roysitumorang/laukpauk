@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"mime/multipart"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
@@ -49,9 +52,13 @@ func (q *blogController) Mount(r fiber.Router) {
 func (q *blogController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BlogController-AdminIndex"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.BlogFilter)
 	rows := []*models.Blog{}
@@ -67,14 +74,38 @@ func (q *blogController) AdminIndex(c fiber.Ctx) (err error) {
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
+		"sortings", []models.Sorting{
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Newest-Oldest",
+			},
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Oldest-Newest",
+			},
+			{
+				Field:     models.BlogSortingFieldSubject,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Subject A-Z",
+			},
+			{
+				Field:     models.BlogSortingFieldSubject,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Subject Z-A",
+			},
+		},
 	)
-	if request, err = sanitizers.FindBlogs(ctx, c); err != nil {
+	request, err = sanitizers.FindBlogs(ctx, c)
+	params.Push("request", request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
 		return c.Render("admin/blog_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request = request.WithRecordStatus(models.RecordStatusActive)
+	request.WithRecordStatuses(models.RecordStatusActive)
 	if rows, pagination, err = q.blogService.FindBlogs(
 		c,
 		request,
@@ -92,9 +123,13 @@ func (q *blogController) AdminIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *blogController) AdminNew(c fiber.Ctx) (err error) {
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Blog)
 	params := models.NewMap().Push(
@@ -112,9 +147,12 @@ func (q *blogController) AdminNew(c fiber.Ctx) (err error) {
 func (q *blogController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BlogController-AdminCreate"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.Blog)
 	params := models.NewMap().Push(
@@ -127,12 +165,29 @@ func (q *blogController) AdminCreate(c fiber.Ctx) (err error) {
 		"request", request,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateBlog(ctx, c)
+	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlog")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/blog_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
+		), "admin/layouts/authenticated")
+	}
+	blog, err := q.blogService.FindBlog(
+		ctx,
+		models.NewBlogFilter().
+			WithSlugs(request.Slug),
+	)
+	if err != nil && !errors.Is(err, models.ErrBlogNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlog")
+		return c.Render("admin/blog_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if blog != nil {
+		return c.Render("admin/blog_new", params.Push(
+			"flash", flash.Danger(models.ErrUniqueBlogSlugViolation.Error()),
 		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
@@ -145,76 +200,85 @@ func (q *blogController) AdminCreate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = os.Getenv("BLOG_DEFAULT_PHOTO")
 	}
+	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/blog_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	if _, err = q.blogService.CreateBlog(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBlog")
 		return c.Render("admin/blog_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
-		}
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/blog_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/blog_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("blog created successfully").Redirect(c, sess.Session, "/admin/blogs")
+	return flash.Clear(c, sess.Session).
+		Success("blog created successfully").
+		Redirect(c, sess.Session, "/admin/blogs")
 }
 
 func (q *blogController) AdminEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BlogController-AdminEdit"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	blogID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("blog not found").Redirect(c, sess.Session, "/admin/blogs")
+		return flash.Danger(models.ErrBlogNotFound.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	blogs, _, err := q.blogService.FindBlogs(
+	blog, err := q.blogService.FindBlog(
 		ctx,
 		models.NewBlogFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithBlogIDs(blogID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
+		if !errors.Is(err, models.ErrBlogNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlog")
+		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	if len(blogs) == 0 {
-		return flash.Danger("blog not found").Redirect(c, sess.Session, "/admin/blogs")
+	if blog == nil {
+		return flash.Danger(models.ErrBlogNotFound.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	request := blogs[0]
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Data Blog|%s", request.Subject),
-		"request", request,
-		"blogID", request.ID,
+		"pageTitle", helper.Sprintf("Edit Data Blog|%s", blog.Subject),
+		"request", blog,
+		"blog", blog,
 	)
 	return c.Render("admin/blog_edit", params, "admin/layouts/authenticated")
 }
@@ -222,30 +286,34 @@ func (q *blogController) AdminEdit(c fiber.Ctx) (err error) {
 func (q *blogController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BlogController-AdminUpdate"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	csrfToken := csrf.TokenFromContext(c)
 	blogID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("blog not found").Redirect(c, sess.Session, "/admin/blogs")
+		return flash.Danger(models.ErrBlogNotFound.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	blogs, _, err := q.blogService.FindBlogs(
+	blog, err := q.blogService.FindBlog(
 		ctx,
 		models.NewBlogFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithBlogIDs(blogID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
-		return flash.Danger("blog not found").Redirect(c, sess.Session, "/admin/blogs")
+		if !errors.Is(err, models.ErrBlogNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlog")
+		}
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	if len(blogs) == 0 {
-		return flash.Danger("blog not found").Redirect(c, sess.Session, "/admin/blogs")
+	if blog == nil {
+		return flash.Danger(models.ErrBlogNotFound.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	blog := blogs[0]
-	request := new(models.Blog)
+	request := blog
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -254,16 +322,35 @@ func (q *blogController) AdminUpdate(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", helper.Sprintf("Edit Data Blog|%s", blog.Subject),
 		"request", request,
-		"blogID", blog.ID,
+		"blog", blog,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateBlog(ctx, c)
+	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlog")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/blog_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
+	}
+	if blog.Slug != request.Slug {
+		otherBlog, err := q.blogService.FindBlog(
+			ctx,
+			models.NewBlogFilter().
+				WithSlugs(request.Slug).
+				WithExcludedBlogIDs(blog.ID),
+		)
+		if err != nil && !errors.Is(err, models.ErrBlogNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlog")
+			return c.Render("admin/blog_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if otherBlog != nil {
+			return c.Render("admin/blog_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniqueBlogSlugViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
 	}
 	request.ID = blog.ID
 	request.RecordStatus = blog.RecordStatus
@@ -276,66 +363,75 @@ func (q *blogController) AdminUpdate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = blog.Photo
 	}
+	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/blog_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	if _, err = q.blogService.UpdateBlog(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBlog")
 		return c.Render("admin/blog_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
-		}
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/blog_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/blog_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("blog updated successfully").Redirect(c, sess.Session, "/admin/blogs")
+	return flash.Clear(c, sess.Session).
+		Success("blog updated successfully").
+		Redirect(c, sess.Session, "/admin/blogs")
 }
 
 func (q *blogController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BlogController-AdminDelete"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
 	blogID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("blog not found").Redirect(c, sess.Session, "/admin/blogs")
+		return flash.Danger(models.ErrBlogNotFound.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	blogs, _, err := q.blogService.FindBlogs(
+	blog, err := q.blogService.FindBlog(
 		ctx,
 		models.NewBlogFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithBlogIDs(blogID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
+		if !errors.Is(err, models.ErrBlogNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlog")
+		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	if len(blogs) == 0 {
-		return flash.Danger("blog not found").Redirect(c, sess.Session, "/admin/blogs")
+	if blog == nil {
+		return flash.Danger(models.ErrBlogNotFound.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	request := blogs[0]
+	request := blog
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -345,6 +441,14 @@ func (q *blogController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	if _, err = q.blogService.UpdateBlog(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBlog")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/blogs")
@@ -353,7 +457,9 @@ func (q *blogController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/blogs")
 	}
-	return flash.Success("blog deactivated successfully").Redirect(c, sess.Session, "/admin/blogs")
+	return flash.Clear(c, sess.Session).
+		Success("blog deleted successfully").
+		Redirect(c, sess.Session, "/admin/blogs")
 }
 
 func (q *blogController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {

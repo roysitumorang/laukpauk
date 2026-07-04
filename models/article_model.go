@@ -21,9 +21,7 @@ var (
 
 const (
 	ArticleSortingFieldSubject = "subject"
-)
 
-const (
 	ArticlePhotoName         = "artikel-%d%s"
 	ArticlePhotoPath         = "./images/artikel/%s"
 	ArticlePhotoCompressPath = "./images/artikel/compress/%s"

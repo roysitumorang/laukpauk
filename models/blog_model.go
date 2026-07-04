@@ -6,9 +6,22 @@ import (
 	"strings"
 	"time"
 	"uuid"
+
+	"github.com/roysitumorang/laukpauk/helper"
+)
+
+var (
+	ErrBlogNotFound            = errors.New("blog not found")
+	ErrUniqueBlogSlugViolation = errors.New("slug: already exists")
+	MapBlogSortings            = map[string]struct{}{
+		SortingFieldID:          {},
+		BlogSortingFieldSubject: {},
+	}
 )
 
 const (
+	BlogSortingFieldSubject = "subject"
+
 	BlogPhotoName         = "blog-%d%s"
 	BlogPhotoPath         = "./images/blog/%s"
 	BlogPhotoCompressPath = "./images/blog/compress/%s"
@@ -33,11 +46,14 @@ type (
 	}
 
 	BlogFilter struct {
-		BlogIDs      []uuid.UUID
-		RecordStatus []RecordStatus
-		Slugs        []string
+		BlogIDs,
+		ExcludedBlogIDs []uuid.UUID
+		RecordStatuses []RecordStatus
+		Slugs          []string
 		Keyword,
 		PaginationURL string
+		Sortings    []Sorting
+		MapSortings *Map
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -45,7 +61,10 @@ type (
 )
 
 func NewBlogFilter() *BlogFilter {
-	return new(BlogFilter{UrlValues: url.Values{}})
+	return new(BlogFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
+	})
 }
 
 func (q *BlogFilter) WithBlogIDs(blogIDs ...uuid.UUID) *BlogFilter {
@@ -53,8 +72,13 @@ func (q *BlogFilter) WithBlogIDs(blogIDs ...uuid.UUID) *BlogFilter {
 	return q
 }
 
-func (q *BlogFilter) WithRecordStatus(recordStatus ...RecordStatus) *BlogFilter {
-	q.RecordStatus = recordStatus
+func (q *BlogFilter) WithExcludedBlogIDs(excludedBlogIDs ...uuid.UUID) *BlogFilter {
+	q.ExcludedBlogIDs = excludedBlogIDs
+	return q
+}
+
+func (q *BlogFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *BlogFilter {
+	q.RecordStatuses = recordStatuses
 	return q
 }
 
@@ -70,6 +94,15 @@ func (q *BlogFilter) WithKeyword(keyword string) *BlogFilter {
 
 func (q *BlogFilter) WithPaginationURL(paginationURL string) *BlogFilter {
 	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *BlogFilter) WithSortings(sortings ...Sorting) *BlogFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
 	return q
 }
 

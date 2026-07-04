@@ -43,7 +43,7 @@
 						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 					</div>
 					{{ end }}
-					<form method="POST" action="{{ baseURL }}/admin/blogs/{{ blogID }}" enctype="multipart/form-data">
+					<form method="POST" action="{{ baseURL }}/admin/blogs/{{ blog.ID }}" enctype="multipart/form-data">
 						{{ include "_blog_form" }}
 					</form>
 				</div>
@@ -62,7 +62,7 @@
 	let baseURL = '{{ baseURL }}/admin/';
 	let imgPreview = false;
 	let imgData = false;
-	let idBlog = '/{{ blogID }}';
+	let idBlog = '/{{ blog.ID }}';
 	$('#content').summernote({
 		toolbar: _summernoteCustomToolbar,
 		placeholder: 'Your Content Here'

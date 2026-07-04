@@ -291,7 +291,7 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		if !errors.Is(err, models.ErrArticleNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticle")
 		}
-		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
 	if article == nil {
 		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")

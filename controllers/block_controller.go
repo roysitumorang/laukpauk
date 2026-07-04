@@ -187,7 +187,7 @@ func (q *blockController) BlogIndex(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "block/_layout")
 	}
-	request = request.WithRecordStatus(models.RecordStatusActive)
+	request = request.WithRecordStatuses(models.RecordStatusActive)
 	if rows, pagination, err = q.blogService.FindBlogs(
 		c,
 		request,
@@ -222,7 +222,7 @@ func (q *blockController) BlogShow(c fiber.Ctx) (err error) {
 		"blog", blog,
 	)
 	request := models.NewBlogFilter().
-		WithRecordStatus(models.RecordStatusActive)
+		WithRecordStatuses(models.RecordStatusActive)
 	slug := c.Params("id")
 	if blogID, err := uuid.Parse(slug); err == nil {
 		request = request.WithBlogIDs(blogID)

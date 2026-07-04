@@ -1109,7 +1109,7 @@ func init() {
 			`CREATE TABLE blogs (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, subject character varying NOT NULL
+				, subject character varying NOT NULL COLLATE "natural_sort"
 				, body character varying NOT NULL
 				, slug character varying NOT NULL UNIQUE
 				, photo character varying NOT NULL

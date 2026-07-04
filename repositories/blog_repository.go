@@ -3,12 +3,14 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 
 	"github.com/govalues/decimal"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -20,6 +22,10 @@ type (
 			ctx context.Context,
 			request *models.BlogFilter,
 		) ([]*models.Blog, int64, int64, error)
+		FindBlog(
+			ctx context.Context,
+			request *models.BlogFilter,
+		) (*models.Blog, error)
 		CreateBlog(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -53,80 +59,10 @@ func (q *blogRepository) FindBlogs(
 	request *models.BlogFilter,
 ) ([]*models.Blog, int64, int64, error) {
 	ctxt := "BlogRepository-FindBlogs"
-	var (
-		params []any
-		conds  []string
-		sb     strings.Builder
-	)
-	if len(request.BlogIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("id IN (")
-		for i, blogID := range request.BlogIDs {
-			params = append(params, blogID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.RecordStatus) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("record_status IN (")
-		for i, recordStatus := range request.RecordStatus {
-			params = append(params, recordStatus)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.Slugs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("slug IN (")
-		for i, slug := range request.Slugs {
-			params = append(params, slug)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if request.Keyword != "" {
-		sb.Reset()
-		_, _ = sb.WriteString("%%")
-		_, _ = sb.WriteString(strings.ToLower(request.Keyword))
-		_, _ = sb.WriteString("%%")
-		params = append(params, sb.String())
-		n := strconv.Itoa(len(params))
-		sb.Reset()
-		_, _ = sb.WriteString("LOWER(subject) LIKE $")
-		_, _ = sb.WriteString(n)
-		conds = append(conds, sb.String())
-	}
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = sb.WriteString(
-		`SELECT COUNT(1)
-        	FROM blogs`,
-	)
-	if len(conds) > 0 {
-		_, _ = sb.WriteString(" WHERE")
-		for i, cond := range conds {
-			if i > 0 {
-				_, _ = sb.WriteString(" AND")
-			}
-			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(cond)
-		}
-	}
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM blogs %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -140,8 +76,7 @@ func (q *blogRepository) FindBlogs(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`ROW_NUMBER() OVER (ORDER BY id DESC) AS row_no
-		, id
+		`id
 		, record_status
 		, subject
 		, body
@@ -157,7 +92,19 @@ func (q *blogRepository) FindBlogs(
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
+	sortBy := request.Sortings
+	if len(sortBy) == 0 {
+		sortBy = append(sortBy, models.DefaultSortBy)
+	}
+	_, _ = sb.WriteString(" ORDER BY")
+	for i, item := range sortBy {
+		if i > 0 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+	}
 	pages := int64(1)
+	var offset int64
 	if request.Limit > 0 {
 		totalDecimal, err := decimal.New(total, 0)
 		if err != nil {
@@ -175,11 +122,8 @@ func (q *blogRepository) FindBlogs(
 			return nil, 0, 0, err
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
-		offset := request.Page * request.Limit
-		_, _ = sb.WriteString(" LIMIT ")
-		_, _ = sb.WriteString(strconv.FormatInt(request.Limit, 10))
-		_, _ = sb.WriteString(" OFFSET ")
-		_, _ = sb.WriteString(strconv.FormatInt(offset, 10))
+		offset = request.Page * request.Limit
+		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -194,7 +138,6 @@ func (q *blogRepository) FindBlogs(
 	for rows.Next() {
 		var blog models.Blog
 		if err = rows.Scan(
-			&blog.RowNo,
 			&blog.ID,
 			&blog.RecordStatus,
 			&blog.Subject,
@@ -212,9 +155,65 @@ func (q *blogRepository) FindBlogs(
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
+		offset++
+		blog.RowNo = offset
 		response = append(response, &blog)
 	}
 	return response, total, pages, nil
+}
+
+func (q *blogRepository) FindBlog(
+	ctx context.Context,
+	request *models.BlogFilter,
+) (*models.Blog, error) {
+	ctxt := "BlogRepository-FindBlog"
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(
+		&sb,
+		`SELECT
+			id
+			, record_status
+			, subject
+			, body
+			, slug
+			, photo
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM blogs %s`,
+		condition,
+	)
+	query := sb.String()
+	var response models.Blog
+	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Subject,
+		&response.Body,
+		&response.Slug,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrBlogNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	return new(response), nil
 }
 
 func (q *blogRepository) CreateBlog(
@@ -274,10 +273,13 @@ func (q *blogRepository) CreateBlog(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "blogs_slug_key" {
+			err = models.ErrUniqueBlogSlugViolation
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return new(response), nil
@@ -343,11 +345,90 @@ func (q *blogRepository) UpdateBlog(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "blogs_slug_key" {
+			err = models.ErrUniqueBlogSlugViolation
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return new(response), nil
+}
+
+func (q *blogRepository) buildCondition(request *models.BlogFilter, sb *strings.Builder) (condition string, params []any) {
+	var conds []string
+	if len(request.BlogIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id IN (")
+		for i, blogID := range request.BlogIDs {
+			params = append(params, blogID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ExcludedBlogIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedBlogID := range request.ExcludedBlogIDs {
+			params = append(params, excludedBlogID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.RecordStatuses) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("record_status IN (")
+		for i, recordStatus := range request.RecordStatuses {
+			params = append(params, recordStatus)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.Slugs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("slug IN (")
+		for i, slug := range request.Slugs {
+			params = append(params, slug)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if request.Keyword != "" {
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		params = append(params, sb.String())
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "LOWER(subject) LIKE $%d", len(params))
+		conds = append(conds, sb.String())
+	}
+	if len(conds) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("WHERE")
+		for i, cond := range conds {
+			if i > 0 {
+				_, _ = sb.WriteString(" AND")
+			}
+			_, _ = fmt.Fprintf(sb, " %s", cond)
+		}
+		condition = sb.String()
+	}
+	return
 }

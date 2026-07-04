@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
@@ -16,6 +17,10 @@ type (
 			ctx context.Context,
 			request *models.BlogFilter,
 		) ([]*models.Blog, *models.Pagination, error)
+		FindBlog(
+			ctx context.Context,
+			request *models.BlogFilter,
+		) (*models.Blog, error)
 		CreateBlog(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -69,6 +74,18 @@ func (q *blogService) FindBlogs(
 		return nil, nil, err
 	}
 	return rows, pagination, nil
+}
+
+func (q *blogService) FindBlog(
+	ctx context.Context,
+	request *models.BlogFilter,
+) (*models.Blog, error) {
+	ctxt := "BlogService-FindBlog"
+	response, err := q.blogRepository.FindBlog(ctx, request)
+	if err != nil && !errors.Is(err, models.ErrBlogNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlog")
+	}
+	return response, err
 }
 
 func (q *blogService) CreateBlog(
