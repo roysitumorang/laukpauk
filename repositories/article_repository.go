@@ -3,8 +3,8 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 
 	"github.com/govalues/decimal"
@@ -20,6 +20,10 @@ type (
 			ctx context.Context,
 			request *models.ArticleFilter,
 		) ([]*models.Article, int64, int64, error)
+		FindArticle(
+			ctx context.Context,
+			request *models.ArticleFilter,
+		) (*models.Article, error)
 		CreateArticle(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -53,66 +57,10 @@ func (q *articleRepository) FindArticles(
 	request *models.ArticleFilter,
 ) ([]*models.Article, int64, int64, error) {
 	ctxt := "ArticleRepository-FindArticles"
-	var (
-		params []any
-		conds  []string
-		sb     strings.Builder
-	)
-	if len(request.ArticleIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("id IN (")
-		for i, articleID := range request.ArticleIDs {
-			params = append(params, articleID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.RecordStatus) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("record_status IN (")
-		for i, recordStatus := range request.RecordStatus {
-			params = append(params, recordStatus)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = sb.WriteString("$")
-			_, _ = sb.WriteString(strconv.Itoa(len(params)))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if request.Keyword != "" {
-		sb.Reset()
-		_, _ = sb.WriteString("%%")
-		_, _ = sb.WriteString(strings.ToLower(request.Keyword))
-		_, _ = sb.WriteString("%%")
-		params = append(params, sb.String())
-		n := strconv.Itoa(len(params))
-		sb.Reset()
-		_, _ = sb.WriteString("LOWER(subject) LIKE $")
-		_, _ = sb.WriteString(n)
-		conds = append(conds, sb.String())
-	}
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = sb.WriteString(
-		`SELECT COUNT(1)
-        FROM articles`,
-	)
-	if len(conds) > 0 {
-		_, _ = sb.WriteString(" WHERE")
-		for i, cond := range conds {
-			if i > 0 {
-				_, _ = sb.WriteString(" AND")
-			}
-			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(cond)
-		}
-	}
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM articles %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -126,8 +74,7 @@ func (q *articleRepository) FindArticles(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`ROW_NUMBER() OVER (ORDER BY id DESC) AS row_no
-		, id
+		`id
 		, record_status
 		, subject
 		, body
@@ -143,7 +90,19 @@ func (q *articleRepository) FindArticles(
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
+	sortBy := request.Sortings
+	if len(sortBy) == 0 {
+		sortBy = append(sortBy, models.DefaultSortBy)
+	}
+	_, _ = sb.WriteString(" ORDER BY")
+	for i, item := range sortBy {
+		if i > 0 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+	}
 	pages := int64(1)
+	var offset int64
 	if request.Limit > 0 {
 		totalDecimal, err := decimal.New(total, 0)
 		if err != nil {
@@ -161,11 +120,8 @@ func (q *articleRepository) FindArticles(
 			return nil, 0, 0, err
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
-		offset := request.Page * request.Limit
-		_, _ = sb.WriteString(" LIMIT ")
-		_, _ = sb.WriteString(strconv.FormatInt(request.Limit, 10))
-		_, _ = sb.WriteString(" OFFSET ")
-		_, _ = sb.WriteString(strconv.FormatInt(offset, 10))
+		offset = request.Page * request.Limit
+		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -180,7 +136,6 @@ func (q *articleRepository) FindArticles(
 	for rows.Next() {
 		var article models.Article
 		if err = rows.Scan(
-			&article.RowNo,
 			&article.ID,
 			&article.RecordStatus,
 			&article.Subject,
@@ -198,9 +153,65 @@ func (q *articleRepository) FindArticles(
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
+		offset++
+		article.RowNo = offset
 		response = append(response, &article)
 	}
 	return response, total, pages, nil
+}
+
+func (q *articleRepository) FindArticle(
+	ctx context.Context,
+	request *models.ArticleFilter,
+) (*models.Article, error) {
+	ctxt := "ArticleRepository-FindArticle"
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(
+		&sb,
+		`SELECT
+			id
+			, record_status
+			, subject
+			, body
+			, photo
+			, link
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM articles %s`,
+		condition,
+	)
+	query := sb.String()
+	var response models.Article
+	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Subject,
+		&response.Body,
+		&response.Photo,
+		&response.Link,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrArticleNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	return new(response), nil
 }
 
 func (q *articleRepository) CreateArticle(
@@ -260,9 +271,6 @@ func (q *articleRepository) CreateArticle(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
@@ -329,11 +337,58 @@ func (q *articleRepository) UpdateArticle(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return new(response), nil
+}
+
+func (q *articleRepository) buildCondition(request *models.ArticleFilter, sb *strings.Builder) (condition string, params []any) {
+	var conds []string
+	if len(request.ArticleIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id IN (")
+		for i, articleID := range request.ArticleIDs {
+			params = append(params, articleID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.RecordStatuses) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("record_status IN (")
+		for i, recordStatus := range request.RecordStatuses {
+			params = append(params, recordStatus)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if request.Keyword != "" {
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		params = append(params, sb.String())
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "LOWER(subject) LIKE $%d", len(params))
+		conds = append(conds, sb.String())
+	}
+	if len(conds) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("WHERE")
+		for i, cond := range conds {
+			if i > 0 {
+				_, _ = sb.WriteString(" AND")
+			}
+			_, _ = fmt.Fprintf(sb, " %s", cond)
+		}
+		condition = sb.String()
+	}
+	return
 }

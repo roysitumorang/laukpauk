@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
@@ -16,6 +17,10 @@ type (
 			ctx context.Context,
 			request *models.ArticleFilter,
 		) ([]*models.Article, *models.Pagination, error)
+		FindArticle(
+			ctx context.Context,
+			request *models.ArticleFilter,
+		) (*models.Article, error)
 		CreateArticle(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -69,6 +74,18 @@ func (q *articleService) FindArticles(
 		return nil, nil, err
 	}
 	return rows, pagination, nil
+}
+
+func (q *articleService) FindArticle(
+	ctx context.Context,
+	request *models.ArticleFilter,
+) (*models.Article, error) {
+	ctxt := "ArticleService-FindArticle"
+	response, err := q.articleRepository.FindArticle(ctx, request)
+	if err != nil && !errors.Is(err, models.ErrArticleNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticle")
+	}
+	return response, err
 }
 
 func (q *articleService) CreateArticle(

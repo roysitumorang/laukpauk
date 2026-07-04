@@ -25,147 +25,164 @@
 	<!-- Main content -->
 	<div class="content">
 		<div class="container-fluid">
-            <div class="card">
-                <div class="card-header">
-                    <div class="row">
-                        <div class="col-lg-4">
-                            <h5>Data Artikel</h5>
-                        </div>
-                        <div class="col-lg-8 text-right">
-                            <a href="{{ baseURL }}/admin/articles/new"
-                                data-toggle="tooltip"
-                                data-placement="top"
-                                title="Tambah Artikel Baru">
-                                Add New Artikel
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="col-lg-12 table-responsive">
-                        <form method="GET" action="/admin/articles">
-                            <div class="row">
-                                <div class="col-sm-12 col-md-6">
-                                    <div class="dataTables_length" id="listArtikel_length">
-                                        <label>
-                                            Show
-                                            <select name="limit" aria-controls="listArtikel" class="custom-select custom-select-sm form-control form-control-sm">
-                                                {{ range _, limit := limits }}
-                                                <option value="{{ limit }}"{{ if limit == request.Limit }} selected{{ end }}>{{ limit }}</option>
-                                                {{ end }}
-                                            </select> entries
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-sm-12 col-md-6">
-                                    <div id="listArtikel_filter" class="dataTables_filter">
-                                        <label>
-                                            Search: <input type="text" name="q" value="{{ request.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                        {{ if pagination.Info.Total > pagination.Info.Limit }}
-                        <ul class="pagination">
-                            {{ if pagination.Links.First }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.First }}">First</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Previous }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Previous }}">Previous</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Current }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Current }}">Current</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Next }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Next }}">Next</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Last }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Last }}">Last</a></li>
-                            {{ end }}
-                            <li class="page-item"><a class="page-link" href="#">Total: {{ rows | len }} of {{ pagination.Info.Total }} items , Page: {{ pagination.Info.Page + 1 }} of {{ pagination.Info.Pages }} pages</a></li>
-                        </ul>
-                        {{ end }}
-                        <table class="table-sm table table-striped" id="listArtikel">
-                            <thead>
-                                <tr>
-                                    <th class="border-top-0 text-center">No.</th>
-                                    <th class="border-top-0 text-left">Artikel</th>
-                                    <th class="border-top-0 text-left" style="width:60%;">Isi</th>
-                                    <th class="border-top-0 text-center">Opsi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {{ range _, row := rows }}
-                                <tr class="text-sm tr-parent">
-                                    <td class="text-center"><b>{{ row.RowNo }}.</b></td>
-                                    <td class="text-left">
-                                        <div class="row">
-                                            <div class="col-lg-3 text-center">
-                                                <a href="{{ baseURL }}/images/artikel/{{ row.Photo }}" target="_blank">
-                                                    <img src="{{ baseURL }}/images/artikel/compress/{{ row.Photo }}"
-                                                        class="img-circle cp"
-                                                        style="width:50px; height:50px;"
-                                                        onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
-                                                </a>
-                                            </div>
-                                            <div class="col-lg-9">
-                                                <h6 class="text-info mb-1">
-                                                    <b>{{ row.Subject }}</b>
-                                                </h6>
-                                                <p class="text-sm text-muted mb-0">
-                                                    <a target="_blank" href="{{ row.Link }}">{{ row.Link }}</a>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-left">
-                                    </td>
-                                    <td class="vam text-center">
-                                        <a href="{{ baseURL }}/admin/articles/{{ row.ID }}/edit">
-                                            <span class="fa fa-edit text-warning cp mr-2"
-                                            data-toggle="tooltip"
-                                            data-placement="top"
-                                            title="Edit Data Artikel">
-                                            </span>
-                                        </a>
-                                        <form method="POST" action="{{ baseURL }}/admin/articles/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
-                                            <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-                                            <span class="fa fa-trash text-danger cp ml-2"
-                                                data-toggle="tooltip"
-                                                data-placement="top"
-                                                title="Hapus Data Artikel"
-                                                onclick="confirm('Are you sure to delete this article ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
-                                            </span>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {{ end }}
-                            </tbody>
-                        </table>
-                        {{ if pagination.Info.Total > pagination.Info.Limit }}
-                        <ul class="pagination">
-                            {{ if pagination.Links.First }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.First }}">First</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Previous }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Previous }}">Previous</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Current }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Current }}">Current</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Next }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Next }}">Next</a></li>
-                            {{ end }}
-                            {{ if pagination.Links.Last }}
-                            <li class="page-item"><a class="page-link" href="{{ pagination.Links.Last }}">Last</a></li>
-                            {{ end }}
-                            <li class="page-item"><a class="page-link" href="#">Total: {{ rows | len }} of {{ pagination.Info.Total }} items , Page: {{ pagination.Info.Page + 1 }} of {{ pagination.Info.Pages }} pages</a></li>
-                        </ul>
-                        {{ end }}
-                    </div>
-                </div>
-            </div>
+			<div class="card">
+				<div class="card-header">
+					<div class="row">
+						<div class="col-lg-4">
+							<h5>Data Artikel</h5>
+						</div>
+						<div class="col-lg-8 text-right">
+							<a href="{{ baseURL }}/admin/articles/new"
+								data-toggle="tooltip"
+								data-placement="top"
+								title="Tambah Artikel Baru">
+								Add New Artikel
+							</a>
+						</div>
+					</div>
+				</div>
+				<div class="card-body">
+					<div class="col-lg-12 table-responsive">
+						{{ range type, message := flash.Data }}
+						<div class="alert alert-{{ type }}">
+							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+						</div>
+						{{ end }}
+						<form method="GET" action="/admin/articles">
+							<div class="row">
+								<div class="col-sm-4 col-md-6">
+									<div class="dataTables_length" id="listArtikel_length">
+										<label>
+											Show
+											<select name="limit" aria-controls="listArtikel" class="custom-select custom-select-sm form-control form-control-sm">
+												{{ range _, limit := limits }}
+												<option value="{{ limit }}"{{ if limit == request.Limit }} selected{{ end }}>{{ limit }}</option>
+												{{ end }}
+											</select> entries
+										</label>
+									</div>
+								</div>
+								<div class="col-sm-4 col-md-6">
+									<div id="listArtikel_filter" class="dataTables_filter">
+										<label>
+											Search: <input type="text" name="q" value="{{ request.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
+										</label>
+									</div>
+								</div>
+								<div class="col-sm-4 col-md-6">
+									<div class="dataTables_length" id="listBlog_length">
+										<label for="limit">
+											Sort by
+											<select name="sort_by" multiple id="sort_by" aria-controls="listBlog" class="custom-select custom-select-sm form-control form-control-sm">
+												{{ range _, sorting := sortings }}
+												<option value="{{ sorting.String() }}"{{ if request.MapSortings.Contains(sorting.String()) }} selected{{ end }}>{{ sorting.Label }}</option>
+												{{ end }}
+											</select>
+										</label>
+									</div>
+								</div>
+							</div>
+						</form>
+						{{ if pagination.Info.Total > pagination.Info.Limit }}
+						<ul class="pagination">
+							{{ if pagination.Links.First }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.First }}">First</a></li>
+							{{ end }}
+							{{ if pagination.Links.Previous }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Previous }}">Previous</a></li>
+							{{ end }}
+							{{ if pagination.Links.Current }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Current }}">Current</a></li>
+							{{ end }}
+							{{ if pagination.Links.Next }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Next }}">Next</a></li>
+							{{ end }}
+							{{ if pagination.Links.Last }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Last }}">Last</a></li>
+							{{ end }}
+							<li class="page-item"><a class="page-link" href="#">Total: {{ rows | len }} of {{ pagination.Info.Total }} items , Page: {{ pagination.Info.Page + 1 }} of {{ pagination.Info.Pages }} pages</a></li>
+						</ul>
+						{{ end }}
+						<table class="table-sm table table-striped" id="listArtikel">
+							<thead>
+								<tr>
+									<th class="border-top-0 text-center">No.</th>
+									<th class="border-top-0 text-left">Artikel</th>
+									<th class="border-top-0 text-left" style="width:60%;">Isi</th>
+									<th class="border-top-0 text-center">Opsi</th>
+								</tr>
+							</thead>
+							<tbody>
+								{{ range _, row := rows }}
+								<tr class="text-sm tr-parent">
+									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
+									<td class="text-left">
+										<div class="row">
+											<div class="col-lg-3 text-center">
+												<a href="{{ baseURL }}/images/artikel/{{ row.Photo }}" target="_blank">
+													<img src="{{ baseURL }}/images/artikel/compress/{{ row.Photo }}"
+														class="img-circle cp"
+														style="width:50px; height:50px;"
+														onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+												</a>
+											</div>
+											<div class="col-lg-9">
+												<h6 class="text-info mb-1">
+													<b>{{ row.Subject }}</b>
+												</h6>
+												<p class="text-sm text-muted mb-0">
+													<a target="_blank" href="{{ row.Link }}">{{ row.Link }}</a>
+												</p>
+											</div>
+										</div>
+									</td>
+									<td class="text-left">
+									</td>
+									<td class="vam text-center">
+										<a href="{{ baseURL }}/admin/articles/{{ row.ID }}/edit">
+											<span class="fa fa-edit text-warning cp mr-2"
+											data-toggle="tooltip"
+											data-placement="top"
+											title="Edit Data Artikel">
+											</span>
+										</a>
+										<form method="POST" action="{{ baseURL }}/admin/articles/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+											<span class="fa fa-trash text-danger cp ml-2"
+												data-toggle="tooltip"
+												data-placement="top"
+												title="Hapus Data Artikel"
+												onclick="confirm('Are you sure to delete this article ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
+											</span>
+										</form>
+									</td>
+								</tr>
+								{{ end }}
+							</tbody>
+						</table>
+						{{ if pagination.Info.Total > pagination.Info.Limit }}
+						<ul class="pagination">
+							{{ if pagination.Links.First }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.First }}">First</a></li>
+							{{ end }}
+							{{ if pagination.Links.Previous }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Previous }}">Previous</a></li>
+							{{ end }}
+							{{ if pagination.Links.Current }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Current }}">Current</a></li>
+							{{ end }}
+							{{ if pagination.Links.Next }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Next }}">Next</a></li>
+							{{ end }}
+							{{ if pagination.Links.Last }}
+							<li class="page-item"><a class="page-link" href="{{ pagination.Links.Last }}">Last</a></li>
+							{{ end }}
+							<li class="page-item"><a class="page-link" href="#">Total: {{ rows | len }} of {{ pagination.Info.Total }} items , Page: {{ pagination.Info.Page + 1 }} of {{ pagination.Info.Pages }} pages</a></li>
+						</ul>
+						{{ end }}
+					</div>
+				</div>
+			</div>
 		</div>
 		<!-- /.container-fluid -->
 	</div>
@@ -173,44 +190,44 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-    $('#listArtikel').DataTable();
+	$('#listArtikel').DataTable();
 
-    function deleteArtikel(thisContext, namaArtikel) {
-    	let el = $(thisContext);
-    	Swal.fire({
-    		title: `Konfirmasi Penghapusan Artikel`,
-    		html: `Apakah anda yakin akan menghapus artikel <b class='text-info'>${namaArtikel}</b> ini ?`,
-    		type: 'question',
-    		showConfirmButton: true,
-    		showCancelButton: true,
-    		cancelButtonText: 'Batal',
-    		confirmButtonText: 'Ya, Lanjutkan !',
-    		focusCancel: true
-    	}).then((konfirmasi) => {
-    		if (konfirmasi.value) {
-    			let idArtikel = el.attr('idArtikel');
-    			$.ajax({
-    				url: `{{ baseURL }}/admin/artikel/delete/${idArtikel}`,
-    				success: function(responseFromServer) {
-    					let rFS = JSON.parse(responseFromServer);
-    					let swalText = `<span class='text-danger'>Gagal menghapus artikel !</span>`;
-    					let swalType = 'error';
-    					if (rFS.statusHapusArtikel) {
-    						swalText = `<span class='text-success'>Berhasil menghapus artikel !</span>`;
-    						swalType = 'success';
-    					}
-    					Swal.fire({
-    						title: `Penghapusan Data Artikel`,
-    						html: swalText,
-    						type: swalType
-    					}).then(() => {
-    						if (rFS.statusHapusArtikel) {
-    							location.reload();
-    						}
-    					});
-    				}
-    			})
-    		}
-    	});
-    }
+	function deleteArtikel(thisContext, namaArtikel) {
+		let el = $(thisContext);
+		Swal.fire({
+			title: `Konfirmasi Penghapusan Artikel`,
+			html: `Apakah anda yakin akan menghapus artikel <b class='text-info'>${namaArtikel}</b> ini ?`,
+			type: 'question',
+			showConfirmButton: true,
+			showCancelButton: true,
+			cancelButtonText: 'Batal',
+			confirmButtonText: 'Ya, Lanjutkan !',
+			focusCancel: true
+		}).then((konfirmasi) => {
+			if (konfirmasi.value) {
+				let idArtikel = el.attr('idArtikel');
+				$.ajax({
+					url: `{{ baseURL }}/admin/artikel/delete/${idArtikel}`,
+					success: function(responseFromServer) {
+						let rFS = JSON.parse(responseFromServer);
+						let swalText = `<span class='text-danger'>Gagal menghapus artikel !</span>`;
+						let swalType = 'error';
+						if (rFS.statusHapusArtikel) {
+							swalText = `<span class='text-success'>Berhasil menghapus artikel !</span>`;
+							swalType = 'success';
+						}
+						Swal.fire({
+							title: `Penghapusan Data Artikel`,
+							html: swalText,
+							type: swalType
+						}).then(() => {
+							if (rFS.statusHapusArtikel) {
+								location.reload();
+							}
+						});
+					}
+				})
+			}
+		});
+	}
 </script>

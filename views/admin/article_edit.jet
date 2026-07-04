@@ -43,7 +43,7 @@
 						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 					</div>
 					{{ end }}
-					<form method="POST" action="{{ baseURL }}/admin/articles/{{ articleID }}" enctype="multipart/form-data">
+					<form method="POST" action="{{ baseURL }}/admin/articles/{{ article.ID }}" enctype="multipart/form-data">
 						{{ include "_article_form" }}
 					</form>
 				</div>
@@ -83,7 +83,7 @@
 		dataArtikel.append("link", link);
 		dataArtikel.append("body", body);
 		$.ajax({
-			url: "{{ baseURL }}/admin/articles/{{ articleID }}",
+			url: "{{ baseURL }}/admin/articles/{{ article.ID }}",
 			data: dataArtikel,
 			type: "POST",
 			contentType: false,

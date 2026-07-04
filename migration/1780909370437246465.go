@@ -1011,7 +1011,7 @@ func init() {
 			`CREATE TABLE articles (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, subject character varying NOT NULL
+				, subject character varying NOT NULL COLLATE "natural_sort"
 				, body character varying NOT NULL
 				, photo character varying NOT NULL
 				, link character varying NOT NULL

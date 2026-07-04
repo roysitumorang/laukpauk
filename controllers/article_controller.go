@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"mime/multipart"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
@@ -67,14 +70,38 @@ func (q *articleController) AdminIndex(c fiber.Ctx) (err error) {
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
+		"sortings", []models.Sorting{
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Newest-Oldest",
+			},
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Oldest-Newest",
+			},
+			{
+				Field:     models.ArticleSortingFieldSubject,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Subject A-Z",
+			},
+			{
+				Field:     models.ArticleSortingFieldSubject,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Subject Z-A",
+			},
+		},
 	)
-	if request, err = sanitizers.FindArticles(ctx, c); err != nil {
+	request, err = sanitizers.FindArticles(ctx, c)
+	request.WithRecordStatuses(models.RecordStatusActive)
+	params.Push("request", request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticles")
 		return c.Render("admin/article_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request = request.WithRecordStatus(models.RecordStatusActive)
 	if rows, pagination, err = q.articleService.FindArticles(
 		c,
 		request,
@@ -127,12 +154,12 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 		"request", request,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateArticle(ctx, c)
+	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateArticle")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
@@ -145,36 +172,38 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = os.Getenv("ARTICLE_DEFAULT_PHOTO")
 	}
+	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	if _, err = q.articleService.CreateArticle(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateArticle")
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
-		}
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("article created successfully").Redirect(c, sess.Session, "/admin/articles")
@@ -190,31 +219,32 @@ func (q *articleController) AdminEdit(c fiber.Ctx) (err error) {
 	articleID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
+		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	articles, _, err := q.articleService.FindArticles(
+	article, err := q.articleService.FindArticle(
 		ctx,
 		models.NewArticleFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithArticleIDs(articleID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticles")
+		if !errors.Is(err, models.ErrArticleNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticle")
+		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	if len(articles) == 0 {
-		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
+	if article == nil {
+		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	request := articles[0]
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Data Artikel|%s", request.Subject),
-		"request", request,
-		"articleID", request.ID,
+		"pageTitle", helper.Sprintf("Edit Data Artikel|%s", article.Subject),
+		"request", article,
+		"article", article,
 	)
 	return c.Render("admin/article_edit", params, "admin/layouts/authenticated")
 }
@@ -229,22 +259,23 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 	articleID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
+		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	articles, _, err := q.articleService.FindArticles(
+	article, err := q.articleService.FindArticle(
 		ctx,
 		models.NewArticleFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithArticleIDs(articleID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticles")
-		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
+		if !errors.Is(err, models.ErrArticleNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticle")
+		}
+		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	if len(articles) == 0 {
-		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
+	if article == nil {
+		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	article := articles[0]
 	request := new(models.Article)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -254,15 +285,15 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", helper.Sprintf("Edit Data Artikel|%s", article.Subject),
 		"request", request,
-		"articleID", article.ID,
+		"article", article,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateArticle(ctx, c)
+	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateArticle")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/article_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	request.ID = article.ID
@@ -280,31 +311,32 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/article_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	if _, err = q.articleService.UpdateArticle(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateArticle")
 		return c.Render("admin/article_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Log(ctx, slog.LevelError, errRollback.Error(), ctxt, "ErrRollback")
-		}
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/article_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/article_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("article updated successfully").Redirect(c, sess.Session, "/admin/articles")
@@ -321,20 +353,22 @@ func (q *articleController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
 	}
-	articles, _, err := q.articleService.FindArticles(
+	article, err := q.articleService.FindArticle(
 		ctx,
 		models.NewArticleFilter().
-			WithRecordStatus(models.RecordStatusActive).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithArticleIDs(articleID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticles")
+		if !errors.Is(err, models.ErrArticleNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindArticle")
+		}
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	if len(articles) == 0 {
-		return flash.Danger("article not found").Redirect(c, sess.Session, "/admin/articles")
+	if article == nil {
+		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	request := articles[0]
+	request := article
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -344,6 +378,14 @@ func (q *articleController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	if _, err = q.articleService.UpdateArticle(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateArticle")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
@@ -352,7 +394,7 @@ func (q *articleController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	return flash.Success("article deactivated successfully").Redirect(c, sess.Session, "/admin/articles")
+	return flash.Success("article deleted successfully").Redirect(c, sess.Session, "/admin/articles")
 }
 
 func (q *articleController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {

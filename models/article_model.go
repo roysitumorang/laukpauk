@@ -7,6 +7,20 @@ import (
 	"strings"
 	"time"
 	"uuid"
+
+	"github.com/roysitumorang/laukpauk/helper"
+)
+
+var (
+	ErrArticleNotFound = errors.New("article not found")
+	MapArticleSortings = map[string]struct{}{
+		SortingFieldID:             {},
+		ArticleSortingFieldSubject: {},
+	}
+)
+
+const (
+	ArticleSortingFieldSubject = "subject"
 )
 
 const (
@@ -34,10 +48,12 @@ type (
 	}
 
 	ArticleFilter struct {
-		ArticleIDs   []uuid.UUID
-		RecordStatus []RecordStatus
+		ArticleIDs     []uuid.UUID
+		RecordStatuses []RecordStatus
 		Keyword,
 		PaginationURL string
+		Sortings    []Sorting
+		MapSortings *Map
 		Limit,
 		Page int64
 		UrlValues url.Values
@@ -45,7 +61,10 @@ type (
 )
 
 func NewArticleFilter() *ArticleFilter {
-	return new(ArticleFilter{UrlValues: url.Values{}})
+	return new(ArticleFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
+	})
 }
 
 func (q *ArticleFilter) WithArticleIDs(articleIDs ...uuid.UUID) *ArticleFilter {
@@ -53,8 +72,8 @@ func (q *ArticleFilter) WithArticleIDs(articleIDs ...uuid.UUID) *ArticleFilter {
 	return q
 }
 
-func (q *ArticleFilter) WithRecordStatus(recordStatus ...RecordStatus) *ArticleFilter {
-	q.RecordStatus = recordStatus
+func (q *ArticleFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *ArticleFilter {
+	q.RecordStatuses = recordStatuses
 	return q
 }
 
@@ -65,6 +84,15 @@ func (q *ArticleFilter) WithKeyword(keyword string) *ArticleFilter {
 
 func (q *ArticleFilter) WithPaginationURL(paginationURL string) *ArticleFilter {
 	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *ArticleFilter) WithSortings(sortings ...Sorting) *ArticleFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
 	return q
 }
 
