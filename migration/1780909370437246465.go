@@ -730,26 +730,26 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// shipping_plans
+		// delivery_plans
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE shipping_plans (
+			`CREATE TABLE delivery_plans (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, name character varying NOT NULL
-				, transaction_time_start TIME WITH TIME ZONE NOT NULL
-				, transaction_time_end TIME WITH TIME ZONE NOT NULL
+				, name character varying NOT NULL COLLATE "natural_sort"
+				, transaction_time_min timestamp with time zone NOT NULL
+				, transaction_time_max timestamp with time zone NOT NULL
 				, transaction_time_description character varying NOT NULL
-				, shipping_time_start TIME WITH TIME ZONE NOT NULL
-				, shipping_time_end TIME WITH TIME ZONE NOT NULL
-				, shipping_time_description character varying NOT NULL
-				, period character varying NOT NULL
-				, daily_quota bigint NOT NULL
-				, ordinal_number bigint NOT NULL UNIQUE
-				, shipping_type character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
+				, delivery_time_min timestamp with time zone NOT NULL
+				, delivery_time_max timestamp with time zone NOT NULL
+				, delivery_time_description character varying NOT NULL
+				, delivery_daytime integer NOT NULL
+				, same_day BOOLEAN NOT NULL
+				, next_day BOOLEAN NOT NULL
+				, next_two_day BOOLEAN NOT NULL
+				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
@@ -761,49 +761,68 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON shipping_plans (record_status);`,
+			`CREATE INDEX ON delivery_plans (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON shipping_plans (LOWER(name));`,
+			`CREATE UNIQUE INDEX delivery_plans_unique_name_idx ON delivery_plans (LOWER(name));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON shipping_plans (created_by);`,
+			`CREATE INDEX ON delivery_plans (transaction_time_min);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON shipping_plans (updated_by);`,
+			`CREATE INDEX ON delivery_plans (transaction_time_max);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON shipping_plans (deleted_by);`,
+			`CREATE UNIQUE INDEX delivery_plans_unique_transaction_time_range_idx ON delivery_plans (transaction_time_min, transaction_time_max);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// non_shipping_days
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE non_shipping_days (
+			`CREATE INDEX ON delivery_plans (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plans (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plans (deleted_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// non_delivery_days
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE non_delivery_days (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, day timestamp with time zone NOT NULL
-				, shipping_plan_id UUID NOT NULL REFERENCES shipping_plans (id)
-				, created_by UUID REFERENCES users (id)
+				, date timestamp with time zone NOT NULL UNIQUE
+				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, UNIQUE (day, shipping_plan_id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -811,14 +830,43 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON non_shipping_days (shipping_plan_id);`,
+			`CREATE INDEX ON non_delivery_days (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// non_delivery_days_delivery_plans
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE non_delivery_days_delivery_plans (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, non_delivery_day_id UUID NOT NULL REFERENCES non_delivery_days (id)
+				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
+				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_at timestamp with time zone NOT NULL
+				, UNIQUE (non_delivery_day_id, delivery_plan_id)
+			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON non_shipping_days (created_by);`,
+			`CREATE INDEX ON non_delivery_days_delivery_plans (non_delivery_day_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON non_delivery_days_delivery_plans (delivery_plan_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON non_delivery_days_delivery_plans (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -829,8 +877,8 @@ func init() {
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, shipping_type character varying NOT NULL
-				, shipping_plan_id UUID NOT NULL REFERENCES shipping_plans (id)
+				, delivery_type character varying NOT NULL
+				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, UNIQUE (buyer_id)
@@ -841,7 +889,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON carts (shipping_plan_id);`,
+			`CREATE INDEX ON carts (buyer_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON carts (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -900,22 +955,22 @@ func init() {
 				, buyer_note character varying NOT NULL
 				, payment_no character varying
 				, payment_status character varying NOT NULL
-				, shipping_status character varying NOT NULL
+				, delivery_status character varying NOT NULL
 				, reviewed_by UUID REFERENCES users (id)
 				, reviewed_at timestamp with time zone
 				, rejection_reason character varying
-				, shipping_cost bigint NOT NULL
-				, shipping_cost_type character varying NOT NULL
+				, delivery_cost bigint NOT NULL
+				, delivery_cost_type character varying NOT NULL
 				, wallet_deduction bigint NOT NULL
 				, cashback bigint NOT NULL
-				, shipping_coordinates POINT NOT NULL
-				, shipping_address character varying NOT NULL
-				, shipping_instruction character varying NOT NULL
-				, shipping_date timestamp with time zone NOT NULL
-				, shipping_plan_id UUID NOT NULL REFERENCES shipping_plans (id)
-				, shipping_type character varying NOT NULL
-				, shipping_timeline character varying NOT NULL
-				, refunded_shipping_cost bigint NOT NULL
+				, delivery_coordinates POINT NOT NULL
+				, delivery_address character varying NOT NULL
+				, delivery_instruction character varying NOT NULL
+				, delivery_date timestamp with time zone NOT NULL
+				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
+				, delivery_type character varying NOT NULL
+				, delivery_timeline character varying NOT NULL
+				, refunded_delivery_cost bigint NOT NULL
 				, refunded_transaction_cost bigint NOT NULL
 				, unique_code character varying NOT NULL UNIQUE
 				, minimum_point bigint NOT NULL
@@ -943,14 +998,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions USING GiST(shipping_coordinates);`,
+			`CREATE INDEX ON transactions USING GiST(delivery_coordinates);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions (shipping_plan_id);`,
+			`CREATE INDEX ON transactions (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

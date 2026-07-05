@@ -577,7 +577,7 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/delivery_plans") || HasPrefix(path, "/admin/non_delivery_days") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-truck"></i>
 								<p>
@@ -585,27 +585,27 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview">
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/delivery_plans") || HasPrefix(path, "/admin/non_delivery_days") }} style="display:block"{{ end }}>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/shipping_plans" class="nav-link">
+									<a href="{{ baseURL }}/admin/delivery_plans" class="nav-link">
 										<i class="fa fa-clock nav-icon"></i>
 										<p>Atur Jadwal Delivery</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/shipping_plans/global" class="nav-link">
+									<a href="{{ baseURL }}/admin/delivery_plans/new" class="nav-link">
 										<i class="fa fa-tags nav-icon"></i>
-										<p>Atur Jadwal Delivery Global</p>
+										<p>Tambah Jadwal Delivery</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/non_shipping_days" class="nav-link">
+									<a href="{{ baseURL }}/admin/non_delivery_days" class="nav-link">
 										<i class="fa fa-clock nav-icon"></i>
 										<p>Jadwal Tutup</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/non_shipping_days/new" class="nav-link">
+									<a href="{{ baseURL }}/admin/non_delivery_days/new" class="nav-link">
 										<i class="fa fa-clock nav-icon"></i>
 										<p>Tambah Jadwal Tutup</p>
 									</a>

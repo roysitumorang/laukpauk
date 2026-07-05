@@ -40,6 +40,7 @@ type (
 		ProductVariantService  services.ProductVariantService
 		SmsMessageService      services.SmsMessageService
 		SettingService         services.SettingService
+		DeliveryPlanService    services.DeliveryPlanService
 	}
 )
 
@@ -110,6 +111,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productVariantRepository := repositories.NewProductVariantRepository(dbRead, dbWrite)
 	smsMessageRepository := repositories.NewSmsMessageRepository(dbRead, dbWrite)
 	settingRepository := repositories.NewSettingRepository(dbRead, dbWrite)
+	deliveryPlanRepository := repositories.NewDeliveryPlanRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
@@ -120,6 +122,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productVariantService := services.NewProductVariantService(productVariantRepository, productRepository)
 	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaConsumer, zenzivaConsumer)
 	settingService := services.NewSettingService(settingRepository)
+	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
 	return &Service{
 		DbWrite:                dbWrite,
 		Migration:              migration,
@@ -137,6 +140,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		ProductVariantService:  productVariantService,
 		SmsMessageService:      smsMessageService,
 		SettingService:         settingService,
+		DeliveryPlanService:    deliveryPlanService,
 	}, nil
 }
 
