@@ -193,6 +193,7 @@ func (q *blogController) AdminCreate(c fiber.Ctx) (err error) {
 	now := time.Now()
 	createdBy := currentAdmin.ID
 	request.RecordStatus = models.RecordStatusActive
+	request.DeletedSlug = nil
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
 	request.UpdatedBy = createdBy
@@ -355,6 +356,7 @@ func (q *blogController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.ID = blog.ID
 	request.RecordStatus = blog.RecordStatus
 	request.Slug = blog.Slug
+	request.DeletedSlug = nil
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
@@ -433,6 +435,8 @@ func (q *blogController) AdminDelete(c fiber.Ctx) (err error) {
 	}
 	request := blog
 	request.RecordStatus = models.RecordStatusDeleted
+	request.DeletedSlug = request.Slug
+	request.Slug = nil
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
 	request.DeletionReason = nil

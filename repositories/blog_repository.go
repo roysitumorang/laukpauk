@@ -81,6 +81,7 @@ func (q *blogRepository) FindBlogs(
 		, subject
 		, body
 		, slug
+		, deleted_slug
 		, photo
 		, created_by
 		, created_at
@@ -143,6 +144,7 @@ func (q *blogRepository) FindBlogs(
 			&blog.Subject,
 			&blog.Body,
 			&blog.Slug,
+			&blog.DeletedSlug,
 			&blog.Photo,
 			&blog.CreatedBy,
 			&blog.CreatedAt,
@@ -178,6 +180,7 @@ func (q *blogRepository) FindBlog(
 			, subject
 			, body
 			, slug
+			, deleted_slug
 			, photo
 			, created_by
 			, created_at
@@ -197,6 +200,7 @@ func (q *blogRepository) FindBlog(
 		&response.Subject,
 		&response.Body,
 		&response.Slug,
+		&response.DeletedSlug,
 		&response.Photo,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -241,6 +245,7 @@ func (q *blogRepository) CreateBlog(
 			, subject
 			, body
 			, slug
+			, deleted_slug
 			, photo
 			, created_by
 			, created_at
@@ -264,6 +269,7 @@ func (q *blogRepository) CreateBlog(
 		&response.Subject,
 		&response.Body,
 		&response.Slug,
+		&response.DeletedSlug,
 		&response.Photo,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -299,18 +305,20 @@ func (q *blogRepository) UpdateBlog(
 			, subject = $2
 			, body = $3
 			, slug = $4
-			, photo = $5
-			, updated_by = $6
-			, updated_at = $7
-			, deleted_by = $8
-			, deleted_at = $9
-			, deletion_reason = $10
-		WHERE id = $11
+			, deleted_slug = $5
+			, photo = $6
+			, updated_by = $7
+			, updated_at = $8
+			, deleted_by = $9
+			, deleted_at = $10
+			, deletion_reason = $11
+		WHERE id = $12
 		RETURNING id
 			, record_status
 			, subject
 			, body
 			, slug
+			, deleted_slug
 			, photo
 			, created_by
 			, created_at
@@ -323,6 +331,7 @@ func (q *blogRepository) UpdateBlog(
 		request.Subject,
 		request.Body,
 		request.Slug,
+		request.DeletedSlug,
 		request.Photo,
 		request.UpdatedBy,
 		request.UpdatedAt,
@@ -336,6 +345,7 @@ func (q *blogRepository) UpdateBlog(
 		&response.Subject,
 		&response.Body,
 		&response.Slug,
+		&response.DeletedSlug,
 		&response.Photo,
 		&response.CreatedBy,
 		&response.CreatedAt,

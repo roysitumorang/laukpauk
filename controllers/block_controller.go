@@ -227,7 +227,7 @@ func (q *blockController) BlogShow(c fiber.Ctx) (err error) {
 	if blogID, err := uuid.Parse(slug); err == nil {
 		request = request.WithBlogIDs(blogID)
 	} else {
-		request = request.WithSlugs(slug)
+		request = request.WithSlugs(new(slug))
 	}
 	blogs, _, err := q.blogService.FindBlogs(
 		c,

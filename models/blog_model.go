@@ -34,7 +34,8 @@ type (
 		RecordStatus   RecordStatus `json:"-" form:"-"`
 		Subject        string       `json:"-" form:"subject"`
 		Body           string       `json:"-" form:"body"`
-		Slug           string       `json:"-" form:"slug"`
+		Slug           *string      `json:"-" form:"slug"`
+		DeletedSlug    *string      `json:"-" form:"-"`
 		Photo          string       `json:"-" form:"photo"`
 		CreatedBy      uuid.UUID    `json:"-" form:"-"`
 		CreatedAt      time.Time    `json:"-" form:"-"`
@@ -49,7 +50,7 @@ type (
 		BlogIDs,
 		ExcludedBlogIDs []uuid.UUID
 		RecordStatuses []RecordStatus
-		Slugs          []string
+		Slugs          []*string
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -82,7 +83,7 @@ func (q *BlogFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *BlogFil
 	return q
 }
 
-func (q *BlogFilter) WithSlugs(slugs ...string) *BlogFilter {
+func (q *BlogFilter) WithSlugs(slugs ...*string) *BlogFilter {
 	q.Slugs = slugs
 	return q
 }
@@ -125,10 +126,10 @@ func (q *Blog) Validate() error {
 	if q.Subject = strings.TrimSpace(q.Subject); q.Subject == "" {
 		return errors.New("subject: is required")
 	}
-	if q.Slug = strings.TrimSpace(q.Slug); q.Slug == "" {
+	if q.Slug == nil || strings.TrimSpace(*q.Slug) == "" {
 		return errors.New("slug: is required")
 	}
-	if !SlugRegex.MatchString(q.Slug) {
+	if !SlugRegex.MatchString(*q.Slug) {
 		return errors.New("slug: invalid characters")
 	}
 	return nil

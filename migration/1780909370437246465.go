@@ -1166,7 +1166,8 @@ func init() {
 				, record_status integer NOT NULL
 				, subject character varying NOT NULL COLLATE "natural_sort"
 				, body character varying NOT NULL
-				, slug character varying NOT NULL UNIQUE
+				, slug character varying UNIQUE
+				, deleted_slug character varying
 				, photo character varying NOT NULL
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
