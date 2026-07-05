@@ -170,6 +170,9 @@ func (q *DeliveryPlan) Validate() (err error) {
 	if q.TransactionTimeMax, err = time.ParseInLocation(time.TimeOnly, q.RawTransactionTimeMax, location); err != nil {
 		return fmt.Errorf("transaction_time_max: should use format '%s'", time.TimeOnly)
 	}
+	if !q.TransactionTimeMax.After(q.TransactionTimeMin) {
+		return errors.New("transaction_time_max: should exceed transaction_time_min")
+	}
 	if q.RawDeliveryTimeMin = strings.TrimSpace(q.RawDeliveryTimeMin); q.RawDeliveryTimeMin == "" {
 		return errors.New("delivery_time_min: is required")
 	}
@@ -181,6 +184,9 @@ func (q *DeliveryPlan) Validate() (err error) {
 	}
 	if q.DeliveryTimeMax, err = time.ParseInLocation(time.TimeOnly, q.RawDeliveryTimeMax, location); err != nil {
 		return fmt.Errorf("delivery_time_max: should use format '%s'", time.TimeOnly)
+	}
+	if !q.DeliveryTimeMax.After(q.DeliveryTimeMin) {
+		return errors.New("delivery_time_max: should exceed delivery_time_min")
 	}
 	if _, ok := MapDeliveryDayTimes[q.DeliveryDayTime]; !ok {
 		return errors.New("delivery_daytime: not found")
