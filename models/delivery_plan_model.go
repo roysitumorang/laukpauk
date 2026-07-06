@@ -202,7 +202,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return fmt.Errorf("day: should use format '%s'", time.DateOnly)
 		}
-		q.Day = new(day)
+		q.Day = &day
 		if !q.Day.After(time.Now()) {
 			return errors.New("day: should exceed current day")
 		}
@@ -241,7 +241,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return fmt.Errorf("same_day_window_min: should use format '%s'", time.TimeOnly)
 		}
-		q.SameDayWindowMin = new(sameDayWindowMin)
+		q.SameDayWindowMin = &sameDayWindowMin
 		if q.RawSameDayWindowMax = strings.TrimSpace(q.RawSameDayWindowMax); q.RawSameDayWindowMax == "" {
 			return errors.New("same_day_window_max: is required")
 		}
@@ -249,7 +249,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return fmt.Errorf("same_day_window_max: should use format '%s'", time.TimeOnly)
 		}
-		q.SameDayWindowMax = new(sameDayWindowMax)
+		q.SameDayWindowMax = &sameDayWindowMax
 		if !q.SameDayWindowMax.After(*q.SameDayWindowMin) {
 			return errors.New("same_day_window_max: should exceed same_day_window_min")
 		}
@@ -260,13 +260,36 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return errors.New("same_day_interval: is not valid")
 		}
-		t := *q.SameDayWindowMin
+		windowMin := *q.SameDayWindowMin
+		windowMax := *q.SameDayWindowMax
+		if q.Day != nil {
+			windowMin = time.Date(
+				q.Day.Year(),
+				q.Day.Month(),
+				q.Day.Day(),
+				windowMin.Hour(),
+				windowMin.Minute(),
+				windowMin.Second(),
+				0,
+				location,
+			)
+			windowMax = time.Date(
+				q.Day.Year(),
+				q.Day.Month(),
+				q.Day.Day(),
+				windowMax.Hour(),
+				windowMax.Minute(),
+				windowMax.Second(),
+				0,
+				location,
+			)
+		}
 		for {
-			q.SameDayHours = append(q.SameDayHours, t)
-			if t.Equal(*q.SameDayWindowMax) {
+			q.SameDayHours = append(q.SameDayHours, windowMin)
+			if windowMin.Equal(windowMax) {
 				break
 			}
-			t = t.Add(interval)
+			windowMin = windowMin.Add(interval)
 		}
 	} else {
 		q.RawSameDayWindowMin = ""
@@ -283,7 +306,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return fmt.Errorf("next_day_window_min: should use format '%s'", time.TimeOnly)
 		}
-		q.NextDayWindowMin = new(nextDayWindowMin)
+		q.NextDayWindowMin = &nextDayWindowMin
 		if q.RawNextDayWindowMax = strings.TrimSpace(q.RawNextDayWindowMax); q.RawNextDayWindowMax == "" {
 			return errors.New("next_day_window_max: is required")
 		}
@@ -291,7 +314,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return fmt.Errorf("next_day_window_max: should use format '%s'", time.TimeOnly)
 		}
-		q.NextDayWindowMax = new(nextDayWindowMax)
+		q.NextDayWindowMax = &nextDayWindowMax
 		if !q.NextDayWindowMax.After(*q.NextDayWindowMin) {
 			return errors.New("next_day_window_max: should exceed next_day_window_min")
 		}
@@ -302,13 +325,36 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return errors.New("next_day_interval: is not valid")
 		}
-		t := *q.NextDayWindowMin
+		windowMin := *q.NextDayWindowMin
+		windowMax := *q.NextDayWindowMax
+		if q.Day != nil {
+			windowMin = time.Date(
+				q.Day.Year(),
+				q.Day.Month(),
+				q.Day.Day(),
+				windowMin.Hour(),
+				windowMin.Minute(),
+				windowMin.Second(),
+				0,
+				location,
+			)
+			windowMax = time.Date(
+				q.Day.Year(),
+				q.Day.Month(),
+				q.Day.Day(),
+				windowMax.Hour(),
+				windowMax.Minute(),
+				windowMax.Second(),
+				0,
+				location,
+			)
+		}
 		for {
-			q.NextDayHours = append(q.NextDayHours, t)
-			if t.Equal(*q.NextDayWindowMax) {
+			q.NextDayHours = append(q.NextDayHours, windowMin)
+			if windowMin.Equal(windowMax) {
 				break
 			}
-			t = t.Add(interval)
+			windowMin = windowMin.Add(interval)
 		}
 	} else {
 		q.RawNextDayWindowMin = ""
@@ -325,7 +371,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return fmt.Errorf("next_two_day_window_min: should use format '%s'", time.TimeOnly)
 		}
-		q.NextTwoDayWindowMin = new(nextTwoDayWindowMin)
+		q.NextTwoDayWindowMin = &nextTwoDayWindowMin
 		if q.RawNextTwoDayWindowMax = strings.TrimSpace(q.RawNextTwoDayWindowMax); q.RawNextTwoDayWindowMax == "" {
 			return errors.New("next_two_day_window_max: is required")
 		}
@@ -333,7 +379,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return fmt.Errorf("next_two_day_window_max: should use format '%s'", time.TimeOnly)
 		}
-		q.NextTwoDayWindowMax = new(nextTwoDayWindowMax)
+		q.NextTwoDayWindowMax = &nextTwoDayWindowMax
 		if !q.NextTwoDayWindowMax.After(*q.NextTwoDayWindowMin) {
 			return errors.New("next_two_day_window_max: should exceed next_two_day_window_min")
 		}
@@ -344,13 +390,36 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if err != nil {
 			return errors.New("next_two_day_interval: is not valid")
 		}
-		t := *q.NextTwoDayWindowMin
+		windowMin := *q.NextTwoDayWindowMin
+		windowMax := *q.NextTwoDayWindowMax
+		if q.Day != nil {
+			windowMin = time.Date(
+				q.Day.Year(),
+				q.Day.Month(),
+				q.Day.Day(),
+				windowMin.Hour(),
+				windowMin.Minute(),
+				windowMin.Second(),
+				0,
+				location,
+			)
+			windowMax = time.Date(
+				q.Day.Year(),
+				q.Day.Month(),
+				q.Day.Day(),
+				windowMax.Hour(),
+				windowMax.Minute(),
+				windowMax.Second(),
+				0,
+				location,
+			)
+		}
 		for {
-			q.NextTwoDayHours = append(q.NextTwoDayHours, t)
-			if t.Equal(*q.NextTwoDayWindowMax) {
+			q.NextTwoDayHours = append(q.NextTwoDayHours, windowMin)
+			if windowMin.Equal(windowMax) {
 				break
 			}
-			t = t.Add(interval)
+			windowMin = windowMin.Add(interval)
 		}
 	} else {
 		q.RawNextTwoDayWindowMin = ""
