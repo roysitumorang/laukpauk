@@ -31,10 +31,6 @@ type (
 			tx pgx.Tx,
 			request *models.DeliveryPlan,
 		) (*models.DeliveryPlan, error)
-		ValidInterval(
-			ctx context.Context,
-			interval string,
-		) bool
 	}
 
 	deliveryPlanService struct {
@@ -118,11 +114,4 @@ func (q *deliveryPlanService) UpdateDeliveryPlan(
 		return nil, err
 	}
 	return response, nil
-}
-
-func (q *deliveryPlanService) ValidInterval(
-	ctx context.Context,
-	interval string,
-) bool {
-	return q.deliveryPlanRepository.ValidInterval(ctx, interval)
 }

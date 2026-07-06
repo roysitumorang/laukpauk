@@ -795,6 +795,56 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// delivery_plan_hours
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE delivery_plan_hours (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
+				, delivery_speed integer NOT NULL
+				, hour timestamp with time zone NOT NULL
+				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plan_hours (delivery_plan_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plan_hours (delivery_speed);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plan_hours (hour);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE UNIQUE INDEX ON delivery_plan_hours (delivery_plan_id, delivery_speed, hour);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plan_hours (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// non_delivery_days
 		if _, err = tx.Exec(
 			ctx,

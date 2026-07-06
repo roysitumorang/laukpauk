@@ -15,9 +15,6 @@ var (
 	ErrDeliveryPlanNotFound                          = errors.New("delivery plan not found")
 	ErrUniqueDeliveryPlanNameViolation               = errors.New("name: already exists")
 	ErrUniqueDeliveryTransactionWindowFrameViolation = errors.New("transaction time frame already exists")
-	ErrInvalidDeliveryPlanSameDayInterval            = errors.New("same_day_interval: is not valid")
-	ErrInvalidDeliveryPlanNextDayInterval            = errors.New("next_day_interval: is not valid")
-	ErrInvalidDeliveryPlanNextTwoDayInterval         = errors.New("next_two_day_interval: is not valid")
 
 	MapDeliveryPlanSortings = map[string]struct{}{
 		SortingFieldID:   {},
@@ -25,7 +22,15 @@ var (
 	}
 )
 
+const (
+	DeliverySpeedSameDay DeliverySpeed = iota
+	DeliverySpeedNextDay
+	DeliverySpeedNextTwoDay
+)
+
 type (
+	DeliverySpeed int
+
 	DeliveryPlan struct {
 		RowNo                   int64        `json:"-" form:"-"`
 		ID                      uuid.UUID    `json:"-" form:"-"`
@@ -41,18 +46,21 @@ type (
 		SameDayWindowMax        *time.Time   `json:"-" form:"-"`
 		RawSameDayWindowMax     string       `json:"-" form:"same_day_window_max"`
 		SameDayInterval         *string      `json:"-" form:"same_day_interval"`
+		SameDayHours            []time.Time  `json:"-" form:"-"`
 		NextDay                 bool         `json:"-" form:"next_day"`
 		NextDayWindowMin        *time.Time   `json:"-" form:"-"`
 		RawNextDayWindowMin     string       `json:"-" form:"next_day_window_min"`
 		NextDayWindowMax        *time.Time   `json:"-" form:"-"`
 		RawNextDayWindowMax     string       `json:"-" form:"next_day_window_max"`
 		NextDayInterval         *string      `json:"-" form:"next_day_interval"`
+		NextDayHours            []time.Time  `json:"-" form:"-"`
 		NextTwoDay              bool         `json:"-" form:"next_two_day"`
 		NextTwoDayWindowMin     *time.Time   `json:"-" form:"-"`
 		RawNextTwoDayWindowMin  string       `json:"-" form:"next_two_day_window_min"`
 		NextTwoDayWindowMax     *time.Time   `json:"-" form:"-"`
 		RawNextTwoDayWindowMax  string       `json:"-" form:"next_two_day_window_max"`
 		NextTwoDayInterval      *string      `json:"-" form:"next_two_day_interval"`
+		NextTwoDayHours         []time.Time  `json:"-" form:"-"`
 		CreatedBy               uuid.UUID    `json:"-" form:"-"`
 		CreatedAt               time.Time    `json:"-" form:"-"`
 		UpdatedBy               uuid.UUID    `json:"-" form:"-"`
@@ -193,6 +201,18 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if q.SameDayInterval == nil || strings.TrimSpace(*q.SameDayInterval) == "" {
 			return errors.New("same_day_interval: is required")
 		}
+		interval, err := time.ParseDuration(*q.SameDayInterval)
+		if err != nil {
+			return errors.New("same_day_interval: is not valid")
+		}
+		t := *q.SameDayWindowMin
+		for {
+			q.SameDayHours = append(q.SameDayHours, t)
+			if t.Equal(*q.SameDayWindowMax) {
+				break
+			}
+			t = t.Add(interval)
+		}
 	} else {
 		q.RawSameDayWindowMin = ""
 		q.SameDayWindowMin = nil
@@ -223,6 +243,18 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if q.NextDayInterval == nil || strings.TrimSpace(*q.NextDayInterval) == "" {
 			return errors.New("next_day_interval: is required")
 		}
+		interval, err := time.ParseDuration(*q.NextDayInterval)
+		if err != nil {
+			return errors.New("next_day_interval: is not valid")
+		}
+		t := *q.NextDayWindowMin
+		for {
+			q.NextDayHours = append(q.NextDayHours, t)
+			if t.Equal(*q.NextDayWindowMax) {
+				break
+			}
+			t = t.Add(interval)
+		}
 	} else {
 		q.RawNextDayWindowMin = ""
 		q.NextDayWindowMin = nil
@@ -252,6 +284,18 @@ func (q *DeliveryPlan) Validate() (err error) {
 		}
 		if q.NextTwoDayInterval == nil || strings.TrimSpace(*q.NextTwoDayInterval) == "" {
 			return errors.New("next_two_day_interval: is required")
+		}
+		interval, err := time.ParseDuration(*q.NextTwoDayInterval)
+		if err != nil {
+			return errors.New("next_two_day_interval: is not valid")
+		}
+		t := *q.NextTwoDayWindowMin
+		for {
+			q.NextTwoDayHours = append(q.NextTwoDayHours, t)
+			if t.Equal(*q.NextTwoDayWindowMax) {
+				break
+			}
+			t = t.Add(interval)
 		}
 	} else {
 		q.RawNextTwoDayWindowMin = ""

@@ -171,27 +171,6 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if request.SameDay &&
-		request.SameDayInterval != nil &&
-		!q.deliveryPlanService.ValidInterval(ctx, *request.SameDayInterval) {
-		return c.Render("admin/delivery_plan_new", params.Push(
-			"flash", flash.Danger(models.ErrInvalidDeliveryPlanSameDayInterval.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if request.NextDay &&
-		request.NextDayInterval != nil &&
-		!q.deliveryPlanService.ValidInterval(ctx, *request.NextDayInterval) {
-		return c.Render("admin/delivery_plan_new", params.Push(
-			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextDayInterval.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if request.NextTwoDay &&
-		request.NextTwoDayInterval != nil &&
-		!q.deliveryPlanService.ValidInterval(ctx, *request.NextTwoDayInterval) {
-		return c.Render("admin/delivery_plan_new", params.Push(
-			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextTwoDayInterval.Error()),
-		), "admin/layouts/authenticated")
-	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
@@ -359,27 +338,6 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if request.SameDay &&
-		request.SameDayInterval != nil &&
-		!q.deliveryPlanService.ValidInterval(ctx, *request.SameDayInterval) {
-		return c.Render("admin/delivery_plan_edit", params.Push(
-			"flash", flash.Danger(models.ErrInvalidDeliveryPlanSameDayInterval.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if request.NextDay &&
-		request.NextDayInterval != nil &&
-		!q.deliveryPlanService.ValidInterval(ctx, *request.NextDayInterval) {
-		return c.Render("admin/delivery_plan_edit", params.Push(
-			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextDayInterval.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if request.NextTwoDay &&
-		request.NextTwoDayInterval != nil &&
-		!q.deliveryPlanService.ValidInterval(ctx, *request.NextTwoDayInterval) {
-		return c.Render("admin/delivery_plan_edit", params.Push(
-			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextTwoDayInterval.Error()),
-		), "admin/layouts/authenticated")
-	}
 	if deliveryPlan.Name != request.Name {
 		otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 			ctx,
@@ -405,7 +363,8 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 			ctx,
 			models.NewDeliveryPlanFilter().
 				WithTransactionWindowMin(new(request.TransactionWindowMin)).
-				WithTransactionWindowMax(new(request.TransactionWindowMax)),
+				WithTransactionWindowMax(new(request.TransactionWindowMax)).
+				WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
