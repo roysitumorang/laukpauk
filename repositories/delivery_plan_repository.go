@@ -654,33 +654,35 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 			delivery_plan_id
 			, delivery_speed
 			, hour
+			, created_by
+			, created_at
 		) VALUES`,
 	)
 	if request.SameDay {
 		for _, deliveryHour := range request.SameDayHours {
-			params = append(params, response.ID, models.DeliverySpeedSameDay, deliveryHour)
-			if n = len(params); n > 3 {
+			params = append(params, response.ID, models.DeliverySpeedSameDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
+			if n = len(params); n > 5 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d)", n-2, n-1, n)
+			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
 		}
 	}
 	if request.NextDay {
 		for _, deliveryHour := range request.NextDayHours {
-			params = append(params, response.ID, models.DeliverySpeedNextDay, deliveryHour)
-			if n = len(params); n > 3 {
+			params = append(params, response.ID, models.DeliverySpeedNextDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
+			if n = len(params); n > 5 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d)", n-2, n-1, n)
+			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
 		}
 	}
 	if request.NextTwoDay {
 		for _, deliveryHour := range request.NextTwoDayHours {
-			params = append(params, response.ID, models.DeliverySpeedNextTwoDay, deliveryHour)
-			if n = len(params); n > 3 {
+			params = append(params, response.ID, models.DeliverySpeedNextTwoDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
+			if n = len(params); n > 5 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d)", n-2, n-1, n)
+			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
 		}
 	}
 	_, _ = sb.WriteString(
@@ -701,13 +703,11 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 	}
 	defer rows.Close()
 	var (
-		deliveryPlanID uuid.UUID
-		deliverySpeed  models.DeliverySpeed
-		deliveryHour   time.Time
+		deliverySpeed models.DeliverySpeed
+		deliveryHour  time.Time
 	)
 	for rows.Next() {
 		if err = rows.Scan(
-			&deliveryPlanID,
 			&deliverySpeed,
 			&deliveryHour,
 		); err != nil {
@@ -724,6 +724,10 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 		default:
 			response.SameDayHours = append(response.SameDayHours, deliveryHour)
 		}
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return err
 	}
 	return nil
 }
