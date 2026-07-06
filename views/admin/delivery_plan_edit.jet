@@ -33,7 +33,7 @@
 					<div class="row">
 						<div class="col-lg-4">
 							<h5>Edit Data Jadwal Delivery</h5>
-							<p class="mb-0 text-muted text-sm">{{ deliveryPlan.Name }}</p>
+							<p class="mb-0 text-muted text-sm">{{ if deliveryPlan.Name }}{{ deliveryPlan.Name }}{{ else if deliveryPlan.Day }}{{ deliveryPlan.Day.Format("2 Jan 2006") }}{{ end }}</p>
 						</div>
 						<div class="col-lg-8 text-right"></div>
 					</div>

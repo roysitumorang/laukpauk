@@ -97,7 +97,7 @@ func (q *deliveryPlanService) CreateDeliveryPlan(
 	response, err := q.deliveryPlanRepository.CreateDeliveryPlan(ctx, tx, request)
 	if err != nil {
 		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
-			!errors.Is(err, models.ErrUniqueDeliveryTransactionWindowFrameViolation) {
+			!errors.Is(err, models.ErrUniqueDeliveryPlanDayViolation) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
 		}
 		return nil, err
@@ -114,7 +114,7 @@ func (q *deliveryPlanService) UpdateDeliveryPlan(
 	response, err := q.deliveryPlanRepository.UpdateDeliveryPlan(ctx, tx, request)
 	if err != nil {
 		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
-			!errors.Is(err, models.ErrUniqueDeliveryTransactionWindowFrameViolation) {
+			!errors.Is(err, models.ErrUniqueDeliveryPlanDayViolation) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
 		}
 		return nil, err

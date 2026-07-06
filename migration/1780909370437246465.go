@@ -736,7 +736,9 @@ func init() {
 			`CREATE TABLE delivery_plans (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, name character varying NOT NULL COLLATE "natural_sort"
+				, delivery_plan_type integer NOT NULL
+				, name character varying COLLATE "natural_sort"
+				, day timestamp with time zone UNIQUE
 				, transaction_window TSTZRANGE NOT NULL
 				, same_day BOOLEAN NOT NULL
 				, same_day_window TSTZRANGE NOT NULL
@@ -754,7 +756,6 @@ func init() {
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
-				, CONSTRAINT no_overlapping_transactions EXCLUDE USING gist (transaction_window WITH &&)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -769,7 +770,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON delivery_plans (delivery_plan_type);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE UNIQUE INDEX delivery_plans_unique_name_idx ON delivery_plans (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plans USING gist (transaction_window);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
