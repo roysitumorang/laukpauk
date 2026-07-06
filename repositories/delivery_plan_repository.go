@@ -34,6 +34,10 @@ type (
 			tx pgx.Tx,
 			request *models.DeliveryPlan,
 		) (*models.DeliveryPlan, error)
+		ValidInterval(
+			ctx context.Context,
+			interval string,
+		) bool
 	}
 
 	deliveryPlanRepository struct {
@@ -516,6 +520,18 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		return nil, err
 	}
 	return new(response).Populate(), nil
+}
+
+func (q *deliveryPlanRepository) ValidInterval(
+	ctx context.Context,
+	interval string,
+) bool {
+	_, err := q.dbRead.Exec(
+		ctx,
+		"SELECT $1::interval",
+		interval,
+	)
+	return err == nil
 }
 
 func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilter, sb *strings.Builder) (condition string, params []any) {

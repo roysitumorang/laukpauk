@@ -15,6 +15,9 @@ var (
 	ErrDeliveryPlanNotFound                          = errors.New("delivery plan not found")
 	ErrUniqueDeliveryPlanNameViolation               = errors.New("name: already exists")
 	ErrUniqueDeliveryTransactionWindowFrameViolation = errors.New("transaction time frame already exists")
+	ErrInvalidDeliveryPlanSameDayInterval            = errors.New("same_day_interval: is not valid")
+	ErrInvalidDeliveryPlanNextDayInterval            = errors.New("next_day_interval: is not valid")
+	ErrInvalidDeliveryPlanNextTwoDayInterval         = errors.New("next_two_day_interval: is not valid")
 
 	MapDeliveryPlanSortings = map[string]struct{}{
 		SortingFieldID:   {},
@@ -187,6 +190,9 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if !q.SameDayWindowMax.After(*q.SameDayWindowMin) {
 			return errors.New("same_day_window_max: should exceed same_day_window_min")
 		}
+		if q.SameDayInterval == nil || strings.TrimSpace(*q.SameDayInterval) == "" {
+			return errors.New("same_day_interval: is required")
+		}
 	} else {
 		q.RawSameDayWindowMin = ""
 		q.SameDayWindowMin = nil
@@ -214,6 +220,9 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if !q.NextDayWindowMax.After(*q.NextDayWindowMin) {
 			return errors.New("next_day_window_max: should exceed next_day_window_min")
 		}
+		if q.NextDayInterval == nil || strings.TrimSpace(*q.NextDayInterval) == "" {
+			return errors.New("next_day_interval: is required")
+		}
 	} else {
 		q.RawNextDayWindowMin = ""
 		q.NextDayWindowMin = nil
@@ -240,6 +249,9 @@ func (q *DeliveryPlan) Validate() (err error) {
 		q.NextTwoDayWindowMax = new(nextTwoDayWindowMax)
 		if !q.NextTwoDayWindowMax.After(*q.NextTwoDayWindowMin) {
 			return errors.New("next_two_day_window_max: should exceed next_two_day_window_min")
+		}
+		if q.NextTwoDayInterval == nil || strings.TrimSpace(*q.NextTwoDayInterval) == "" {
+			return errors.New("next_two_day_interval: is required")
 		}
 	} else {
 		q.RawNextTwoDayWindowMin = ""

@@ -169,7 +169,27 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-			"request", request,
+		), "admin/layouts/authenticated")
+	}
+	if request.SameDay &&
+		request.SameDayInterval != nil &&
+		!q.deliveryPlanService.ValidInterval(ctx, *request.SameDayInterval) {
+		return c.Render("admin/delivery_plan_new", params.Push(
+			"flash", flash.Danger(models.ErrInvalidDeliveryPlanSameDayInterval.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if request.NextDay &&
+		request.NextDayInterval != nil &&
+		!q.deliveryPlanService.ValidInterval(ctx, *request.NextDayInterval) {
+		return c.Render("admin/delivery_plan_new", params.Push(
+			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextDayInterval.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if request.NextTwoDay &&
+		request.NextTwoDayInterval != nil &&
+		!q.deliveryPlanService.ValidInterval(ctx, *request.NextTwoDayInterval) {
+		return c.Render("admin/delivery_plan_new", params.Push(
+			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextTwoDayInterval.Error()),
 		), "admin/layouts/authenticated")
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
@@ -337,6 +357,27 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/delivery_plan_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if request.SameDay &&
+		request.SameDayInterval != nil &&
+		!q.deliveryPlanService.ValidInterval(ctx, *request.SameDayInterval) {
+		return c.Render("admin/delivery_plan_edit", params.Push(
+			"flash", flash.Danger(models.ErrInvalidDeliveryPlanSameDayInterval.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if request.NextDay &&
+		request.NextDayInterval != nil &&
+		!q.deliveryPlanService.ValidInterval(ctx, *request.NextDayInterval) {
+		return c.Render("admin/delivery_plan_edit", params.Push(
+			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextDayInterval.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if request.NextTwoDay &&
+		request.NextTwoDayInterval != nil &&
+		!q.deliveryPlanService.ValidInterval(ctx, *request.NextTwoDayInterval) {
+		return c.Render("admin/delivery_plan_edit", params.Push(
+			"flash", flash.Danger(models.ErrInvalidDeliveryPlanNextTwoDayInterval.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if deliveryPlan.Name != request.Name {
