@@ -10,7 +10,9 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -408,8 +410,20 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
+
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			(pgxErr.Code == pgerrcode.UniqueViolation ||
+				pgxErr.Code == pgerrcode.ExclusionViolation) {
+			switch pgxErr.ConstraintName {
+			case "delivery_plans_unique_name_idx":
+				err = models.ErrUniqueDeliveryPlanNameViolation
+			case "no_overlapping_transactions":
+				err = models.ErrUniqueDeliveryTransactionWindowFrameViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	if err = q.saveDeliveryPlanHours(ctx, tx, request, new(response).Populate()); err != nil {
@@ -537,7 +551,18 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		&response.DeletionReason,
 	)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			(pgxErr.Code == pgerrcode.UniqueViolation ||
+				pgxErr.Code == pgerrcode.ExclusionViolation) {
+			switch pgxErr.ConstraintName {
+			case "delivery_plans_unique_name_idx":
+				err = models.ErrUniqueDeliveryPlanNameViolation
+			case "no_overlapping_transactions":
+				err = models.ErrUniqueDeliveryTransactionWindowFrameViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	if err = q.saveDeliveryPlanHours(ctx, tx, request, new(response).Populate()); err != nil {
@@ -594,16 +619,11 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		_, _ = fmt.Fprintf(sb, "LOWER(name) = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
-	if request.TransactionWindowMin != nil {
-		params = append(params, request.TransactionWindowMin)
+	if request.TransactionWindow != nil {
+		params = append(params, request.TransactionWindow.Min, request.TransactionWindow.Max)
+		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "lower(transaction_window) = $%d", len(params))
-		conds = append(conds, sb.String())
-	}
-	if request.TransactionWindowMax != nil {
-		params = append(params, request.TransactionWindowMax)
-		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "upper(transaction_window) = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "transaction_window && tstzrange($%d, $%d, '[]')", n-1, n)
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {

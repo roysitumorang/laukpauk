@@ -190,8 +190,7 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	deliveryPlan, err = q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithTransactionWindowMin(new(request.TransactionWindowMin)).
-			WithTransactionWindowMax(new(request.TransactionWindowMax)),
+			WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
@@ -228,7 +227,10 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 		}
 	}(ctx)
 	if _, err = q.deliveryPlanService.CreateDeliveryPlan(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
+		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
+			!errors.Is(err, models.ErrUniqueDeliveryTransactionWindowFrameViolation) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
+		}
 		return c.Render("admin/delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -362,8 +364,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 			ctx,
 			models.NewDeliveryPlanFilter().
-				WithTransactionWindowMin(new(request.TransactionWindowMin)).
-				WithTransactionWindowMax(new(request.TransactionWindowMax)).
+				WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax).
 				WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
@@ -402,7 +403,10 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 	}(ctx)
 	if _, err = q.deliveryPlanService.UpdateDeliveryPlan(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
+		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
+			!errors.Is(err, models.ErrUniqueDeliveryTransactionWindowFrameViolation) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
+		}
 		return c.Render("admin/delivery_plan_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")

@@ -96,7 +96,10 @@ func (q *deliveryPlanService) CreateDeliveryPlan(
 	ctxt := "DeliveryPlanService-CreateDeliveryPlan"
 	response, err := q.deliveryPlanRepository.CreateDeliveryPlan(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
+		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
+			!errors.Is(err, models.ErrUniqueDeliveryTransactionWindowFrameViolation) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
+		}
 		return nil, err
 	}
 	return response, nil
@@ -110,7 +113,10 @@ func (q *deliveryPlanService) UpdateDeliveryPlan(
 	ctxt := "DeliveryPlanService-UpdateDeliveryPlan"
 	response, err := q.deliveryPlanRepository.UpdateDeliveryPlan(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
+		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
+			!errors.Is(err, models.ErrUniqueDeliveryTransactionWindowFrameViolation) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
+		}
 		return nil, err
 	}
 	return response, nil

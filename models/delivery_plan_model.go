@@ -73,10 +73,9 @@ type (
 	DeliveryPlanFilter struct {
 		DeliveryPlanIDs,
 		ExcludedDeliveryPlanIDs []uuid.UUID
-		RecordStatuses []RecordStatus
-		Name           string
-		TransactionWindowMin,
-		TransactionWindowMax *time.Time
+		RecordStatuses    []RecordStatus
+		Name              string
+		TransactionWindow *TransactionWindow
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -84,6 +83,11 @@ type (
 		Limit,
 		Page int64
 		UrlValues url.Values
+	}
+
+	TransactionWindow struct {
+		Min,
+		Max time.Time
 	}
 )
 
@@ -114,13 +118,11 @@ func (q *DeliveryPlanFilter) WithName(name string) *DeliveryPlanFilter {
 	return q
 }
 
-func (q *DeliveryPlanFilter) WithTransactionWindowMin(transactionWindowMin *time.Time) *DeliveryPlanFilter {
-	q.TransactionWindowMin = transactionWindowMin
-	return q
-}
-
-func (q *DeliveryPlanFilter) WithTransactionWindowMax(transactionWindowMax *time.Time) *DeliveryPlanFilter {
-	q.TransactionWindowMax = transactionWindowMax
+func (q *DeliveryPlanFilter) WithTransactionWindow(min, max time.Time) *DeliveryPlanFilter {
+	q.TransactionWindow = new(TransactionWindow{
+		Min: min,
+		Max: max,
+	})
 	return q
 }
 
