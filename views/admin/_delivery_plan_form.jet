@@ -11,44 +11,16 @@
 <div class="row">
 	<div class="col-4">
 		<div class="form-group">
-			<label for="transaction_time_min" class="label-title">Batas Awal Jam Transaksi</label>
-			<input type="text" name="transaction_time_min" value="{{ request.TransactionTimeMin.Format("15:04:05") }}" id="transaction_time_min"
+			<label for="transaction_window_min" class="label-title">Batas Awal Jam Transaksi</label>
+			<input type="text" name="transaction_window_min" value="{{ request.TransactionWindowMin.Format("15:04:05") }}" id="transaction_window_min"
 				class="form-control" placeholder="00:00:00" maxlength="8" />
 		</div>
 	</div>
 	<div class="col-4">
 		<div class="form-group">
-			<label for="transaction_time_max" class="label-title">Batas Akhir Jam Transaksi</label>
-			<input type="text" name="transaction_time_max" value="{{ request.TransactionTimeMax.Format("15:04:05") }}" id="transaction_time_max"
+			<label for="transaction_window_max" class="label-title">Batas Akhir Jam Transaksi</label>
+			<input type="text" name="transaction_window_max" value="{{ request.TransactionWindowMax.Format("15:04:05") }}" id="transaction_window_max"
 				class="form-control" placeholder="00:00:00" maxlength="8" />
-		</div>
-	</div>
-</div>
-<div class="row">
-	<div class="col-4">
-		<div class="form-group">
-			<label for="delivery_time_min" class="label-title">Batas Awal Jam Pengantaran</label>
-			<input type="text" name="delivery_time_min" value="{{ request.DeliveryTimeMin.Format("15:04:05") }}" id="delivery_time_min"
-				class="form-control" placeholder="00:00:00" maxlength="8" />
-		</div>
-	</div>
-	<div class="col-4">
-		<div class="form-group">
-			<label for="delivery_time_max" class="label-title">Batas Akhir Jam Pengantaran</label>
-			<input type="text" name="delivery_time_max" value="{{ request.DeliveryTimeMax.Format("15:04:05") }}" id="delivery_time_max"
-				class="form-control" placeholder="00:00:00" maxlength="8" />
-		</div>
-	</div>
-</div>
-<div class="row">
-	<div class="col-12">
-		<div class="form-group">
-			<label for="delivery_daytime" class="label-title">Periode</label>
-			<select name="delivery_daytime" class="form-control" id="delivery_daytime">
-				{{ range _, deliveryDayTime := deliveryDayTimes }}
-				<option value="{{ deliveryDayTime.Int() }}"{{ if request.DeliveryDayTime.Equal(deliveryDayTime) }} selected{{ end }}>{{ deliveryDayTime.String() }}</option>
-				{{ end }}
-			</select>
 		</div>
 	</div>
 </div>
@@ -61,14 +33,81 @@
 	</div>
 	<div class="col-4">
 		<div class="form-group">
+			<label for="same_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
+			<input type="text" name="same_day_window_min" value="{{ if request.SameDayWindowMin }}{{ request.SameDayWindowMin.Format("15:04:05") }}{{ end }}" id="same_day_window_min"
+				class="form-control" placeholder="00:00:00" maxlength="8" />
+		</div>
+	</div>
+	<div class="col-4">
+		<div class="form-group">
+			<label for="same_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
+			<input type="text" name="same_day_window_max" value="{{ if request.SameDayWindowMax }}{{ request.SameDayWindowMax.Format("15:04:05") }}{{ end }}" id="same_day_window_max"
+				class="form-control" placeholder="00:00:00" maxlength="8" />
+		</div>
+	</div>
+	<div class="col-4">
+		<div class="form-group">
+			<label for="same_day_interval" class="label-title">Interval Jam Pengantaran</label>
+			<input type="text" name="same_day_interval" value="{{ if request.SameDayInterval }}{{ request.SameDayInterval }}{{ end }}" id="same_day_interval"
+				class="form-control" placeholder="1 hour" />
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-4">
+		<div class="form-group">
 			<label for="next_day" class="label-title">Next Day</label>
 			<input type="checkbox" name="next_day" value="1"{{ if request.NextDay}} checked{{ end }} />
 		</div>
 	</div>
 	<div class="col-4">
 		<div class="form-group">
+			<label for="next_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
+			<input type="text" name="next_day_window_min" value="{{ if request.NextDayWindowMin }}{{ request.NextDayWindowMin.Format("15:04:05") }}{{ end }}" id="next_day_window_min"
+				class="form-control" placeholder="00:00:00" maxlength="8" />
+		</div>
+	</div>
+	<div class="col-4">
+		<div class="form-group">
+			<label for="next_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
+			<input type="text" name="next_day_window_max" value="{{ if request.NextDayWindowMax }}{{ request.NextDayWindowMax.Format("15:04:05") }}{{ end }}" id="next_day_window_max"
+				class="form-control" placeholder="00:00:00" maxlength="8" />
+		</div>
+	</div>
+	<div class="col-4">
+		<div class="form-group">
+			<label for="next_day_interval" class="label-title">Interval Jam Pengantaran</label>
+			<input type="text" name="next_day_interval" value="{{ if request.NextDayInterval }}{{ request.NextDayInterval }}{{ end }}" id="next_day_interval"
+				class="form-control" placeholder="1 hour" />
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-4">
+		<div class="form-group">
 			<label for="next_two_day" class="label-title">Next Two Day</label>
 			<input type="checkbox" name="next_two_day" value="1"{{ if request.NextTwoDay}} checked{{ end }} />
+		</div>
+	</div>
+	<div class="col-4">
+		<div class="form-group">
+			<label for="next_two_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
+			<input type="text" name="next_two_day_window_min" value="{{ if request.NextTwoDayWindowMin }}{{ request.NextTwoDayWindowMin.Format("15:04:05") }}{{ end }}" id="next_two_day_window_min"
+				class="form-control" placeholder="00:00:00" maxlength="8" />
+		</div>
+	</div>
+	<div class="col-4">
+		<div class="form-group">
+			<label for="next_two_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
+			<input type="text" name="next_two_day_window_max" value="{{ if request.NextTwoDayWindowMax }}{{ request.NextTwoDayWindowMax.Format("15:04:05") }}{{ end }}" id="next_two_day_window_max"
+				class="form-control" placeholder="00:00:00" maxlength="8" />
+		</div>
+	</div>
+	<div class="col-4">
+		<div class="form-group">
+			<label for="next_two_day_interval" class="label-title">Interval Jam Pengantaran</label>
+			<input type="text" name="next_two_day_interval" value="{{ if request.NextTwoDayInterval }}{{ request.NextTwoDayInterval }}{{ end }}" id="next_two_day_interval"
+				class="form-control" placeholder="1 hour" />
 		</div>
 	</div>
 </div>

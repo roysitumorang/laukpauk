@@ -737,16 +737,16 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
-				, transaction_time_min timestamp with time zone NOT NULL
-				, transaction_time_max timestamp with time zone NOT NULL
-				, transaction_time_description character varying NOT NULL
-				, delivery_time_min timestamp with time zone NOT NULL
-				, delivery_time_max timestamp with time zone NOT NULL
-				, delivery_time_description character varying NOT NULL
-				, delivery_daytime integer NOT NULL
+				, transaction_window TSTZRANGE NOT NULL
 				, same_day BOOLEAN NOT NULL
+				, same_day_window TSTZRANGE NOT NULL
+				, same_day_interval character varying
 				, next_day BOOLEAN NOT NULL
+				, next_day_window TSTZRANGE NOT NULL
+				, next_day_interval character varying
 				, next_two_day BOOLEAN NOT NULL
+				, next_two_day_window TSTZRANGE NOT NULL
+				, next_two_day_interval character varying
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -754,6 +754,7 @@ func init() {
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
+				, CONSTRAINT no_overlapping_transactions EXCLUDE USING gist (transaction_window WITH &&)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -769,27 +770,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE UNIQUE INDEX delivery_plans_unique_name_idx ON delivery_plans (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_plans (transaction_time_min);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_plans (transaction_time_max);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE UNIQUE INDEX delivery_plans_unique_transaction_time_range_idx ON delivery_plans (transaction_time_min, transaction_time_max);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

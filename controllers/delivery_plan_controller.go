@@ -138,7 +138,6 @@ func (q *deliveryPlanController) AdminNew(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
-		"deliveryDayTimes", models.DeliveryDayTimes,
 	)
 	return c.Render("admin/delivery_plan_new", params, "admin/layouts/authenticated")
 }
@@ -162,7 +161,6 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
-		"deliveryDayTimes", models.DeliveryDayTimes,
 	)
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
@@ -193,8 +191,8 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	deliveryPlan, err = q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithTransactionTimeMin(new(request.TransactionTimeMin)).
-			WithTransactionTimeMax(new(request.TransactionTimeMax)),
+			WithTransactionWindowMin(new(request.TransactionWindowMin)).
+			WithTransactionWindowMax(new(request.TransactionWindowMax)),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
@@ -204,7 +202,7 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	if deliveryPlan != nil {
 		return c.Render("admin/delivery_plan_new", params.Push(
-			"flash", flash.Danger(models.ErrUniqueDeliveryTimeRangeViolation.Error()),
+			"flash", flash.Danger(models.ErrUniqueDeliveryTransactionWindowFrameViolation.Error()),
 		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
@@ -287,7 +285,6 @@ func (q *deliveryPlanController) AdminEdit(c fiber.Ctx) (err error) {
 		"pageTitle", helper.Sprintf("Edit Data Jadwal Delivery|%s", deliveryPlan.Name),
 		"request", deliveryPlan,
 		"deliveryPlan", deliveryPlan,
-		"deliveryDayTimes", models.DeliveryDayTimes,
 	)
 	return c.Render("admin/delivery_plan_edit", params, "admin/layouts/authenticated")
 }
@@ -332,7 +329,6 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		"pageTitle", helper.Sprintf("Edit Data Jadwal Delivery|%s", deliveryPlan.Name),
 		"request", request,
 		"deliveryPlan", deliveryPlan,
-		"deliveryDayTimes", models.DeliveryDayTimes,
 	)
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
@@ -362,13 +358,13 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 	}
-	if deliveryPlan.TransactionTimeMin != request.TransactionTimeMin ||
-		deliveryPlan.TransactionTimeMax != request.TransactionTimeMax {
+	if deliveryPlan.TransactionWindowMin != request.TransactionWindowMin ||
+		deliveryPlan.TransactionWindowMax != request.TransactionWindowMax {
 		otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 			ctx,
 			models.NewDeliveryPlanFilter().
-				WithTransactionTimeMin(new(request.TransactionTimeMin)).
-				WithTransactionTimeMax(new(request.TransactionTimeMax)),
+				WithTransactionWindowMin(new(request.TransactionWindowMin)).
+				WithTransactionWindowMax(new(request.TransactionWindowMax)),
 		)
 		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
@@ -378,7 +374,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 		if otherDeliveryPlan != nil {
 			return c.Render("admin/delivery_plan_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueDeliveryTimeRangeViolation.Error()),
+				"flash", flash.Danger(models.ErrUniqueDeliveryTransactionWindowFrameViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}

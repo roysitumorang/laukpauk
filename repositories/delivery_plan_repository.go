@@ -77,16 +77,20 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		`id
 		, record_status
 		, name
-		, transaction_time_min
-		, transaction_time_max
-		, transaction_time_description
-		, delivery_time_min
-		, delivery_time_max
-		, delivery_time_description
-		, delivery_daytime
+		, lower(transaction_window)
+		, upper(transaction_window)
 		, same_day
+		, lower(same_day_window)
+		, upper(same_day_window)
+		, same_day_interval
 		, next_day
+		, lower(next_day_window)
+		, upper(next_day_window)
+		, next_day_interval
 		, next_two_day
+		, lower(next_two_day_window)
+		, upper(next_two_day_window)
+		, next_two_day_interval
 		, created_by
 		, created_at
 		, updated_by
@@ -146,16 +150,20 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 			&deliveryPlan.ID,
 			&deliveryPlan.RecordStatus,
 			&deliveryPlan.Name,
-			&deliveryPlan.TransactionTimeMin,
-			&deliveryPlan.TransactionTimeMax,
-			&deliveryPlan.TransactionTimeDescription,
-			&deliveryPlan.DeliveryTimeMin,
-			&deliveryPlan.DeliveryTimeMax,
-			&deliveryPlan.DeliveryTimeDescription,
-			&deliveryPlan.DeliveryDayTime,
+			&deliveryPlan.TransactionWindowMin,
+			&deliveryPlan.TransactionWindowMax,
 			&deliveryPlan.SameDay,
+			&deliveryPlan.SameDayWindowMin,
+			&deliveryPlan.SameDayWindowMax,
+			&deliveryPlan.SameDayInterval,
 			&deliveryPlan.NextDay,
+			&deliveryPlan.NextDayWindowMin,
+			&deliveryPlan.NextDayWindowMax,
+			&deliveryPlan.NextDayInterval,
 			&deliveryPlan.NextTwoDay,
+			&deliveryPlan.NextTwoDayWindowMin,
+			&deliveryPlan.NextTwoDayWindowMax,
+			&deliveryPlan.NextTwoDayInterval,
 			&deliveryPlan.CreatedBy,
 			&deliveryPlan.CreatedAt,
 			&deliveryPlan.UpdatedBy,
@@ -188,16 +196,20 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 			id
 			, record_status
 			, name
-			, transaction_time_min
-			, transaction_time_max
-			, transaction_time_description
-			, delivery_time_min
-			, delivery_time_max
-			, delivery_time_description
-			, delivery_daytime
+			, lower(transaction_window)
+			, upper(transaction_window)
 			, same_day
+			, lower(same_day_window)
+			, upper(same_day_window)
+			, same_day_interval
 			, next_day
+			, lower(next_day_window)
+			, upper(next_day_window)
+			, next_day_interval
 			, next_two_day
+			, lower(next_two_day_window)
+			, upper(next_two_day_window)
+			, next_two_day_interval
 			, created_by
 			, created_at
 			, updated_by
@@ -214,16 +226,20 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
-		&response.TransactionTimeMin,
-		&response.TransactionTimeMax,
-		&response.TransactionTimeDescription,
-		&response.DeliveryTimeMin,
-		&response.DeliveryTimeMax,
-		&response.DeliveryTimeDescription,
-		&response.DeliveryDayTime,
+		&response.TransactionWindowMin,
+		&response.TransactionWindowMax,
 		&response.SameDay,
+		&response.SameDayWindowMin,
+		&response.SameDayWindowMax,
+		&response.SameDayInterval,
 		&response.NextDay,
+		&response.NextDayWindowMin,
+		&response.NextDayWindowMax,
+		&response.NextDayInterval,
 		&response.NextTwoDay,
+		&response.NextTwoDayWindowMin,
+		&response.NextTwoDayWindowMax,
+		&response.NextTwoDayInterval,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -249,58 +265,100 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-CreateDeliveryPlan"
 	var response models.DeliveryPlan
+	var sameDayInterval,
+		nextDayInterval,
+		nextTwoDayInterval string
+	if request.SameDay {
+		sameDayInterval = ", '[]'"
+	}
+	if request.NextDay {
+		nextDayInterval = ", '[]'"
+	}
+	if request.NextTwoDay {
+		nextTwoDayInterval = ", '[]'"
+	}
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO delivery_plans (
-			record_status
-			, name
-			, transaction_time_min
-			, transaction_time_max
-			, transaction_time_description
-			, delivery_time_min
-			, delivery_time_max
-			, delivery_time_description
-			, delivery_daytime
-			, same_day
-			, next_day
-			, next_two_day
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-		RETURNING id
-			, record_status
-			, name
-			, transaction_time_min
-			, transaction_time_max
-			, transaction_time_description
-			, delivery_time_min
-			, delivery_time_max
-			, delivery_time_description
-			, delivery_daytime
-			, same_day
-			, next_day
-			, next_two_day
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
+		helper.Sprintf(
+			`INSERT INTO delivery_plans (
+				record_status
+				, name
+				, transaction_window
+				, same_day
+				, same_day_window
+				, same_day_interval
+				, next_day
+				, next_day_window
+				, next_day_interval
+				, next_two_day
+				, next_two_day_window
+				, next_two_day_interval
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			) VALUES (
+				$1
+				, $2
+				, tstzrange($3, $4, '[]')
+				, $5
+				, tstzrange($6, $7%s)
+				, $8
+				, $9
+				, tstzrange($10, $11%s)
+				, $12
+				, $13
+				, tstzrange($14, $15%s)
+				, $16
+				, $17
+				, $18
+				, $19
+				, $20
+			)
+			RETURNING id
+				, record_status
+				, name
+				, lower(transaction_window)
+				, upper(transaction_window)
+				, same_day
+				, lower(same_day_window)
+				, upper(same_day_window)
+				, same_day_interval
+				, next_day
+				, lower(next_day_window)
+				, upper(next_day_window)
+				, next_day_interval
+				, next_two_day
+				, lower(next_two_day_window)
+				, upper(next_two_day_window)
+				, next_two_day_interval
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+				, deleted_by
+				, deleted_at
+				, deletion_reason`,
+			sameDayInterval,
+			nextDayInterval,
+			nextTwoDayInterval,
+		),
 		request.RecordStatus,
 		request.Name,
-		request.TransactionTimeMin,
-		request.TransactionTimeMax,
-		request.TransactionTimeDescription,
-		request.DeliveryTimeMin,
-		request.DeliveryTimeMax,
-		request.DeliveryTimeDescription,
-		request.DeliveryDayTime,
+		request.TransactionWindowMin,
+		request.TransactionWindowMax,
 		request.SameDay,
+		request.SameDayWindowMin,
+		request.SameDayWindowMax,
+		request.SameDayInterval,
 		request.NextDay,
+		request.NextDayWindowMin,
+		request.NextDayWindowMax,
+		request.NextDayInterval,
 		request.NextTwoDay,
+		request.NextTwoDayWindowMin,
+		request.NextTwoDayWindowMax,
+		request.NextTwoDayInterval,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -309,16 +367,20 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
-		&response.TransactionTimeMin,
-		&response.TransactionTimeMax,
-		&response.TransactionTimeDescription,
-		&response.DeliveryTimeMin,
-		&response.DeliveryTimeMax,
-		&response.DeliveryTimeDescription,
-		&response.DeliveryDayTime,
+		&response.TransactionWindowMin,
+		&response.TransactionWindowMax,
 		&response.SameDay,
+		&response.SameDayWindowMin,
+		&response.SameDayWindowMax,
+		&response.SameDayInterval,
 		&response.NextDay,
+		&response.NextDayWindowMin,
+		&response.NextDayWindowMax,
+		&response.NextDayInterval,
 		&response.NextTwoDay,
+		&response.NextTwoDayWindowMin,
+		&response.NextTwoDayWindowMax,
+		&response.NextTwoDayInterval,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -340,59 +402,84 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-UpdateDeliveryPlan"
 	var response models.DeliveryPlan
+	var sameDayInterval,
+		nextDayInterval,
+		nextTwoDayInterval string
+	if request.SameDay {
+		sameDayInterval = ", '[]'"
+	}
+	if request.NextDay {
+		nextDayInterval = ", '[]'"
+	}
+	if request.NextTwoDay {
+		nextTwoDayInterval = ", '[]'"
+	}
 	if err := tx.QueryRow(
 		ctx,
-		`UPDATE delivery_plans SET
-			record_status = $1
-			, name = $2
-			, transaction_time_min = $3
-			, transaction_time_max = $4
-			, transaction_time_description = $5
-			, delivery_time_min = $6
-			, delivery_time_max = $7
-			, delivery_time_description = $8
-			, delivery_daytime = $9
-			, same_day = $10
-			, next_day = $11
-			, next_two_day = $12
-			, updated_by = $13
-			, updated_at = $14
-			, deleted_by = $15
-			, deleted_at = $16
-			, deletion_reason = $17
-		WHERE id = $18
-		RETURNING id
-			, record_status
-			, name
-			, transaction_time_min
-			, transaction_time_max
-			, transaction_time_description
-			, delivery_time_min
-			, delivery_time_max
-			, delivery_time_description
-			, delivery_daytime
-			, same_day
-			, next_day
-			, next_two_day
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
+		helper.Sprintf(
+			`UPDATE delivery_plans SET
+				record_status = $1
+				, name = $2
+				, transaction_window = tstzrange($3, $4, '[]')
+				, same_day = $5
+				, same_day_window = tstzrange($6, $7%s)
+				, same_day_interval = $8
+				, next_day = $9
+				, next_day_window = tstzrange($10, $11%s)
+				, next_day_interval = $12
+				, next_two_day = $13
+				, next_two_day_window = tstzrange($14, $15%s)
+				, next_two_day_interval = $16
+				, updated_by = $17
+				, updated_at = $18
+				, deleted_by = $19
+				, deleted_at = $20
+				, deletion_reason = $21
+			WHERE id = $22
+			RETURNING id
+				, record_status
+				, name
+				, lower(transaction_window)
+				, upper(transaction_window)
+				, same_day
+				, lower(same_day_window)
+				, upper(same_day_window)
+				, same_day_interval
+				, next_day
+				, lower(next_day_window)
+				, upper(next_day_window)
+				, next_day_interval
+				, next_two_day
+				, lower(next_two_day_window)
+				, upper(next_two_day_window)
+				, next_two_day_interval
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+				, deleted_by
+				, deleted_at
+				, deletion_reason`,
+			sameDayInterval,
+			nextDayInterval,
+			nextTwoDayInterval,
+		),
 		request.RecordStatus,
 		request.Name,
-		request.TransactionTimeMin,
-		request.TransactionTimeMax,
-		request.TransactionTimeDescription,
-		request.DeliveryTimeMin,
-		request.DeliveryTimeMax,
-		request.DeliveryTimeDescription,
-		request.DeliveryDayTime,
+		request.TransactionWindowMin,
+		request.TransactionWindowMax,
 		request.SameDay,
+		request.SameDayWindowMin,
+		request.SameDayWindowMax,
+		request.SameDayInterval,
 		request.NextDay,
+		request.NextDayWindowMin,
+		request.NextDayWindowMax,
+		request.NextDayInterval,
 		request.NextTwoDay,
+		request.NextTwoDayWindowMin,
+		request.NextTwoDayWindowMax,
+		request.NextTwoDayInterval,
 		request.UpdatedBy,
 		request.UpdatedAt,
 		request.DeletedBy,
@@ -403,16 +490,20 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
-		&response.TransactionTimeMin,
-		&response.TransactionTimeMax,
-		&response.TransactionTimeDescription,
-		&response.DeliveryTimeMin,
-		&response.DeliveryTimeMax,
-		&response.DeliveryTimeDescription,
-		&response.DeliveryDayTime,
+		&response.TransactionWindowMin,
+		&response.TransactionWindowMax,
 		&response.SameDay,
+		&response.SameDayWindowMin,
+		&response.SameDayWindowMax,
+		&response.SameDayInterval,
 		&response.NextDay,
+		&response.NextDayWindowMin,
+		&response.NextDayWindowMax,
+		&response.NextDayInterval,
 		&response.NextTwoDay,
+		&response.NextTwoDayWindowMin,
+		&response.NextTwoDayWindowMax,
+		&response.NextTwoDayInterval,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -474,16 +565,16 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		_, _ = fmt.Fprintf(sb, "LOWER(name) = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
-	if request.TransactionTimeMin != nil {
-		params = append(params, request.TransactionTimeMin)
+	if request.TransactionWindowMin != nil {
+		params = append(params, request.TransactionWindowMin)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "transaction_time_min = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "lower(transaction_window) = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
-	if request.TransactionTimeMax != nil {
-		params = append(params, request.TransactionTimeMax)
+	if request.TransactionWindowMax != nil {
+		params = append(params, request.TransactionWindowMax)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "transaction_time_max = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "upper(transaction_window) = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {

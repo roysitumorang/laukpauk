@@ -12,57 +12,51 @@ import (
 )
 
 var (
-	ErrDeliveryPlanNotFound             = errors.New("shipping plan not found")
-	ErrUniqueDeliveryPlanNameViolation  = errors.New("name: already exists")
-	ErrUniqueDeliveryTimeRangeViolation = errors.New("delivery plan time range already exists")
+	ErrDeliveryPlanNotFound                          = errors.New("delivery plan not found")
+	ErrUniqueDeliveryPlanNameViolation               = errors.New("name: already exists")
+	ErrUniqueDeliveryTransactionWindowFrameViolation = errors.New("transaction time frame already exists")
 
-	DeliveryDayTimes    = []DeliveryDayTime{DeliveryDayTimeMorning, DeliveryDayTimeMidday, DeliveryDayTimeAfternoon}
-	MapDeliveryDayTimes = map[DeliveryDayTime]struct{}{
-		DeliveryDayTimeMorning:   {},
-		DeliveryDayTimeMidday:    {},
-		DeliveryDayTimeAfternoon: {},
-	}
 	MapDeliveryPlanSortings = map[string]struct{}{
 		SortingFieldID:   {},
 		SortingFieldName: {},
 	}
 )
 
-const (
-	DeliveryDayTimeMorning DeliveryDayTime = iota
-	DeliveryDayTimeMidday
-	DeliveryDayTimeAfternoon
-)
-
 type (
-	DeliveryDayTime int
-
 	DeliveryPlan struct {
-		RowNo                      int64           `json:"-" form:"-"`
-		ID                         uuid.UUID       `json:"-" form:"-"`
-		RecordStatus               RecordStatus    `json:"-" form:"-"`
-		Name                       string          `json:"-" form:"name"`
-		TransactionTimeMin         time.Time       `json:"-" form:"-"`
-		RawTransactionTimeMin      string          `json:"-" form:"transaction_time_min"`
-		TransactionTimeMax         time.Time       `json:"-" form:"-"`
-		RawTransactionTimeMax      string          `json:"-" form:"transaction_time_max"`
-		TransactionTimeDescription string          `json:"-" form:"-"`
-		DeliveryTimeMin            time.Time       `json:"-" form:"-"`
-		RawDeliveryTimeMin         string          `json:"-" form:"delivery_time_min"`
-		DeliveryTimeMax            time.Time       `json:"-" form:"-"`
-		RawDeliveryTimeMax         string          `json:"-" form:"delivery_time_max"`
-		DeliveryTimeDescription    string          `json:"-" form:"-"`
-		DeliveryDayTime            DeliveryDayTime `json:"-" form:"delivery_daytime"`
-		SameDay                    bool            `json:"-" form:"same_day"`
-		NextDay                    bool            `json:"-" form:"next_day"`
-		NextTwoDay                 bool            `json:"-" form:"next_two_day"`
-		CreatedBy                  uuid.UUID       `json:"-" form:"-"`
-		CreatedAt                  time.Time       `json:"-" form:"-"`
-		UpdatedBy                  uuid.UUID       `json:"-" form:"-"`
-		UpdatedAt                  time.Time       `json:"-" form:"-"`
-		DeletedBy                  *uuid.UUID      `json:"-" form:"-"`
-		DeletedAt                  *time.Time      `json:"-" form:"-"`
-		DeletionReason             *string         `json:"-" form:"-"`
+		RowNo                   int64        `json:"-" form:"-"`
+		ID                      uuid.UUID    `json:"-" form:"-"`
+		RecordStatus            RecordStatus `json:"-" form:"-"`
+		Name                    string       `json:"-" form:"name"`
+		TransactionWindowMin    time.Time    `json:"-" form:"-"`
+		RawTransactionWindowMin string       `json:"-" form:"transaction_window_min"`
+		TransactionWindowMax    time.Time    `json:"-" form:"-"`
+		RawTransactionWindowMax string       `json:"-" form:"transaction_window_max"`
+		SameDay                 bool         `json:"-" form:"same_day"`
+		SameDayWindowMin        *time.Time   `json:"-" form:"-"`
+		RawSameDayWindowMin     string       `json:"-" form:"same_day_window_min"`
+		SameDayWindowMax        *time.Time   `json:"-" form:"-"`
+		RawSameDayWindowMax     string       `json:"-" form:"same_day_window_max"`
+		SameDayInterval         *string      `json:"-" form:"same_day_interval"`
+		NextDay                 bool         `json:"-" form:"next_day"`
+		NextDayWindowMin        *time.Time   `json:"-" form:"-"`
+		RawNextDayWindowMin     string       `json:"-" form:"next_day_window_min"`
+		NextDayWindowMax        *time.Time   `json:"-" form:"-"`
+		RawNextDayWindowMax     string       `json:"-" form:"next_day_window_max"`
+		NextDayInterval         *string      `json:"-" form:"next_day_interval"`
+		NextTwoDay              bool         `json:"-" form:"next_two_day"`
+		NextTwoDayWindowMin     *time.Time   `json:"-" form:"-"`
+		RawNextTwoDayWindowMin  string       `json:"-" form:"next_two_day_window_min"`
+		NextTwoDayWindowMax     *time.Time   `json:"-" form:"-"`
+		RawNextTwoDayWindowMax  string       `json:"-" form:"next_two_day_window_max"`
+		NextTwoDayInterval      *string      `json:"-" form:"next_two_day_interval"`
+		CreatedBy               uuid.UUID    `json:"-" form:"-"`
+		CreatedAt               time.Time    `json:"-" form:"-"`
+		UpdatedBy               uuid.UUID    `json:"-" form:"-"`
+		UpdatedAt               time.Time    `json:"-" form:"-"`
+		DeletedBy               *uuid.UUID   `json:"-" form:"-"`
+		DeletedAt               *time.Time   `json:"-" form:"-"`
+		DeletionReason          *string      `json:"-" form:"-"`
 	}
 
 	DeliveryPlanFilter struct {
@@ -70,8 +64,8 @@ type (
 		ExcludedDeliveryPlanIDs []uuid.UUID
 		RecordStatuses []RecordStatus
 		Name           string
-		TransactionTimeMin,
-		TransactionTimeMax *time.Time
+		TransactionWindowMin,
+		TransactionWindowMax *time.Time
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -109,13 +103,13 @@ func (q *DeliveryPlanFilter) WithName(name string) *DeliveryPlanFilter {
 	return q
 }
 
-func (q *DeliveryPlanFilter) WithTransactionTimeMin(transactionTimeMin *time.Time) *DeliveryPlanFilter {
-	q.TransactionTimeMin = transactionTimeMin
+func (q *DeliveryPlanFilter) WithTransactionWindowMin(transactionWindowMin *time.Time) *DeliveryPlanFilter {
+	q.TransactionWindowMin = transactionWindowMin
 	return q
 }
 
-func (q *DeliveryPlanFilter) WithTransactionTimeMax(transactionTimeMax *time.Time) *DeliveryPlanFilter {
-	q.TransactionTimeMax = transactionTimeMax
+func (q *DeliveryPlanFilter) WithTransactionWindowMax(transactionWindowMax *time.Time) *DeliveryPlanFilter {
+	q.TransactionWindowMax = transactionWindowMax
 	return q
 }
 
@@ -158,69 +152,126 @@ func (q *DeliveryPlan) Validate() (err error) {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
-	if q.RawTransactionTimeMin = strings.TrimSpace(q.RawTransactionTimeMin); q.RawTransactionTimeMin == "" {
-		return errors.New("transaction_time_min: is required")
+	if q.RawTransactionWindowMin = strings.TrimSpace(q.RawTransactionWindowMin); q.RawTransactionWindowMin == "" {
+		return errors.New("transaction_window_min: is required")
 	}
-	if q.TransactionTimeMin, err = time.ParseInLocation(time.TimeOnly, q.RawTransactionTimeMin, location); err != nil {
-		return fmt.Errorf("transaction_time_min: should use format '%s'", time.TimeOnly)
+	if q.TransactionWindowMin, err = time.ParseInLocation(time.TimeOnly, q.RawTransactionWindowMin, location); err != nil {
+		return fmt.Errorf("transaction_window_min: should use format '%s'", time.TimeOnly)
 	}
-	if q.RawTransactionTimeMax = strings.TrimSpace(q.RawTransactionTimeMax); q.RawTransactionTimeMax == "" {
-		return errors.New("transaction_time_max: is required")
+	if q.RawTransactionWindowMax = strings.TrimSpace(q.RawTransactionWindowMax); q.RawTransactionWindowMax == "" {
+		return errors.New("transaction_window_max: is required")
 	}
-	if q.TransactionTimeMax, err = time.ParseInLocation(time.TimeOnly, q.RawTransactionTimeMax, location); err != nil {
-		return fmt.Errorf("transaction_time_max: should use format '%s'", time.TimeOnly)
+	if q.TransactionWindowMax, err = time.ParseInLocation(time.TimeOnly, q.RawTransactionWindowMax, location); err != nil {
+		return fmt.Errorf("transaction_window_max: should use format '%s'", time.TimeOnly)
 	}
-	if !q.TransactionTimeMax.After(q.TransactionTimeMin) {
-		return errors.New("transaction_time_max: should exceed transaction_time_min")
+	if !q.TransactionWindowMax.After(q.TransactionWindowMin) {
+		return errors.New("transaction_window_max: should exceed transaction_window_min")
 	}
-	if q.RawDeliveryTimeMin = strings.TrimSpace(q.RawDeliveryTimeMin); q.RawDeliveryTimeMin == "" {
-		return errors.New("delivery_time_min: is required")
+	if q.SameDay {
+		if q.RawSameDayWindowMin = strings.TrimSpace(q.RawSameDayWindowMin); q.RawSameDayWindowMin == "" {
+			return errors.New("same_day_window_min: is required")
+		}
+		sameDayWindowMin, err := time.ParseInLocation(time.TimeOnly, q.RawSameDayWindowMin, location)
+		if err != nil {
+			return fmt.Errorf("same_day_window_min: should use format '%s'", time.TimeOnly)
+		}
+		q.SameDayWindowMin = new(sameDayWindowMin)
+		if q.RawSameDayWindowMax = strings.TrimSpace(q.RawSameDayWindowMax); q.RawSameDayWindowMax == "" {
+			return errors.New("same_day_window_max: is required")
+		}
+		sameDayWindowMax, err := time.ParseInLocation(time.TimeOnly, q.RawSameDayWindowMax, location)
+		if err != nil {
+			return fmt.Errorf("same_day_window_max: should use format '%s'", time.TimeOnly)
+		}
+		q.SameDayWindowMax = new(sameDayWindowMax)
+		if !q.SameDayWindowMax.After(*q.SameDayWindowMin) {
+			return errors.New("same_day_window_max: should exceed same_day_window_min")
+		}
+	} else {
+		q.RawSameDayWindowMin = ""
+		q.SameDayWindowMin = nil
+		q.RawSameDayWindowMax = ""
+		q.SameDayWindowMax = nil
+		q.SameDayInterval = nil
 	}
-	if q.DeliveryTimeMin, err = time.ParseInLocation(time.TimeOnly, q.RawDeliveryTimeMin, location); err != nil {
-		return fmt.Errorf("delivery_time_min: should use format '%s'", time.TimeOnly)
+	if q.NextDay {
+		if q.RawNextDayWindowMin = strings.TrimSpace(q.RawNextDayWindowMin); q.RawNextDayWindowMin == "" {
+			return errors.New("next_day_window_min: is required")
+		}
+		nextDayWindowMin, err := time.ParseInLocation(time.TimeOnly, q.RawNextDayWindowMin, location)
+		if err != nil {
+			return fmt.Errorf("next_day_window_min: should use format '%s'", time.TimeOnly)
+		}
+		q.NextDayWindowMin = new(nextDayWindowMin)
+		if q.RawNextDayWindowMax = strings.TrimSpace(q.RawNextDayWindowMax); q.RawNextDayWindowMax == "" {
+			return errors.New("next_day_window_max: is required")
+		}
+		nextDayWindowMax, err := time.ParseInLocation(time.TimeOnly, q.RawNextDayWindowMax, location)
+		if err != nil {
+			return fmt.Errorf("next_day_window_max: should use format '%s'", time.TimeOnly)
+		}
+		q.NextDayWindowMax = new(nextDayWindowMax)
+		if !q.NextDayWindowMax.After(*q.NextDayWindowMin) {
+			return errors.New("next_day_window_max: should exceed next_day_window_min")
+		}
+	} else {
+		q.RawNextDayWindowMin = ""
+		q.NextDayWindowMin = nil
+		q.RawNextDayWindowMax = ""
+		q.NextDayWindowMax = nil
+		q.NextDayInterval = nil
 	}
-	if q.RawDeliveryTimeMax = strings.TrimSpace(q.RawDeliveryTimeMax); q.RawDeliveryTimeMax == "" {
-		return errors.New("delivery_time_max: is required")
-	}
-	if q.DeliveryTimeMax, err = time.ParseInLocation(time.TimeOnly, q.RawDeliveryTimeMax, location); err != nil {
-		return fmt.Errorf("delivery_time_max: should use format '%s'", time.TimeOnly)
-	}
-	if !q.DeliveryTimeMax.After(q.DeliveryTimeMin) {
-		return errors.New("delivery_time_max: should exceed delivery_time_min")
-	}
-	if _, ok := MapDeliveryDayTimes[q.DeliveryDayTime]; !ok {
-		return errors.New("delivery_daytime: not found")
+	if q.NextTwoDay {
+		if q.RawNextTwoDayWindowMin = strings.TrimSpace(q.RawNextTwoDayWindowMin); q.RawNextTwoDayWindowMin == "" {
+			return errors.New("next_two_day_window_min: is required")
+		}
+		nextTwoDayWindowMin, err := time.ParseInLocation(time.TimeOnly, q.RawNextTwoDayWindowMin, location)
+		if err != nil {
+			return fmt.Errorf("next_two_day_window_min: should use format '%s'", time.TimeOnly)
+		}
+		q.NextTwoDayWindowMin = new(nextTwoDayWindowMin)
+		if q.RawNextTwoDayWindowMax = strings.TrimSpace(q.RawNextTwoDayWindowMax); q.RawNextTwoDayWindowMax == "" {
+			return errors.New("next_two_day_window_max: is required")
+		}
+		nextTwoDayWindowMax, err := time.ParseInLocation(time.TimeOnly, q.RawNextTwoDayWindowMax, location)
+		if err != nil {
+			return fmt.Errorf("next_two_day_window_max: should use format '%s'", time.TimeOnly)
+		}
+		q.NextTwoDayWindowMax = new(nextTwoDayWindowMax)
+		if !q.NextTwoDayWindowMax.After(*q.NextTwoDayWindowMin) {
+			return errors.New("next_two_day_window_max: should exceed next_two_day_window_min")
+		}
+	} else {
+		q.RawNextTwoDayWindowMin = ""
+		q.NextTwoDayWindowMin = nil
+		q.RawNextTwoDayWindowMax = ""
+		q.NextTwoDayWindowMax = nil
+		q.NextTwoDayInterval = nil
 	}
 	return nil
 }
 
 func (q *DeliveryPlan) Populate() *DeliveryPlan {
 	location := helper.LoadTimeZone()
-	q.TransactionTimeMin = q.TransactionTimeMin.In(location)
-	q.TransactionTimeMax = q.TransactionTimeMax.In(location)
-	q.DeliveryTimeMin = q.DeliveryTimeMin.In(location)
-	q.DeliveryTimeMax = q.DeliveryTimeMax.In(location)
-	q.RawTransactionTimeMin = q.TransactionTimeMin.Format(time.TimeOnly)
-	q.RawTransactionTimeMax = q.TransactionTimeMax.Format(time.TimeOnly)
-	q.RawDeliveryTimeMin = q.DeliveryTimeMin.Format(time.TimeOnly)
-	q.RawDeliveryTimeMax = q.DeliveryTimeMax.Format(time.TimeOnly)
+	q.TransactionWindowMin = q.TransactionWindowMin.In(location)
+	q.TransactionWindowMax = q.TransactionWindowMax.In(location)
+	if q.SameDayWindowMin != nil {
+		*q.SameDayWindowMin = q.SameDayWindowMin.In(location)
+	}
+	if q.SameDayWindowMax != nil {
+		*q.SameDayWindowMax = q.SameDayWindowMax.In(location)
+	}
+	if q.NextDayWindowMin != nil {
+		*q.NextDayWindowMin = q.NextDayWindowMin.In(location)
+	}
+	if q.NextDayWindowMax != nil {
+		*q.NextDayWindowMax = q.NextDayWindowMax.In(location)
+	}
+	if q.NextTwoDayWindowMin != nil {
+		*q.NextTwoDayWindowMin = q.NextTwoDayWindowMin.In(location)
+	}
+	if q.NextTwoDayWindowMax != nil {
+		*q.NextTwoDayWindowMax = q.NextTwoDayWindowMax.In(location)
+	}
 	return q
-}
-
-func (q DeliveryDayTime) Int() int {
-	return int(q)
-}
-
-func (q DeliveryDayTime) String() string {
-	if q == DeliveryDayTimeAfternoon {
-		return "sore"
-	}
-	if q == DeliveryDayTimeMidday {
-		return "siang"
-	}
-	return "pagi"
-}
-
-func (q DeliveryDayTime) Equal(v DeliveryDayTime) bool {
-	return q.Int() == v.Int()
 }

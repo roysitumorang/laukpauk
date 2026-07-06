@@ -120,18 +120,17 @@
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
 									<td class="text-left vam">{{ row.Name }}</td>
 									<td class="text-left">
-										<h6 class="text-bold mb-0 text-secondary">{{ row.TransactionTimeMin.Format("15:04:05") }} s/d {{ row.TransactionTimeMax.Format("15:04:05") }}</h6>
+										<h6 class="text-bold mb-0 text-secondary">{{ row.TransactionWindowMin.Format("15:04:05") }} s/d {{ row.TransactionWindowMax.Format("15:04:05") }}</h6>
 									</td>
 									<td class="text-left">
-										{{ row.DeliveryTimeMin.Format("15:04:05") }} - {{ row.DeliveryTimeMax.Format("15:04:05") }} <span class="badge badge-info mr-2">{{ row.DeliveryDayTime.String() }}</span>
 										{{ if row.SameDay }}
-										<br> same day
+										same day {{ row.SameDayWindowMin.Format("15:04:05") }} - {{ row.SameDayWindowMax.Format("15:04:05") }}<br />
 										{{ end }}
 										{{ if row.NextDay }}
-										<br> next day
+										next day {{ row.NextDayWindowMin.Format("15:04:05") }} - {{ row.NextDayWindowMax.Format("15:04:05") }}<br />
 										{{ end }}
 										{{ if row.NextTwoDay }}
-										<br> next two day
+										next two day {{ row.NextTwoDayWindowMin.Format("15:04:05") }} - {{ row.NextTwoDayWindowMax.Format("15:04:05") }}
 										{{ end }}
 									</td>
 									<td class="text-center vam">
