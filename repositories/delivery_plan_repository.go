@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
-	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgerrcode"
@@ -147,11 +145,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var (
-		response        []*models.DeliveryPlan
-		deliveryPlanIDs []any
-	)
-	mapDeliveryPlanIDs := map[uuid.UUID]int{}
+	var response []*models.DeliveryPlan
 	for rows.Next() {
 		var deliveryPlan models.DeliveryPlan
 		if err = rows.Scan(
@@ -163,15 +157,15 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 			&deliveryPlan.SameDay,
 			&deliveryPlan.SameDayWindowMin,
 			&deliveryPlan.SameDayWindowMax,
-			&deliveryPlan.SameDayInterval,
+			&deliveryPlan.RawSameDayInterval,
 			&deliveryPlan.NextDay,
 			&deliveryPlan.NextDayWindowMin,
 			&deliveryPlan.NextDayWindowMax,
-			&deliveryPlan.NextDayInterval,
+			&deliveryPlan.RawNextDayInterval,
 			&deliveryPlan.NextTwoDay,
 			&deliveryPlan.NextTwoDayWindowMin,
 			&deliveryPlan.NextTwoDayWindowMax,
-			&deliveryPlan.NextTwoDayInterval,
+			&deliveryPlan.RawNextTwoDayInterval,
 			&deliveryPlan.CreatedBy,
 			&deliveryPlan.CreatedAt,
 			&deliveryPlan.UpdatedBy,
@@ -185,13 +179,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		}
 		offset++
 		deliveryPlan.RowNo = offset
-		mapDeliveryPlanIDs[deliveryPlan.ID] = len(response)
 		response = append(response, (&deliveryPlan).Populate())
-		deliveryPlanIDs = append(deliveryPlanIDs, deliveryPlan.ID)
-	}
-	if err = q.findDeliveryPlanHours(ctx, &sb, &response, mapDeliveryPlanIDs, deliveryPlanIDs...); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFindDeliveryPlanHours")
-		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -245,15 +233,15 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		&response.SameDay,
 		&response.SameDayWindowMin,
 		&response.SameDayWindowMax,
-		&response.SameDayInterval,
+		&response.RawSameDayInterval,
 		&response.NextDay,
 		&response.NextDayWindowMin,
 		&response.NextDayWindowMax,
-		&response.NextDayInterval,
+		&response.RawNextDayInterval,
 		&response.NextTwoDay,
 		&response.NextTwoDayWindowMin,
 		&response.NextTwoDayWindowMax,
-		&response.NextTwoDayInterval,
+		&response.RawNextTwoDayInterval,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -269,14 +257,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	(&response).Populate()
-	deliveryPlans := []*models.DeliveryPlan{&response}
-	mapDeliveryPlanIDs := map[uuid.UUID]int{response.ID: 0}
-	if err = q.findDeliveryPlanHours(ctx, &sb, &deliveryPlans, mapDeliveryPlanIDs, response.ID); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFindDeliveryPlanHours")
-		return nil, err
-	}
-	return deliveryPlans[0], nil
+	return (&response).Populate(), nil
 }
 
 func (q *deliveryPlanRepository) CreateDeliveryPlan(
@@ -371,15 +352,15 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		request.SameDay,
 		request.SameDayWindowMin,
 		request.SameDayWindowMax,
-		request.SameDayInterval,
+		request.RawSameDayInterval,
 		request.NextDay,
 		request.NextDayWindowMin,
 		request.NextDayWindowMax,
-		request.NextDayInterval,
+		request.RawNextDayInterval,
 		request.NextTwoDay,
 		request.NextTwoDayWindowMin,
 		request.NextTwoDayWindowMax,
-		request.NextTwoDayInterval,
+		request.RawNextTwoDayInterval,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -393,15 +374,15 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		&response.SameDay,
 		&response.SameDayWindowMin,
 		&response.SameDayWindowMax,
-		&response.SameDayInterval,
+		&response.RawSameDayInterval,
 		&response.NextDay,
 		&response.NextDayWindowMin,
 		&response.NextDayWindowMax,
-		&response.NextDayInterval,
+		&response.RawNextDayInterval,
 		&response.NextTwoDay,
 		&response.NextTwoDayWindowMin,
 		&response.NextTwoDayWindowMax,
-		&response.NextTwoDayInterval,
+		&response.RawNextTwoDayInterval,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -425,11 +406,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		}
 		return nil, err
 	}
-	if err = q.saveDeliveryPlanHours(ctx, tx, request, (&response).Populate()); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrSaveDeliveryPlanHours")
-		return nil, err
-	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *deliveryPlanRepository) UpdateDeliveryPlan(
@@ -508,15 +485,15 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		request.SameDay,
 		request.SameDayWindowMin,
 		request.SameDayWindowMax,
-		request.SameDayInterval,
+		request.RawSameDayInterval,
 		request.NextDay,
 		request.NextDayWindowMin,
 		request.NextDayWindowMax,
-		request.NextDayInterval,
+		request.RawNextDayInterval,
 		request.NextTwoDay,
 		request.NextTwoDayWindowMin,
 		request.NextTwoDayWindowMax,
-		request.NextTwoDayInterval,
+		request.RawNextTwoDayInterval,
 		request.UpdatedBy,
 		request.UpdatedAt,
 		request.DeletedBy,
@@ -532,15 +509,15 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		&response.SameDay,
 		&response.SameDayWindowMin,
 		&response.SameDayWindowMax,
-		&response.SameDayInterval,
+		&response.RawSameDayInterval,
 		&response.NextDay,
 		&response.NextDayWindowMin,
 		&response.NextDayWindowMax,
-		&response.NextDayInterval,
+		&response.RawNextDayInterval,
 		&response.NextTwoDay,
 		&response.NextTwoDayWindowMin,
 		&response.NextTwoDayWindowMax,
-		&response.NextTwoDayInterval,
+		&response.RawNextTwoDayInterval,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -564,11 +541,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		}
 		return nil, err
 	}
-	if err = q.saveDeliveryPlanHours(ctx, tx, request, (&response).Populate()); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrSaveDeliveryPlanHours")
-		return nil, err
-	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilter, sb *strings.Builder) (condition string, params []any) {
@@ -645,215 +618,4 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		condition = sb.String()
 	}
 	return
-}
-
-func (q *deliveryPlanRepository) saveDeliveryPlanHours(
-	ctx context.Context,
-	tx pgx.Tx,
-	request,
-	response *models.DeliveryPlan,
-) error {
-	ctxt := "DeliveryPlanRepository-saveDeliveryPlanHours"
-	var (
-		sb     strings.Builder
-		params []any
-		n      int
-	)
-	_, _ = sb.WriteString(
-		`INSERT INTO delivery_plan_hours (
-			record_status
-			, delivery_plan_id
-			, delivery_speed
-			, hour
-			, created_by
-			, created_at
-		) VALUES`,
-	)
-	if request.SameDay {
-		for _, deliveryHour := range request.SameDayHours {
-			params = append(params, models.RecordStatusActive, response.ID, models.DeliverySpeedSameDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
-			if n = len(params); n > 6 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d, $%d)", n-5, n-4, n-3, n-2, n-1, n)
-		}
-	}
-	if request.NextDay {
-		for _, deliveryHour := range request.NextDayHours {
-			params = append(params, models.RecordStatusActive, response.ID, models.DeliverySpeedNextDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
-			if n = len(params); n > 6 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d, $%d)", n-5, n-4, n-3, n-2, n-1, n)
-		}
-	}
-	if request.NextTwoDay {
-		for _, deliveryHour := range request.NextTwoDayHours {
-			params = append(params, models.RecordStatusActive, response.ID, models.DeliverySpeedNextTwoDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
-			if n = len(params); n > 6 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d, $%d)", n-5, n-4, n-3, n-2, n-1, n)
-		}
-	}
-	if len(params) == 0 {
-		return nil
-	}
-	params = append(params, models.RecordStatusActive)
-	_, _ = fmt.Fprintf(
-		&sb,
-		`ON CONFLICT (
-			delivery_plan_id
-			, delivery_speed
-			, hour
-		) DO UPDATE SET
-			record_status = $%d
-			, deleted_by = NULL
-			, deleted_at = NULL
-			, deletion_reason = NULL
-		RETURNING id
-			, delivery_speed
-			, hour`,
-		len(params),
-	)
-	rows, err := tx.Query(
-		ctx,
-		sb.String(),
-		params...,
-	)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
-		return err
-	}
-	defer rows.Close()
-	var (
-		deliveryPlanHourID uuid.UUID
-		deliverySpeed      models.DeliverySpeed
-		deliveryHour       time.Time
-	)
-	params = []any{
-		models.RecordStatusDeleted,
-		response.UpdatedBy,
-		response.UpdatedAt,
-		response.ID,
-		models.RecordStatusActive,
-	}
-	n = len(params)
-	sb.Reset()
-	_, _ = fmt.Fprintf(
-		&sb,
-		`UPDATE delivery_plan_hours SET
-			record_status = $%d
-			, deleted_by = $%d
-			, deleted_at = $%d
-		WHERE delivery_plan_id = $%d
-			AND record_status = $%d
-			AND id NOT IN (`,
-		n-4, n-3, n-2, n-1, n,
-	)
-	for rows.Next() {
-		if err = rows.Scan(
-			&deliveryPlanHourID,
-			&deliverySpeed,
-			&deliveryHour,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return err
-		}
-		switch deliverySpeed {
-		case models.DeliverySpeedNextTwoDay:
-			response.NextTwoDayHours = append(response.NextTwoDayHours, deliveryHour)
-		case models.DeliverySpeedNextDay:
-			response.NextDayHours = append(response.NextDayHours, deliveryHour)
-		case models.DeliverySpeedSameDay:
-			fallthrough
-		default:
-			response.SameDayHours = append(response.SameDayHours, deliveryHour)
-		}
-		params = append(params, deliveryPlanHourID)
-		if n = len(params); n > 6 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, "$%d", n)
-	}
-	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
-		return err
-	}
-	_, _ = sb.WriteString(")")
-	query := sb.String()
-	if len(params) == 5 {
-		query = strings.ReplaceAll(query, "id NOT IN ()", "")
-	}
-	if _, err = tx.Exec(ctx, query, params...); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
-	return nil
-}
-
-func (q *deliveryPlanRepository) findDeliveryPlanHours(
-	ctx context.Context,
-	sb *strings.Builder,
-	response *[]*models.DeliveryPlan,
-	mapDeliveryPlanIDs map[uuid.UUID]int,
-	deliveryPlanIDs ...any,
-) error {
-	ctxt := "DeliveryPlanRepository-saveDeliveryPlanHours"
-	if len(deliveryPlanIDs) == 0 {
-		return nil
-	}
-	sb.Reset()
-	_, _ = sb.WriteString(
-		`SELECT
-			delivery_plan_id
-			, delivery_speed
-			, hour
-		FROM delivery_plan_hours
-		WHERE delivery_plan_id IN (`,
-	)
-	for i := range deliveryPlanIDs {
-		if i > 0 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, "$%d", i+1)
-	}
-	deliveryPlanIDs = append(deliveryPlanIDs, models.RecordStatusActive)
-	_, _ = fmt.Fprintf(sb, ") AND record_status = $%d ORDER BY delivery_speed, hour", len(deliveryPlanIDs))
-	rows, err := q.dbRead.Query(ctx, sb.String(), deliveryPlanIDs...)
-	if errors.Is(err, pgx.ErrNoRows) {
-		err = nil
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var (
-			deliveryPlanID uuid.UUID
-			deliverySpeed  models.DeliverySpeed
-			deliveryHour   time.Time
-		)
-		if err = rows.Scan(
-			&deliveryPlanID,
-			&deliverySpeed,
-			&deliveryHour,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return err
-		}
-		i := mapDeliveryPlanIDs[deliveryPlanID]
-		switch deliverySpeed {
-		case models.DeliverySpeedNextTwoDay:
-			(*response)[i].NextTwoDayHours = append((*response)[i].NextTwoDayHours, deliveryHour)
-		case models.DeliverySpeedNextDay:
-			(*response)[i].NextDayHours = append((*response)[i].NextDayHours, deliveryHour)
-		case models.DeliverySpeedSameDay:
-			fallthrough
-		default:
-			(*response)[i].SameDayHours = append((*response)[i].SameDayHours, deliveryHour)
-		}
-	}
-	return nil
 }
