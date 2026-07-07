@@ -1,0 +1,44 @@
+<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+<div class="row">
+	<div class="col-lg-12">
+		<div class="row">
+			<div class="col-lg-8">
+				<div class="form-group">
+					<label for="buyer_id" class="label-user">User</label>
+					<select name="buyer_id" id="buyer_id" class="form-control" required{{ if request.ID }} disabled{{ end }}>
+						<option disabled>Pilih User</option>
+						{{ range _, buyer := buyers }}
+						<option value="{{ buyer.ID }}"{{ if request.BuyerID.Compare(buyer.ID) == 0 }} selected{{ end }}>{{ buyer.Name }} ({{ buyer.Username }})</option>
+						{{ end }}
+					</select>
+				</div>
+			</div>
+			<div class="col-lg-4">
+				<div class="form-group">
+					<label for="amount" class="label-nilai">Nilai</label>
+					<div class="input-group">
+						<div class="input-group-prepend">
+							<span class="input-group-text">Rp.</span>
+						</div>
+						<input type="number" name="amount" value="{{ request.Amount }}" class="form-control input" id="amount"
+							placeholder="Nominal Poin" required />
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="description" class="label-title">Keterangan</label>
+			<input type="text" name="description" value="{{ request.Description }}" class="form-control input"
+				placeholder="Keterangan"
+				id="description"
+				required{{ if !request.PointType.Equal(pointTypeAdmin) }} readonly{{ end }} />
+		</div>
+		<hr class="mb-4" />
+		<button type="submit" class="btn btn-success mr-1" id="btnSubmit">
+			Simpan  Data Poin
+		</button>
+		<a href="{{ baseURL }}/admin/points" class="btn btn-link btn-sm">
+			List Poin User
+		</a>
+	</div>
+</div>
