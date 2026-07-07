@@ -736,9 +736,7 @@ func init() {
 			`CREATE TABLE delivery_plans (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, delivery_plan_type integer NOT NULL
 				, name character varying COLLATE "natural_sort"
-				, day timestamp with time zone UNIQUE
 				, transaction_window TSTZRANGE NOT NULL
 				, same_day BOOLEAN NOT NULL
 				, same_day_window TSTZRANGE NOT NULL
@@ -756,6 +754,9 @@ func init() {
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
+				, CONSTRAINT no_overlapping_transaction_windows EXCLUDE USING gist (
+					transaction_window WITH &&
+				)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -770,21 +771,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_plans (delivery_plan_type);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
 			`CREATE UNIQUE INDEX delivery_plans_unique_name_idx ON delivery_plans (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_plans USING gist (transaction_window);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -815,12 +802,24 @@ func init() {
 			ctx,
 			`CREATE TABLE delivery_plan_hours (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
 				, delivery_speed integer NOT NULL
 				, hour timestamp with time zone NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
+				, UNIQUE (delivery_plan_id, delivery_speed, hour)
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plan_hours (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -848,14 +847,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON delivery_plan_hours (delivery_plan_id, delivery_speed, hour);`,
+			`CREATE INDEX ON delivery_plan_hours (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_plan_hours (created_by);`,
+			`CREATE INDEX ON delivery_plan_hours (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

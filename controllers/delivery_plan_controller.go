@@ -138,9 +138,6 @@ func (q *deliveryPlanController) AdminNew(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
-		"deliveryPlanTypes", models.DeliveryPlanTypes,
-		"deliveryPlanTypeStandard", models.DeliveryPlanTypeStandard,
-		"deliveryPlanTypeCustom", models.DeliveryPlanTypeCustom,
 	)
 	return c.Render("admin/delivery_plan_new", params, "admin/layouts/authenticated")
 }
@@ -164,9 +161,6 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
-		"deliveryPlanTypes", models.DeliveryPlanTypes,
-		"deliveryPlanTypeStandard", models.DeliveryPlanTypeStandard,
-		"deliveryPlanTypeCustom", models.DeliveryPlanTypeCustom,
 	)
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
@@ -177,58 +171,36 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if request.DeliveryPlanType == models.DeliveryPlanTypeStandard &&
-		request.Name != nil {
-		deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
-			ctx,
-			models.NewDeliveryPlanFilter().
-				WithName(*request.Name),
-		)
-		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-			return c.Render("admin/delivery_plan_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
-		}
-		if deliveryPlan != nil {
-			return c.Render("admin/delivery_plan_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueDeliveryPlanNameViolation.Error()),
-			), "admin/layouts/authenticated")
-		}
-		if deliveryPlan, err = q.deliveryPlanService.FindDeliveryPlan(
-			ctx,
-			models.NewDeliveryPlanFilter().
-				WithDeliveryPlanTypes(request.DeliveryPlanType).
-				WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax),
-		); err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-			return c.Render("admin/delivery_plan_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
-		}
-		if deliveryPlan != nil {
-			return c.Render("admin/delivery_plan_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueDeliveryTransactionWindowFrameViolation.Error()),
-			), "admin/layouts/authenticated")
-		}
-	} else if request.DeliveryPlanType == models.DeliveryPlanTypeCustom &&
-		request.Day != nil {
-		deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
-			ctx,
-			models.NewDeliveryPlanFilter().
-				WithDay(*request.Day),
-		)
-		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-			return c.Render("admin/delivery_plan_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
-		}
-		if deliveryPlan != nil {
-			return c.Render("admin/delivery_plan_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueDeliveryPlanDayViolation.Error()),
-			), "admin/layouts/authenticated")
-		}
+	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
+		ctx,
+		models.NewDeliveryPlanFilter().
+			WithName(request.Name),
+	)
+	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
+		return c.Render("admin/delivery_plan_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if deliveryPlan != nil {
+		return c.Render("admin/delivery_plan_new", params.Push(
+			"flash", flash.Danger(models.ErrUniqueDeliveryPlanNameViolation.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if deliveryPlan, err = q.deliveryPlanService.FindDeliveryPlan(
+		ctx,
+		models.NewDeliveryPlanFilter().
+			WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax),
+	); err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
+		return c.Render("admin/delivery_plan_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if deliveryPlan != nil {
+		return c.Render("admin/delivery_plan_new", params.Push(
+			"flash", flash.Danger(models.ErrUniqueDeliveryPlanTransactionWindowViolation.Error()),
+		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
 	createdBy := currentAdmin.ID
@@ -255,7 +227,7 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.deliveryPlanService.CreateDeliveryPlan(ctx, tx, request); err != nil {
 		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
-			!errors.Is(err, models.ErrUniqueDeliveryPlanDayViolation) {
+			!errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
 		}
 		return c.Render("admin/delivery_plan_new", params.Push(
@@ -313,9 +285,6 @@ func (q *deliveryPlanController) AdminEdit(c fiber.Ctx) (err error) {
 		"pageTitle", "Edit Data Jadwal Delivery",
 		"request", deliveryPlan,
 		"deliveryPlan", deliveryPlan,
-		"deliveryPlanTypes", models.DeliveryPlanTypes,
-		"deliveryPlanTypeStandard", models.DeliveryPlanTypeStandard,
-		"deliveryPlanTypeCustom", models.DeliveryPlanTypeCustom,
 	)
 	return c.Render("admin/delivery_plan_edit", params, "admin/layouts/authenticated")
 }
@@ -360,9 +329,6 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		"pageTitle", "Edit Data Jadwal Delivery",
 		"request", request,
 		"deliveryPlan", deliveryPlan,
-		"deliveryPlanTypes", models.DeliveryPlanTypes,
-		"deliveryPlanTypeStandard", models.DeliveryPlanTypeStandard,
-		"deliveryPlanTypeCustom", models.DeliveryPlanTypeCustom,
 	)
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
@@ -373,57 +339,11 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if request.DeliveryPlanType == models.DeliveryPlanTypeStandard {
-		if request.Name != nil &&
-			deliveryPlan.Name != nil &&
-			*deliveryPlan.Name != *request.Name {
-			otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
-				ctx,
-				models.NewDeliveryPlanFilter().
-					WithName(*request.Name).
-					WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
-			)
-			if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-				return c.Render("admin/delivery_plan_edit", params.Push(
-					"flash", flash.Danger(err.Error()),
-				), "admin/layouts/authenticated")
-			}
-			if otherDeliveryPlan != nil {
-				return c.Render("admin/delivery_plan_edit", params.Push(
-					"flash", flash.Danger(models.ErrUniqueDeliveryPlanNameViolation.Error()),
-				), "admin/layouts/authenticated")
-			}
-		}
-		if deliveryPlan.TransactionWindowMin != request.TransactionWindowMin ||
-			deliveryPlan.TransactionWindowMax != request.TransactionWindowMax {
-			otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
-				ctx,
-				models.NewDeliveryPlanFilter().
-					WithDeliveryPlanTypes(request.DeliveryPlanType).
-					WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax).
-					WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
-			)
-			if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-				return c.Render("admin/delivery_plan_edit", params.Push(
-					"flash", flash.Danger(err.Error()),
-				), "admin/layouts/authenticated")
-			}
-			if otherDeliveryPlan != nil {
-				return c.Render("admin/delivery_plan_edit", params.Push(
-					"flash", flash.Danger(models.ErrUniqueDeliveryTransactionWindowFrameViolation.Error()),
-				), "admin/layouts/authenticated")
-			}
-		}
-	} else if request.DeliveryPlanType == models.DeliveryPlanTypeCustom &&
-		request.Day != nil &&
-		deliveryPlan.Day != nil &&
-		!deliveryPlan.Day.Equal(*request.Day) {
+	if deliveryPlan.Name != request.Name {
 		otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 			ctx,
 			models.NewDeliveryPlanFilter().
-				WithDay(*request.Day).
+				WithName(request.Name).
 				WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
@@ -434,7 +354,27 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 		if otherDeliveryPlan != nil {
 			return c.Render("admin/delivery_plan_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueDeliveryPlanDayViolation.Error()),
+				"flash", flash.Danger(models.ErrUniqueDeliveryPlanNameViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
+	if deliveryPlan.TransactionWindowMin != request.TransactionWindowMin ||
+		deliveryPlan.TransactionWindowMax != request.TransactionWindowMax {
+		otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
+			ctx,
+			models.NewDeliveryPlanFilter().
+				WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax).
+				WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
+		)
+		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
+			return c.Render("admin/delivery_plan_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if otherDeliveryPlan != nil {
+			return c.Render("admin/delivery_plan_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniqueDeliveryPlanTransactionWindowViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
@@ -463,7 +403,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.deliveryPlanService.UpdateDeliveryPlan(ctx, tx, request); err != nil {
 		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
-			!errors.Is(err, models.ErrUniqueDeliveryPlanDayViolation) {
+			!errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
 		}
 		return c.Render("admin/delivery_plan_edit", params.Push(

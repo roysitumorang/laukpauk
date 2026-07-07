@@ -80,9 +80,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		"COUNT(1)",
 		`id
 		, record_status
-		, delivery_plan_type
 		, name
-		, day
 		, lower(transaction_window)
 		, upper(transaction_window)
 		, same_day
@@ -159,9 +157,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		if err = rows.Scan(
 			&deliveryPlan.ID,
 			&deliveryPlan.RecordStatus,
-			&deliveryPlan.DeliveryPlanType,
 			&deliveryPlan.Name,
-			&deliveryPlan.Day,
 			&deliveryPlan.TransactionWindowMin,
 			&deliveryPlan.TransactionWindowMax,
 			&deliveryPlan.SameDay,
@@ -213,9 +209,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		`SELECT
 			id
 			, record_status
-			, delivery_plan_type
 			, name
-			, day
 			, lower(transaction_window)
 			, upper(transaction_window)
 			, same_day
@@ -245,9 +239,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.DeliveryPlanType,
 		&response.Name,
-		&response.Day,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
 		&response.SameDay,
@@ -311,9 +303,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		helper.Sprintf(
 			`INSERT INTO delivery_plans (
 				record_status
-				, delivery_plan_type
 				, name
-				, day
 				, transaction_window
 				, same_day
 				, same_day_window
@@ -331,28 +321,24 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			) VALUES (
 				$1
 				, $2
-				, $3
-				, $4
-				, tstzrange($5, $6, '[]')
-				, $7
-				, tstzrange($8, $9%s)
-				, $10
-				, $11
-				, tstzrange($12, $13%s)
-				, $14
-				, $15
-				, tstzrange($16, $17%s)
+				, tstzrange($3, $4, '[]')
+				, $5
+				, tstzrange($6, $7%s)
+				, $8
+				, $9
+				, tstzrange($10, $11%s)
+				, $12
+				, $13
+				, tstzrange($14, $15%s)
+				, $16
+				, $17
 				, $18
 				, $19
 				, $20
-				, $21
-				, $22
 			)
 			RETURNING id
 				, record_status
-				, delivery_plan_type
 				, name
-				, day
 				, lower(transaction_window)
 				, upper(transaction_window)
 				, same_day
@@ -379,9 +365,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			nextTwoDayInterval,
 		),
 		request.RecordStatus,
-		request.DeliveryPlanType,
 		request.Name,
-		request.Day,
 		request.TransactionWindowMin,
 		request.TransactionWindowMax,
 		request.SameDay,
@@ -403,9 +387,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.DeliveryPlanType,
 		&response.Name,
-		&response.Day,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
 		&response.SameDay,
@@ -430,12 +412,13 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	)
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation {
+			(pgxErr.Code == pgerrcode.UniqueViolation ||
+				pgxErr.Code == pgerrcode.ExclusionViolation) {
 			switch pgxErr.ConstraintName {
 			case "delivery_plans_unique_name_idx":
 				err = models.ErrUniqueDeliveryPlanNameViolation
-			case "delivery_plans_day_key":
-				err = models.ErrUniqueDeliveryPlanDayViolation
+			case "no_overlapping_transaction_windows":
+				err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -473,30 +456,26 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		helper.Sprintf(
 			`UPDATE delivery_plans SET
 				record_status = $1
-				, delivery_plan_type = $2
-				, name = $3
-				, day = $4
-				, transaction_window = tstzrange($5, $6, '[]')
-				, same_day = $7
-				, same_day_window = tstzrange($8, $9%s)
-				, same_day_interval = $10
-				, next_day = $11
-				, next_day_window = tstzrange($12, $13%s)
-				, next_day_interval = $14
-				, next_two_day = $15
-				, next_two_day_window = tstzrange($16, $17%s)
-				, next_two_day_interval = $18
-				, updated_by = $19
-				, updated_at = $20
-				, deleted_by = $21
-				, deleted_at = $22
-				, deletion_reason = $23
-			WHERE id = $24
+				, name = $2
+				, transaction_window = tstzrange($3, $4, '[]')
+				, same_day = $5
+				, same_day_window = tstzrange($6, $7%s)
+				, same_day_interval = $8
+				, next_day = $9
+				, next_day_window = tstzrange($10, $11%s)
+				, next_day_interval = $12
+				, next_two_day = $13
+				, next_two_day_window = tstzrange($14, $15%s)
+				, next_two_day_interval = $16
+				, updated_by = $17
+				, updated_at = $18
+				, deleted_by = $19
+				, deleted_at = $20
+				, deletion_reason = $21
+			WHERE id = $22
 			RETURNING id
 				, record_status
-				, delivery_plan_type
 				, name
-				, day
 				, lower(transaction_window)
 				, upper(transaction_window)
 				, same_day
@@ -523,9 +502,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			nextTwoDayInterval,
 		),
 		request.RecordStatus,
-		request.DeliveryPlanType,
 		request.Name,
-		request.Day,
 		request.TransactionWindowMin,
 		request.TransactionWindowMax,
 		request.SameDay,
@@ -549,9 +526,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.DeliveryPlanType,
 		&response.Name,
-		&response.Day,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
 		&response.SameDay,
@@ -576,12 +551,13 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	)
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation {
+			(pgxErr.Code == pgerrcode.UniqueViolation ||
+				pgxErr.Code == pgerrcode.ExclusionViolation) {
 			switch pgxErr.ConstraintName {
 			case "delivery_plans_unique_name_idx":
 				err = models.ErrUniqueDeliveryPlanNameViolation
-			case "delivery_plans_day_key":
-				err = models.ErrUniqueDeliveryPlanDayViolation
+			case "no_overlapping_transaction_windows":
+				err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -636,29 +612,10 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.DeliveryPlanTypes) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("delivery_plan_type IN (")
-		for i, deliveryPlanType := range request.DeliveryPlanTypes {
-			params = append(params, deliveryPlanType)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
 	if request.Name != "" {
 		params = append(params, strings.ToLower(request.Name))
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "LOWER(name) = $%d", len(params))
-		conds = append(conds, sb.String())
-	}
-	if !request.Day.IsZero() {
-		params = append(params, request.Day)
-		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "day = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.TransactionWindow != nil {
@@ -697,15 +654,6 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 	response *models.DeliveryPlan,
 ) error {
 	ctxt := "DeliveryPlanRepository-saveDeliveryPlanHours"
-	_, err := tx.Exec(
-		ctx,
-		"DELETE FROM delivery_plan_hours WHERE delivery_plan_id = $1",
-		response.ID,
-	)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
 	var (
 		sb     strings.Builder
 		params []any
@@ -713,7 +661,8 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 	)
 	_, _ = sb.WriteString(
 		`INSERT INTO delivery_plan_hours (
-			delivery_plan_id
+			record_status
+			, delivery_plan_id
 			, delivery_speed
 			, hour
 			, created_by
@@ -722,38 +671,51 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 	)
 	if request.SameDay {
 		for _, deliveryHour := range request.SameDayHours {
-			params = append(params, response.ID, models.DeliverySpeedSameDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
-			if n = len(params); n > 5 {
+			params = append(params, models.RecordStatusActive, response.ID, models.DeliverySpeedSameDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
+			if n = len(params); n > 6 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
+			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d, $%d)", n-5, n-4, n-3, n-2, n-1, n)
 		}
 	}
 	if request.NextDay {
 		for _, deliveryHour := range request.NextDayHours {
-			params = append(params, response.ID, models.DeliverySpeedNextDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
-			if n = len(params); n > 5 {
+			params = append(params, models.RecordStatusActive, response.ID, models.DeliverySpeedNextDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
+			if n = len(params); n > 6 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
+			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d, $%d)", n-5, n-4, n-3, n-2, n-1, n)
 		}
 	}
 	if request.NextTwoDay {
 		for _, deliveryHour := range request.NextTwoDayHours {
-			params = append(params, response.ID, models.DeliverySpeedNextTwoDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
-			if n = len(params); n > 5 {
+			params = append(params, models.RecordStatusActive, response.ID, models.DeliverySpeedNextTwoDay, deliveryHour, response.UpdatedBy, response.UpdatedAt)
+			if n = len(params); n > 6 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
+			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d, $%d)", n-5, n-4, n-3, n-2, n-1, n)
 		}
 	}
-	_, _ = sb.WriteString(
-		`RETURNING delivery_speed
-			, hour`,
-	)
 	if len(params) == 0 {
 		return nil
 	}
+	params = append(params, models.RecordStatusActive)
+	_, _ = fmt.Fprintf(
+		&sb,
+		`ON CONFLICT (
+			delivery_plan_id
+			, delivery_speed
+			, hour
+		) DO UPDATE SET
+			record_status = $%d
+			, deleted_by = NULL
+			, deleted_at = NULL
+			, deletion_reason = NULL
+		RETURNING id
+			, delivery_speed
+			, hour`,
+		len(params),
+	)
 	rows, err := tx.Query(
 		ctx,
 		sb.String(),
@@ -765,11 +727,33 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 	}
 	defer rows.Close()
 	var (
-		deliverySpeed models.DeliverySpeed
-		deliveryHour  time.Time
+		deliveryPlanHourID uuid.UUID
+		deliverySpeed      models.DeliverySpeed
+		deliveryHour       time.Time
+	)
+	params = []any{
+		models.RecordStatusDeleted,
+		response.UpdatedBy,
+		response.UpdatedAt,
+		response.ID,
+		models.RecordStatusActive,
+	}
+	n = len(params)
+	sb.Reset()
+	_, _ = fmt.Fprintf(
+		&sb,
+		`UPDATE delivery_plan_hours SET
+			record_status = $%d
+			, deleted_by = $%d
+			, deleted_at = $%d
+		WHERE delivery_plan_id = $%d
+			AND record_status = $%d
+			AND id NOT IN (`,
+		n-4, n-3, n-2, n-1, n,
 	)
 	for rows.Next() {
 		if err = rows.Scan(
+			&deliveryPlanHourID,
 			&deliverySpeed,
 			&deliveryHour,
 		); err != nil {
@@ -786,9 +770,23 @@ func (q *deliveryPlanRepository) saveDeliveryPlanHours(
 		default:
 			response.SameDayHours = append(response.SameDayHours, deliveryHour)
 		}
+		params = append(params, deliveryPlanHourID)
+		if n = len(params); n > 6 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, "$%d", n)
 	}
 	if err = rows.Err(); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return err
+	}
+	_, _ = sb.WriteString(")")
+	query := sb.String()
+	if len(params) == 5 {
+		query = strings.ReplaceAll(query, "id NOT IN ()", "")
+	}
+	if _, err = tx.Exec(ctx, query, params...); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return err
 	}
 	return nil
@@ -820,7 +818,7 @@ func (q *deliveryPlanRepository) findDeliveryPlanHours(
 		}
 		_, _ = fmt.Fprintf(sb, "$%d", i+1)
 	}
-	_, _ = sb.WriteString(") ORDER BY id")
+	_, _ = sb.WriteString(") ORDER BY hour")
 	rows, err := q.dbRead.Query(ctx, sb.String(), deliveryPlanIDs...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = nil

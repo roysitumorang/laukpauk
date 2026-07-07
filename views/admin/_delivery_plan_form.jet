@@ -2,30 +2,9 @@
 <div class="row">
 	<div class="col-12">
 		<div class="form-group">
-			<label for="delivery_plan_type" class="label-title">Tipe Jadwal Delivery</label>
-			<select name="delivery_plan_type" id="delivery_plan_type" class="form-control">
-				{{ range _, deliveryPlanType := deliveryPlanTypes }}
-				<option value="{{ deliveryPlanType.Int() }}"{{ if request.DeliveryPlanType.Equal(deliveryPlanType) }} selected{{ end }}>{{ deliveryPlanType.String() }}</option>
-				{{ end }}
-			<select>
-		</div>
-	</div>
-</div>
-<div class="row">
-	<div class="col-12">
-		<div class="form-group">
 			<label for="name" class="label-title">Nama</label>
 			<input type="text" name="name" value="{{ if request.Name }}{{ request.Name }}{{ end }}" class="form-control" id="name"
-				placeholder="Nama Jadwal Delivery"{{ if request.DeliveryPlanType.Equal(deliveryPlanTypeCustom) }} disabled{{ end }}  />
-		</div>
-	</div>
-</div>
-<div class="row">
-	<div class="col-12">
-		<div class="form-group">
-			<label for="day" class="label-title">Tanggal</label>
-			<input type="date" name="day" value="{{ if request.RawDay }}{{ request.RawDay }}{{ end }}" class="form-control" id="day"
-				placeholder="Tanggal Jadwal Delivery"{{ if request.DeliveryPlanType.Equal(deliveryPlanTypeStandard) }} disabled{{ end }} />
+				placeholder="Nama Jadwal Delivery" />
 		</div>
 	</div>
 </div>
@@ -141,15 +120,6 @@
 </a>
 <script>
 	document.addEventListener("DOMContentLoaded", () => {
-		document.getElementById("delivery_plan_type").addEventListener("change", (event) => {
-			if (event.target.value == "1") {
-				document.getElementById("day").removeAttribute("disabled");
-				document.getElementById("name").setAttribute("disabled", "disabled");
-				return
-			}
-			document.getElementById("day").setAttribute("disabled", "disabled");
-			document.getElementById("name").removeAttribute("disabled");
-		});
 		document.getElementById("same_day").addEventListener("change", (event) => {
 			if (event.target.checked) {
 				document.getElementById("same_day_window_min").removeAttribute("disabled");

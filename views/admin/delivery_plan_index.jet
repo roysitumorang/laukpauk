@@ -118,7 +118,7 @@
 								{{ range _, row := rows }}
 								<tr class="text-sm tr-parent">
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
-									<td class="text-left vam">{{ if row.Name }}{{ row.Name }}{{ else if row.Day }}{{ row.Day.Format("2 Jan 2006") }}{{ end }}</td>
+									<td class="text-left vam">{{ row.Name }}</td>
 									<td class="text-left">
 										<h6 class="text-bold mb-0 text-secondary">{{ row.TransactionWindowMin.Format("15:04:05") }} s/d {{ row.TransactionWindowMax.Format("15:04:05") }}</h6>
 									</td>
