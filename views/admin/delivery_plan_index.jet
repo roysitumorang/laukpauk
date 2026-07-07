@@ -123,13 +123,13 @@
 										<h6 class="text-bold mb-0 text-secondary">{{ row.TransactionWindowMin.Format("15:04:05") }} s/d {{ row.TransactionWindowMax.Format("15:04:05") }}</h6>
 									</td>
 									<td class="text-left">
-										{{ if row.SameDay }}
+										{{ if row.SameDay && row.SameDayWindowMin && row.SameDayWindowMax }}
 										same day {{ row.SameDayWindowMin.Format("15:04:05") }} - {{ row.SameDayWindowMax.Format("15:04:05") }}<br />
 										{{ end }}
-										{{ if row.NextDay }}
+										{{ if row.NextDay && row.NextDayWindowMin && row.NextDayWindowMax }}
 										next day {{ row.NextDayWindowMin.Format("15:04:05") }} - {{ row.NextDayWindowMax.Format("15:04:05") }}<br />
 										{{ end }}
-										{{ if row.NextTwoDay }}
+										{{ if row.NextTwoDay && row.NextTwoDayWindowMin && row.NextTwoDayWindowMax }}
 										next two day {{ row.NextTwoDayWindowMin.Format("15:04:05") }} - {{ row.NextTwoDayWindowMax.Format("15:04:05") }}
 										{{ end }}
 									</td>
