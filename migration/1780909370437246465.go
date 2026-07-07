@@ -802,10 +802,30 @@ func init() {
 			ctx,
 			`CREATE TABLE non_delivery_days (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, date timestamp with time zone NOT NULL UNIQUE
+				, record_status integer NOT NULL
+				, date timestamp with time zone NOT NULL
+				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
+				, UNIQUE (date, delivery_plan_id)
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON non_delivery_days (date);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON non_delivery_days (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -817,38 +837,9 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// non_delivery_days_delivery_plans
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE non_delivery_days_delivery_plans (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, non_delivery_day_id UUID NOT NULL REFERENCES non_delivery_days (id)
-				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
-				, created_by UUID NOT NULL REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, UNIQUE (non_delivery_day_id, delivery_plan_id)
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON non_delivery_days_delivery_plans (non_delivery_day_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON non_delivery_days_delivery_plans (delivery_plan_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON non_delivery_days_delivery_plans (created_by);`,
+			`CREATE INDEX ON non_delivery_days (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
