@@ -818,7 +818,8 @@ func (q *deliveryPlanRepository) findDeliveryPlanHours(
 		}
 		_, _ = fmt.Fprintf(sb, "$%d", i+1)
 	}
-	_, _ = sb.WriteString(") ORDER BY hour")
+	deliveryPlanIDs = append(deliveryPlanIDs, models.RecordStatusActive)
+	_, _ = fmt.Fprintf(sb, ") AND record_status = $%d ORDER BY delivery_speed, hour", len(deliveryPlanIDs))
 	rows, err := q.dbRead.Query(ctx, sb.String(), deliveryPlanIDs...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = nil
