@@ -11,13 +11,20 @@ const (
 	UserTypeBuyer
 )
 
+const (
+	UserStatusActive UserStatus = iota
+	UserStatusDeactivated
+)
+
 type (
-	UserType int
+	UserType   int
+	UserStatus int
 
 	user struct {
 		RowNo                         int64      `json:"-" form:"-"`
 		ID                            uuid.UUID  `json:"-" form:"-"`
 		UserType                      UserType   `json:"-" form:"-"`
+		UserStatus                    UserStatus `json:"-" form:"-"`
 		Name                          string     `json:"-" form:"-"`
 		ConfirmationToken             *string    `json:"-" form:"-"`
 		ConfirmedAt                   *time.Time `json:"-" form:"-"`
@@ -52,6 +59,7 @@ type (
 	userFilter struct {
 		UserIDs,
 		ExcludedUserIDs []uuid.UUID
+		UserStatuses []UserStatus
 		Login,
 		Keyword,
 		Username,

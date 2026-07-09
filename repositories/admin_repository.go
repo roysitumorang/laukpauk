@@ -66,6 +66,7 @@ func (q *adminRepository) FindAdmins(
 		"COUNT(1)",
 		`u.id
 		, u.user_type
+		, u.user_status
 		, u.name
 		, u.confirmation_token
 		, u.confirmed_at
@@ -147,6 +148,7 @@ func (q *adminRepository) FindAdmins(
 		if err = rows.Scan(
 			&admin.ID,
 			&admin.UserType,
+			&admin.UserStatus,
 			&admin.Name,
 			&admin.ConfirmationToken,
 			&admin.ConfirmedAt,
@@ -201,6 +203,7 @@ func (q *adminRepository) FindAdmin(
 		`SELECT
 			u.id
 			, u.user_type
+			, u.user_status
 			, u.name
 			, u.confirmation_token
 			, u.confirmed_at
@@ -240,6 +243,7 @@ func (q *adminRepository) FindAdmin(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.UserType,
+		&response.UserStatus,
 		&response.Name,
 		&response.ConfirmationToken,
 		&response.ConfirmedAt,
@@ -288,6 +292,32 @@ func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *string
 		_, _ = sb.WriteString("u.id IN (")
 		for i, userID := range request.UserIDs {
 			params = append(params, userID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ExcludedUserIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("u.id NOT IN (")
+		for i, excludedUserID := range request.ExcludedUserIDs {
+			params = append(params, excludedUserID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.UserStatuses) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("u.user_status IN (")
+		for i, userStatus := range request.UserStatuses {
+			params = append(params, userStatus)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

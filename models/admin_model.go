@@ -43,6 +43,16 @@ func (q *AdminFilter) WithAdminIDs(adminIDs ...uuid.UUID) *AdminFilter {
 	return q
 }
 
+func (q *AdminFilter) WithExcludedAdminIDs(excludedAdminIDs ...uuid.UUID) *AdminFilter {
+	q.ExcludedUserIDs = excludedAdminIDs
+	return q
+}
+
+func (q *AdminFilter) WithUserStatuses(userStatuses ...UserStatus) *AdminFilter {
+	q.UserStatuses = userStatuses
+	return q
+}
+
 func (q *AdminFilter) WithLogin(login string) *AdminFilter {
 	q.Login = login
 	return q

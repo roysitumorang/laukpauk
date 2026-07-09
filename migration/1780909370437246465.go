@@ -27,6 +27,7 @@ func init() {
 			`CREATE TABLE users (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, user_type integer NOT NULL
+				, user_status integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, confirmation_token character varying UNIQUE
 				, confirmed_at timestamp with time zone
@@ -64,6 +65,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON users (user_type);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON users (user_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

@@ -66,6 +66,7 @@ func (q *buyerRepository) FindBuyers(
 		"COUNT(1)",
 		`u.id
 		, u.user_type
+		, u.user_status
 		, u.name
 		, u.confirmation_token
 		, u.confirmed_at
@@ -155,6 +156,7 @@ func (q *buyerRepository) FindBuyers(
 		if err = rows.Scan(
 			&buyer.ID,
 			&buyer.UserType,
+			&buyer.UserStatus,
 			&buyer.Name,
 			&buyer.ConfirmationToken,
 			&buyer.ConfirmedAt,
@@ -217,6 +219,7 @@ func (q *buyerRepository) FindBuyer(
 		`SELECT
 			u.id
 			, u.user_type
+			, u.user_status
 			, u.name
 			, u.confirmation_token
 			, u.confirmed_at
@@ -264,6 +267,7 @@ func (q *buyerRepository) FindBuyer(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.UserType,
+		&response.UserStatus,
 		&response.Name,
 		&response.ConfirmationToken,
 		&response.ConfirmedAt,
@@ -320,6 +324,32 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		_, _ = sb.WriteString("u.id IN (")
 		for i, userID := range request.UserIDs {
 			params = append(params, userID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ExcludedUserIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("u.id NOT IN (")
+		for i, excludedUserID := range request.ExcludedUserIDs {
+			params = append(params, excludedUserID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.UserStatuses) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("u.user_status IN (")
+		for i, userStatus := range request.UserStatuses {
+			params = append(params, userStatus)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

@@ -44,6 +44,16 @@ func (q *BuyerFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *BuyerFilter {
 	return q
 }
 
+func (q *BuyerFilter) WithExcludedBuyerIDs(excludedBuyerIDs ...uuid.UUID) *BuyerFilter {
+	q.ExcludedUserIDs = excludedBuyerIDs
+	return q
+}
+
+func (q *BuyerFilter) WithUserStatuses(userStatuses ...UserStatus) *BuyerFilter {
+	q.UserStatuses = userStatuses
+	return q
+}
+
 func (q *BuyerFilter) WithLogin(login string) *BuyerFilter {
 	q.Login = login
 	return q
