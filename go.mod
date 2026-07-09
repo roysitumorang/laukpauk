@@ -9,8 +9,8 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.13
 	github.com/getsentry/sentry-go v0.47.0
 	github.com/goccy/go-json v0.10.6
-	github.com/gofiber/contrib/v3/monitor v1.1.0
-	github.com/gofiber/contrib/v3/sentry v1.1.7
+	github.com/gofiber/contrib/v3/monitor v1.1.1
+	github.com/gofiber/contrib/v3/sentry v1.1.8
 	github.com/gofiber/contrib/v3/swaggo v1.0.8
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/storage/valkey v0.3.0
@@ -81,6 +81,6 @@ require (
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
-	golang.org/x/tools v0.47.0 // indirect
+	golang.org/x/tools v0.48.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
