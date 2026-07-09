@@ -112,7 +112,7 @@
 									<th class="border-top-0 text-left">Budget / Nilai Voucher</th>
 									<th class="border-top-0 text-left">Jenis</th>
 									<th class="border-top-0 text-right">Minimum Belanja</th>
-									<th class="border-top-0 text-center">Maximum Usage</th>
+									<th class="border-top-0 text-center">Maximum Usage Per Buyer</th>
 									<th class="border-top-0 text-left">Masa Berlaku</th>
 									<th class="border-top-0 text-center">Status</th>
 									<th class="border-top-0 text-center">Opsi</th>
@@ -143,7 +143,7 @@
 											data-placement="top" title="Voucher untuk mengurangi {{ row.VoucherType.String() }}">{{ row.VoucherType.String() }}</span>
 									</td>
 									<td class="vam text-right">Rp. {{ row.Discount | Comma }}</td>
-									<td class="vam text-center">{{ row.MaximumUsage }}x Pemakaian</td>
+									<td class="vam text-center">{{ row.QuotaPerBuyer }}x Pemakaian</td>
 									<td class="vam text-left">
 										{{ row.EffectiveStartDate.Format("2 Jan 2006") }} s/d {{ row.EffectiveEndDate.Format("2 Jan 2006") }}
 

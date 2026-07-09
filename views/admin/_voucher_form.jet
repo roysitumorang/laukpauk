@@ -38,10 +38,10 @@
 					placeholder="Minimum Belanja" />
 			</div>
 			<div class="form-group col-lg-4">
-				<label for="maximum_usage" class="label-title">Maksimal Penggunaan</label>
+				<label for="maximum_usage" class="label-title">Maksimal Penggunaan Per Buyer</label>
 				<div class="input-group">
-					<input type="number" name="maximum_usage" value="{{ request.MaximumUsage }}" id="maximum_usage" class="form-control" required
-						placeholder="Maximal Usage Voucher" />
+					<input type="number" name="quota_per_buyer" value="{{ request.QuotaPerBuyer }}" id="quota_per_buyer" class="form-control" required
+						placeholder="Maximal Usage Voucher Per Buyer" />
 					<span class="input-group-append">
 						<span class="input-group-text">
 							Kali Penggunaan

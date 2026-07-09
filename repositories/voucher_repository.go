@@ -85,7 +85,7 @@ func (q *voucherRepository) FindVouchers(
 		, budget
 		, discount
 		, minimum_purchase
-		, maximum_usage
+		, quota_per_buyer
 		, effective_start_time
 		, effective_end_time
 		, effective_start_date
@@ -156,7 +156,7 @@ func (q *voucherRepository) FindVouchers(
 			&voucher.Budget,
 			&voucher.Discount,
 			&voucher.MinimumPurchase,
-			&voucher.MaximumUsage,
+			&voucher.QuotaPerBuyer,
 			&voucher.EffectiveStartTime,
 			&voucher.EffectiveEndTime,
 			&voucher.EffectiveStartDate,
@@ -200,7 +200,7 @@ func (q *voucherRepository) FindVoucher(
 			, budget
 			, discount
 			, minimum_purchase
-			, maximum_usage
+			, quota_per_buyer
 			, effective_start_time
 			, effective_end_time
 			, effective_start_date
@@ -228,7 +228,7 @@ func (q *voucherRepository) FindVoucher(
 		&response.Budget,
 		&response.Discount,
 		&response.MinimumPurchase,
-		&response.MaximumUsage,
+		&response.QuotaPerBuyer,
 		&response.EffectiveStartTime,
 		&response.EffectiveEndTime,
 		&response.EffectiveStartDate,
@@ -270,7 +270,7 @@ func (q *voucherRepository) CreateVoucher(
 			, budget
 			, discount
 			, minimum_purchase
-			, maximum_usage
+			, quota_per_buyer
 			, effective_start_time
 			, effective_end_time
 			, effective_start_date
@@ -293,7 +293,7 @@ func (q *voucherRepository) CreateVoucher(
 			, budget
 			, discount
 			, minimum_purchase
-			, maximum_usage
+			, quota_per_buyer
 			, effective_start_time
 			, effective_end_time
 			, effective_start_date
@@ -314,7 +314,7 @@ func (q *voucherRepository) CreateVoucher(
 		request.Budget,
 		request.Discount,
 		request.MinimumPurchase,
-		request.MaximumUsage,
+		request.QuotaPerBuyer,
 		request.EffectiveStartTime,
 		request.EffectiveEndTime,
 		request.EffectiveStartDate,
@@ -334,7 +334,7 @@ func (q *voucherRepository) CreateVoucher(
 		&response.Budget,
 		&response.Discount,
 		&response.MinimumPurchase,
-		&response.MaximumUsage,
+		&response.QuotaPerBuyer,
 		&response.EffectiveStartTime,
 		&response.EffectiveEndTime,
 		&response.EffectiveStartDate,
@@ -378,7 +378,7 @@ func (q *voucherRepository) UpdateVoucher(
 			, budget = $6
 			, discount = $7
 			, minimum_purchase = $8
-			, maximum_usage = $9
+			, quota_per_buyer = $9
 			, effective_start_time = $10
 			, effective_end_time = $11
 			, effective_start_date = $12
@@ -399,7 +399,7 @@ func (q *voucherRepository) UpdateVoucher(
 			, budget
 			, discount
 			, minimum_purchase
-			, maximum_usage
+			, quota_per_buyer
 			, effective_start_time
 			, effective_end_time
 			, effective_start_date
@@ -420,7 +420,7 @@ func (q *voucherRepository) UpdateVoucher(
 		request.Budget,
 		request.Discount,
 		request.MinimumPurchase,
-		request.MaximumUsage,
+		request.QuotaPerBuyer,
 		request.EffectiveStartTime,
 		request.EffectiveEndTime,
 		request.EffectiveStartDate,
@@ -442,7 +442,7 @@ func (q *voucherRepository) UpdateVoucher(
 		&response.Budget,
 		&response.Discount,
 		&response.MinimumPurchase,
-		&response.MaximumUsage,
+		&response.QuotaPerBuyer,
 		&response.EffectiveStartTime,
 		&response.EffectiveEndTime,
 		&response.EffectiveStartDate,

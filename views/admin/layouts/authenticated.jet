@@ -323,7 +323,7 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/vouchers") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-money-check-alt"></i>
 								<p>
@@ -331,7 +331,7 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview">
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/vouchers") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/vouchers" class="nav-link">
 										<i class="fa fa-money-check-alt nav-icon"></i>
@@ -342,18 +342,6 @@
 									<a href="{{ baseURL }}/admin/vouchers/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>Voucher Baru</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/promos" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Promo</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/promos/new" class="nav-link">
-										<i class="fa fa-bullhorn nav-icon"></i>
-										<p>Add New Promo</p>
 									</a>
 								</li>
 							</ul>

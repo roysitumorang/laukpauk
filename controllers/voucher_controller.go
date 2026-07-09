@@ -45,7 +45,8 @@ func (q *voucherController) Mount(r fiber.Router) {
 		Get("/new", q.AdminNew).
 		Post("", q.AdminCreate).
 		Get("/:id/edit", q.AdminEdit).
-		Post("/:id", q.AdminUpdate)
+		Post("/:id", q.AdminUpdate).
+		Post("/:id/delete", q.AdminDelete)
 }
 
 func (q *voucherController) AdminIndex(c fiber.Ctx) (err error) {
@@ -98,6 +99,7 @@ func (q *voucherController) AdminIndex(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
+	request.WithRecordStatuses(models.RecordStatusActive)
 	if rows, pagination, err = q.voucherService.FindVouchers(
 		c,
 		request,
@@ -211,6 +213,7 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	createdBy := currentAdmin.ID
+	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
 	request.UpdatedBy = createdBy
@@ -358,8 +361,12 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = voucher.ID
+	request.RecordStatus = voucher.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
+	request.DeletedBy = nil
+	request.DeletedAt = nil
+	request.DeletionReason = nil
 	if photo == nil {
 		request.Photo = voucher.Photo
 	}
@@ -398,6 +405,66 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("voucher updated successfully").Redirect(c, sess.Session, "/admin/vouchers")
+}
+
+func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "VoucherController-AdminDelete"
+	sess := session.FromContext(c)
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	voucherID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+	}
+	voucher, err := q.voucherService.FindVoucher(
+		ctx,
+		models.NewVoucherFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithVoucherIDs(voucherID),
+	)
+	if err != nil {
+		if !errors.Is(err, models.ErrVoucherNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
+		}
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+	}
+	if voucher == nil {
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+	}
+	request := voucher
+	request.RecordStatus = models.RecordStatusDeleted
+	request.DeletedBy = &currentAdmin.ID
+	request.DeletedAt = new(time.Now())
+	request.DeletionReason = nil
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	if _, err = q.voucherService.UpdateVoucher(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateVoucher")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+	}
+	return flash.Clear(c, sess.Session).
+		Success("voucher deleted successfully").
+		Redirect(c, sess.Session, "/admin/vouchers")
 }
 
 func (q *voucherController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {

@@ -1025,7 +1025,7 @@ func init() {
 				, budget bigint NOT NULL
 				, discount bigint NOT NULL
 				, minimum_purchase bigint NOT NULL
-				, maximum_usage bigint NOT NULL
+				, quota_per_buyer bigint NOT NULL
 				, effective_start_time timestamp with time zone
 				, effective_end_time timestamp with time zone
 				, effective_start_date timestamp with time zone NOT NULL

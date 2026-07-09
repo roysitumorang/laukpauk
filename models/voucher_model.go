@@ -53,7 +53,7 @@ type (
 		Budget                int64        `json:"-" form:"budget"`
 		Discount              int64        `json:"-" form:"discount"`
 		MinimumPurchase       int64        `json:"-" form:"minimum_purchase"`
-		MaximumUsage          int          `json:"-" form:"maximum_usage"`
+		QuotaPerBuyer         int          `json:"-" form:"quota_per_buyer"`
 		EffectiveStartTime    time.Time    `json:"-" form:"-"`
 		RawEffectiveStartTime string       `json:"-" form:"effective_start_time"`
 		EffectiveEndTime      time.Time    `json:"-" form:"-"`
@@ -190,8 +190,8 @@ func (q *Voucher) Validate() (err error) {
 	if q.MinimumPurchase < 1 {
 		return errors.New("minimum_purchase: is required")
 	}
-	if q.MaximumUsage < 1 {
-		return errors.New("maximum_usage: is required")
+	if q.QuotaPerBuyer < 1 {
+		return errors.New("quota_per_buyer: is required")
 	}
 	if q.RawEffectiveStartTime = strings.TrimSpace(q.RawEffectiveStartTime); q.RawEffectiveStartTime == "" {
 		return errors.New("effective_start_time: is required")
