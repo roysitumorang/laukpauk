@@ -347,7 +347,7 @@ func (q *userRepository) FindBuyers(
 		, b.referral_code
 		, b.photo
 		, b.address
-		, b.referenced_by`,
+		, b.referrer_id`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -430,7 +430,7 @@ func (q *userRepository) FindBuyers(
 			&buyer.ReferralCode,
 			&buyer.Photo,
 			&buyer.Address,
-			&buyer.ReferencedBy,
+			&buyer.ReferrerID,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -487,7 +487,7 @@ func (q *userRepository) FindBuyer(
 			, b.referral_code
 			, b.photo
 			, b.address
-			, b.referenced_by
+			, b.referrer_id
 		FROM users u
 		JOIN buyers b ON u.id = b.user_id %s`,
 		condition,
@@ -528,7 +528,7 @@ func (q *userRepository) FindBuyer(
 		&response.ReferralCode,
 		&response.Photo,
 		&response.Address,
-		&response.ReferencedBy,
+		&response.ReferrerID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrBuyerNotFound

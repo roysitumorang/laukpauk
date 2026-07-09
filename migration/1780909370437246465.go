@@ -112,10 +112,10 @@ func init() {
 			ctx,
 			`CREATE TABLE buyers (
 				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
-				, referral_code character varying NOT NULL UNIQUE
+				, referral_code character varying NOT NULL
 				, photo character varying NOT NULL
 				, address character varying NOT NULL
-				, referenced_by UUID REFERENCES users (id)
+				, referrer_id UUID REFERENCES users (id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -123,7 +123,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON buyers (referenced_by);`,
+			`CREATE UNIQUE INDEX ON buyers (LOWER(referral_code));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON buyers (referrer_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

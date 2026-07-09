@@ -72,7 +72,7 @@ type (
 		ReferralCode string     `json:"-" form:"-"`
 		Photo        string     `json:"-" form:"-"`
 		Address      string     `json:"-" form:"-"`
-		ReferencedBy *uuid.UUID `json:"-" form:"-"`
+		ReferrerID   *uuid.UUID `json:"-" form:"-"`
 	}
 
 	UserFilter struct {
