@@ -23,23 +23,23 @@ import (
 
 type (
 	blogController struct {
-		userService services.UserService
-		blogService services.BlogService
+		adminService services.AdminService
+		blogService  services.BlogService
 	}
 )
 
 func NewBlogController(
-	userService services.UserService,
+	userService services.AdminService,
 	blogService services.BlogService,
 ) *blogController {
 	return new(blogController{
-		userService: userService,
-		blogService: blogService,
+		adminService: userService,
+		blogService:  blogService,
 	})
 }
 
 func (q *blogController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).

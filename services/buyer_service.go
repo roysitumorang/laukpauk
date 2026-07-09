@@ -1,0 +1,78 @@
+package services
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+
+	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/repositories"
+)
+
+type (
+	BuyerService interface {
+		FindBuyers(
+			ctx context.Context,
+			request *models.BuyerFilter,
+		) ([]*models.Buyer, *models.Pagination, error)
+		FindBuyer(
+			ctx context.Context,
+			request *models.BuyerFilter,
+		) (*models.Buyer, error)
+	}
+
+	buyerService struct {
+		buyerRepository repositories.BuyerRepository
+	}
+)
+
+func NewBuyerService(
+	buyerRepository repositories.BuyerRepository,
+) BuyerService {
+	return new(buyerService{
+		buyerRepository: buyerRepository,
+	})
+}
+
+func (q *buyerService) FindBuyers(
+	ctx context.Context,
+	request *models.BuyerFilter,
+) ([]*models.Buyer, *models.Pagination, error) {
+	ctxt := "BuyerService-FindBuyers"
+	buyers, total, pages, err := q.buyerRepository.FindBuyers(ctx, request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		return nil, nil, err
+	}
+	n := len(buyers)
+	rows := make([]*models.Buyer, n)
+	if n > 0 {
+		copy(rows, buyers)
+	}
+	pagination, err := models.NewPagination(
+		total,
+		pages,
+		request.Limit,
+		request.Page,
+		request.PaginationURL,
+		request.UrlValues,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewPagination")
+		return nil, nil, err
+	}
+	return rows, pagination, nil
+}
+
+func (q *buyerService) FindBuyer(
+	ctx context.Context,
+	request *models.BuyerFilter,
+) (*models.Buyer, error) {
+	ctxt := "BuyerService-FindBuyer"
+	response, err := q.buyerRepository.FindBuyer(ctx, request)
+	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+	}
+	return response, err
+}

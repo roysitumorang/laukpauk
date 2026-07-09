@@ -21,23 +21,23 @@ import (
 
 type (
 	productCategoryController struct {
-		userService            services.UserService
+		adminService           services.AdminService
 		productCategoryService services.ProductCategoryService
 	}
 )
 
 func NewProductCategoryController(
-	userService services.UserService,
+	adminService services.AdminService,
 	productCategoryService services.ProductCategoryService,
 ) *productCategoryController {
 	return new(productCategoryController{
-		userService:            userService,
+		adminService:           adminService,
 		productCategoryService: productCategoryService,
 	})
 }
 
 func (q *productCategoryController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).

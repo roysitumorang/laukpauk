@@ -21,7 +21,7 @@ import (
 
 type (
 	productController struct {
-		userService            services.UserService
+		adminService           services.AdminService
 		productCategoryService services.ProductCategoryService
 		productService         services.ProductService
 		productVariantService  services.ProductVariantService
@@ -29,13 +29,13 @@ type (
 )
 
 func NewProductController(
-	userService services.UserService,
+	adminService services.AdminService,
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
 ) *productController {
 	return new(productController{
-		userService:            userService,
+		adminService:           adminService,
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
@@ -43,7 +43,7 @@ func NewProductController(
 }
 
 func (q *productController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).

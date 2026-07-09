@@ -26,7 +26,7 @@ func init() {
 			ctx,
 			`CREATE TABLE users (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_type character varying NOT NULL
+				, user_type integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, confirmation_token character varying UNIQUE
 				, confirmed_at timestamp with time zone
@@ -48,6 +48,7 @@ func init() {
 				, password_reset_at timestamp with time zone
 				, password_reset_token character varying
 				, password_changed_at timestamp with time zone
+				, photo character varying NOT NULL
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
@@ -100,8 +101,7 @@ func init() {
 			ctx,
 			`CREATE TABLE admins (
 				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
-				, admin_level character varying NOT NULL
-				, photo character varying NOT NULL
+				, admin_type integer NOT NULL
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -113,7 +113,6 @@ func init() {
 			`CREATE TABLE buyers (
 				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
 				, referral_code character varying NOT NULL
-				, photo character varying NOT NULL
 				, address character varying NOT NULL
 				, referrer_id UUID REFERENCES users (id)
 				, referral_points bigint NOT NULL DEFAULT 0

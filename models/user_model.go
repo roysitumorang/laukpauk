@@ -1,33 +1,20 @@
 package models
 
 import (
-	"errors"
 	"net/url"
-	"strings"
 	"time"
 	"uuid"
-
-	"github.com/roysitumorang/laukpauk/helper"
-)
-
-var (
-	ErrAdminNotFound = errors.New("admin not found")
-	ErrBuyerNotFound = errors.New("buyer not found")
 )
 
 const (
-	UserTypeAdmin UserType = "admin"
-	UserTypeBuyer UserType = "buyer"
-
-	AdminLevelAdmin      AdminLevel = "admin"
-	AdminLevelSuperAdmin AdminLevel = "superadmin"
+	UserTypeAdmin UserType = iota
+	UserTypeBuyer
 )
 
 type (
-	UserType   string
-	AdminLevel string
+	UserType int
 
-	User struct {
+	user struct {
 		RowNo                         int64      `json:"-" form:"-"`
 		ID                            uuid.UUID  `json:"-" form:"-"`
 		UserType                      UserType   `json:"-" form:"-"`
@@ -52,6 +39,7 @@ type (
 		PasswordResetAt               *time.Time `json:"-" form:"-"`
 		PasswordResetToken            *string    `json:"-" form:"-"`
 		PasswordChangedAt             *time.Time `json:"-" form:"-"`
+		Photo                         string     `json:"-" form:"-"`
 		CreatedBy                     *uuid.UUID `json:"-" form:"-"`
 		CreatedAt                     time.Time  `json:"-" form:"-"`
 		UpdatedBy                     *uuid.UUID `json:"-" form:"-"`
@@ -61,29 +49,9 @@ type (
 		DeactivationReason            *string    `json:"-" form:"-"`
 	}
 
-	Admin struct {
-		User
-		AdminLevel AdminLevel `json:"-" form:"-"`
-		Photo      string     `json:"-" form:"-"`
-	}
-
-	Buyer struct {
-		User
-		ReferralCode              string     `json:"-" form:"-"`
-		Photo                     string     `json:"-" form:"-"`
-		Address                   string     `json:"-" form:"-"`
-		ReferrerID                *uuid.UUID `json:"-" form:"-"`
-		ReferralPoints            int64      `json:"-" form:"-"`
-		UnspendableReferralPoints int64      `json:"-" form:"-"`
-		SpendableReferralPoints   int64      `json:"-" form:"-"`
-		RewardPoints              int64      `json:"-" form:"-"`
-		SpendablePoints           int64      `json:"-" form:"-"`
-		Wallet                    int64      `json:"-" form:"-"`
-	}
-
-	UserFilter struct {
-		UserIDs   []uuid.UUID
-		UserTypes []UserType
+	userFilter struct {
+		UserIDs,
+		ExcludedUserIDs []uuid.UUID
 		Login,
 		Keyword,
 		Username,
@@ -98,79 +66,3 @@ type (
 		UrlValues url.Values
 	}
 )
-
-func NewUserFilter() *UserFilter {
-	return new(UserFilter{
-		MapSortings: NewMap(),
-		UrlValues:   url.Values{},
-	})
-}
-
-func (q *UserFilter) WithUserIDs(userIDs ...uuid.UUID) *UserFilter {
-	q.UserIDs = userIDs
-	return q
-}
-
-func (q *UserFilter) WithUserTypes(userTypes ...UserType) *UserFilter {
-	q.UserTypes = userTypes
-	return q
-}
-
-func (q *UserFilter) WithLogin(login string) *UserFilter {
-	q.Login = login
-	return q
-}
-
-func (q *UserFilter) WithKeyword(keyword string) *UserFilter {
-	q.Keyword = keyword
-	return q
-}
-
-func (q *UserFilter) WithUsername(username string) *UserFilter {
-	q.Username = username
-	return q
-}
-
-func (q *UserFilter) WithEmail(email string) *UserFilter {
-	q.Email = email
-	return q
-}
-
-func (q *UserFilter) WithMobilePhone(mobilePhone string) *UserFilter {
-	q.MobilePhone = mobilePhone
-	return q
-}
-
-func (q *UserFilter) WithPasswordResetToken(passwordResetToken string) *UserFilter {
-	q.PasswordResetToken = passwordResetToken
-	return q
-}
-
-func (q *UserFilter) WithPaginationURL(paginationURL string) *UserFilter {
-	q.PaginationURL = paginationURL
-	return q
-}
-
-func (q *UserFilter) WithSortings(sortings ...Sorting) *UserFilter {
-	q.Sortings = sortings
-	q.MapSortings.Clear()
-	for _, sorting := range sortings {
-		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
-	}
-	return q
-}
-
-func (q *UserFilter) WithLimit(limit int64) *UserFilter {
-	q.Limit = limit
-	return q
-}
-
-func (q *UserFilter) WithPage(page int64) *UserFilter {
-	q.Page = page
-	return q
-}
-
-func (q *UserFilter) WithUrlValues(urlValues url.Values) *UserFilter {
-	q.UrlValues = urlValues
-	return q
-}

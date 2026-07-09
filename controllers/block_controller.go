@@ -22,7 +22,7 @@ import (
 
 type (
 	blockController struct {
-		userService    services.UserService
+		adminService   services.AdminService
 		blockService   services.BlockService
 		blogService    services.BlogService
 		messageService services.MessageService
@@ -30,13 +30,13 @@ type (
 )
 
 func NewBlockController(
-	userService services.UserService,
+	adminService services.AdminService,
 	blockService services.BlockService,
 	blogService services.BlogService,
 	messageService services.MessageService,
 ) *blockController {
 	return new(blockController{
-		userService:    userService,
+		adminService:   adminService,
 		blockService:   blockService,
 		blogService:    blogService,
 		messageService: messageService,
@@ -51,7 +51,7 @@ func (q *blockController) Mount(r fiber.Router) {
 		Post("/contact-us", q.CreateMessage).
 		Get("/faq", q.FaqIndex).
 		Get("/privacy-policy", q.PrivacyPolicy)
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	admin := r.Group("/admin", adminSessionAuth)
 	admin.Group("/hero").
 		Get("", q.AdminHeroItemIndex).

@@ -21,26 +21,26 @@ import (
 
 type (
 	nonDeliveryDayController struct {
-		userService           services.UserService
+		adminService          services.AdminService
 		nonDeliveryDayService services.NonDeliveryDayService
 		deliveryPlanService   services.DeliveryPlanService
 	}
 )
 
 func NewNonDeliveryDayController(
-	userService services.UserService,
+	adminService services.AdminService,
 	nonDeliveryDayService services.NonDeliveryDayService,
 	deliveryPlanService services.DeliveryPlanService,
 ) *nonDeliveryDayController {
 	return new(nonDeliveryDayController{
-		userService:           userService,
+		adminService:          adminService,
 		nonDeliveryDayService: nonDeliveryDayService,
 		deliveryPlanService:   deliveryPlanService,
 	})
 }
 
 func (q *nonDeliveryDayController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).

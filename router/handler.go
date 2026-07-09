@@ -30,7 +30,8 @@ type (
 		FcmConsumer            *consumers.FcmConsumer
 		ZenzivaConsumer        *consumers.ZenzivaConsumer
 		Storage                fiber.Storage
-		UserService            services.UserService
+		AdminService           services.AdminService
+		BuyerService           services.BuyerService
 		ArticleService         services.ArticleService
 		BlogService            services.BlogService
 		BlockService           services.BlockService
@@ -103,7 +104,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		URL: os.Getenv("REDIS_URL"),
 	})
 	repositories.SetDbWrite(dbWrite)
-	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
+	adminRepository := repositories.NewAdminRepository(dbRead, dbWrite)
+	buyerRepository := repositories.NewBuyerRepository(dbRead, dbWrite)
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
 	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
 	blockRepository := repositories.NewBlockRepository(dbRead, dbWrite)
@@ -116,7 +118,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	deliveryPlanRepository := repositories.NewDeliveryPlanRepository(dbRead, dbWrite)
 	nonDeliveryDayRepository := repositories.NewNonDeliveryDayRepository(dbRead, dbWrite)
 	rewardPointRepository := repositories.NewRewardPointRepository(dbRead, dbWrite)
-	userService := services.NewUserService(userRepository)
+	adminService := services.NewAdminService(adminRepository)
+	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
 	blockService := services.NewBlockService(blockRepository)
@@ -136,7 +139,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		FcmConsumer:            fcmConsumer,
 		ZenzivaConsumer:        zenzivaConsumer,
 		Storage:                storage,
-		UserService:            userService,
+		AdminService:           adminService,
+		BuyerService:           buyerService,
 		ArticleService:         articleService,
 		BlogService:            blogService,
 		BlockService:           blockService,

@@ -76,7 +76,7 @@
 					<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 					<input type="hidden" name="password" id="password" value="" />
 					<div class="input-group mb-3">
-						<input type="text" name="login" id="login" value="{{ request.Email }}" placeholder="Email or Username" class="form-control" />
+						<input type="text" name="login" id="login" value="{{ request.Login }}" placeholder="Email or Username" class="form-control" />
 						<div class="input-group-append">
 							<div class="input-group-text">
 								<span class="fas fa-envelope"></span>

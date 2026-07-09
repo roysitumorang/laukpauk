@@ -19,23 +19,23 @@ import (
 
 type (
 	settingController struct {
-		userService    services.UserService
+		adminService   services.AdminService
 		settingService services.SettingService
 	}
 )
 
 func NewSettingController(
-	userService services.UserService,
+	adminService services.AdminService,
 	settingService services.SettingService,
 ) *settingController {
 	return new(settingController{
-		userService:    userService,
+		adminService:   adminService,
 		settingService: settingService,
 	})
 }
 
 func (q *settingController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).

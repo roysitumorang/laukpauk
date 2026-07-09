@@ -12,20 +12,20 @@ import (
 
 type (
 	homeController struct {
-		userService services.UserService
+		adminService services.AdminService
 	}
 )
 
 func NewHomeController(
-	userService services.UserService,
+	adminService services.AdminService,
 ) *homeController {
 	return new(homeController{
-		userService: userService,
+		adminService: adminService,
 	})
 }
 
 func (q *homeController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	admin := r.Group("/admin")
 	admin.Get("", adminSessionAuth, q.AdminIndex)
 }

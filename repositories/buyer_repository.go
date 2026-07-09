@@ -15,289 +15,39 @@ import (
 )
 
 type (
-	UserRepository interface {
-		FindAdmins(
-			ctx context.Context,
-			request *models.UserFilter,
-		) ([]*models.Admin, int64, int64, error)
-		FindAdmin(
-			ctx context.Context,
-			request *models.UserFilter,
-		) (*models.Admin, error)
+	BuyerRepository interface {
 		FindBuyers(
 			ctx context.Context,
-			request *models.UserFilter,
+			request *models.BuyerFilter,
 		) ([]*models.Buyer, int64, int64, error)
 		FindBuyer(
 			ctx context.Context,
-			request *models.UserFilter,
+			request *models.BuyerFilter,
 		) (*models.Buyer, error)
 	}
 
-	userRepository struct {
+	buyerRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewUserRepository(
+func NewBuyerRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) UserRepository {
-	return new(userRepository{
+) BuyerRepository {
+	return new(buyerRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	})
 }
 
-func (q *userRepository) FindAdmins(
+func (q *buyerRepository) FindBuyers(
 	ctx context.Context,
-	request *models.UserFilter,
-) ([]*models.Admin, int64, int64, error) {
-	ctxt := "UserRepository-FindAdmins"
-	var sb strings.Builder
-	request.WithUserTypes(models.UserTypeAdmin)
-	condition, params := q.buildCondition(request, &sb)
-	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM users u JOIN admins a ON u.id = a.user_id %s", condition)
-	query := sb.String()
-	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return nil, 0, 0, err
-	}
-	if total == 0 {
-		return nil, 0, 0, nil
-	}
-	query = strings.ReplaceAll(
-		query,
-		"COUNT(1)",
-		`u.id
-		, u.user_type
-		, u.name
-		, u.confirmation_token
-		, u.confirmed_at
-		, u.unconfirmed_mobile_phone
-		, u.mobile_phone_confirmation_sent_at
-		, u.mobile_phone_confirmation_token
-		, u.mobile_phone_confirmed_at
-		, u.mobile_phone
-		, u.otp_token
-		, u.otp_created_at
-		, u.otp_expired_at
-		, u.username
-		, u.unconfirmed_email
-		, u.email_confirmation_sent_at
-		, u.email_confirmation_token
-		, u.email_confirmed_at
-		, u.email
-		, u.encrypted_password
-		, u.password_reset_at
-		, u.password_reset_token
-		, u.password_changed_at
-		, u.created_by
-		, u.created_at
-		, u.updated_by
-		, u.updated_at
-		, u.deactivated_by
-		, u.deactivated_at
-		, u.deactivation_reason
-		, a.admin_level
-		, a.photo`,
-	)
-	sb.Reset()
-	_, _ = sb.WriteString(query)
-	sortBy := request.Sortings
-	if len(sortBy) == 0 {
-		sortBy = append(sortBy, models.DefaultSortBy)
-	}
-	_, _ = sb.WriteString(" ORDER BY")
-	for i, item := range sortBy {
-		if i > 0 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
-	}
-	pages := int64(1)
-	var offset int64
-	if request.Limit > 0 {
-		totalDecimal, err := decimal.New(total, 0)
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNew")
-			return nil, 0, 0, err
-		}
-		perPageDecimal, err := decimal.New(request.Limit, 0)
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNew")
-			return nil, 0, 0, err
-		}
-		pagesDecimal, err := totalDecimal.Quo(perPageDecimal)
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuo")
-			return nil, 0, 0, err
-		}
-		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
-		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
-	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
-		err = nil
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
-		return nil, 0, 0, err
-	}
-	defer rows.Close()
-	var response []*models.Admin
-	for rows.Next() {
-		var admin models.Admin
-		if err = rows.Scan(
-			&admin.ID,
-			&admin.UserType,
-			&admin.Name,
-			&admin.ConfirmationToken,
-			&admin.ConfirmedAt,
-			&admin.UnconfirmedMobilePhone,
-			&admin.MobilePhoneConfirmationSentAt,
-			&admin.MobilePhoneConfirmationToken,
-			&admin.MobilePhoneConfirmedAt,
-			&admin.MobilePhone,
-			&admin.OtpToken,
-			&admin.OtpCreatedAt,
-			&admin.OtpExpiredAt,
-			&admin.Username,
-			&admin.UnconfirmedEmail,
-			&admin.EmailConfirmationSentAt,
-			&admin.EmailConfirmationToken,
-			&admin.EmailConfirmedAt,
-			&admin.Email,
-			&admin.EncryptedPassword,
-			&admin.PasswordResetAt,
-			&admin.PasswordResetToken,
-			&admin.PasswordChangedAt,
-			&admin.CreatedBy,
-			&admin.CreatedAt,
-			&admin.UpdatedBy,
-			&admin.UpdatedAt,
-			&admin.DeactivatedBy,
-			&admin.DeactivatedAt,
-			&admin.DeactivationReason,
-			&admin.AdminLevel,
-			&admin.Photo,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, 0, 0, err
-		}
-		offset++
-		admin.RowNo = offset
-		response = append(response, &admin)
-	}
-	return response, total, pages, nil
-}
-
-func (q *userRepository) FindAdmin(
-	ctx context.Context,
-	request *models.UserFilter,
-) (*models.Admin, error) {
-	ctxt := "UserRepository-FindAdmin"
-	var sb strings.Builder
-	request.WithUserTypes(models.UserTypeAdmin)
-	condition, params := q.buildCondition(request, &sb)
-	sb.Reset()
-	_, _ = fmt.Fprintf(
-		&sb,
-		`SELECT
-			u.id
-			, u.user_type
-			, u.name
-			, u.confirmation_token
-			, u.confirmed_at
-			, u.unconfirmed_mobile_phone
-			, u.mobile_phone_confirmation_sent_at
-			, u.mobile_phone_confirmation_token
-			, u.mobile_phone_confirmed_at
-			, u.mobile_phone
-			, u.otp_token
-			, u.otp_created_at
-			, u.otp_expired_at
-			, u.username
-			, u.unconfirmed_email
-			, u.email_confirmation_sent_at
-			, u.email_confirmation_token
-			, u.email_confirmed_at
-			, u.email
-			, u.encrypted_password
-			, u.password_reset_at
-			, u.password_reset_token
-			, u.password_changed_at
-			, u.created_by
-			, u.created_at
-			, u.updated_by
-			, u.updated_at
-			, u.deactivated_by
-			, u.deactivated_at
-			, u.deactivation_reason
-			, a.admin_level
-			, a.photo
-		FROM users u
-		JOIN admins a ON u.id = a.user_id %s`,
-		condition,
-	)
-	query := sb.String()
-	var response models.Admin
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
-		&response.ID,
-		&response.UserType,
-		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
-		&response.UnconfirmedMobilePhone,
-		&response.MobilePhoneConfirmationSentAt,
-		&response.MobilePhoneConfirmationToken,
-		&response.MobilePhoneConfirmedAt,
-		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
-		&response.OtpExpiredAt,
-		&response.Username,
-		&response.UnconfirmedEmail,
-		&response.EmailConfirmationSentAt,
-		&response.EmailConfirmationToken,
-		&response.EmailConfirmedAt,
-		&response.Email,
-		&response.EncryptedPassword,
-		&response.PasswordResetAt,
-		&response.PasswordResetToken,
-		&response.PasswordChangedAt,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeactivatedBy,
-		&response.DeactivatedAt,
-		&response.DeactivationReason,
-		&response.AdminLevel,
-		&response.Photo,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrAdminNotFound
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	return new(response), nil
-}
-
-func (q *userRepository) FindBuyers(
-	ctx context.Context,
-	request *models.UserFilter,
+	request *models.BuyerFilter,
 ) ([]*models.Buyer, int64, int64, error) {
-	ctxt := "UserRepository-FindBuyers"
+	ctxt := "BuyerRepository-FindBuyers"
 	var sb strings.Builder
-	request.WithUserTypes(models.UserTypeBuyer)
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM users u JOIN buyers b ON u.id = b.user_id %s", condition)
@@ -337,6 +87,7 @@ func (q *userRepository) FindBuyers(
 		, u.password_reset_at
 		, u.password_reset_token
 		, u.password_changed_at
+		, u.photo
 		, u.created_by
 		, u.created_at
 		, u.updated_by
@@ -345,7 +96,6 @@ func (q *userRepository) FindBuyers(
 		, u.deactivated_at
 		, u.deactivation_reason
 		, b.referral_code
-		, b.photo
 		, b.address
 		, b.referrer_id
 		, b.referral_points
@@ -426,6 +176,7 @@ func (q *userRepository) FindBuyers(
 			&buyer.PasswordResetAt,
 			&buyer.PasswordResetToken,
 			&buyer.PasswordChangedAt,
+			&buyer.Photo,
 			&buyer.CreatedBy,
 			&buyer.CreatedAt,
 			&buyer.UpdatedBy,
@@ -434,7 +185,6 @@ func (q *userRepository) FindBuyers(
 			&buyer.DeactivatedAt,
 			&buyer.DeactivationReason,
 			&buyer.ReferralCode,
-			&buyer.Photo,
 			&buyer.Address,
 			&buyer.ReferrerID,
 			&buyer.ReferralPoints,
@@ -454,13 +204,12 @@ func (q *userRepository) FindBuyers(
 	return response, total, pages, nil
 }
 
-func (q *userRepository) FindBuyer(
+func (q *buyerRepository) FindBuyer(
 	ctx context.Context,
-	request *models.UserFilter,
+	request *models.BuyerFilter,
 ) (*models.Buyer, error) {
-	ctxt := "UserRepository-FindBuyer"
+	ctxt := "BuyerRepository-FindBuyer"
 	var sb strings.Builder
-	request.WithUserTypes(models.UserTypeBuyer)
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
@@ -489,6 +238,7 @@ func (q *userRepository) FindBuyer(
 			, u.password_reset_at
 			, u.password_reset_token
 			, u.password_changed_at
+			, u.photo
 			, u.created_by
 			, u.created_at
 			, u.updated_by
@@ -497,7 +247,6 @@ func (q *userRepository) FindBuyer(
 			, u.deactivated_at
 			, u.deactivation_reason
 			, b.referral_code
-			, b.photo
 			, b.address
 			, b.referrer_id
 			, b.referral_points
@@ -536,6 +285,7 @@ func (q *userRepository) FindBuyer(
 		&response.PasswordResetAt,
 		&response.PasswordResetToken,
 		&response.PasswordChangedAt,
+		&response.Photo,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -544,7 +294,6 @@ func (q *userRepository) FindBuyer(
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
 		&response.ReferralCode,
-		&response.Photo,
 		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
@@ -564,26 +313,13 @@ func (q *userRepository) FindBuyer(
 	return new(response), nil
 }
 
-func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
 	if len(request.UserIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("u.id IN (")
 		for i, userID := range request.UserIDs {
 			params = append(params, userID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.UserTypes) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("u.user_type IN (")
-		for i, userType := range request.UserTypes {
-			params = append(params, userType)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

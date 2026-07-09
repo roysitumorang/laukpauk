@@ -203,17 +203,17 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 		Get("/images*", static.New("", static.Config{
 			FS: os.DirFS("images"),
 		}))
-	controllers.NewAuthController(q.UserService).Mount(app.Group("/auth"))
-	controllers.NewHomeController(q.UserService).Mount(app.Group("/home"))
-	controllers.NewArticleController(q.UserService, q.ArticleService).Mount(app.Group("/articles"))
-	controllers.NewBlogController(q.UserService, q.BlogService).Mount(app.Group("/blogs"))
-	controllers.NewBlockController(q.UserService, q.BlockService, q.BlogService, q.MessageService).Mount(app.Group("/blocks"))
-	controllers.NewProductCategoryController(q.UserService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
-	controllers.NewProductController(q.UserService, q.ProductCategoryService, q.ProductService, q.ProductVariantService).Mount(app.Group("/products"))
-	controllers.NewSettingController(q.UserService, q.SettingService).Mount(app.Group("/settings"))
-	controllers.NewDeliveryPlanController(q.UserService, q.DeliveryPlanService).Mount(app.Group("/delivery_plans"))
-	controllers.NewNonDeliveryDayController(q.UserService, q.NonDeliveryDayService, q.DeliveryPlanService).Mount(app.Group("/non_delivery_days"))
-	controllers.NewRewardPointController(q.UserService, q.RewardPointService).Mount(app.Group("/reward_points"))
+	controllers.NewAuthController(q.AdminService).Mount(app.Group("/auth"))
+	controllers.NewHomeController(q.AdminService).Mount(app.Group("/home"))
+	controllers.NewArticleController(q.AdminService, q.ArticleService).Mount(app.Group("/articles"))
+	controllers.NewBlogController(q.AdminService, q.BlogService).Mount(app.Group("/blogs"))
+	controllers.NewBlockController(q.AdminService, q.BlockService, q.BlogService, q.MessageService).Mount(app.Group("/blocks"))
+	controllers.NewProductCategoryController(q.AdminService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
+	controllers.NewProductController(q.AdminService, q.ProductCategoryService, q.ProductService, q.ProductVariantService).Mount(app.Group("/products"))
+	controllers.NewSettingController(q.AdminService, q.SettingService).Mount(app.Group("/settings"))
+	controllers.NewDeliveryPlanController(q.AdminService, q.DeliveryPlanService).Mount(app.Group("/delivery_plans"))
+	controllers.NewNonDeliveryDayController(q.AdminService, q.NonDeliveryDayService, q.DeliveryPlanService).Mount(app.Group("/non_delivery_days"))
+	controllers.NewRewardPointController(q.AdminService, q.BuyerService, q.RewardPointService).Mount(app.Group("/reward_points"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{

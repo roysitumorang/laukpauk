@@ -10,7 +10,7 @@ import (
 )
 
 func AdminSessionAuth(
-	userService services.UserService,
+	adminService services.AdminService,
 ) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		ctx := c.Context()
@@ -23,10 +23,10 @@ func AdminSessionAuth(
 			}
 			return c.Redirect().To("/admin/auth/login")
 		}
-		currentAdmin, err := userService.FindAdmin(
+		currentAdmin, err := adminService.FindAdmin(
 			ctx,
-			models.NewUserFilter().
-				WithUserIDs(userID),
+			models.NewAdminFilter().
+				WithAdminIDs(userID),
 		)
 		if err != nil || currentAdmin == nil {
 			_ = sess.ResetWithContext(ctx)

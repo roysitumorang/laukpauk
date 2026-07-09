@@ -19,15 +19,15 @@ var (
 
 type (
 	AdminLoginRequest struct {
-		Email          string `json:"email" form:"login"`
+		Login          string `json:"login" form:"login"`
 		Base64Password string `json:"password" form:"password"`
 		Password       string `json:"-" form:"-"`
 	}
 )
 
 func (q *AdminLoginRequest) Validate() error {
-	if q.Email = strings.TrimSpace(q.Email); q.Email == "" {
-		return errors.New("email: is required")
+	if q.Login = strings.TrimSpace(q.Login); q.Login == "" {
+		return errors.New("login: is required")
 	}
 	if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
 		return errors.New("password: is required")

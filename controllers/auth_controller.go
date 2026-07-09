@@ -16,20 +16,20 @@ import (
 
 type (
 	authController struct {
-		userService services.UserService
+		adminService services.AdminService
 	}
 )
 
 func NewAuthController(
-	userService services.UserService,
+	adminService services.AdminService,
 ) *authController {
 	return new(authController{
-		userService: userService,
+		adminService: adminService,
 	})
 }
 
 func (q *authController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
+	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	admin := r.Group("/admin")
 	admin.Get("/login", q.AdminNewLogin).
 		Post("/login", q.AdminLogin).
@@ -86,10 +86,10 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 			"flash", flash.Danger(err.Error()),
 		))
 	}
-	admin, err := q.userService.FindAdmin(
+	admin, err := q.adminService.FindAdmin(
 		ctx,
-		models.NewUserFilter().
-			WithEmail(request.Email),
+		models.NewAdminFilter().
+			WithLogin(request.Login),
 	)
 	if err != nil {
 		if !errors.Is(err, models.ErrAdminNotFound) {
