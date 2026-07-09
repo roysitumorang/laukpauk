@@ -1,0 +1,105 @@
+<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+<div class="row">
+	<div class="col-lg-4">
+		<label for="voucherImage">
+			<img src="{{ baseURL }}/{{ if request.Photo }}images/voucher/{{ request.Photo }}{{ else }}assets/img/upload-icon.png{{ end }}"
+				alt="Foto Voucher" data-toggle="tooltip"
+				class="w-100 cp"
+				data-placement="left" title="Klik Gambar untuk Memilih Gambar" id="photo_preview" />
+			<input type="file" name="photo" id="photo" accept="image/*" />
+		</label>
+	</div>
+	<div class="col-lg-8">
+		<div class="row">
+			<div class="form-group col-lg-3">
+				<label for="code" class="label-title">Kode Voucher</label>
+				<input type="text" name="code" value="{{ request.Code }}" id="code" class="form-control" required
+					placeholder="Kode Voucher" />
+				<span id="kodeVoucherMessage"></span>
+			</div>
+			<div class="form-group col-lg-5">
+				<label for="name" class="label-title">Nama Voucher</label>
+				<input type="text" name="name" value="{{ request.Name }}" id="name" class="form-control" required
+				placeholder="Nama Voucher" />
+			</div>
+			<div class="form-group col-lg-4">
+				<label for="budget" class="label-title">Budget Voucher</label>
+				<input type="number" name="budget" value="{{ request.Budget }}" id="budget" class="form-control" required
+					placeholder="Budget Voucher" />
+			</div>
+			<div class="form-group col-lg-4">
+				<label for="discount" class="label-title">Nilai Voucher</label>
+				<input type="number" name="discount" value="{{ request.Discount }}" id="discount" class="form-control" required
+					placeholder="Nilai Voucher" />
+			</div>
+			<div class="form-group col-lg-3">
+				<label for="minimum_purchase" class="label-title">Minimum Belanja</label>
+				<input type="number" name="minimum_purchase" value="{{ request.MinimumPurchase }}" id="minimum_purchase" class="form-control" required
+					placeholder="Minimum Belanja" />
+			</div>
+			<div class="form-group col-lg-4">
+				<label for="maximum_usage" class="label-title">Maksimal Penggunaan</label>
+				<div class="input-group">
+					<input type="number" name="maximum_usage" value="{{ request.MaximumUsage }}" id="maximum_usage" class="form-control" required
+						placeholder="Maximal Usage Voucher" />
+					<span class="input-group-append">
+						<span class="input-group-text">
+							Kali Penggunaan
+						</span>
+					</span>
+				</div>
+			</div>
+			<div class="form-group col-lg-5">
+				<label for="effective_time" class="label-title">Jam Berlaku (Berlaku Mulai - Berlaku Sampai)</label>
+				<div class="input-group" id="effective_time">
+					<input type="time" name="effective_start_time" value="{{ request.RawEffectiveStartTime }}" id="effective_start_time"
+						step="1" class="form-control" required />
+					<input type="time" name="effective_end_time" value="{{ request.RawEffectiveEndTime }}" id="effective_end_time"
+						step="1" class="form-control" required />
+				</div>
+			</div>
+			<div class="form-group col-lg-5">
+				<label for="effective_date" class="label-title">Masa Berlaku (Berlaku Mulai - Berlaku Sampai)</label>
+				<div class="input-group" id="effective_date">
+					<input type="date" name="effective_start_date" value="{{ request.RawEffectiveStartDate }}" id="effective_start_date"
+						class="form-control" required />
+					<input type="date" name="effective_end_date" value="{{ request.RawEffectiveEndDate }}" id="effective_end_date"
+						class="form-control" required />
+				</div>
+			</div>
+			<div class="form-group col-lg-12">
+				<label for="voucher_type" class="label-title">Jenis Voucher</label>
+				<select name="voucher_type" id="voucher_type" class="form-control" required>
+					<option value="" disabled>Pilih</option>
+					{{ range _, voucherType := voucherTypes }}
+					<option value="{{ voucherType.Int() }}"{{ if request.VoucherType.Equal(voucherType) }} selected{{ end }}>{{ voucherType.String() }}</option>
+					{{ end }}
+				</select>
+			</div>
+			<div class="form-group col-lg-12">
+				<label for="description" class="label-title">Deskripsi Voucher (Optional)</label>
+				<textarea name="description" id="description" class="form-control" placeholder="Deskripsi Voucher">{{ request.Description }}</textarea>
+			</div>
+		</div>
+		<hr class="mb-4 mt-2" />
+		<button type="submit" class="btn btn-success mr-1">
+			Simpan Data Voucher
+		</button>
+		<a href="{{ baseURL }}/admin/vouchers" class="btn btn-default ml-1">
+			Back to List Voucher
+		</a>
+	</div>
+</div>
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("photo").addEventListener("change", (event) => {
+			let file = event.target.files[0]
+			if (!file || !file.type.startsWith("image/")) {
+				return;
+			}
+			let preview = document.getElementById("photo_preview");
+			preview.setAttribute("src", URL.createObjectURL(file));
+			preview.classList.add("img-thumbnail");
+		});
+	});
+</script>

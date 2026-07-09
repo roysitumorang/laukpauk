@@ -128,6 +128,9 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 				"/admin/reward_points":          "/reward_points/admin",
 				"/admin/reward_points/*":        "/reward_points/admin/$1",
 				"/admin/reward_points/*/*":      "/reward_points/admin/$1/$2",
+				"/admin/vouchers":               "/vouchers/admin",
+				"/admin/vouchers/*":             "/vouchers/admin/$1",
+				"/admin/vouchers/*/*":           "/vouchers/admin/$1/$2",
 				"/":                             "/blocks",
 				"/blogs":                        "/blocks/blogs",
 				"/read/*":                       "/blocks/blogs/$1",
@@ -214,6 +217,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewDeliveryPlanController(q.AdminService, q.DeliveryPlanService).Mount(app.Group("/delivery_plans"))
 	controllers.NewNonDeliveryDayController(q.AdminService, q.NonDeliveryDayService, q.DeliveryPlanService).Mount(app.Group("/non_delivery_days"))
 	controllers.NewRewardPointController(q.AdminService, q.BuyerService, q.RewardPointService).Mount(app.Group("/reward_points"))
+	controllers.NewVoucherController(q.AdminService, q.VoucherService).Mount(app.Group("/vouchers"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{

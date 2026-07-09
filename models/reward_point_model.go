@@ -129,8 +129,11 @@ func (q *RewardPointFilter) WithUrlValues(urlValues url.Values) *RewardPointFilt
 }
 
 func (q *RewardPoint) Validate() error {
+	if q.BuyerID.Compare(uuid.Nil()) == 0 {
+		return errors.New("buyer_id: is required")
+	}
 	if _, ok := MapRewardPointTypes[q.RewardPointType]; !ok {
-		return errors.New("point_type: not found")
+		return errors.New("reward_point_type: not found")
 	}
 	if q.Amount == 0 {
 		return errors.New("amount: is required")
