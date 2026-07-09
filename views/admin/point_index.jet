@@ -35,7 +35,7 @@
 									<h5 class="mb-1">Histori Point</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/reward_points/new">
+									<a href="{{ baseURL }}/admin/points/new">
 										Tambah Poin User
 									</a>
 								</div>
@@ -50,7 +50,7 @@
 							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 						</div>
 						{{ end }}
-						<form method="GET" action="/admin/reward_points">
+						<form method="GET" action="/admin/points">
 							<div class="row">
 								<div class="col-sm-4 col-md-6">
 									<div class="dataTables_length" id="listBlog_length">
@@ -130,12 +130,12 @@
 									</td>
 									<td class="text-right">
 										<div class="text-right">
-											<h6 class="mb-0">Rp. {{ row.Amount | Comma }}</h6>
+											<h6 class="badge badge-{{ if row.Spendable }}success{{ else }}seconday{{ end }}">Rp. {{ row.Amount | Comma }}</h6>
 											<span class="text-muted text-sm">{{ row.Description }}</span>
 										</div>
 									</td>
 									<td class="text-left">
-										{{ row.RewardPointType.String() }}<br>
+										{{ row.PointType.String() }}<br>
 										<span class="text-sm text-muted">Dibuat pada <b>{{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 ") }}</b></span>
 										{{ if row.UpdatedAt.After(row.CreatedAt) }}
 										<p class="text-sm mb-0 mt-1 text-muted">
@@ -144,22 +144,13 @@
 										{{ end }}
 									</td>
 									<td class="vam text-center">
-										<a href="{{ baseURL }}/admin/reward_points/{{ row.ID }}/edit">
+										<a href="{{ baseURL }}/admin/points/{{ row.ID }}/edit">
 											<span class="fa fa-edit text-warning cp mr-2"
 												data-toggle="tooltip"
 												data-placement="top"
 												title="Edit Data Point">
 											</span>
 										</a>
-										<form method="POST" action="{{ baseURL }}/admin/reward_points/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
-											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-											<span class="fa fa-trash text-danger cp ml-2"
-												data-toggle="tooltip"
-												data-placement="top"
-												title="Hapus Data Point"
-												onclick="confirm('Are you sure to delete this item ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
-											</span>
-										</form>
 									</td>
 								</tr>
 								{{ end }}

@@ -43,7 +43,7 @@ type (
 		SettingService         services.SettingService
 		DeliveryPlanService    services.DeliveryPlanService
 		NonDeliveryDayService  services.NonDeliveryDayService
-		RewardPointService     services.RewardPointService
+		PointService           services.PointService
 		VoucherService         services.VoucherService
 	}
 )
@@ -118,7 +118,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	settingRepository := repositories.NewSettingRepository(dbRead, dbWrite)
 	deliveryPlanRepository := repositories.NewDeliveryPlanRepository(dbRead, dbWrite)
 	nonDeliveryDayRepository := repositories.NewNonDeliveryDayRepository(dbRead, dbWrite)
-	rewardPointRepository := repositories.NewRewardPointRepository(dbRead, dbWrite)
+	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
 	voucherRepository := repositories.NewVoucherRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
@@ -133,7 +133,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	settingService := services.NewSettingService(settingRepository)
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
 	nonDeliveryDayService := services.NewNonDeliveryDayService(nonDeliveryDayRepository)
-	rewardPointService := services.NewRewardPointService(rewardPointRepository)
+	pointService := services.NewPointService(pointRepository)
 	voucherService := services.NewVoucherService(voucherRepository)
 	return &Service{
 		DbWrite:                dbWrite,
@@ -155,7 +155,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		SettingService:         settingService,
 		DeliveryPlanService:    deliveryPlanService,
 		NonDeliveryDayService:  nonDeliveryDayService,
-		RewardPointService:     rewardPointService,
+		PointService:           pointService,
 		VoucherService:         voucherService,
 	}, nil
 }

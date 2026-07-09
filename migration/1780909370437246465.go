@@ -941,23 +941,19 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// reward_points
+		// points
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE reward_points (
+			`CREATE TABLE points (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, record_status integer NOT NULL
-				, reward_point_type integer NOT NULL
+				, point_type integer NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES users (id)
 				, amount bigint NOT NULL
-				, description character varying NOT NULL COLLATE "natural_sort"
-				, created_by UUID REFERENCES users (id)
+				, transaction_id UUID
+				, spendable BOOLEAN NOT NULL
+				, description character varying NOT NULL
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
-				, deleted_at timestamp with time zone
-				, deletion_reason character varying
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -965,49 +961,35 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_points (record_status);`,
+			`CREATE INDEX ON points (point_type);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_points (reward_point_type);`,
+			`CREATE INDEX ON points (buyer_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_points (buyer_id);`,
+			`CREATE INDEX ON points (transaction_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_points (LOWER(description));`,
+			`CREATE INDEX ON points (spendable);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_points (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON reward_points (updated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON reward_points (deleted_by);`,
+			`CREATE INDEX ON points (LOWER(description));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

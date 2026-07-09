@@ -15,9 +15,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindRewardPoints(ctx context.Context, c fiber.Ctx) (*models.RewardPointFilter, error) {
-	ctxt := "RewardPointSanitizer-FindRewardPoints"
-	response := models.NewRewardPointFilter()
+func FindPoints(ctx context.Context, c fiber.Ctx) (*models.PointFilter, error) {
+	ctxt := "PointSanitizer-FindPoints"
+	response := models.NewPointFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -71,9 +71,9 @@ func FindRewardPoints(ctx context.Context, c fiber.Ctx) (*models.RewardPointFilt
 	return response, nil
 }
 
-func ValidateRewardPoint(ctx context.Context, c fiber.Ctx) (*models.RewardPoint, int, error) {
-	ctxt := "RewardPointSanitizer-ValidateRewardPoint"
-	var response models.RewardPoint
+func ValidatePoint(ctx context.Context, c fiber.Ctx) (*models.Point, int, error) {
+	ctxt := "PointSanitizer-ValidatePoint"
+	var response models.Point
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

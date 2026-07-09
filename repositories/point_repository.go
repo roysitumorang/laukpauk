@@ -15,55 +15,55 @@ import (
 )
 
 type (
-	RewardPointRepository interface {
-		FindRewardPoints(
+	PointRepository interface {
+		FindPoints(
 			ctx context.Context,
-			request *models.RewardPointFilter,
-		) ([]*models.RewardPoint, int64, int64, error)
-		FindRewardPoint(
+			request *models.PointFilter,
+		) ([]*models.Point, int64, int64, error)
+		FindPoint(
 			ctx context.Context,
-			request *models.RewardPointFilter,
-		) (*models.RewardPoint, error)
-		CreateRewardPoint(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.RewardPoint,
-		) (*models.RewardPoint, error)
-		UpdateRewardPoint(
+			request *models.PointFilter,
+		) (*models.Point, error)
+		CreatePoint(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.RewardPoint,
-		) (*models.RewardPoint, error)
+			request *models.Point,
+		) (*models.Point, error)
+		UpdatePoint(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.Point,
+		) (*models.Point, error)
 	}
 
-	rewardPointRepository struct {
+	pointRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewRewardPointRepository(
+func NewPointRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) RewardPointRepository {
-	return new(rewardPointRepository{
+) PointRepository {
+	return new(pointRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	})
 }
 
-func (q *rewardPointRepository) FindRewardPoints(
+func (q *pointRepository) FindPoints(
 	ctx context.Context,
-	request *models.RewardPointFilter,
-) ([]*models.RewardPoint, int64, int64, error) {
-	ctxt := "RewardPointRepository-FindRewardPoints"
+	request *models.PointFilter,
+) ([]*models.Point, int64, int64, error) {
+	ctxt := "PointRepository-FindPoints"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
 		&sb,
 		`SELECT COUNT(1)
-		FROM reward_points p
+		FROM points p
 		JOIN users u ON p.buyer_id = u.id
 		JOIN buyers b ON u.id = b.user_id %s`,
 		condition,
@@ -82,22 +82,18 @@ func (q *rewardPointRepository) FindRewardPoints(
 		query,
 		"COUNT(1)",
 		`p.id
-		, p.record_status
-		, p.reward_point_type
+		, p.point_type
 		, p.buyer_id
 		, u.name
 		, u.username
 		, u.mobile_phone
 		, b.referral_code
 		, p.amount
+		, p.transaction_id
+		, p.spendable
 		, p.description
-		, p.created_by
 		, p.created_at
-		, p.updated_by
-		, p.updated_at
-		, p.deleted_by
-		, p.deleted_at
-		, p.deletion_reason`,
+		, p.updated_at`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -143,27 +139,23 @@ func (q *rewardPointRepository) FindRewardPoints(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.RewardPoint
+	var response []*models.Point
 	for rows.Next() {
-		var point models.RewardPoint
+		var point models.Point
 		if err = rows.Scan(
 			&point.ID,
-			&point.RecordStatus,
-			&point.RewardPointType,
+			&point.PointType,
 			&point.BuyerID,
 			&point.BuyerName,
 			&point.BuyerUsername,
 			&point.BuyerMobilePhone,
 			&point.BuyerReferralCode,
 			&point.Amount,
+			&point.TransactionID,
+			&point.Spendable,
 			&point.Description,
-			&point.CreatedBy,
 			&point.CreatedAt,
-			&point.UpdatedBy,
 			&point.UpdatedAt,
-			&point.DeletedBy,
-			&point.DeletedAt,
-			&point.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -175,11 +167,11 @@ func (q *rewardPointRepository) FindRewardPoints(
 	return response, total, pages, nil
 }
 
-func (q *rewardPointRepository) FindRewardPoint(
+func (q *pointRepository) FindPoint(
 	ctx context.Context,
-	request *models.RewardPointFilter,
-) (*models.RewardPoint, error) {
-	ctxt := "RewardPointRepository-FindRewardPoint"
+	request *models.PointFilter,
+) (*models.Point, error) {
+	ctxt := "PointRepository-FindPoint"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
@@ -187,50 +179,42 @@ func (q *rewardPointRepository) FindRewardPoint(
 		&sb,
 		`SELECT
 			p.id
-			, p.record_status
-			, p.reward_point_type
+			, p.point_type
 			, p.buyer_id
 			, u.name
 			, u.username
 			, u.mobile_phone
 			, b.referral_code
 			, p.amount
+			, p.transaction_id
+			, p.spendable
 			, p.description
-			, p.created_by
 			, p.created_at
-			, p.updated_by
 			, p.updated_at
-			, p.deleted_by
-			, p.deleted_at
-			, p.deletion_reason
-		FROM reward_points p
+		FROM points p
 		JOIN users u ON p.buyer_id = u.id
 		JOIN buyers b ON u.id = b.user_id %s`,
 		condition,
 	)
 	query := sb.String()
-	var response models.RewardPoint
+	var response models.Point
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.RecordStatus,
-		&response.RewardPointType,
+		&response.PointType,
 		&response.BuyerID,
 		&response.BuyerName,
 		&response.BuyerUsername,
 		&response.BuyerMobilePhone,
 		&response.BuyerReferralCode,
 		&response.Amount,
+		&response.TransactionID,
+		&response.Spendable,
 		&response.Description,
-		&response.CreatedBy,
 		&response.CreatedAt,
-		&response.UpdatedBy,
 		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrRewardPointNotFound
+		return nil, models.ErrPointNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -239,77 +223,67 @@ func (q *rewardPointRepository) FindRewardPoint(
 	return &response, nil
 }
 
-func (q *rewardPointRepository) CreateRewardPoint(
+func (q *pointRepository) CreatePoint(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.RewardPoint,
-) (*models.RewardPoint, error) {
-	ctxt := "RewardPointRepository-CreateRewardPoint"
-	var response models.RewardPoint
+	request *models.Point,
+) (*models.Point, error) {
+	ctxt := "PointRepository-CreatePoint"
+	var response models.Point
 	err := tx.QueryRow(
 		ctx,
 		`WITH p AS (
-			INSERT INTO reward_points (
-				record_status
-				, reward_point_type
+			INSERT INTO points (
+				point_type
 				, buyer_id
 				, amount
+				, transaction_id
+				, spendable
 				, description
-				, created_by
 				, created_at
-				, updated_by
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING *
 		)
 		SELECT
 			p.id
-			, p.record_status
-			, p.reward_point_type
+			, p.point_type
 			, p.buyer_id
 			, u.name
 			, u.username
 			, u.mobile_phone
 			, b.referral_code
 			, p.amount
+			, p.transaction_id
+			, p.spendable
 			, p.description
-			, p.created_by
 			, p.created_at
-			, p.updated_by
 			, p.updated_at
-			, p.deleted_by
-			, p.deleted_at
-			, p.deletion_reason
 		FROM p
 		JOIN users u ON p.buyer_id = u.id
 		JOIN buyers b ON u.id = b.user_id`,
-		request.RecordStatus,
-		request.RewardPointType,
+		request.PointType,
 		request.BuyerID,
 		request.Amount,
+		request.TransactionID,
+		request.Spendable,
 		request.Description,
-		request.CreatedBy,
 		request.CreatedAt,
-		request.UpdatedBy,
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.RecordStatus,
-		&response.RewardPointType,
+		&response.PointType,
 		&response.BuyerID,
 		&response.BuyerName,
 		&response.BuyerUsername,
 		&response.BuyerMobilePhone,
 		&response.BuyerReferralCode,
 		&response.Amount,
+		&response.TransactionID,
+		&response.Spendable,
 		&response.Description,
-		&response.CreatedBy,
 		&response.CreatedAt,
-		&response.UpdatedBy,
 		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -318,76 +292,56 @@ func (q *rewardPointRepository) CreateRewardPoint(
 	return &response, nil
 }
 
-func (q *rewardPointRepository) UpdateRewardPoint(
+func (q *pointRepository) UpdatePoint(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.RewardPoint,
-) (*models.RewardPoint, error) {
-	ctxt := "RewardPointRepository-UpdateRewardPoint"
-	var response models.RewardPoint
+	request *models.Point,
+) (*models.Point, error) {
+	ctxt := "PointRepository-UpdatePoint"
+	var response models.Point
 	err := tx.QueryRow(
 		ctx,
 		`WITH p AS (
-			UPDATE reward_points SET
-				record_status = $1
-				, amount = $2
-				, description = $3
-				, updated_by = $4
-				, updated_at = $5
-				, deleted_by = $6
-				, deleted_at = $7
-				, deletion_reason = $8
-			WHERE id = $9
+			UPDATE points SET
+				spendable = $1
+				, updated_at = $2
+			WHERE id = $3
 			RETURNING *
 		)
 		SELECT
 			p.id
-			, p.record_status
-			, p.reward_point_type
+			, p.point_type
 			, p.buyer_id
 			, u.name
 			, u.username
 			, u.mobile_phone
 			, b.referral_code
 			, p.amount
+			, p.transaction_id
+			, p.spendable
 			, p.description
-			, p.created_by
 			, p.created_at
-			, p.updated_by
 			, p.updated_at
-			, p.deleted_by
-			, p.deleted_at
-			, p.deletion_reason
 		FROM p
 		JOIN users u ON p.buyer_id = u.id
 		JOIN buyers b ON u.id = b.user_id`,
-		request.RecordStatus,
-		request.Amount,
-		request.Description,
-		request.UpdatedBy,
+		request.Spendable,
 		request.UpdatedAt,
-		request.DeletedBy,
-		request.DeletedAt,
-		request.DeletionReason,
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.RecordStatus,
-		&response.RewardPointType,
+		&response.PointType,
 		&response.BuyerID,
 		&response.BuyerName,
 		&response.BuyerUsername,
 		&response.BuyerMobilePhone,
 		&response.BuyerReferralCode,
 		&response.Amount,
+		&response.TransactionID,
+		&response.Spendable,
 		&response.Description,
-		&response.CreatedBy,
 		&response.CreatedAt,
-		&response.UpdatedBy,
 		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -396,12 +350,12 @@ func (q *rewardPointRepository) UpdateRewardPoint(
 	return &response, nil
 }
 
-func (q *rewardPointRepository) buildCondition(request *models.RewardPointFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *pointRepository) buildCondition(request *models.PointFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.RewardPointIDs) > 0 {
+	if len(request.PointIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("p.id IN (")
-		for i, pointID := range request.RewardPointIDs {
+		for i, pointID := range request.PointIDs {
 			params = append(params, pointID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -411,11 +365,11 @@ func (q *rewardPointRepository) buildCondition(request *models.RewardPointFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.RecordStatuses) > 0 {
+	if len(request.BuyerIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("p.record_status IN (")
-		for i, recordStatus := range request.RecordStatuses {
-			params = append(params, recordStatus)
+		_, _ = sb.WriteString("p.buyer_id IN (")
+		for i, buyerID := range request.BuyerIDs {
+			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -424,10 +378,23 @@ func (q *rewardPointRepository) buildCondition(request *models.RewardPointFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.RewardPointTypes) > 0 {
+	if len(request.TransactionIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("p.reward_point_type IN (")
-		for i, pointType := range request.RewardPointTypes {
+		_, _ = sb.WriteString("p.transaction_id IN (")
+		for i, transactionID := range request.TransactionIDs {
+			params = append(params, transactionID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.PointTypes) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("p.point_type IN (")
+		for i, pointType := range request.PointTypes {
 			params = append(params, pointType)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -436,6 +403,13 @@ func (q *rewardPointRepository) buildCondition(request *models.RewardPointFilter
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
+	}
+	if request.Spendable != nil {
+		if *request.Spendable {
+			conds = append(conds, "p.spendable")
+		} else {
+			conds = append(conds, "NOT p.spendable")
+		}
 	}
 	if request.Keyword != "" {
 		sb.Reset()
