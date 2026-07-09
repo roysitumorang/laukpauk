@@ -347,7 +347,13 @@ func (q *userRepository) FindBuyers(
 		, b.referral_code
 		, b.photo
 		, b.address
-		, b.referrer_id`,
+		, b.referrer_id
+		, b.referral_points
+		, b.unspendable_referral_points
+		, b.spendable_referral_points
+		, b.reward_points
+		, b.spendable_points
+		, b.wallet`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -431,6 +437,12 @@ func (q *userRepository) FindBuyers(
 			&buyer.Photo,
 			&buyer.Address,
 			&buyer.ReferrerID,
+			&buyer.ReferralPoints,
+			&buyer.UnspendableReferralPoints,
+			&buyer.SpendableReferralPoints,
+			&buyer.RewardPoints,
+			&buyer.SpendablePoints,
+			&buyer.Wallet,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -488,6 +500,12 @@ func (q *userRepository) FindBuyer(
 			, b.photo
 			, b.address
 			, b.referrer_id
+			, b.referral_points
+			, b.unspendable_referral_points
+			, b.spendable_referral_points
+			, b.reward_points
+			, b.spendable_points
+			, b.wallet
 		FROM users u
 		JOIN buyers b ON u.id = b.user_id %s`,
 		condition,
@@ -529,6 +547,12 @@ func (q *userRepository) FindBuyer(
 		&response.Photo,
 		&response.Address,
 		&response.ReferrerID,
+		&response.ReferralPoints,
+		&response.UnspendableReferralPoints,
+		&response.SpendableReferralPoints,
+		&response.RewardPoints,
+		&response.SpendablePoints,
+		&response.Wallet,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrBuyerNotFound

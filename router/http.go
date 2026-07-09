@@ -125,9 +125,9 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 				"/admin/non_delivery_days":      "/non_delivery_days/admin",
 				"/admin/non_delivery_days/*":    "/non_delivery_days/admin/$1",
 				"/admin/non_delivery_days/*/*":  "/non_delivery_days/admin/$1/$2",
-				"/admin/points":                 "/points/admin",
-				"/admin/points/*":               "/points/admin/$1",
-				"/admin/points/*/*":             "/points/admin/$1/$2",
+				"/admin/reward_points":          "/reward_points/admin",
+				"/admin/reward_points/*":        "/reward_points/admin/$1",
+				"/admin/reward_points/*/*":      "/reward_points/admin/$1/$2",
 				"/":                             "/blocks",
 				"/blogs":                        "/blocks/blogs",
 				"/read/*":                       "/blocks/blogs/$1",
@@ -213,7 +213,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 	controllers.NewSettingController(q.UserService, q.SettingService).Mount(app.Group("/settings"))
 	controllers.NewDeliveryPlanController(q.UserService, q.DeliveryPlanService).Mount(app.Group("/delivery_plans"))
 	controllers.NewNonDeliveryDayController(q.UserService, q.NonDeliveryDayService, q.DeliveryPlanService).Mount(app.Group("/non_delivery_days"))
-	controllers.NewPointController(q.UserService, q.PointService).Mount(app.Group("/points"))
+	controllers.NewRewardPointController(q.UserService, q.RewardPointService).Mount(app.Group("/reward_points"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{

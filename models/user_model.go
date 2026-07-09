@@ -69,10 +69,16 @@ type (
 
 	Buyer struct {
 		User
-		ReferralCode string     `json:"-" form:"-"`
-		Photo        string     `json:"-" form:"-"`
-		Address      string     `json:"-" form:"-"`
-		ReferrerID   *uuid.UUID `json:"-" form:"-"`
+		ReferralCode              string     `json:"-" form:"-"`
+		Photo                     string     `json:"-" form:"-"`
+		Address                   string     `json:"-" form:"-"`
+		ReferrerID                *uuid.UUID `json:"-" form:"-"`
+		ReferralPoints            int64      `json:"-" form:"-"`
+		UnspendableReferralPoints int64      `json:"-" form:"-"`
+		SpendableReferralPoints   int64      `json:"-" form:"-"`
+		RewardPoints              int64      `json:"-" form:"-"`
+		SpendablePoints           int64      `json:"-" form:"-"`
+		Wallet                    int64      `json:"-" form:"-"`
 	}
 
 	UserFilter struct {

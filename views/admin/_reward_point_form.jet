@@ -31,13 +31,13 @@
 			<input type="text" name="description" value="{{ request.Description }}" class="form-control input"
 				placeholder="Keterangan"
 				id="description"
-				required{{ if !request.PointType.Equal(pointTypeAdmin) }} readonly{{ end }} />
+				required{{ if !request.RewardPointType.Equal(rewardPointTypeByAdmin) }} readonly{{ end }} />
 		</div>
 		<hr class="mb-4" />
 		<button type="submit" class="btn btn-success mr-1" id="btnSubmit">
 			Simpan  Data Poin
 		</button>
-		<a href="{{ baseURL }}/admin/points" class="btn btn-link btn-sm">
+		<a href="{{ baseURL }}/admin/reward_points" class="btn btn-link btn-sm">
 			List Poin User
 		</a>
 	</div>

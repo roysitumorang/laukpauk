@@ -20,23 +20,23 @@ import (
 )
 
 type (
-	pointController struct {
-		userService  services.UserService
-		pointService services.PointService
+	rewardPointController struct {
+		userService        services.UserService
+		rewardPointService services.RewardPointService
 	}
 )
 
-func NewPointController(
+func NewRewardPointController(
 	userService services.UserService,
-	pointService services.PointService,
-) *pointController {
-	return new(pointController{
-		userService:  userService,
-		pointService: pointService,
+	rewardPointService services.RewardPointService,
+) *rewardPointController {
+	return new(rewardPointController{
+		userService:        userService,
+		rewardPointService: rewardPointService,
 	})
 }
 
-func (q *pointController) Mount(r fiber.Router) {
+func (q *rewardPointController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.userService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
@@ -47,9 +47,9 @@ func (q *pointController) Mount(r fiber.Router) {
 		Post("/:id/delete", q.AdminDelete)
 }
 
-func (q *pointController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *rewardPointController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointController-AdminIndex"
+	ctxt := "RewardPointController-AdminIndex"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -58,8 +58,8 @@ func (q *pointController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.PointFilter)
-	rows := []*models.Point{}
+	request := new(models.RewardPointFilter)
+	rows := []*models.RewardPoint{}
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -85,34 +85,34 @@ func (q *pointController) AdminIndex(c fiber.Ctx) (err error) {
 			},
 		},
 	)
-	request, err = sanitizers.FindPoints(ctx, c)
+	request, err = sanitizers.FindRewardPoints(ctx, c)
 	request.WithRecordStatuses(models.RecordStatusActive)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoints")
-		return c.Render("admin/point_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRewardPoints")
+		return c.Render("/admin/reward_point_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if rows, pagination, err = q.pointService.FindPoints(
+	if rows, pagination, err = q.rewardPointService.FindRewardPoints(
 		c,
 		request,
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoints")
-		return c.Render("admin/point_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRewardPoints")
+		return c.Render("/admin/reward_point_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/point_index", params.Push(
+	return c.Render("/admin/reward_point_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
 }
 
-func (q *pointController) AdminNew(c fiber.Ctx) (err error) {
+func (q *rewardPointController) AdminNew(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointController-AdminCreate"
+	ctxt := "RewardPointController-AdminCreate"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -121,8 +121,8 @@ func (q *pointController) AdminNew(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.Point{
-		PointType: models.PointTypeByAdmin,
+	request := new(models.RewardPoint{
+		RewardPointType: models.RewardPointTypeByAdmin,
 	})
 	var buyers []*models.Buyer
 	params := models.NewMap().Push(
@@ -134,21 +134,21 @@ func (q *pointController) AdminNew(c fiber.Ctx) (err error) {
 		"pageTitle", "Tambah Point User",
 		"request", request,
 		"buyers", buyers,
-		"pointTypeAdmin", models.PointTypeByAdmin,
+		"rewardPointTypeByAdmin", models.RewardPointTypeByAdmin,
 	)
 	if buyers, _, err = q.userService.FindBuyers(
 		ctx,
 		models.NewUserFilter(),
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
-		return c.Render("admin/point_new", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/point_new", params.Push("buyers", buyers), "admin/layouts/authenticated")
+	return c.Render("/admin/reward_point_new", params.Push("buyers", buyers), "admin/layouts/authenticated")
 }
 
-func (q *pointController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *rewardPointController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-AdminCreate"
 	sess := session.FromContext(c)
@@ -158,8 +158,8 @@ func (q *pointController) AdminCreate(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.Point{
-		PointType: models.PointTypeByAdmin,
+	request := new(models.RewardPoint{
+		RewardPointType: models.RewardPointTypeByAdmin,
 	})
 	var buyers []*models.Buyer
 	params := models.NewMap().Push(
@@ -171,14 +171,14 @@ func (q *pointController) AdminCreate(c fiber.Ctx) (err error) {
 		"pageTitle", "Tambah Point User",
 		"request", request,
 		"buyers", buyers,
-		"pointTypeAdmin", models.PointTypeByAdmin,
+		"rewardPointTypeByAdmin", models.RewardPointTypeByAdmin,
 	)
 	if buyers, _, err = q.userService.FindBuyers(
 		ctx,
 		models.NewUserFilter(),
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
-		return c.Render("admin/point_new", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -187,24 +187,24 @@ func (q *pointController) AdminCreate(c fiber.Ctx) (err error) {
 	for _, buyer := range buyers {
 		mapBuyerIDs[buyer.ID] = struct{}{}
 	}
-	request, statusCode, err := sanitizers.ValidatePoint(ctx, c)
+	request, statusCode, err := sanitizers.ValidateRewardPoint(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRewardPoint")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/point_new", params.Push(
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if _, ok := mapBuyerIDs[request.BuyerID]; !ok {
-		return c.Render("admin/point_new", params.Push(
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger("buyer_id: not found"),
 		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
 	createdBy := currentAdmin.ID
 	request.RecordStatus = models.RecordStatusActive
-	request.PointType = models.PointTypeByAdmin
+	request.RewardPointType = models.RewardPointTypeByAdmin
 	request.CreatedBy = &createdBy
 	request.CreatedAt = now
 	request.UpdatedBy = &createdBy
@@ -213,7 +213,7 @@ func (q *pointController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/point_new", params.Push(
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -225,26 +225,26 @@ func (q *pointController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.pointService.CreatePoint(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePoint")
-		return c.Render("admin/point_new", params.Push(
+	if _, err = q.rewardPointService.CreateRewardPoint(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateRewardPoint")
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/point_new", params.Push(
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("point created successfully").
-		Redirect(c, sess.Session, "/admin/points")
+		Success("reward point created successfully").
+		Redirect(c, sess.Session, "/admin/reward_points")
 }
 
-func (q *pointController) AdminEdit(c fiber.Ctx) (err error) {
+func (q *rewardPointController) AdminEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointController-AdminEdit"
+	ctxt := "RewardPointController-AdminEdit"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -253,25 +253,25 @@ func (q *pointController) AdminEdit(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	pointID, err := uuid.Parse(c.Params("id"))
+	rewardPointID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointNotFound.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(models.ErrRewardPointNotFound.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
-	point, err := q.pointService.FindPoint(
+	rewardPoint, err := q.rewardPointService.FindRewardPoint(
 		ctx,
-		models.NewPointFilter().
+		models.NewRewardPointFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithPointIDs(pointID),
+			WithRewardPointIDs(rewardPointID),
 	)
 	if err != nil {
-		if !errors.Is(err, models.ErrPointNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoint")
+		if !errors.Is(err, models.ErrRewardPointNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRewardPoint")
 		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
-	if point == nil {
-		return flash.Danger(models.ErrPointNotFound.Error()).Redirect(c, sess.Session, "/admin/points")
+	if rewardPoint == nil {
+		return flash.Danger(models.ErrRewardPointNotFound.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	var buyers []*models.Buyer
 	params := models.NewMap().Push(
@@ -281,25 +281,25 @@ func (q *pointController) AdminEdit(c fiber.Ctx) (err error) {
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Data Poin User",
-		"request", point,
-		"point", point,
+		"request", rewardPoint,
+		"point", rewardPoint,
 		"buyers", buyers,
-		"pointTypeAdmin", models.PointTypeByAdmin,
+		"rewardPointTypeByAdmin", models.RewardPointTypeByAdmin,
 	)
 	if buyers, _, err = q.userService.FindBuyers(
 		ctx,
 		models.NewUserFilter().
-			WithUserIDs(point.BuyerID),
+			WithUserIDs(rewardPoint.BuyerID),
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
-		return c.Render("admin/point_new", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		return c.Render("/admin/reward_point_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/point_edit", params.Push("buyers", buyers), "admin/layouts/authenticated")
+	return c.Render("/admin/reward_point_edit", params.Push("buyers", buyers), "admin/layouts/authenticated")
 }
 
-func (q *pointController) AdminUpdate(c fiber.Ctx) (err error) {
+func (q *rewardPointController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-AdminUpdate"
 	sess := session.FromContext(c)
@@ -309,25 +309,25 @@ func (q *pointController) AdminUpdate(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	pointID, err := uuid.Parse(c.Params("id"))
+	rewardPointID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointNotFound.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(models.ErrRewardPointNotFound.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
-	point, err := q.pointService.FindPoint(
+	point, err := q.rewardPointService.FindRewardPoint(
 		ctx,
-		models.NewPointFilter().
+		models.NewRewardPointFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithPointIDs(pointID),
+			WithRewardPointIDs(rewardPointID),
 	)
 	if err != nil {
-		if !errors.Is(err, models.ErrPointNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoint")
+		if !errors.Is(err, models.ErrRewardPointNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRewardPoint")
 		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	if point == nil {
-		return flash.Danger(models.ErrPointNotFound.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(models.ErrRewardPointNotFound.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	var buyers []*models.Buyer
 	params := models.NewMap().Push(
@@ -340,44 +340,44 @@ func (q *pointController) AdminUpdate(c fiber.Ctx) (err error) {
 		"request", point,
 		"point", point,
 		"buyers", buyers,
-		"pointTypeAdmin", models.PointTypeByAdmin,
+		"rewardPointTypeByAdmin", models.RewardPointTypeByAdmin,
 	)
 	if buyers, _, err = q.userService.FindBuyers(
 		ctx,
 		models.NewUserFilter().
 			WithUserIDs(point.BuyerID),
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
-		return c.Render("admin/point_edit", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		return c.Render("/admin/reward_point_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	params.Push("buyers", buyers)
-	request, statusCode, err := sanitizers.ValidatePoint(ctx, c)
+	request, statusCode, err := sanitizers.ValidateRewardPoint(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRewardPoint")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/point_edit", params.Push(
+		return c.Render("/admin/reward_point_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	request.ID = point.ID
 	request.RecordStatus = point.RecordStatus
-	request.PointType = point.PointType
+	request.RewardPointType = point.RewardPointType
 	request.BuyerID = point.BuyerID
 	request.UpdatedBy = &currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	if request.PointType == models.PointTypeByTransaction {
+	if request.RewardPointType == models.RewardPointTypeByTransaction {
 		request.Description = point.Description
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/point_edit", params.Push(
+		return c.Render("/admin/reward_point_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -389,51 +389,51 @@ func (q *pointController) AdminUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.pointService.UpdatePoint(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePoint")
-		return c.Render("admin/point_edit", params.Push(
+	if _, err = q.rewardPointService.UpdateRewardPoint(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRewardPoint")
+		return c.Render("/admin/reward_point_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/point_edit", params.Push(
+		return c.Render("/admin/reward_point_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("point updated successfully").
-		Redirect(c, sess.Session, "/admin/points")
+		Success("reward point updated successfully").
+		Redirect(c, sess.Session, "/admin/reward_points")
 }
 
-func (q *pointController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *rewardPointController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointController-AdminDelete"
+	ctxt := "RewardPointController-AdminDelete"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	pointID, err := uuid.Parse(c.Params("id"))
+	rewardPointID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointNotFound.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(models.ErrRewardPointNotFound.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
-	point, err := q.pointService.FindPoint(
+	point, err := q.rewardPointService.FindRewardPoint(
 		ctx,
-		models.NewPointFilter().
+		models.NewRewardPointFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithPointIDs(pointID),
+			WithRewardPointIDs(rewardPointID),
 	)
 	if err != nil {
-		if !errors.Is(err, models.ErrPointNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoint")
+		if !errors.Is(err, models.ErrRewardPointNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRewardPoint")
 		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	if point == nil {
-		return flash.Danger(models.ErrPointNotFound.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(models.ErrRewardPointNotFound.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	request := point
 	request.RecordStatus = models.RecordStatusDeleted
@@ -443,7 +443,7 @@ func (q *pointController) AdminDelete(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -453,15 +453,15 @@ func (q *pointController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.pointService.UpdatePoint(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePoint")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/points")
+	if _, err = q.rewardPointService.UpdateRewardPoint(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRewardPoint")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/points")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/reward_points")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("point deleted successfully").
-		Redirect(c, sess.Session, "/admin/points")
+		Success("reward point deleted successfully").
+		Redirect(c, sess.Session, "/admin/reward_points")
 }

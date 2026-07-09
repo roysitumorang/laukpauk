@@ -15,9 +15,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindPoints(ctx context.Context, c fiber.Ctx) (*models.PointFilter, error) {
-	ctxt := "PointSanitizer-FindPoints"
-	response := models.NewPointFilter()
+func FindRewardPoints(ctx context.Context, c fiber.Ctx) (*models.RewardPointFilter, error) {
+	ctxt := "RewardPointSanitizer-FindRewardPoints"
+	response := models.NewRewardPointFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -36,7 +36,7 @@ func FindPoints(ctx context.Context, c fiber.Ctx) (*models.PointFilter, error) {
 		var sortings []models.Sorting
 		for _, sorting := range sortBy {
 			if !strings.Contains(sorting, ":") {
-				if _, ok := models.MapPointSortings[sorting]; ok {
+				if _, ok := models.MapRewardPointSortings[sorting]; ok {
 					sortings = append(sortings, models.Sorting{
 						Field:     sorting,
 						Direction: models.SortingDirectionAsc,
@@ -44,7 +44,7 @@ func FindPoints(ctx context.Context, c fiber.Ctx) (*models.PointFilter, error) {
 				}
 			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
 				field, order := items[0], items[1]
-				if _, ok := models.MapPointSortings[field]; ok &&
+				if _, ok := models.MapRewardPointSortings[field]; ok &&
 					(models.SortingDirectionAsc.Equal(order) ||
 						models.SortingDirectionDesc.Equal(order)) {
 					sortings = append(sortings, models.Sorting{
@@ -71,9 +71,9 @@ func FindPoints(ctx context.Context, c fiber.Ctx) (*models.PointFilter, error) {
 	return response, nil
 }
 
-func ValidatePoint(ctx context.Context, c fiber.Ctx) (*models.Point, int, error) {
-	ctxt := "PointSanitizer-ValidatePoint"
-	var response models.Point
+func ValidateRewardPoint(ctx context.Context, c fiber.Ctx) (*models.RewardPoint, int, error) {
+	ctxt := "RewardPointSanitizer-ValidateRewardPoint"
+	var response models.RewardPoint
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
