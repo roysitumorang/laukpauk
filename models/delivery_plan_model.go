@@ -22,7 +22,15 @@ var (
 	}
 )
 
+const (
+	DeliverySpeedSameDay DeliverySpeed = iota
+	DeliverySpeedNextDay
+	DeliverySpeedNextTwoDay
+)
+
 type (
+	DeliverySpeed int
+
 	DeliveryPlan struct {
 		RowNo                   int64          `json:"-" form:"-"`
 		ID                      uuid.UUID      `json:"-" form:"-"`

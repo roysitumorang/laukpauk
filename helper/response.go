@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -52,11 +53,9 @@ func (r *Response) WriteResponse(c fiber.Ctx) error {
 	if r.StatusCode == fiber.StatusNoContent {
 		return c.SendStatus(r.StatusCode)
 	}
-	var builder strings.Builder
-	_, _ = builder.WriteString(c.Method())
-	_, _ = builder.WriteString(" ")
-	_, _ = builder.WriteString(c.FullURL())
-	r.RequestURL = builder.String()
+	var sb strings.Builder
+	_, _ = fmt.Fprintf(&sb, "%s %s", c.Method(), c.FullURL())
+	r.RequestURL = sb.String()
 	r.RequestID = ByteSlice2String(c.Response().Header.Peek(fiber.HeaderXRequestID))
 	r.Latency = time.Since(c.RequestCtx().Time()).String()
 	return c.Status(r.StatusCode).JSON(r)

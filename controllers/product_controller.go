@@ -764,7 +764,7 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 		ctx,
 		models.NewProductVariantFilter().
 			WithProductIDs(product.ID).
-			WithMeasureUnits(request.MeasureUnit),
+			WithStockUnits(request.StockUnit),
 	)
 	if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
@@ -780,7 +780,7 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 	if productVariant != nil {
 		if productVariant.RecordStatus == models.RecordStatusActive {
 			return c.Render("admin/product_variant_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueProductVariantMeasureUnitViolation.Error()),
+				"flash", flash.Danger(models.ErrUniqueProductVariantStockUnitViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
 		request.ID = productVariant.ID
@@ -944,12 +944,12 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	params.Push("request", request)
-	if productVariant.MeasureUnit != request.MeasureUnit {
+	if productVariant.StockUnit != request.StockUnit {
 		otherProductVariant, err := q.productVariantService.FindProductVariant(
 			ctx,
 			models.NewProductVariantFilter().
 				WithProductIDs(product.ID).
-				WithMeasureUnits(request.MeasureUnit).
+				WithStockUnits(request.StockUnit).
 				WithExcludedProductVariantIDs(productVariant.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
@@ -960,7 +960,7 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 		}
 		if otherProductVariant != nil {
 			return c.Render("admin/product_variant_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueProductVariantMeasureUnitViolation.Error()),
+				"flash", flash.Danger(models.ErrUniqueProductVariantStockUnitViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}

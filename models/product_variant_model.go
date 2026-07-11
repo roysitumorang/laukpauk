@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrProductVariantNotFound                   = errors.New("product variant not found")
-	ErrUniqueProductVariantMeasureUnitViolation = errors.New("measure_unit: already exists")
+	ErrProductVariantNotFound                 = errors.New("product variant not found")
+	ErrUniqueProductVariantStockUnitViolation = errors.New("stock_unit: already exists")
 
 	PriceTypes = []PriceType{PriceTypeAbsolute, PriceTypeRelative}
 
@@ -36,7 +36,7 @@ type (
 		ID                      uuid.UUID    `json:"-" form:"-"`
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
-		MeasureUnit             string       `json:"-" form:"measure_unit"`
+		StockUnit               string       `json:"-" form:"stock_unit"`
 		Price                   int64        `json:"-" form:"price"`
 		PriceType               PriceType    `json:"-" form:"price_type"`
 		PriceVariantPercentage  float64      `json:"-" form:"price_variant_percentage"`
@@ -60,7 +60,7 @@ type (
 		ProductVariantIDs,
 		ExcludedProductVariantIDs []uuid.UUID
 		RecordStatuses []RecordStatus
-		MeasureUnits   []string
+		StockUnits     []string
 		PriceTypes     []PriceType
 		PaginationURL  string
 		Sortings       []Sorting
@@ -98,8 +98,8 @@ func (q *ProductVariantFilter) WithRecordStatuses(recordStatuses ...RecordStatus
 	return q
 }
 
-func (q *ProductVariantFilter) WithMeasureUnits(measureUnits ...string) *ProductVariantFilter {
-	q.MeasureUnits = measureUnits
+func (q *ProductVariantFilter) WithStockUnits(stockUnits ...string) *ProductVariantFilter {
+	q.StockUnits = stockUnits
 	return q
 }
 
@@ -138,8 +138,8 @@ func (q *ProductVariantFilter) WithUrlValues(urlValues url.Values) *ProductVaria
 }
 
 func (q *ProductVariant) Validate(productBasePrice int64) error {
-	if q.MeasureUnit = strings.TrimSpace(q.MeasureUnit); q.MeasureUnit == "" {
-		return errors.New("measure_unit: is required")
+	if q.StockUnit = strings.TrimSpace(q.StockUnit); q.StockUnit == "" {
+		return errors.New("stock_unit: is required")
 	}
 	switch q.PriceType {
 	case PriceTypeAbsolute:

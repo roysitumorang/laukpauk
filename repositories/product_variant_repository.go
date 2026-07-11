@@ -77,7 +77,7 @@ func (q *productVariantRepository) FindProductVariants(
 		`id
 		, record_status
 		, product_id
-		, measure_unit
+		, stock_unit
 		, price
 		, price_type
 		, price_variant_percentage
@@ -146,7 +146,7 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ID,
 			&productVariant.RecordStatus,
 			&productVariant.ProductID,
-			&productVariant.MeasureUnit,
+			&productVariant.StockUnit,
 			&productVariant.Price,
 			&productVariant.PriceType,
 			&productVariant.PriceVariantPercentage,
@@ -188,7 +188,7 @@ func (q *productVariantRepository) FindProductVariant(
 			id
 			, record_status
 			, product_id
-			, measure_unit
+			, stock_unit
 			, price
 			, price_type
 			, price_variant_percentage
@@ -214,7 +214,7 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
-		&response.MeasureUnit,
+		&response.StockUnit,
 		&response.Price,
 		&response.PriceType,
 		&response.PriceVariantPercentage,
@@ -254,7 +254,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		`INSERT INTO product_variants (
 			record_status
 			, product_id
-			, measure_unit
+			, stock_unit
 			, price
 			, price_type
 			, price_variant_percentage
@@ -272,7 +272,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		RETURNING id
 			, record_status
 			, product_id
-			, measure_unit
+			, stock_unit
 			, price
 			, price_type
 			, price_variant_percentage
@@ -291,7 +291,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, deletion_reason`,
 		request.RecordStatus,
 		request.ProductID,
-		request.MeasureUnit,
+		request.StockUnit,
 		request.Price,
 		request.PriceType,
 		request.PriceVariantPercentage,
@@ -309,7 +309,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
-		&response.MeasureUnit,
+		&response.StockUnit,
 		&response.Price,
 		&response.PriceType,
 		&response.PriceVariantPercentage,
@@ -347,7 +347,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		ctx,
 		`UPDATE product_variants SET
 			record_status = $1
-			, measure_unit = $2
+			, stock_unit = $2
 			, price = $3
 			, price_type = $4
 			, price_variant_percentage = $5
@@ -366,7 +366,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		RETURNING id
 			, record_status
 			, product_id
-			, measure_unit
+			, stock_unit
 			, price
 			, price_type
 			, price_variant_percentage
@@ -384,7 +384,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, deleted_at
 			, deletion_reason`,
 		request.RecordStatus,
-		request.MeasureUnit,
+		request.StockUnit,
 		request.Price,
 		request.PriceType,
 		request.PriceVariantPercentage,
@@ -404,7 +404,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
-		&response.MeasureUnit,
+		&response.StockUnit,
 		&response.Price,
 		&response.PriceType,
 		&response.PriceVariantPercentage,
@@ -472,11 +472,11 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.MeasureUnits) > 0 {
+	if len(request.StockUnits) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(measure_unit) IN (")
-		for i, measureUnit := range request.MeasureUnits {
-			params = append(params, strings.ToLower(measureUnit))
+		_, _ = sb.WriteString("LOWER(stock_unit) IN (")
+		for i, stockUnit := range request.StockUnits {
+			params = append(params, strings.ToLower(stockUnit))
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

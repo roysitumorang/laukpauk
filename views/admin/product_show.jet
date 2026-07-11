@@ -77,13 +77,13 @@
 											<tr class="text-sm">
 												<td class="border-top-0 text-left">Dibuat</td>
 												<td class="border-top-0 text-left">
-													{{ product.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 ") }}
+													{{ product.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05") }}
 												</td>
 											</tr>
 											<tr class="text-sm">
 												<td class="border-top-0 text-left">Terakhir Diperbaharui</td>
 												<td class="border-top-0 text-left">
-													{{ product.UpdatedAt.Format("Mon, 2 Jan 2006 15:04:05 ") }}
+													{{ product.UpdatedAt.Format("Mon, 2 Jan 2006 15:04:05") }}
 												</td>
 											</tr>
 										</table>
@@ -141,7 +141,7 @@
 										<tr class="text-sm tr-parent">
 											<td class="vam text-center text-bold">{{ row.RowNo }}</td>
 											<td class="vam text-left">
-												<h5 class="text-primary mb-1">{{ row.MeasureUnit }}</h5>
+												<h5 class="text-primary mb-1">{{ row.StockUnit }}</h5>
 												<span class="text-bold text-success">Rp. {{ row.Price | Comma }}</span>
 											</td>
 											<td class="vam text-left">{{ row.PriceType.String() }}</td>

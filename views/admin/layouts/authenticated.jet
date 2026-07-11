@@ -263,7 +263,7 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/transactions") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-shopping-cart"></i>
 								<p>
@@ -271,7 +271,7 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview">
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/transactions") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/transactions" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>

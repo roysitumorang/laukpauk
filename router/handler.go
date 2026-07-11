@@ -46,6 +46,7 @@ type (
 		PointService           services.PointService
 		VoucherService         services.VoucherService
 		PointAccrualCapService services.PointAccrualCapService
+		TransactionService     services.TransactionService
 	}
 )
 
@@ -122,6 +123,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
 	voucherRepository := repositories.NewVoucherRepository(dbRead, dbWrite)
 	pointAccrualCapRepository := repositories.NewPointAccrualCapRepository(dbRead, dbWrite)
+	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -138,6 +140,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointService := services.NewPointService(pointRepository)
 	voucherService := services.NewVoucherService(voucherRepository)
 	pointAccrualCapService := services.NewPointAccrualCapService(pointAccrualCapRepository)
+	transactionService := services.NewTransactionService(transactionRepository)
 	return &Service{
 		DbWrite:                dbWrite,
 		Migration:              migration,
@@ -161,6 +164,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		PointService:           pointService,
 		VoucherService:         voucherService,
 		PointAccrualCapService: pointAccrualCapService,
+		TransactionService:     transactionService,
 	}, nil
 }
 
