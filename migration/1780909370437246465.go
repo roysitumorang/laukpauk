@@ -50,6 +50,7 @@ func init() {
 				, password_reset_token character varying
 				, password_changed_at timestamp with time zone
 				, photo character varying NOT NULL
+				, unread_notifications bigint NOT NULL DEFAULT 0
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
@@ -124,10 +125,8 @@ func init() {
 				, address character varying NOT NULL
 				, referrer_id UUID REFERENCES users (id)
 				, referral_points bigint NOT NULL DEFAULT 0
-				, unspendable_referral_points bigint NOT NULL DEFAULT 0
-				, spendable_referral_points bigint NOT NULL DEFAULT 0
 				, reward_points bigint NOT NULL DEFAULT 0
-				, spendable_points bigint NOT NULL DEFAULT 0
+				, points bigint NOT NULL DEFAULT 0
 				, wallet bigint NOT NULL DEFAULT 0
 			);`,
 		); err != nil {
@@ -864,10 +863,10 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// reward_point_accrual_rates
+		// reward_point_accrual_caps
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE reward_point_accrual_rates (
+			`CREATE TABLE reward_point_accrual_caps (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, minimum_purchase bigint NOT NULL UNIQUE
@@ -886,21 +885,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_point_accrual_rates (created_by);`,
+			`CREATE INDEX ON reward_point_accrual_caps (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_point_accrual_rates (updated_by);`,
+			`CREATE INDEX ON reward_point_accrual_caps (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_point_accrual_rates (deleted_by);`,
+			`CREATE INDEX ON reward_point_accrual_caps (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -911,10 +910,12 @@ func init() {
 			`CREATE TABLE reward_point_accruals (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, period character varying NOT NULL
+				, start_date timestamp with time zone NOT NULL
+				, end_date timestamp with time zone NOT NULL
 				, amount bigint NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
+				, UNIQUE (buyer_id, start_date, end_date)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -929,14 +930,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON reward_point_accruals (period);`,
+			`CREATE INDEX ON reward_point_accruals (start_date);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON reward_point_accruals (buyer_id, LOWER(period));`,
+			`CREATE INDEX ON reward_point_accruals (end_date);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

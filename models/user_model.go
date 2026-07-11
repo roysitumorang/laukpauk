@@ -47,6 +47,7 @@ type (
 		PasswordResetToken            *string    `json:"-" form:"-"`
 		PasswordChangedAt             *time.Time `json:"-" form:"-"`
 		Photo                         string     `json:"-" form:"-"`
+		UnreadNotifications           int64      `json:"-" form:"-"`
 		CreatedBy                     *uuid.UUID `json:"-" form:"-"`
 		CreatedAt                     time.Time  `json:"-" form:"-"`
 		UpdatedBy                     *uuid.UUID `json:"-" form:"-"`

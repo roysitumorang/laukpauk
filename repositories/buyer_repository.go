@@ -89,6 +89,7 @@ func (q *buyerRepository) FindBuyers(
 		, u.password_reset_token
 		, u.password_changed_at
 		, u.photo
+		, u.unread_notifications
 		, u.created_by
 		, u.created_at
 		, u.updated_by
@@ -100,10 +101,8 @@ func (q *buyerRepository) FindBuyers(
 		, b.address
 		, b.referrer_id
 		, b.referral_points
-		, b.unspendable_referral_points
-		, b.spendable_referral_points
 		, b.reward_points
-		, b.spendable_points
+		, b.points
 		, b.wallet`,
 	)
 	sb.Reset()
@@ -179,6 +178,7 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.PasswordResetToken,
 			&buyer.PasswordChangedAt,
 			&buyer.Photo,
+			&buyer.UnreadNotifications,
 			&buyer.CreatedBy,
 			&buyer.CreatedAt,
 			&buyer.UpdatedBy,
@@ -190,10 +190,8 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.Address,
 			&buyer.ReferrerID,
 			&buyer.ReferralPoints,
-			&buyer.UnspendableReferralPoints,
-			&buyer.SpendableReferralPoints,
 			&buyer.RewardPoints,
-			&buyer.SpendablePoints,
+			&buyer.Points,
 			&buyer.Wallet,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -242,6 +240,7 @@ func (q *buyerRepository) FindBuyer(
 			, u.password_reset_token
 			, u.password_changed_at
 			, u.photo
+			, u.unread_notifications
 			, u.created_by
 			, u.created_at
 			, u.updated_by
@@ -253,10 +252,8 @@ func (q *buyerRepository) FindBuyer(
 			, b.address
 			, b.referrer_id
 			, b.referral_points
-			, b.unspendable_referral_points
-			, b.spendable_referral_points
 			, b.reward_points
-			, b.spendable_points
+			, b.points
 			, b.wallet
 		FROM users u
 		JOIN buyers b ON u.id = b.user_id %s`,
@@ -290,6 +287,7 @@ func (q *buyerRepository) FindBuyer(
 		&response.PasswordResetToken,
 		&response.PasswordChangedAt,
 		&response.Photo,
+		&response.UnreadNotifications,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -301,10 +299,8 @@ func (q *buyerRepository) FindBuyer(
 		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
-		&response.UnspendableReferralPoints,
-		&response.SpendableReferralPoints,
 		&response.RewardPoints,
-		&response.SpendablePoints,
+		&response.Points,
 		&response.Wallet,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {

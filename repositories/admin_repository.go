@@ -89,6 +89,7 @@ func (q *adminRepository) FindAdmins(
 		, u.password_reset_token
 		, u.password_changed_at
 		, u.photo
+		, u.unread_notifications
 		, u.created_by
 		, u.created_at
 		, u.updated_by
@@ -171,6 +172,7 @@ func (q *adminRepository) FindAdmins(
 			&admin.PasswordResetToken,
 			&admin.PasswordChangedAt,
 			&admin.Photo,
+			&admin.UnreadNotifications,
 			&admin.CreatedBy,
 			&admin.CreatedAt,
 			&admin.UpdatedBy,
@@ -226,6 +228,7 @@ func (q *adminRepository) FindAdmin(
 			, u.password_reset_token
 			, u.password_changed_at
 			, u.photo
+			, u.unread_notifications
 			, u.created_by
 			, u.created_at
 			, u.updated_by
@@ -266,6 +269,7 @@ func (q *adminRepository) FindAdmin(
 		&response.PasswordResetToken,
 		&response.PasswordChangedAt,
 		&response.Photo,
+		&response.UnreadNotifications,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,

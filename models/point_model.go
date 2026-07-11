@@ -33,7 +33,7 @@ type (
 
 	Point struct {
 		RowNo             int64      `json:"-" form:"-"`
-		ID                uuid.UUID  `json:"-" form:"-"`
+		ID                uuid.UUID  `json:"-" form:"id"`
 		PointType         PointType  `json:"-" form:"point_type"`
 		BuyerID           uuid.UUID  `json:"-" form:"buyer_id"`
 		BuyerName         string     `json:"-" form:"-"`
@@ -137,12 +137,13 @@ func (q *Point) Validate() error {
 	if q.BuyerID.Compare(uuid.Nil()) == 0 {
 		return errors.New("buyer_id: is required")
 	}
-	if q.Amount == 0 {
-		return errors.New("amount: is required")
+	if q.Amount < 1 {
+		return errors.New("amount: requires a positive integer")
 	}
 	if q.Description = strings.TrimSpace(q.Description); q.Description == "" {
 		return errors.New("description: is required")
 	}
+	q.Spendable = q.PointType.Equal(PointTypeReward)
 	return nil
 }
 

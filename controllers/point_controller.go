@@ -353,6 +353,10 @@ func (q *pointController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	request.ID = point.ID
+	request.PointType = point.PointType
+	request.BuyerID = point.BuyerID
+	request.Spendable = point.Spendable
+	request.Description = point.Description
 	request.UpdatedAt = time.Now()
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
