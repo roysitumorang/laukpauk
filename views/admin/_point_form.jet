@@ -5,7 +5,7 @@
 		<div class="row">
 			<div class="col-lg-4">
 				<div class="form-group">
-					<label for="point_type" class="label-user">Tipe PoinBuyer</label>
+					<label for="point_type" class="label-user">Tipe Poin</label>
 					<select name="point_type" id="point_type" class="form-control" required{{ if request.ID }} disabled{{ end }}>
 						<option disabled>Pilih</option>
 						{{ range _, pointType := pointTypes }}
@@ -50,7 +50,7 @@
 		</div>
 		<hr class="mb-4" />
 		<button type="submit" class="btn btn-success mr-1" id="btnSubmit">
-			Simpan  Data Poin
+			Simpan Data Poin
 		</button>
 		<a href="{{ baseURL }}/admin/points" class="btn btn-link btn-sm">
 			List Poin User

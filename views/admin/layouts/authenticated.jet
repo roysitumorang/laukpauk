@@ -434,7 +434,7 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/points") || HasPrefix(path, "/admin/gifts") }} menu-open{{ end }}">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/points") || HasPrefix(path, "/admin/point_accrual_caps") || HasPrefix(path, "/admin/gifts") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-coins"></i>
 								<p>
@@ -442,7 +442,7 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/points")  || HasPrefix(path, "/admin/gifts") }} style="display:block"{{ end }}>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/points") || HasPrefix(path, "/admin/point_accrual_caps") || HasPrefix(path, "/admin/gifts") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/points" class="nav-link">
 										<i class="fa fa-coins nav-icon"></i>
@@ -453,6 +453,18 @@
 									<a href="{{ baseURL }}/admin/points/new" class="nav-link">
 										<i class="fa fa-coins nav-icon"></i>
 										<p>Tambah Poin User</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/admin/point_accrual_caps" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Tarif Akumulasi Poin</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/admin/point_accrual_caps/new" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Tambah Tarif Akumulasi Poin</p>
 									</a>
 								</li>
 								<li class="nav-item">
