@@ -159,12 +159,23 @@ func (q *ProductVariant) Validate(productBasePrice int64) error {
 		if err != nil {
 			return err
 		}
-		price, err := basePrice.Mul(variantPercentage)
+		if basePrice, err = basePrice.Mul(variantPercentage); err != nil {
+			return err
+		}
+		if basePrice, err = basePrice.Quo(decimal.Hundred); err != nil {
+			return err
+		}
+		price, remainder, err := basePrice.QuoRem(decimal.Hundred)
 		if err != nil {
 			return err
 		}
-		if price, err = price.Quo(decimal.Hundred); err != nil {
-			return err
+		if remainder.IsPos() {
+			if price, err = price.Add(decimal.One); err != nil {
+				return err
+			}
+			if price, err = price.Mul(decimal.Hundred); err != nil {
+				return err
+			}
 		}
 		q.Price, _, _ = price.Ceil(0).Int64(0)
 	default:
