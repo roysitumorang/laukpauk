@@ -230,7 +230,7 @@ func (q *productRepository) FindProduct(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *productRepository) CreateProduct(
@@ -310,13 +310,16 @@ func (q *productRepository) CreateProduct(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "products_unique_name_idx" {
+			err = models.ErrUniqueProductNameViolation
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *productRepository) UpdateProduct(
@@ -399,9 +402,6 @@ func (q *productRepository) UpdateProduct(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
 			pgxErr.ConstraintName == "products_unique_name_idx" {
@@ -411,7 +411,7 @@ func (q *productRepository) UpdateProduct(
 		}
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *productRepository) buildCondition(request *models.ProductFilter, sb *strings.Builder) (condition string, params []any) {
