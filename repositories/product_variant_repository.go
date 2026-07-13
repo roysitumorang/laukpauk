@@ -79,8 +79,6 @@ func (q *productVariantRepository) FindProductVariants(
 		, product_id
 		, stock_unit
 		, price
-		, price_type
-		, price_variant_percentage
 		, discount_type
 		, discount_rate
 		, discount_minimum_quantity
@@ -148,8 +146,6 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ProductID,
 			&productVariant.StockUnit,
 			&productVariant.Price,
-			&productVariant.PriceType,
-			&productVariant.PriceVariantPercentage,
 			&productVariant.DiscountType,
 			&productVariant.DiscountRate,
 			&productVariant.DiscountMinimumQuantity,
@@ -190,8 +186,6 @@ func (q *productVariantRepository) FindProductVariant(
 			, product_id
 			, stock_unit
 			, price
-			, price_type
-			, price_variant_percentage
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
@@ -216,8 +210,6 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.ProductID,
 		&response.StockUnit,
 		&response.Price,
-		&response.PriceType,
-		&response.PriceVariantPercentage,
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
@@ -256,8 +248,6 @@ func (q *productVariantRepository) CreateProductVariant(
 			, product_id
 			, stock_unit
 			, price
-			, price_type
-			, price_variant_percentage
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
@@ -268,14 +258,12 @@ func (q *productVariantRepository) CreateProductVariant(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id
 			, record_status
 			, product_id
 			, stock_unit
 			, price
-			, price_type
-			, price_variant_percentage
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
@@ -293,8 +281,6 @@ func (q *productVariantRepository) CreateProductVariant(
 		request.ProductID,
 		request.StockUnit,
 		request.Price,
-		request.PriceType,
-		request.PriceVariantPercentage,
 		request.DiscountType,
 		request.DiscountRate,
 		request.DiscountMinimumQuantity,
@@ -311,8 +297,6 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ProductID,
 		&response.StockUnit,
 		&response.Price,
-		&response.PriceType,
-		&response.PriceVariantPercentage,
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
@@ -349,27 +333,23 @@ func (q *productVariantRepository) UpdateProductVariant(
 			record_status = $1
 			, stock_unit = $2
 			, price = $3
-			, price_type = $4
-			, price_variant_percentage = $5
-			, discount_type = $6
-			, discount_rate = $7
-			, discount_minimum_quantity = $8
-			, discount_amount = $9
-			, sale_price = $10
-			, description = $11
-			, updated_by = $12
-			, updated_at = $13
-			, deleted_by = $14
-			, deleted_at = $15
-			, deletion_reason = $16
-		WHERE id = $17
+			, discount_type = $4
+			, discount_rate = $5
+			, discount_minimum_quantity = $6
+			, discount_amount = $7
+			, sale_price = $8
+			, description = $9
+			, updated_by = $10
+			, updated_at = $11
+			, deleted_by = $12
+			, deleted_at = $13
+			, deletion_reason = $14
+		WHERE id = $15
 		RETURNING id
 			, record_status
 			, product_id
 			, stock_unit
 			, price
-			, price_type
-			, price_variant_percentage
 			, discount_type
 			, discount_rate
 			, discount_minimum_quantity
@@ -386,8 +366,6 @@ func (q *productVariantRepository) UpdateProductVariant(
 		request.RecordStatus,
 		request.StockUnit,
 		request.Price,
-		request.PriceType,
-		request.PriceVariantPercentage,
 		request.DiscountType,
 		request.DiscountRate,
 		request.DiscountMinimumQuantity,
@@ -406,8 +384,6 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductID,
 		&response.StockUnit,
 		&response.Price,
-		&response.PriceType,
-		&response.PriceVariantPercentage,
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
@@ -477,19 +453,6 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 		_, _ = sb.WriteString("LOWER(stock_unit) IN (")
 		for i, stockUnit := range request.StockUnits {
 			params = append(params, strings.ToLower(stockUnit))
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.PriceTypes) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("price_type IN (")
-		for i, priceType := range request.PriceTypes {
-			params = append(params, priceType)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

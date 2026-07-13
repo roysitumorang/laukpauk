@@ -14,23 +14,9 @@ import (
 var (
 	ErrProductVariantNotFound                 = errors.New("product variant not found")
 	ErrUniqueProductVariantStockUnitViolation = errors.New("stock_unit: already exists")
-
-	PriceTypes = []PriceType{PriceTypeAbsolute, PriceTypeRelative}
-
-	MapPriceTypes = map[PriceType]struct{}{
-		PriceTypeAbsolute: {},
-		PriceTypeRelative: {},
-	}
-)
-
-const (
-	PriceTypeAbsolute PriceType = iota
-	PriceTypeRelative
 )
 
 type (
-	PriceType int
-
 	ProductVariant struct {
 		RowNo                   int64        `json:"-" form:"-"`
 		ID                      uuid.UUID    `json:"-" form:"-"`
@@ -38,8 +24,6 @@ type (
 		ProductID               uuid.UUID    `json:"-" form:"-"`
 		StockUnit               string       `json:"-" form:"stock_unit"`
 		Price                   int64        `json:"-" form:"price"`
-		PriceType               PriceType    `json:"-" form:"price_type"`
-		PriceVariantPercentage  float64      `json:"-" form:"price_variant_percentage"`
 		DiscountType            DiscountType `json:"-" form:"discount_type"`
 		DiscountRate            int64        `json:"-" form:"discount_rate"`
 		DiscountMinimumQuantity int64        `json:"-" form:"discount_minimum_quantity"`
@@ -61,7 +45,6 @@ type (
 		ExcludedProductVariantIDs []uuid.UUID
 		RecordStatuses []RecordStatus
 		StockUnits     []string
-		PriceTypes     []PriceType
 		PaginationURL  string
 		Sortings       []Sorting
 		MapSortings    *Map
@@ -103,11 +86,6 @@ func (q *ProductVariantFilter) WithStockUnits(stockUnits ...string) *ProductVari
 	return q
 }
 
-func (q *ProductVariantFilter) WithPriceTypes(priceTypes ...PriceType) *ProductVariantFilter {
-	q.PriceTypes = priceTypes
-	return q
-}
-
 func (q *ProductVariantFilter) WithPaginationURL(paginationURL string) *ProductVariantFilter {
 	q.PaginationURL = paginationURL
 	return q
@@ -137,49 +115,12 @@ func (q *ProductVariantFilter) WithUrlValues(urlValues url.Values) *ProductVaria
 	return q
 }
 
-func (q *ProductVariant) Validate(productBasePrice int64) error {
+func (q *ProductVariant) Validate() error {
 	if q.StockUnit = strings.TrimSpace(q.StockUnit); q.StockUnit == "" {
 		return errors.New("stock_unit: is required")
 	}
-	switch q.PriceType {
-	case PriceTypeAbsolute:
-		q.PriceVariantPercentage = 0
-		if q.Price < 1 {
-			return errors.New("price: requires a positive integer minimum 1")
-		}
-	case PriceTypeRelative:
-		if q.PriceVariantPercentage < 1 || q.PriceVariantPercentage > 99 {
-			return errors.New("price_variant_percentage: requires a positive decimal minimum 0 maximum 99")
-		}
-		basePrice, err := decimal.New(productBasePrice, 0)
-		if err != nil {
-			return err
-		}
-		variantPercentage, err := decimal.NewFromFloat64(q.PriceVariantPercentage)
-		if err != nil {
-			return err
-		}
-		if basePrice, err = basePrice.Mul(variantPercentage); err != nil {
-			return err
-		}
-		if basePrice, err = basePrice.Quo(decimal.Hundred); err != nil {
-			return err
-		}
-		price, remainder, err := basePrice.QuoRem(decimal.Hundred)
-		if err != nil {
-			return err
-		}
-		if remainder.IsPos() {
-			if price, err = price.Add(decimal.One); err != nil {
-				return err
-			}
-			if price, err = price.Mul(decimal.Hundred); err != nil {
-				return err
-			}
-		}
-		q.Price, _, _ = price.Ceil(0).Int64(0)
-	default:
-		return errors.New("price_type: not found")
+	if q.Price < 1 {
+		return errors.New("price: requires a positive integer minimum 1")
 	}
 	switch q.DiscountType {
 	case DiscountTypeFixedAmount:
@@ -219,19 +160,4 @@ func (q *ProductVariant) Validate(productBasePrice int64) error {
 		return errors.New("discount_minimum_quantity: requires a positive integer minimum 0")
 	}
 	return nil
-}
-
-func (q PriceType) Int() int {
-	return int(q)
-}
-
-func (q PriceType) String() string {
-	if q == PriceTypeRelative {
-		return "tidak pas"
-	}
-	return "pas"
-}
-
-func (q PriceType) Equal(v PriceType) bool {
-	return q.Int() == v.Int()
 }

@@ -4,14 +4,6 @@
 		<label for="stock_unit" class="label-title">Nama Satuan</label>
 		<input type="text" name="stock_unit" value="{{ request.StockUnit }}" id="stock_unit" placeholder="Nama Harga (misal 1 Kg)" class="form-control" />
 	</div>
-	<div class="form-group col-lg-6">
-		<label for="price_type" class="label-title">Jenis Harga</label>
-		<select name="price_type" class="form-control" id="price_type">
-			{{ range _, priceType := priceTypes}}
-			<option value="{{ priceType.Int() }}"{{ if request.PriceType.Equal(priceType) }} selected{{ end }}>{{ priceType.String() }}</option>
-			{{ end }}
-		</select>
-	</div>
 	<div class="form-group col-lg-4">
 		<label for="price" class="label-title">Harga</label>
 		<div class="input-group">
@@ -19,15 +11,6 @@
 				<span class="input-group-text">Rp.</span>
 			</div>
 			<input type="number" name="price" value="{{ request.Price }}" id="price" placeholder="Harga" class="form-control" />
-		</div>
-	</div>
-	<div class="form-group col-lg-4">
-		<label for="price_variant_percentage" class="label-title">Persentase Variasi Harga</label>
-		<div class="input-group">
-			<input type="number" name="price_variant_percentage" value="{{ request.PriceVariantPercentage }}" id="price_variant_percentage" placeholder="Persentase Variasi Harga" class="form-control" min="0" max="99" step="any" />
-			<div class="input-group-append">
-				<span class="input-group-text">%</span>
-			</div>
 		</div>
 	</div>
 	<div class="form-group col-lg-4">

@@ -216,7 +216,6 @@ func init() {
 				, description character varying NOT NULL
 				, stock_status integer NOT NULL
 				, pinned BOOLEAN NOT NULL DEFAULT FALSE
-				, base_price bigint NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -301,8 +300,6 @@ func init() {
 				, product_id UUID NOT NULL REFERENCES products (id)
 				, stock_unit character varying NOT NULL COLLATE "natural_sort"
 				, price bigint NOT NULL
-				, price_type integer NOT NULL
-				, price_variant_percentage numeric(5, 2) NOT NULL
 				, discount_type integer NOT NULL
 				, discount_rate bigint NOT NULL
 				, discount_minimum_quantity bigint NOT NULL

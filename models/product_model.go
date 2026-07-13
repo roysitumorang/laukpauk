@@ -64,7 +64,6 @@ type (
 		Description         string       `json:"-" form:"description"`
 		StockStatus         StockStatus  `json:"-" form:"stock_status"`
 		Pinned              bool         `json:"-" form:"pinned"`
-		BasePrice           int64        `json:"-" form:"base_price"`
 		CreatedBy           uuid.UUID    `json:"-" form:"-"`
 		CreatedAt           time.Time    `json:"-" form:"-"`
 		UpdatedBy           uuid.UUID    `json:"-" form:"-"`
@@ -182,9 +181,6 @@ func (q *Product) Validate() error {
 		return errors.New("stock_status: invalid")
 	}
 	q.Description = strings.TrimSpace(q.Description)
-	if q.BasePrice < 0 {
-		return errors.New("base_price: requires a positive integer with minimum 0")
-	}
 	return nil
 }
 

@@ -245,8 +245,6 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = os.Getenv("PRODUCT_DEFAULT_PHOTO")
 	}
-	var productVariants []*models.ProductVariant
-	var basePriceChanged bool
 	if product != nil {
 		if product.RecordStatus == models.RecordStatusActive {
 			return c.Render("admin/product_new", params.Push(
@@ -261,31 +259,6 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		request.DeletionReason = nil
 		if photo == nil {
 			request.Photo = product.Photo
-		}
-		if basePriceChanged = product.BasePrice != request.BasePrice; basePriceChanged {
-			if productVariants, _, err = q.productVariantService.FindProductVariants(
-				ctx,
-				models.NewProductVariantFilter().
-					WithRecordStatuses(models.RecordStatusActive).
-					WithProductIDs(product.ID).
-					WithPriceTypes(models.PriceTypeRelative),
-			); err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-				return c.Render("admin/product_new", params.Push(
-					"flash", flash.Danger(err.Error()),
-				), "admin/layouts/authenticated")
-			}
-			for i, productVariant := range productVariants {
-				productVariant.UpdatedBy = request.UpdatedBy
-				productVariant.UpdatedAt = request.UpdatedAt
-				if err = productVariant.Validate(request.BasePrice); err != nil {
-					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
-					return c.Render("admin/product_new", params.Push(
-						"flash", flash.Danger(err.Error()),
-					), "admin/layouts/authenticated")
-				}
-				productVariants[i] = productVariant
-			}
 		}
 	}
 	params.Push(
@@ -312,16 +285,6 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
-	}
-	if basePriceChanged {
-		for _, productVariant := range productVariants {
-			if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-				return c.Render("admin/product_new", params.Push(
-					"flash", flash.Danger(err.Error()),
-				), "admin/layouts/authenticated")
-			}
-		}
 	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
@@ -552,33 +515,6 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	params.Push("request", request)
-	var productVariants []*models.ProductVariant
-	basePriceChanged := product.BasePrice != request.BasePrice
-	if basePriceChanged {
-		if productVariants, _, err = q.productVariantService.FindProductVariants(
-			ctx,
-			models.NewProductVariantFilter().
-				WithRecordStatuses(models.RecordStatusActive).
-				WithProductIDs(product.ID).
-				WithPriceTypes(models.PriceTypeRelative),
-		); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-			return c.Render("admin/product_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
-		}
-		for i, productVariant := range productVariants {
-			productVariant.UpdatedBy = request.UpdatedBy
-			productVariant.UpdatedAt = request.UpdatedAt
-			if err = productVariant.Validate(request.BasePrice); err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
-				return c.Render("admin/product_edit", params.Push(
-					"flash", flash.Danger(err.Error()),
-				), "admin/layouts/authenticated")
-			}
-			productVariants[i] = productVariant
-		}
-	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -591,16 +527,6 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
-	}
-	if basePriceChanged {
-		for _, productVariant := range productVariants {
-			if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-				return c.Render("admin/product_edit", params.Push(
-					"flash", flash.Danger(err.Error()),
-				), "admin/layouts/authenticated")
-			}
-		}
 	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
 		if errRollback := tx.Rollback(ctx); errRollback != nil {
@@ -707,7 +633,6 @@ func (q *productController) AdminNewVariant(c fiber.Ctx) (err error) {
 		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 		"product", product,
 		"request", request,
-		"priceTypes", models.PriceTypes,
 		"discountTypes", models.DiscountTypes,
 	)
 	return c.Render("admin/product_variant_new", params, "admin/layouts/authenticated")
@@ -747,10 +672,9 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 		"product", product,
 		"request", request,
-		"priceTypes", models.PriceTypes,
 		"discountTypes", models.DiscountTypes,
 	)
-	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c, product.BasePrice)
+	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductVariant")
 		c.Response().SetStatusCode(statusCode)
@@ -873,7 +797,6 @@ func (q *productController) AdminEditVariant(c fiber.Ctx) (err error) {
 		"product", product,
 		"productVariant", productVariant,
 		"request", productVariant,
-		"priceTypes", models.PriceTypes,
 		"discountTypes", models.DiscountTypes,
 	)
 	return c.Render("admin/product_variant_edit", params, "admin/layouts/authenticated")
@@ -931,10 +854,9 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 		"product", product,
 		"productVariant", productVariant,
 		"request", productVariant,
-		"priceTypes", models.PriceTypes,
 		"discountTypes", models.DiscountTypes,
 	)
-	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c, product.BasePrice)
+	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductVariant")
 		c.Response().SetStatusCode(statusCode)

@@ -59,10 +59,6 @@
 												<td class="border-top-0 text-left">{{ product.ProductCategoryName }}</td>
 											</tr>
 											<tr class="text-sm">
-												<td class="border-top-0 text-left">Harga Dasar</td>
-												<td class="border-top-0 text-left">Rp. {{ product.BasePrice | Comma }}</td>
-											</tr>
-											<tr class="text-sm">
 												<td class="border-top-0 text-left">Stok</td>
 												<td class="border-top-0 text-left">
 													<span class="badge badge-success">
@@ -88,6 +84,11 @@
 											</tr>
 										</table>
 										<hr />
+										<a href="{{ baseURL }}/admin/products/{{ product.ID }}/edit">
+											<button class="btn btn-default">
+												Edit Data Product
+											</button>
+										</a>
 										<a href="{{ baseURL }}/admin/products">
 											<button class="btn btn-default">
 												Back to List Product
@@ -130,7 +131,6 @@
 										<tr>
 											<th class="text-center">No.</th>
 											<th class="text-left">Satuan &amp; Harga</th>
-											<th class="text-left">Jenis Harga</th>
 											<th class="text-left">Diskon &amp; Minimum Quantity</th>
 											<th class="text-left">Keterangan</th>
 											<th class="text-center">Opsi</th>
@@ -144,7 +144,6 @@
 												<h5 class="text-primary mb-1">{{ row.StockUnit }}</h5>
 												<span class="text-bold text-success">Rp. {{ row.Price | Comma }}</span>
 											</td>
-											<td class="vam text-left">{{ row.PriceType.String() }}</td>
 											<td class="vam text-left">
 												<h5 class="text-primary mb-1">
 													{{ if row.DiscountType.Equal(discountTypePercentage) }}

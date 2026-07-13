@@ -59,10 +59,6 @@
 												<td class="border-top-0 text-left">{{ product.ProductCategoryName }}</td>
 											</tr>
 											<tr class="text-sm">
-												<td class="border-top-0 text-left">Harga Dasar</td>
-												<td class="border-top-0 text-left">Rp. {{ product.BasePrice | Comma }}</td>
-											</tr>
-											<tr class="text-sm">
 												<td class="border-top-0 text-left">Stok</td>
 												<td class="border-top-0 text-left">
 													<span class="badge badge-success">

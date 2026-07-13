@@ -131,7 +131,6 @@
 													<b>{{ row.Name }}</b>
 												</h6>
 												<p class="text-sm text-muted mb-0">{{ row.ProductCategoryName }}</p>
-												<p class="text-sm text-muted mb-0">Rp. {{ row.BasePrice | Comma }}</p>
 											</div>
 										</div>
 									</td>
