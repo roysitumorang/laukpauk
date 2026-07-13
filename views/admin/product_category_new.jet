@@ -60,37 +60,37 @@
 
 	function katagoriProdukChanged(thisContext) {
 		let el = $(thisContext);
-		let imgData = el.prop('files')[0];
+		let imgData = el.prop("files")[0];
 		let fileReader = new FileReader();
 		fileReader.readAsDataURL(imgData);
 		fileReader.onload = (e) => {
 			let imgResult = e.target.result;
 			imgKategoriProdukPreview = imgResult;
 			imgKategoriProdukData = imgData;
-			$('#imgKategoriProduk').attr('src', imgKategoriProdukPreview).addClass('img-thumbnail');
+			$("#imgKategoriProduk").attr("src", imgKategoriProdukPreview).addClass("img-thumbnail");
 		}
 	}
-	$('#formKategoriProduk').on('submit', function(e) {
+	$("#formKategoriProduk").on("submit", function(e) {
 		e.preventDefault();
 		let formData = new FormData();
-		formData.append('imgKategoriProduk', imgKategoriProdukData);
-		formData.append('nama', $('#nama').val());
-		formData.append('keterangan', $('#keterangan').val());
+		formData.append("imgKategoriProduk", imgKategoriProdukData);
+		formData.append("nama", $("#nama").val());
+		formData.append("keterangan", $("#keterangan").val());
 		$.ajax({
-			url: '{{ baseURL }}/admin/kategoriproduk/save',
+			url: "{{ baseURL }}/admin/kategoriproduk/save",
 			data: formData,
-			type: 'POST',
+			type: "POST",
 			processData: false,
 			contentType: false,
 			cache: false,
 			success: function(responseFromServer) {
 				let rFS = JSON.parse(responseFromServer);
-				let swalTitle = 'Add New Kategori Produk';
-				let swalMessage = 'Penambahan Kategori Produk baru gagal!';
-				let swalType = 'error';
+				let swalTitle = "Add New Kategori Produk";
+				let swalMessage = "Penambahan Kategori Produk baru gagal!";
+				let swalType = "error";
 				if (rFS.statusSave) {
-					swalMessage = 'Penambahan Kategori Produk baru berhasil!';;
-					swalType = 'success';
+					swalMessage = "Penambahan Kategori Produk baru berhasil!";;
+					swalType = "success";
 				}
 				Swal.fire({
 					title: swalTitle,

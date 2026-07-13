@@ -48,10 +48,10 @@ func NewProductCategoryRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) ProductCategoryRepository {
-	return new(productCategoryRepository{
+	return &productCategoryRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *productCategoryRepository) FindProductCategories(
@@ -155,7 +155,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		}
 		offset++
 		productCategory.RowNo = offset
-		response = append(response, new(productCategory))
+		response = append(response, &productCategory)
 	}
 	return response, total, pages, nil
 }
@@ -209,7 +209,7 @@ func (q *productCategoryRepository) FindProductCategory(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *productCategoryRepository) CreateProductCategory(
@@ -265,13 +265,16 @@ func (q *productCategoryRepository) CreateProductCategory(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "product_categories_unique_name_idx" {
+			err = models.ErrUniqueProductCategoryNameViolation
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *productCategoryRepository) UpdateProductCategory(
@@ -330,9 +333,6 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
 			pgxErr.ConstraintName == "product_categories_unique_name_idx" {
@@ -342,7 +342,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		}
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *productCategoryRepository) buildCondition(request *models.ProductCategoryFilter, sb *strings.Builder) (condition string, params []any) {
