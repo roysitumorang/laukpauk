@@ -35,10 +35,6 @@
 							<h5>Data Kategori Produk</h5>
 						</div>
 						<div class="col-lg-8 text-right">
-							<a href="#" data-toggle="tooltip" class="mr-1" onClick="sinkronKategoriProduk(this)"
-								data-placement="top" title="Sinkronisasi Data Kategori Produk">
-								Sinkronisasi Kategori Produk
-							</a>
 							<a href="{{ baseURL }}/admin/product_categories/new" data-toggle="tooltip"
 								data-placement="top" title="Tambah Kategori Produk Baru"
 								class="ml-1">
@@ -124,8 +120,8 @@
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
 									<td class="text-left">
 										<div class="row">
-											<a href="{{ baseURL }}/images/product_category/{{ row.Photo }}" target="_blank">
-												<img src="{{ baseURL }}/images/product_category/compress/{{ row.Photo }}"
+											<a href="{{ baseURL }}{{ row.PhotoPath() }}" target="_blank">
+												<img src="{{ baseURL }}{{ row.PhotoPath() }}"
 													alt="{{ row.Name }}" class="img-circle"
 													style="width:50px; height:50px;"
 													onerror="this.src='{{ baseURL }}/assets/img/no-image.png'" />
@@ -196,79 +192,3 @@
 	<!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
-<script>
-	$("#listKategoriProduk").DataTable();
-
-	function deleteKategoriProduk(thisContext) {
-		let el = $(thisContext);
-		Swal.fire({
-			title: `Konfirmasi Penghapusan Kategori Produk`,
-			html: `Apakah anda yakin akan menghapus Kategori Produk ini ?
-				<p class="text-danger text-sm mt-2">
-					Jika anda menghapus kategori produk ini maka produk produk yang ada di dalam kategori produk ini akan terhapus dari kategori produk ini !
-				</p>`,
-			type: "question",
-			showConfirmButton: true,
-			showCancelButton: true,
-			cancelButtonText: "Batal",
-			confirmButtonText: "Ya, Lanjutkan !",
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				let idKategoriProduk = el.attr("idKategoriProduk");
-				$.ajax({
-					url: `{{ baseURL }}/admin/kategoriproduk/delete/${idKategoriProduk}`,
-					success: function(responseFromServer) {
-						let rFS = JSON.parse(responseFromServer);
-						let swalText = `<span class="text-danger">Gagal menghapus Kategori Produk !</span>`;
-						let swalType = "error";
-						if (rFS.statusHapusKategoriProduk) {
-							swalText = `<span class="text-success">Berhasil menghapus Kategori Produk !</span>`;
-							swalType = "success";
-						}
-						Swal.fire({
-							title: `Penghapusan Data Kategori Produk`,
-							html: swalText,
-							type: swalType
-						}).then(() => {
-							if (rFS.statusHapusKategoriProduk) {
-								location.reload();
-							}
-						});
-					}
-				})
-			}
-		});
-	}
-
-	function sinkronKategoriProduk(thisContext) {
-		let el = $(thisContext);
-		Swal.fire({
-			title: "Konfirmasi Sinkronisasi Kategori Produk",
-			html: `Apakah anda yakin akan melakukan sinkronisasi data kategori produk dari database lama ke database saat ini ?`,
-			type: "question",
-			showConfirmButton: true,
-			showCancelButton: true,
-			cancelButtonText: "Batal",
-			confirmButtonText: "Ya, Lanjutkan !",
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				$.ajax({
-					url: `{{ baseURL }}/admin/sinkronisasi/sinkronKategoriProduk`,
-					success: function(responseFromServer) {
-						let rFS = JSON.parse(responseFromServer);
-						let html = "Sinkronisasi berhasil dilakukan !";
-						Swal.fire({
-							title: "Sinkronisasi Data Kategori Produk",
-							html: html,
-							type: "success"
-						}).then(() => {
-							location.reload();
-						});
-					}
-				});
-			}
-		});
-	}
-</script>

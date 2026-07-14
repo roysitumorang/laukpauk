@@ -115,17 +115,7 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 func (q *productCategoryController) AdminNew(c fiber.Ctx) (err error) {
 	_, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request := &models.ProductCategory{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Kategori Produk Baru",
-		"request", request,
-		"productCategory", request,
-	)
+	_, params := q.prepareCreate(c, flash, currentAdmin, csrfToken)
 	return c.Render("admin/product_category_new", params, "admin/layouts/authenticated")
 }
 
@@ -198,14 +188,8 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if request.ID.Compare(uuid.Nil()) == 0 {
-		if _, err = q.productCategoryService.CreateProductCategory(ctx, tx, request); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProductCategory")
-		}
-	} else if _, err = q.productCategoryService.UpdateProductCategory(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
-	}
-	if err != nil {
+	if _, err = q.productCategoryService.SaveProductCategory(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProductCategory")
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -320,6 +304,14 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
+	if request.Photo != productCategory.Photo {
+		if err = os.RemoveAll(helper.PhotoLocation(productCategory.Photo)); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
+			return c.Render("admin/product_category_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
 	if err = q.saveFile(c, photo, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_category_edit", params.Push(
@@ -383,10 +375,7 @@ func (q *productCategoryController) saveFile(c fiber.Ctx, file *multipart.FileHe
 	if file == nil {
 		return nil
 	}
-	if err := c.SaveFile(file, helper.Sprintf(models.ProductCategoryPhotoPath, filename)); err != nil {
-		return err
-	}
-	return c.SaveFile(file, helper.Sprintf(models.ProductCategoryPhotoCompressPath, filename))
+	return c.SaveFile(file, helper.PhotoLocation(filename))
 }
 
 func (q *productCategoryController) prepare(c fiber.Ctx) (

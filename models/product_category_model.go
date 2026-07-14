@@ -21,10 +21,6 @@ var (
 )
 
 const (
-	ProductCategoryPhotoName         = "product-category-%d%s"
-	ProductCategoryPhotoPath         = "./images/product_category/%s"
-	ProductCategoryPhotoCompressPath = "./images/product_category/compress/%s"
-
 	SortProductCategoriesByID   = "id"
 	SortProductCategoriesByName = "name"
 )
@@ -32,7 +28,7 @@ const (
 type (
 	ProductCategory struct {
 		RowNo          int64        `json:"-" form:"-"`
-		ID             uuid.UUID    `json:"-" form:"-"`
+		ID             uuid.UUID    `json:"-" form:"id"`
 		RecordStatus   RecordStatus `json:"-" form:"-"`
 		Name           string       `json:"-" form:"name"`
 		Description    string       `json:"-" form:"description"`
@@ -129,7 +125,15 @@ func (q *ProductCategory) Validate() error {
 	return nil
 }
 
+func (q *ProductCategory) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
 func (q *ProductCategory) SetPhoto(photo string) *ProductCategory {
 	q.Photo = photo
 	return q
+}
+
+func (q *ProductCategory) PhotoPath() string {
+	return helper.PhotoPath(q.Photo)
 }

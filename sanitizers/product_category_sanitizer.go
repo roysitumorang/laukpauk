@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"uuid"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v3"
@@ -99,7 +100,7 @@ func ValidateProductCategory(ctx context.Context, c fiber.Ctx) (*models.ProductC
 		if _, ok := mimeTypes[mtype.String()]; !ok {
 			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
 		}
-		response.Photo = helper.Sprintf(models.ProductCategoryPhotoName, helper.GenerateSnowflakeID(), mtype.Extension())
+		response.Photo = helper.Sprintf("%s%s", uuid.New().String(), mtype.Extension())
 	}
 	return &response, photo, fiber.StatusOK, nil
 }

@@ -295,3 +295,15 @@ func TruncateString(s string, maxLength int) string {
 	}
 	return unsafe.String(unsafe.StringData(s), maxLength)
 }
+
+func PhotoDirectory() string {
+	return os.Getenv("PHOTO_DIRECTORY")
+}
+
+func PhotoPath(filename string) string {
+	return Sprintf("/%s/%s", PhotoDirectory(), filename)
+}
+
+func PhotoLocation(filename string) string {
+	return Sprintf(".%s", PhotoPath(filename))
+}

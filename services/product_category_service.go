@@ -31,6 +31,11 @@ type (
 			tx pgx.Tx,
 			request *models.ProductCategory,
 		) (*models.ProductCategory, error)
+		SaveProductCategory(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.ProductCategory,
+		) (*models.ProductCategory, error)
 	}
 
 	productCategoryService struct {
@@ -97,10 +102,10 @@ func (q *productCategoryService) CreateProductCategory(
 	response, err := q.productCategoryRepository.CreateProductCategory(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProductCategory")
-		return nil, err
 	}
-	return response, nil
+	return response, err
 }
+
 func (q *productCategoryService) UpdateProductCategory(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -110,7 +115,22 @@ func (q *productCategoryService) UpdateProductCategory(
 	response, err := q.productCategoryRepository.UpdateProductCategory(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
-		return nil, err
 	}
-	return response, nil
+	return response, err
+}
+
+func (q *productCategoryService) SaveProductCategory(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.ProductCategory,
+) (response *models.ProductCategory, err error) {
+	ctxt := "ProductCategoryService-SaveProductCategory"
+	if request.New() {
+		if response, err = q.productCategoryRepository.CreateProductCategory(ctx, tx, request); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProductCategory")
+		}
+	} else if response, err = q.productCategoryRepository.UpdateProductCategory(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
+	}
+	return response, err
 }
