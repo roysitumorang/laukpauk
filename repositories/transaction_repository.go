@@ -505,20 +505,6 @@ func (q *transactionRepository) CreateTransaction(
 			break
 		}
 	}
-	for {
-		request.UniqueCode = helper.RandomNumber(6)
-		if err := tx.QueryRow(
-			ctx,
-			"SELECT COUNT(1) FROM transactions WHERE LOWER(unique_code) = $1",
-			strings.ToLower(request.UniqueCode),
-		).Scan(&count); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-		if count == 0 {
-			break
-		}
-	}
 	var response models.Transaction
 	err := tx.QueryRow(
 		ctx,
@@ -1103,14 +1089,8 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
-		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`(LOWER(reference_number LIKE $%d
-			OR LOWER(unique_code) LIKE $%d)`,
-			n, n,
-		)
+		_, _ = fmt.Fprintf(sb, `LOWER(reference_number) LIKE $%d`, len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

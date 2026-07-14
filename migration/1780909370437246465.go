@@ -1052,7 +1052,7 @@ func init() {
 				, recipient_name character varying NOT NULL
 				, recipient_mobile_phone character varying NOT NULL
 				, buyer_note character varying NOT NULL
-				, unique_code character varying NOT NULL
+				, unique_code bigint NOT NULL
 				, subtotal bigint NOT NULL
 				, referrer_id UUID REFERENCES users (id)
 				, referral_code character varying
@@ -1127,13 +1127,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (transaction_status);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE UNIQUE INDEX transactions_unique_code_idx ON transactions (LOWER(unique_code));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

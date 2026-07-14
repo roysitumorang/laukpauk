@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"mime/multipart"
 	"os"
 	"strconv"
@@ -315,4 +316,18 @@ func SaveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
 		return nil
 	}
 	return c.SaveFile(file, PhotoLocation(filename))
+}
+
+func RandomInteger(bound int64) int64 {
+	max := big.NewInt(bound)
+	var (
+		n   *big.Int
+		err error
+	)
+	for {
+		if n, err = rand.Int(rand.Reader, max); err == nil {
+			break
+		}
+	}
+	return n.Int64()
 }

@@ -2,11 +2,13 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
 	"uuid"
 
+	"github.com/nyaruka/phonenumbers"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -39,56 +41,57 @@ type (
 	TransactionStatus int
 
 	Transaction struct {
-		RowNo                int64              `json:"-" form:"-"`
-		ID                   uuid.UUID          `json:"-" form:"id"`
-		ParentID             *uuid.UUID         `json:"-" form:"parent_id"`
-		BuyerID              uuid.UUID          `json:"-" form:"buyer_id"`
-		IdempotencyKey       uuid.UUID          `json:"-" form:"idempotency_key"`
-		ReferenceNumber      string             `json:"-" form:"-"`
-		TransactionStatus    TransactionStatus  `json:"-" form:"-"`
-		RecipientName        string             `json:"-" form:"recipient_name"`
-		RecipientMobilePhone string             `json:"-" form:"recipient_mobile_phone"`
-		BuyerNote            string             `json:"-" form:"buyer_note"`
-		UniqueCode           string             `json:"-" form:"-"`
-		Subtotal             int64              `json:"-" form:"-"`
-		ReferrerID           *uuid.UUID         `json:"-" form:"-"`
-		ReferralCode         *string            `json:"-" form:"referral_code"`
-		VoucherID            *uuid.UUID         `json:"-" form:"-"`
-		VoucherType          *VoucherType       `json:"-" form:"-"`
-		VoucherCode          *string            `json:"-" form:"voucher_code"`
-		VoucherDiscount      int64              `json:"-" form:"-"`
-		PointDiscount        int64              `json:"-" form:"point_discount"`
-		WalletDiscount       int64              `json:"-" form:"wallet_discount"`
-		ShoppingCost         int64              `json:"-" form:"-"`
-		PaymentAmount        int64              `json:"-" form:"-"`
-		PaymentDeadline      time.Time          `json:"-" form:"payment_deadline"`
-		DeliveryCost         int64              `json:"-" form:"delivery_cost"`
-		DeliveryLatitude     float64            `json:"-" form:"delivery_latitude"`
-		DeliveryLongitude    float64            `json:"-" form:"delivery_longitude"`
-		DeliveryAddress      string             `json:"-" form:"delivery_address"`
-		DeliveryInstruction  string             `json:"-" form:"delivery_instruction"`
-		DeliveryPlanID       uuid.UUID          `json:"-" form:"delivery_plan_id"`
-		DeliverySpeed        DeliverySpeed      `json:"-" form:"-"`
-		DeliveryDatetime     time.Time          `json:"-" form:"delivery_datetime"`
-		CreatedAt            time.Time          `json:"-" form:"-"`
-		PaidAt               *time.Time         `json:"-" form:"-"`
-		PaymentRequestID     *uuid.UUID         `json:"-" form:"-"`
-		PaymentID            *uuid.UUID         `json:"-" form:"-"`
-		PaymentStatus        *string            `json:"-" form:"-"`
-		ProcessedBy          *uuid.UUID         `json:"-" form:"-"`
-		ProcessedAt          *time.Time         `json:"-" form:"-"`
-		RevisedPaymentAmount *int64             `json:"-" form:"-"`
-		RefundAmount         *int64             `json:"-" form:"-"`
-		RefundedAt           *time.Time         `json:"-" form:"-"`
-		RefundID             *uuid.UUID         `json:"-" form:"-"`
-		CancelledBy          *uuid.UUID         `json:"-" form:"-"`
-		CancelledAt          *time.Time         `json:"-" form:"-"`
-		CancellationReason   *string            `json:"-" form:"-"`
-		ShippedBy            *uuid.UUID         `json:"-" form:"-"`
-		ShippedAt            *time.Time         `json:"-" form:"-"`
-		DeliveredBy          *uuid.UUID         `json:"-" form:"-"`
-		DeliveredAt          *time.Time         `json:"-" form:"-"`
-		Items                []*TransactionItem `json:"-" form:"items"`
+		RowNo                   int64              `json:"-" form:"-"`
+		ID                      uuid.UUID          `json:"-" form:"id"`
+		ParentID                *uuid.UUID         `json:"-" form:"parent_id"`
+		BuyerID                 uuid.UUID          `json:"-" form:"buyer_id"`
+		IdempotencyKey          uuid.UUID          `json:"-" form:"idempotency_key"`
+		ReferenceNumber         string             `json:"-" form:"-"`
+		TransactionStatus       TransactionStatus  `json:"-" form:"-"`
+		RecipientName           string             `json:"-" form:"recipient_name"`
+		RecipientMobilePhone    string             `json:"-" form:"-"`
+		RawRecipientMobilePhone string             `json:"-" form:"recipient_mobile_phone"`
+		BuyerNote               string             `json:"-" form:"buyer_note"`
+		UniqueCode              int64              `json:"-" form:"-"`
+		Subtotal                int64              `json:"-" form:"-"`
+		ReferrerID              *uuid.UUID         `json:"-" form:"-"`
+		ReferralCode            *string            `json:"-" form:"referral_code"`
+		VoucherID               *uuid.UUID         `json:"-" form:"-"`
+		VoucherType             *VoucherType       `json:"-" form:"-"`
+		VoucherCode             *string            `json:"-" form:"voucher_code"`
+		VoucherDiscount         int64              `json:"-" form:"-"`
+		PointDiscount           int64              `json:"-" form:"point_discount"`
+		WalletDiscount          int64              `json:"-" form:"wallet_discount"`
+		ShoppingCost            int64              `json:"-" form:"-"`
+		PaymentAmount           int64              `json:"-" form:"-"`
+		PaymentDeadline         time.Time          `json:"-" form:"-"`
+		DeliveryCost            int64              `json:"-" form:"-"`
+		DeliveryLatitude        float64            `json:"-" form:"delivery_latitude"`
+		DeliveryLongitude       float64            `json:"-" form:"delivery_longitude"`
+		DeliveryAddress         string             `json:"-" form:"delivery_address"`
+		DeliveryInstruction     string             `json:"-" form:"delivery_instruction"`
+		DeliveryPlanID          uuid.UUID          `json:"-" form:"delivery_plan_id"`
+		DeliverySpeed           DeliverySpeed      `json:"-" form:"-"`
+		DeliveryDatetime        time.Time          `json:"-" form:"delivery_datetime"`
+		CreatedAt               time.Time          `json:"-" form:"-"`
+		PaidAt                  *time.Time         `json:"-" form:"-"`
+		PaymentRequestID        *uuid.UUID         `json:"-" form:"-"`
+		PaymentID               *uuid.UUID         `json:"-" form:"-"`
+		PaymentStatus           *string            `json:"-" form:"-"`
+		ProcessedBy             *uuid.UUID         `json:"-" form:"-"`
+		ProcessedAt             *time.Time         `json:"-" form:"-"`
+		RevisedPaymentAmount    *int64             `json:"-" form:"-"`
+		RefundAmount            *int64             `json:"-" form:"-"`
+		RefundedAt              *time.Time         `json:"-" form:"-"`
+		RefundID                *uuid.UUID         `json:"-" form:"-"`
+		CancelledBy             *uuid.UUID         `json:"-" form:"-"`
+		CancelledAt             *time.Time         `json:"-" form:"-"`
+		CancellationReason      *string            `json:"-" form:"-"`
+		ShippedBy               *uuid.UUID         `json:"-" form:"-"`
+		ShippedAt               *time.Time         `json:"-" form:"-"`
+		DeliveredBy             *uuid.UUID         `json:"-" form:"-"`
+		DeliveredAt             *time.Time         `json:"-" form:"-"`
+		Items                   []*TransactionItem `json:"-" form:"items"`
 	}
 
 	TransactionItem struct {
@@ -203,7 +206,94 @@ func (q *TransactionFilter) WithUrlValues(urlValues url.Values) *TransactionFilt
 }
 
 func (q *Transaction) Validate() error {
+	if q.IdempotencyKey.Compare(uuid.Nil()) == 0 {
+		return errors.New("idempotency_key: is required")
+	}
+	if q.RecipientName = strings.TrimSpace(q.RecipientName); q.RecipientName == "" {
+		return errors.New("recipient_name: is required")
+	}
+	if q.RawRecipientMobilePhone = strings.TrimSpace(q.RawRecipientMobilePhone); q.RawRecipientMobilePhone == "" {
+		return errors.New("recipient_mobile_phone: is required")
+	}
+	mobilePhone, err := phonenumbers.Parse(q.RawRecipientMobilePhone, "ID")
+	if err != nil {
+		return errors.New("recipient_mobile_phone: is invalid")
+	}
+	q.RecipientMobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
+	q.BuyerNote = strings.TrimSpace(q.BuyerNote)
+	if q.ReferralCode != nil {
+		if *q.ReferralCode = strings.TrimSpace(*q.ReferralCode); *q.ReferralCode == "" {
+			q.ReferralCode = nil
+		}
+	}
+	if q.VoucherCode != nil {
+		if *q.VoucherCode = strings.TrimSpace(*q.VoucherCode); *q.VoucherCode == "" {
+			q.VoucherCode = nil
+		}
+	}
+	if q.PointDiscount < 0 {
+		return errors.New("point_discount: requires a positive integer")
+	}
+	if q.WalletDiscount < 0 {
+		return errors.New("wallet_discount: requires a positive integer")
+	}
+	if q.DeliveryAddress = strings.TrimSpace(q.DeliveryAddress); q.DeliveryAddress == "" {
+		return errors.New("delivery_address: is required")
+	}
+	q.DeliveryInstruction = strings.TrimSpace(q.DeliveryInstruction)
+	if q.DeliveryPlanID.Compare(uuid.Nil()) == 0 {
+		return errors.New("delivery_plan_id: is required")
+	}
+	if q.DeliveryDatetime.IsZero() {
+		return errors.New("delivery_datetime: is required")
+	}
+	if !q.DeliveryDatetime.After(time.Now()) {
+		return errors.New("delivery_datetime: should exceed now")
+	}
+	if len(q.Items) == 0 {
+		return errors.New("items: is required")
+	}
+	for i, item := range q.Items {
+		if item.ProductVariantID.Compare(uuid.Nil()) == 0 {
+			return fmt.Errorf("items[%d].product_variant_id: is required", i)
+		}
+		if item.Quantity < 1 {
+			return fmt.Errorf("items[%d].quantity: requires a positive integer, minimum 1", i)
+		}
+		item.BuyerNote = strings.TrimSpace(item.BuyerNote)
+	}
 	return nil
+}
+
+func (q *Transaction) Calculate() {
+	q.Subtotal = 0
+	for i, item := range q.Items {
+		if item.OutOfStock {
+			item.Subtotal = 0
+		} else if (item.DiscountMinimumQuantity > 0 &&
+			item.Quantity >= item.DiscountMinimumQuantity) ||
+			item.DiscountAmount > 0 {
+			item.Subtotal = max(0, item.Price-item.DiscountAmount) * item.Quantity
+		} else {
+			item.Subtotal = item.Price * item.Quantity
+		}
+		q.Subtotal += item.Subtotal
+		q.Items[i] = item
+	}
+	q.ShoppingCost = q.Subtotal
+	if q.ReferralCode != nil || q.PointDiscount > 0 {
+		q.ShoppingCost = max(0, q.ShoppingCost-q.PointDiscount)
+	} else if q.VoucherCode != nil && q.VoucherType != nil {
+		if *q.VoucherType == VoucherTypeShoppingCost {
+			q.ShoppingCost = max(0, q.ShoppingCost-q.VoucherDiscount)
+		} else {
+			q.DeliveryCost = max(0, q.DeliveryCost-q.VoucherDiscount)
+		}
+	} else if q.WalletDiscount > 0 {
+		q.ShoppingCost = max(0, q.ShoppingCost-q.WalletDiscount)
+	}
+	q.UniqueCode = helper.RandomInteger(1000)
+	q.PaymentAmount = q.ShoppingCost + q.DeliveryCost + q.UniqueCode
 }
 
 func (q TransactionStatus) Int() int {
