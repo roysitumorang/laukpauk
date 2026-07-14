@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"mime/multipart"
 	"os"
 	"time"
 	"uuid"
@@ -113,9 +112,9 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *productCategoryController) AdminNew(c fiber.Ctx) (err error) {
-	_, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params := q.prepareCreate(c, flash, currentAdmin, csrfToken)
+	_, params, _ := q.prepareProductCategory(ctx, c, flash, currentAdmin, csrfToken, true)
 	return c.Render("admin/product_category_new", params, "admin/layouts/authenticated")
 }
 
@@ -123,7 +122,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-AdminCreate"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request, params := q.prepareCreate(c, flash, currentAdmin, csrfToken)
+	request, params, _ := q.prepareProductCategory(ctx, c, flash, currentAdmin, csrfToken, true)
 	request, photo, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	params.Push(
 		"request", request,
@@ -194,7 +193,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -213,16 +212,16 @@ func (q *productCategoryController) AdminEdit(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-AdminEdit"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, err := q.prepareUpdate(
-		c,
+	_, params, err := q.prepareProductCategory(
 		ctx,
+		c,
 		flash,
 		currentAdmin,
 		csrfToken,
 		true,
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareUpdate")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
 	return c.Render("admin/product_category_edit", params, "admin/layouts/authenticated")
@@ -232,16 +231,16 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-AdminUpdate"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	productCategory, params, err := q.prepareUpdate(
-		c,
+	productCategory, params, err := q.prepareProductCategory(
 		ctx,
+		c,
 		flash,
 		currentAdmin,
 		csrfToken,
 		true,
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareUpdate")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
 	request, photo, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
@@ -312,7 +311,7 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -331,15 +330,16 @@ func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-AdminDelete"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	productCategory, _, err := q.prepareUpdate(
-		c,
+	productCategory, _, err := q.prepareProductCategory(
 		ctx,
+		c,
 		flash,
 		currentAdmin,
 		csrfToken,
+		false,
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareUpdate")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
 	request := productCategory
@@ -371,13 +371,6 @@ func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 	return flash.Success("product category deleted successfully").Redirect(c, sess.Session, "/admin/product_categories")
 }
 
-func (q *productCategoryController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
-	if file == nil {
-		return nil
-	}
-	return c.SaveFile(file, helper.PhotoLocation(filename))
-}
-
 func (q *productCategoryController) prepare(c fiber.Ctx) (
 	context.Context,
 	*session.Middleware,
@@ -396,69 +389,55 @@ func (q *productCategoryController) prepare(c fiber.Ctx) (
 	return ctx, sess, flash, currentAdmin, csrfToken
 }
 
-func (q *productCategoryController) prepareCreate(
-	c fiber.Ctx,
-	flash *helper.FlashMessage,
-	currentAdmin *models.Admin,
-	csrfToken string,
-) (
-	*models.ProductCategory,
-	*models.Map,
-) {
-	request := &models.ProductCategory{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Kategori Produk Baru",
-		"request", request,
-		"productCategory", request,
-	)
-	return request, params
-}
-
-func (q *productCategoryController) prepareUpdate(
-	c fiber.Ctx,
+func (q *productCategoryController) prepareProductCategory(
 	ctx context.Context,
+	c fiber.Ctx,
 	flash *helper.FlashMessage,
 	currentAdmin *models.Admin,
 	csrfToken string,
-	withParams ...bool,
+	withParams bool,
 ) (
 	*models.ProductCategory,
-	*models.Map,
+	models.Map,
 	error,
 ) {
-	productCategoryID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		return nil, nil, models.ErrProductCategoryNotFound
-	}
-	productCategory, err := q.productCategoryService.FindProductCategory(
-		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductCategoryIDs(productCategoryID),
-	)
-	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
-		return nil, nil, err
-	}
-	if productCategory == nil {
-		return nil, nil, models.ErrProductCategoryNotFound
-	}
-	var params *models.Map
-	if len(withParams) > 0 && withParams[0] {
+	productCategory := &models.ProductCategory{}
+	var params models.Map
+	if withParams {
 		params = models.NewMap().Push(
 			"baseURL", c.BaseURL(),
 			"flash", flash,
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentAdmin", currentAdmin,
-			"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
+			"pageTitle", "Kategori Produk Baru",
 			"request", productCategory,
 			"productCategory", productCategory,
 		)
+	}
+	if c.Params("id") != "" {
+		productCategoryID, err := uuid.Parse(c.Params("id"))
+		if err != nil {
+			return nil, nil, models.ErrProductCategoryNotFound
+		}
+		if productCategory, err = q.productCategoryService.FindProductCategory(
+			ctx,
+			models.NewProductCategoryFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductCategoryIDs(productCategoryID),
+		); err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
+			return nil, nil, err
+		}
+		if productCategory == nil {
+			return nil, nil, models.ErrProductCategoryNotFound
+		}
+		if withParams && params.Size() > 0 {
+			params.Push(
+				"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
+				"request", productCategory,
+				"productCategory", productCategory,
+			)
+		}
 	}
 	return productCategory, params, nil
 }

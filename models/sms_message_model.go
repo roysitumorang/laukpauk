@@ -51,7 +51,7 @@ type (
 		MessageIDs          []int64
 		PaginationURL       string
 		Sortings            []Sorting
-		MapSortings         *Map
+		MapSortings         Map
 		Limit,
 		Page int64
 		UrlValues url.Values

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"mime/multipart"
 	"os"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/goccy/go-json"
+	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -306,4 +308,11 @@ func PhotoPath(filename string) string {
 
 func PhotoLocation(filename string) string {
 	return Sprintf(".%s", PhotoPath(filename))
+}
+
+func SaveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
+	if file == nil {
+		return nil
+	}
+	return c.SaveFile(file, PhotoLocation(filename))
 }
