@@ -52,8 +52,12 @@ func (q *productCategoryController) Mount(r fiber.Router) {
 func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminIndex"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.ProductCategoryFilter)
@@ -116,8 +120,12 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *productCategoryController) AdminNew(c fiber.Ctx) (err error) {
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.ProductCategory)
@@ -137,8 +145,12 @@ func (q *productCategoryController) AdminNew(c fiber.Ctx) (err error) {
 func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminCreate"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.ProductCategory)
@@ -246,8 +258,12 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 func (q *productCategoryController) AdminEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminEdit"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	productCategoryID, err := uuid.Parse(c.Params("id"))
@@ -284,8 +300,12 @@ func (q *productCategoryController) AdminEdit(c fiber.Ctx) (err error) {
 func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminUpdate"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	productCategoryID, err := uuid.Parse(c.Params("id"))
@@ -394,8 +414,12 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminDelete"
-	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	productCategoryID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
