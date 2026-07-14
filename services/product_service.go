@@ -31,6 +31,11 @@ type (
 			tx pgx.Tx,
 			request *models.Product,
 		) (*models.Product, error)
+		SaveProduct(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.Product,
+		) (*models.Product, error)
 	}
 
 	productService struct {
@@ -100,10 +105,10 @@ func (q *productService) CreateProduct(
 	response, err := q.productRepository.CreateProduct(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProduct")
-		return nil, err
 	}
-	return response, nil
+	return response, err
 }
+
 func (q *productService) UpdateProduct(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -113,7 +118,22 @@ func (q *productService) UpdateProduct(
 	response, err := q.productRepository.UpdateProduct(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-		return nil, err
 	}
-	return response, nil
+	return response, err
+}
+
+func (q *productService) SaveProduct(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.Product,
+) (response *models.Product, err error) {
+	ctxt := "ProductService-SaveProduct"
+	if request.New() {
+		if response, err = q.productRepository.CreateProduct(ctx, tx, request); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProduct")
+		}
+	} else if response, err = q.productRepository.UpdateProduct(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+	}
+	return response, err
 }

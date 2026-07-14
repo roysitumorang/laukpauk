@@ -19,7 +19,7 @@ var (
 type (
 	ProductVariant struct {
 		RowNo                   int64        `json:"-" form:"-"`
-		ID                      uuid.UUID    `json:"-" form:"-"`
+		ID                      uuid.UUID    `json:"-" form:"id"`
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
 		StockUnit               string       `json:"-" form:"stock_unit"`
@@ -160,4 +160,8 @@ func (q *ProductVariant) Validate() error {
 		return errors.New("discount_minimum_quantity: requires a positive integer minimum 0")
 	}
 	return nil
+}
+
+func (q *ProductVariant) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
 }

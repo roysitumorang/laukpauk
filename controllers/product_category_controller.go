@@ -303,6 +303,12 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
+	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
+		return c.Render("admin/product_category_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
 	if request.Photo != productCategory.Photo {
 		if err = os.RemoveAll(helper.PhotoLocation(productCategory.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
@@ -310,12 +316,6 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
-	}
-	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("admin/product_category_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")

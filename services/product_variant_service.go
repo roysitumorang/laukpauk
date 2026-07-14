@@ -31,6 +31,11 @@ type (
 			tx pgx.Tx,
 			request *models.ProductVariant,
 		) (*models.ProductVariant, error)
+		SaveProductVariant(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.ProductVariant,
+		) (*models.ProductVariant, error)
 	}
 
 	productVariantService struct {
@@ -100,9 +105,8 @@ func (q *productVariantService) CreateProductVariant(
 	response, err := q.productVariantRepository.CreateProductVariant(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProductVariant")
-		return nil, err
 	}
-	return response, nil
+	return response, err
 }
 
 func (q *productVariantService) UpdateProductVariant(
@@ -114,7 +118,22 @@ func (q *productVariantService) UpdateProductVariant(
 	response, err := q.productVariantRepository.UpdateProductVariant(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-		return nil, err
 	}
-	return response, nil
+	return response, err
+}
+
+func (q *productVariantService) SaveProductVariant(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.ProductVariant,
+) (response *models.ProductVariant, err error) {
+	ctxt := "ProductVariantService-SaveProductVariant"
+	if request.New() {
+		if response, err = q.productVariantRepository.CreateProductVariant(ctx, tx, request); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProductVariant")
+		}
+	} else if response, err = q.productVariantRepository.UpdateProductVariant(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
+	}
+	return response, err
 }

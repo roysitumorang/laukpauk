@@ -54,7 +54,7 @@ type (
 
 	Product struct {
 		RowNo               int64        `json:"-" form:"-"`
-		ID                  uuid.UUID    `json:"-" form:"-"`
+		ID                  uuid.UUID    `json:"-" form:"id"`
 		RecordStatus        RecordStatus `json:"-" form:"-"`
 		ProductCategoryID   uuid.UUID    `json:"-" form:"product_category_id"`
 		ProductCategoryName string       `json:"-" form:"-"`
@@ -184,9 +184,17 @@ func (q *Product) Validate() error {
 	return nil
 }
 
+func (q *Product) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
 func (q *Product) SetPhoto(photo string) *Product {
 	q.Photo = photo
 	return q
+}
+
+func (q *Product) PhotoPath() string {
+	return helper.PhotoPath(q.Photo)
 }
 
 func (q ProductType) Int() int {

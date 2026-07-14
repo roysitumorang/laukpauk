@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"mime/multipart"
 	"os"
 	"time"
 	"uuid"
@@ -36,12 +35,12 @@ func NewProductController(
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
 ) *productController {
-	return new(productController{
+	return &productController{
 		adminService:           adminService,
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
-	})
+	}
 }
 
 func (q *productController) Mount(r fiber.Router) {
@@ -54,23 +53,20 @@ func (q *productController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
 		Post("/:id/delete", q.AdminDelete).
-		Get("/:product_id/variants/new", q.AdminNewVariant).
-		Post("/:product_id/variants", q.AdminCreateVariant).
-		Get("/:product_id/variants/:product_variant_id/edit", q.AdminEditVariant).
-		Post("/:product_id/variants/:product_variant_id", q.AdminUpdateVariant).
-		Post("/:product_id/variants/:product_variant_id/delete", q.AdminDeleteVariant)
+		Get("/:id/variants/new", q.AdminNewVariant).
+		Post("/:id/variants", q.AdminCreateVariant).
+		Get("/:id/variants/:product_variant_id/edit", q.AdminEditVariant).
+		Post("/:id/variants/:product_variant_id", q.AdminUpdateVariant).
+		Post("/:id/variants/:product_variant_id/delete", q.AdminDeleteVariant)
 }
 
 func (q *productController) AdminIndex(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminIndex"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
 	request := new(models.ProductFilter)
 	rows := []*models.Product{}
-	pagination := new(models.Pagination)
+	pagination := &models.Pagination{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -128,83 +124,30 @@ func (q *productController) AdminIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *productController) AdminNew(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminNew"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.Product)
-	var productCategories []*models.ProductCategory
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Produk Baru",
-		"request", request,
-		"product", request,
-		"productCategories", productCategories,
-		"productTypes", models.ProductTypes,
-		"stockStatuses", models.StockStatuses,
-	)
-	if productCategories, _, err = q.productCategoryService.FindProductCategories(
-		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.SortProductCategoriesByName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	_, params, _, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/product_new", params.Push(
-		"productCategories", productCategories,
-	), "admin/layouts/authenticated")
+	return c.Render("admin/product_new", params, "admin/layouts/authenticated")
 }
 
 func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminCreate"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.Product)
-	var productCategories []*models.ProductCategory
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Produk Baru",
-		"request", request,
-		"product", request,
-		"productCategories", productCategories,
-		"productTypes", models.ProductTypes,
-		"stockStatuses", models.StockStatuses,
-	)
-	if productCategories, _, err = q.productCategoryService.FindProductCategories(
-		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.SortProductCategoriesByName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	request, params, mapProductCategoryIDs, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	params.Push("productCategories", productCategories)
 	request, photo, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	params.Push(
 		"request", request,
@@ -216,11 +159,9 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto("")
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"product", request,
 		), "admin/layouts/authenticated")
-	}
-	mapProductCategoryIDs := map[uuid.UUID]struct{}{}
-	for _, productCategory := range productCategories {
-		mapProductCategoryIDs[productCategory.ID] = struct{}{}
 	}
 	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
 		return c.Render("admin/product_new", params.Push(
@@ -282,19 +223,13 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if request.ID.Compare(uuid.Nil()) == 0 {
-		if _, err = q.productService.CreateProduct(ctx, tx, request); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProduct")
-		}
-	} else if _, err = q.productService.UpdateProduct(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-	}
-	if err != nil {
+	if _, err = q.productService.SaveProduct(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProduct")
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -310,25 +245,12 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 }
 
 func (q *productController) AdminShow(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminShow"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
-		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
-	)
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	product, err := q.prepareProductByID(ctx, c)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
 	if product == nil {
@@ -362,116 +284,42 @@ func (q *productController) AdminShow(c fiber.Ctx) (err error) {
 }
 
 func (q *productController) AdminEdit(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminEdit"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	_, params, _, err := q.prepareProduct(
 		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	var productCategories []*models.ProductCategory
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
-		"request", product,
-		"product", product,
-		"productCategories", productCategories,
-		"productTypes", models.ProductTypes,
-		"stockStatuses", models.StockStatuses,
-	)
-	if productCategories, _, err = q.productCategoryService.FindProductCategories(
-		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.SortProductCategoriesByName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
-		return c.Render("admin/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	params.Push("productCategories", productCategories)
 	return c.Render("admin/product_edit", params, "admin/layouts/authenticated")
 }
 
 func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminUpdate"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	product, params, mapProductCategoryIDs, err := q.prepareProduct(
 		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	var productCategories []*models.ProductCategory
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
-		"request", product,
-		"product", product,
-		"productCategories", productCategories,
-		"productTypes", models.ProductTypes,
-		"stockStatuses", models.StockStatuses,
-	)
-	if productCategories, _, err = q.productCategoryService.FindProductCategories(
-		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.SortProductCategoriesByName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
-		return c.Render("admin/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	params.Push("productCategories", productCategories)
 	request, photo, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	params.Push("request", request)
 	if err != nil {
@@ -485,10 +333,6 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		request.Photo = product.Photo
 	}
 	params.Push("request", request)
-	mapProductCategoryIDs := map[uuid.UUID]struct{}{}
-	for _, productCategory := range productCategories {
-		mapProductCategoryIDs[productCategory.ID] = struct{}{}
-	}
 	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger("product_category_id: not found"),
@@ -542,11 +386,19 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
+	}
+	if request.Photo != product.Photo {
+		if err = os.RemoveAll(helper.PhotoLocation(product.Photo)); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
+			return c.Render("admin/product_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
@@ -558,24 +410,12 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 }
 
 func (q *productController) AdminDelete(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminDelete"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	productID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	request, err := q.productService.FindProduct(
-		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
-	)
+	ctx, sess, flash, currentAdmin, _ := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	request, err := q.prepareProductByID(ctx, c)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
 	if request == nil {
@@ -609,93 +449,41 @@ func (q *productController) AdminDelete(c fiber.Ctx) (err error) {
 	return flash.Success("product deleted successfully").Redirect(c, sess.Session, "/admin/products")
 }
 
-func (q *productController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
-	if file == nil {
-		return nil
-	}
-	if err := c.SaveFile(file, helper.Sprintf(models.ProductPhotoPath, filename)); err != nil {
-		return err
-	}
-	return c.SaveFile(file, helper.Sprintf(models.ProductPhotoCompressPath, filename))
-}
-
 func (q *productController) AdminNewVariant(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminNewVariant"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productID, err := uuid.Parse(c.Params("product_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	_, _, params, err := q.prepareProductVariant(
 		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	request := new(models.ProductVariant)
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
-		"product", product,
-		"request", request,
-		"discountTypes", models.DiscountTypes,
-	)
 	return c.Render("admin/product_variant_new", params, "admin/layouts/authenticated")
 }
 
 func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminCreateVariant"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productID, err := uuid.Parse(c.Params("product_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	product, _, params, err := q.prepareProductVariant(
 		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	request := new(models.ProductVariant)
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
-		"product", product,
-		"request", request,
-		"discountTypes", models.DiscountTypes,
-	)
 	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
 	params.Push("request", request)
 	if err != nil {
@@ -750,15 +538,9 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if request.ID.Compare(uuid.Nil()) == 0 {
-		if _, err = q.productVariantService.CreateProductVariant(ctx, tx, request); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProductVariant")
-		}
-	} else if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-	}
-	if err != nil {
-		return c.Render("admin/product_category_new", params.Push(
+	if _, err = q.productVariantService.SaveProductVariant(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProductVariant")
+		return c.Render("admin/product_variant_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -772,120 +554,40 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 }
 
 func (q *productController) AdminEditVariant(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminEditVariant"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productID, err := uuid.Parse(c.Params("product_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	_, _, params, err := q.prepareProductVariant(
 		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	productVariantID, err := uuid.Parse(c.Params("product_variant_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	productVariant, err := q.productVariantService.FindProductVariant(
-		ctx,
-		models.NewProductVariantFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(product.ID).
-			WithProductVariantIDs(productVariantID),
-	)
-	if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	if productVariant == nil {
-		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
-		"product", product,
-		"productVariant", productVariant,
-		"request", productVariant,
-		"discountTypes", models.DiscountTypes,
-	)
 	return c.Render("admin/product_variant_edit", params, "admin/layouts/authenticated")
 }
 
 func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminUpdateVariant"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productID, err := uuid.Parse(c.Params("product_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	product, productVariant, params, err := q.prepareProductVariant(
 		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	productVariantID, err := uuid.Parse(c.Params("product_variant_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	productVariant, err := q.productVariantService.FindProductVariant(
-		ctx,
-		models.NewProductVariantFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(product.ID).
-			WithProductVariantIDs(productVariantID),
-	)
-	if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	if productVariant == nil {
-		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
-		"product", product,
-		"productVariant", productVariant,
-		"request", productVariant,
-		"discountTypes", models.DiscountTypes,
-	)
 	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
 	params.Push("request", request)
 	if err != nil {
@@ -954,47 +656,20 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 }
 
 func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductController-AdminDeleteVariant"
-	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	productID, err := uuid.Parse(c.Params("product_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	product, err := q.productService.FindProduct(
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	product, productVariant, _, err := q.prepareProductVariant(
 		ctx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		false,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
-	}
-	productVariantID, err := uuid.Parse(c.Params("product_variant_id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	productVariant, err := q.productVariantService.FindProductVariant(
-		ctx,
-		models.NewProductVariantFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(product.ID).
-			WithProductVariantIDs(productVariantID),
-	)
-	if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
-	}
-	if productVariant == nil {
-		return flash.Danger(models.ErrProductVariantNotFound.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
 	}
 	request := productVariant
 	request.RecordStatus = models.RecordStatusDeleted
@@ -1004,7 +679,7 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -1016,11 +691,184 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
 	}
-	return flash.Success("product variant deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", productID))
+	return flash.Success("product variant deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+}
+
+func (q *productController) prepare(c fiber.Ctx) (
+	context.Context,
+	*session.Middleware,
+	*helper.FlashMessage,
+	*models.Admin,
+	string,
+) {
+	ctx := c.Context()
+	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	csrfToken := csrf.TokenFromContext(c)
+	return ctx, sess, flash, currentAdmin, csrfToken
+}
+
+func (q *productController) prepareProductByID(
+	ctx context.Context,
+	c fiber.Ctx,
+) (
+	*models.Product,
+	error,
+) {
+	productID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return nil, models.ErrProductNotFound
+	}
+	product, err := q.productService.FindProduct(
+		ctx,
+		models.NewProductFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductIDs(productID),
+	)
+	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
+		return nil, err
+	}
+	if product == nil {
+		return nil, models.ErrProductNotFound
+	}
+	return product, nil
+}
+
+func (q *productController) prepareProduct(
+	ctx context.Context,
+	c fiber.Ctx,
+	flash *helper.FlashMessage,
+	currentAdmin *models.Admin,
+	csrfToken string,
+	withParams,
+	withProductCategories bool,
+) (
+	product *models.Product,
+	params models.Map,
+	mapProductCategoryIDs map[uuid.UUID]struct{},
+	err error,
+) {
+	product = &models.Product{}
+	if withParams {
+		params = models.NewMap().Push(
+			"baseURL", c.BaseURL(),
+			"flash", flash,
+			"path", c.OriginalURL(),
+			"csrfToken", csrfToken,
+			"currentAdmin", currentAdmin,
+			"pageTitle", "Produk Baru",
+			"request", product,
+			"product", product,
+			"productTypes", models.ProductTypes,
+			"stockStatuses", models.StockStatuses,
+		)
+	}
+	if c.Params("id") != "" {
+		if product, err = q.prepareProductByID(ctx, c); err != nil {
+			return nil, nil, nil, err
+		}
+		if withParams && params.Size() > 0 && product != nil {
+			params.Push(
+				"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
+				"request", product,
+				"product", product,
+			)
+		}
+	}
+	if withProductCategories {
+		var productCategories []*models.ProductCategory
+		if withParams && params.Size() > 0 {
+			params.Push("productCategories", productCategories)
+		}
+		productCategories, _, err := q.productCategoryService.FindProductCategories(
+			ctx,
+			models.NewProductCategoryFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithSortings(models.Sorting{
+					Field:     models.SortProductCategoriesByName,
+					Direction: models.SortingDirectionAsc,
+				}),
+		)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		if withParams && params.Size() > 0 {
+			params.Push("productCategories", productCategories)
+		}
+		mapProductCategoryIDs = map[uuid.UUID]struct{}{}
+		for _, productCategory := range productCategories {
+			mapProductCategoryIDs[productCategory.ID] = struct{}{}
+		}
+	}
+	return product, params, mapProductCategoryIDs, nil
+}
+
+func (q *productController) prepareProductVariant(
+	ctx context.Context,
+	c fiber.Ctx,
+	flash *helper.FlashMessage,
+	currentAdmin *models.Admin,
+	csrfToken string,
+	withParams bool,
+) (
+	*models.Product,
+	*models.ProductVariant,
+	models.Map,
+	error,
+) {
+	product, err := q.prepareProductByID(ctx, c)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	productVariant := &models.ProductVariant{}
+	var params models.Map
+	if withParams {
+		params = models.NewMap().Push(
+			"baseURL", c.BaseURL(),
+			"flash", flash,
+			"path", c.OriginalURL(),
+			"csrfToken", csrfToken,
+			"currentAdmin", currentAdmin,
+			"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
+			"product", product,
+			"productVariant", productVariant,
+			"request", productVariant,
+			"discountTypes", models.DiscountTypes,
+		)
+	}
+	if c.Params("product_variant_id") != "" {
+		productVariantID, err := uuid.Parse(c.Params("product_variant_id"))
+		if err != nil {
+			return nil, nil, nil, models.ErrProductVariantNotFound
+		}
+		if productVariant, err = q.productVariantService.FindProductVariant(
+			ctx,
+			models.NewProductVariantFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductIDs(product.ID).
+				WithProductVariantIDs(productVariantID),
+		); err != nil {
+			return nil, nil, nil, err
+		}
+		if productVariant == nil {
+			return nil, nil, nil, models.ErrProductVariantNotFound
+		}
+		if withParams && params.Size() > 0 {
+			params.Push(
+				"productVariant", productVariant,
+				"request", productVariant,
+			)
+		}
+	}
+	return product, productVariant, params, nil
 }

@@ -120,10 +120,10 @@
 									<td class="text-left">
 										<div class="row">
 											<div class="col-lg-4 text-center">
-												<a href="{{ baseURL }}/images/product/{{ row.Photo }}" target="_blank">
-													<img src="{{ baseURL }}/images/product/compress/{{ row.Photo }}"
+												<a href="{{ baseURL }}{{ if row.Photo }}{{ row.PhotoPath() }}{{ else }}/assets/img/no-image.png{{ end }}" target="_blank">
+													<img src="{{ baseURL }}{{ if row.Photo }}{{ row.PhotoPath() }}{{ else }}/assets/img/no-image.png{{ end }}"
 														class="img-circle cp" style="width:50px; height:50px;"
-														onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+														onerror="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 												</a>
 											</div>
 											<div class="col-lg-8">
@@ -193,45 +193,3 @@
 	<!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
-<script>
-	function deleteProductUser(thisContext, eventContext, namaProduk) {
-		eventContext.preventDefault();
-		let el = $(thisContext);
-		Swal.fire({
-			title: "Konfirmasi Hapus Produk",
-			html: `Apakah anda yakin akan menghapus produk <b class="text-danger">${namaProduk}</b> ?`,
-			type: "question",
-			showConfirmButton: true,
-			showCancelButton: true,
-			cancelButtonText: "Batal",
-			confirmButtonText: "Ya, Lanjutkan !",
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				let idProduk = el.attr("idProduk");
-				$.ajax({
-					url: `{{ baseURL }}/admin/user/deleteProduct/${idProduk}`,
-					success: function(responseFromServer) {
-						let rFS = JSON.parse(responseFromServer);
-						let swalText = `<span class="text-danger">Gagal menghapus produk ${namaProduk} !</span>`;
-						let swalType = "error";
-						if (rFS.statusDeleteProduk) {
-							swalText = `<span class="text-success">Berhasil menghapus produk ${namaProduk} !</span>`;
-							swalType = "success";
-						}
-						Swal.fire({
-							title: "Penghapusan Data Produk Penjual",
-							html: swalText,
-							type: swalType
-						}).then(() => {
-							if (rFS.statusDeleteProduk) {
-								el.parents(".tr-parent").remove();
-							}
-						});
-					}
-				})
-			}
-		})
-	}
-	$("#userProducts").DataTable();
-</script>

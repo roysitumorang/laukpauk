@@ -45,9 +45,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/products/{{ product.ID }}" enctype="multipart/form-data">
-								{{ include "_product_form" }}
-							</form>
+							{{ include "_product_form" }}
 						</div>
 					</div>
 				</div>
@@ -58,60 +56,3 @@
 	<!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
-<script>
-	let baseURL = "{{ baseURL }}/admin/";
-	let produkImgPreview = false;
-	let produkImgData = false;
-	$("#formProduk").on("submit", function(e) {
-		e.preventDefault();
-		let dataProduk = new FormData();
-		dataProduk.append("produkImg", produkImgData);
-		dataProduk.append("nama", $("#nama").val());
-		dataProduk.append("kategoriProduk", $("#kategoriProduk").val());
-		dataProduk.append("stokAvailable", ($("#stokAvailable").is(":checked")) ? "true" : "false");
-		dataProduk.append("keteranganSingkat", $("#keteranganSingkat").val());
-		dataProduk.append("keterangan", $("#keterangan").val());
-		$.ajax({
-			url: `${baseURL}/user/saveProduk/2744/40538`,
-			data: dataProduk,
-			type: "POST",
-			processData: false,
-			cache: false,
-			contentType: false,
-			success: function(responseFromServer) {
-				let rFS = JSON.parse(responseFromServer);
-				let swalText = `<span class="text-danger">Gagal menambahkan produk baru</span>`;
-				let swalType = "error";
-				if (rFS.statusSaveProduk) {
-					swalText = `<span class="text-success">Berhasil menambahkan produk baru</span>`;
-					swalType = "success";
-				}
-				Swal.fire({
-					title: "Penambahan Produk User Baru",
-					html: swalText,
-					type: swalType
-				}).then(() => {
-					if (rFS.statusSaveProduk) {
-						location.href = `{{ baseURL }}/admin/user/products/2744`;
-					}
-				});
-			}
-		})
-	});
-
-	function produkImgChanged(thisContext) {
-		let el = $(thisContext);
-		let imgData = el.prop("files")[0];
-		let fileReader = new FileReader();
-		fileReader.readAsDataURL(imgData);
-		fileReader.onload = (e) => {
-			let imgResult = e.target.result;
-			produkImgPreview = imgResult;
-			produkImgData = imgData;
-			$("#produkImgPreview").attr("src", produkImgPreview).addClass("img-thumbnail");
-		}
-	}
-	$("#kategoriProduk").select2({
-		theme: "bootstrap4"
-	});
-</script>
