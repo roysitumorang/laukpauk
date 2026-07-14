@@ -43,8 +43,9 @@
 						<div class="card-body">
 							<div class="row">
 								<div class="col-lg-4 text-center">
-									<img src="{{ baseURL }}/images/product/{{ product.Photo }}"
-										alt="{{ product.Name }}" class="img-circle"
+									<img src="{{ baseURL }}{{ product.PhotoPath() }}"
+										alt="{{ product.Name }}"
+										class="img-circle"
 										style="width:170px; height:170px;"
 										onerror="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 								</div>
