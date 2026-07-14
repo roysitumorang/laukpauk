@@ -46,7 +46,7 @@ const (
 	DefaultPort uint16 = 8080
 )
 
-func (q *Service) HTTPServerMain(ctx context.Context) error {
+func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error {
 	ctxt := "Router-HTTPServerMain"
 	debug := helper.GetEnv() == "development"
 	// Create a new engine
@@ -86,7 +86,7 @@ func (q *Service) HTTPServerMain(ctx context.Context) error {
 			EnableStackTrace: true,
 		}),
 		slogfiber.NewWithConfig(
-			helper.GetLogger(),
+			logger,
 			slogfiber.Config{
 				WithUserAgent: true,
 				WithRequestID: true,

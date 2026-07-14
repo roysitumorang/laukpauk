@@ -24,10 +24,8 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -43,7 +41,7 @@ import (
 func main() {
 	ctxt := "Main"
 	ctx := context.Background()
-	helper.InitLogger()
+	logger := helper.NewLogger()
 	cmd := &cli.Command{
 		Name: config.AppName,
 		Commands: []*cli.Command{
@@ -52,9 +50,7 @@ func main() {
 				Aliases: []string{"v"},
 				Usage:   "print version",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					var sb strings.Builder
-					fmt.Fprintf(&sb, "Version: %s\nCommit: %s\nBuild: %s\n", config.Version, config.Commit, config.Build)
-					_, _ = os.Stdout.WriteString(sb.String())
+					_, _ = os.Stdout.WriteString(helper.Sprintf("Version: %s\nCommit: %s\nBuild: %s\n", config.Version, config.Commit, config.Build))
 					return nil
 				},
 			},
@@ -83,7 +79,7 @@ func main() {
 					}
 					var g errgroup.Group
 					g.Go(func() error {
-						return service.HTTPServerMain(ctx)
+						return service.HTTPServerMain(ctx, logger)
 					})
 					g.Go(func() error {
 						return service.Consume(ctx)
@@ -135,8 +131,7 @@ func main() {
 						helper.Log(ctx, slog.LevelInfo, "cron: scheduled tasks running!...", ctxt, "")
 						return nil
 					})
-					err = g.Wait()
-					if err != nil {
+					if err = g.Wait(); err != nil {
 						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrWait")
 					}
 					return err

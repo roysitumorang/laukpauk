@@ -14,38 +14,48 @@ import (
 
 var (
 	logger     *slog.Logger
-	InitLogger = sync.OnceFunc(func() {
+	initLogger = sync.OnceFunc(func() {
 		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource: false,
 		}))
 	})
 )
 
-func GetLogger() *slog.Logger {
+func NewLogger() *slog.Logger {
+	initLogger()
 	return logger
 }
 
-func logContext(context, scope string) []any {
-	fields := []any{
-		slog.String("topic", Sprintf("%s-service-log", config.AppName)),
-		slog.String("context", context),
-		slog.String("service", config.AppName),
-	}
-	if scope != "" {
-		fields = append(fields, slog.String("scope", scope))
+func logContext(args ...string) []any {
+	n := len(args)
+	fields := make([]any, 2+n/2)
+	fields[0] = slog.String("topic", Sprintf("%s-service-log", config.AppName))
+	fields[1] = slog.String("service", config.AppName)
+	for i := 0; i < n; i += 2 {
+		if i+1 >= n {
+			break
+		}
+		fields[i+2] = slog.String(args[i], args[i+1])
 	}
 	return fields
 }
 
 func Log(ctx context.Context, level slog.Level, message, context, scope string) {
-	entries := logContext(context, scope)
+	var args []string
+	if context != "" {
+		args = append(args, "context", context)
+	}
+	if scope != "" {
+		args = append(args, "scope", scope)
+	}
+	entries := logContext(args...)
 	switch level {
 	case slog.LevelDebug:
-		logger.Debug(message, entries...)
+		logger.DebugContext(ctx, message, entries...)
 	case slog.LevelInfo:
-		logger.Info(message, entries...)
+		logger.InfoContext(ctx, message, entries...)
 	case slog.LevelWarn:
-		logger.Warn(message, entries...)
+		logger.WarnContext(ctx, message, entries...)
 	case slog.LevelError:
 		var name string
 		pc, file, line, _ := runtime.Caller(1)
@@ -58,19 +68,26 @@ func Log(ctx context.Context, level slog.Level, message, context, scope string) 
 			slog.String("file", Sprintf("%s:%d", file, line)),
 			slog.Int("line", line),
 		)
-		logger.Error(message, entries...)
+		logger.ErrorContext(ctx, message, entries...)
 	}
 }
 
 func Capture(ctx context.Context, level slog.Level, err error, context, scope string) {
-	entries := logContext(context, scope)
+	var args []string
+	if context != "" {
+		args = append(args, "context", context)
+	}
+	if scope != "" {
+		args = append(args, "scope", scope)
+	}
+	entries := logContext(args...)
 	switch level {
 	case slog.LevelDebug:
-		logger.Debug(err.Error(), entries...)
+		logger.DebugContext(ctx, err.Error(), entries...)
 	case slog.LevelInfo:
-		logger.Info(err.Error(), entries...)
+		logger.InfoContext(ctx, err.Error(), entries...)
 	case slog.LevelWarn:
-		logger.Warn(err.Error(), entries...)
+		logger.WarnContext(ctx, err.Error(), entries...)
 	case slog.LevelError:
 		// ignoring pgx.ErrNoRows
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -87,6 +104,6 @@ func Capture(ctx context.Context, level slog.Level, err error, context, scope st
 			slog.String("file", Sprintf("%s:%d", file, line)),
 			slog.Int("line", line),
 		)
-		logger.Error(err.Error(), entries...)
+		logger.ErrorContext(ctx, err.Error(), entries...)
 	}
 }
