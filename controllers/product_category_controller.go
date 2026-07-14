@@ -50,19 +50,12 @@ func (q *productCategoryController) Mount(r fiber.Router) {
 }
 
 func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminIndex"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.ProductCategoryFilter)
+	request := &models.ProductCategoryFilter{}
 	rows := []*models.ProductCategory{}
-	pagination := new(models.Pagination)
+	pagination := &models.Pagination{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -120,15 +113,9 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *productCategoryController) AdminNew(c fiber.Ctx) (err error) {
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
+	_, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.ProductCategory)
+	request := &models.ProductCategory{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -143,27 +130,10 @@ func (q *productCategoryController) AdminNew(c fiber.Ctx) (err error) {
 }
 
 func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminCreate"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.ProductCategory)
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Kategori Produk Baru",
-		"request", request,
-		"productCategory", request,
-	)
+	request, params := q.prepareCreate(c, flash, currentAdmin, csrfToken)
 	request, photo, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	params.Push(
 		"request", request,
@@ -256,86 +226,40 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 }
 
 func (q *productCategoryController) AdminEdit(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminEdit"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productCategoryID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductCategoryNotFound.Error()).Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	productCategory, err := q.productCategoryService.FindProductCategory(
+	_, params, err := q.prepareUpdate(
+		c,
 		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductCategoryIDs(productCategoryID),
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareUpdate")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	if productCategory == nil {
-		return flash.Danger(models.ErrProductCategoryNotFound.Error()).Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
-		"request", productCategory,
-		"productCategory", productCategory,
-	)
 	return c.Render("admin/product_category_edit", params, "admin/layouts/authenticated")
 }
 
 func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminUpdate"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	productCategoryID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductCategoryNotFound.Error()).Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	productCategory, err := q.productCategoryService.FindProductCategory(
+	productCategory, params, err := q.prepareUpdate(
+		c,
 		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductCategoryIDs(productCategoryID),
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareUpdate")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	if productCategory == nil {
-		return flash.Danger(models.ErrProductCategoryNotFound.Error()).Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Data Artikel|%s", productCategory.Name),
-		"request", productCategory,
-		"productCategory", productCategory,
-	)
 	request, photo, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	params.Push("request", request)
 	if err != nil {
@@ -412,32 +336,19 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 }
 
 func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
-	ctx := c.Context()
 	ctxt := "ProductCategoryController-AdminDelete"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	productCategoryID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrProductCategoryNotFound.Error()).Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	productCategory, err := q.productCategoryService.FindProductCategory(
+	productCategory, _, err := q.prepareUpdate(
+		c,
 		ctx,
-		models.NewProductCategoryFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductCategoryIDs(productCategoryID),
+		flash,
+		currentAdmin,
+		csrfToken,
 	)
-	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareUpdate")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
-	}
-	if productCategory == nil {
-		return flash.Danger(models.ErrProductCategoryNotFound.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
 	request := productCategory
 	request.RecordStatus = models.RecordStatusDeleted
@@ -476,4 +387,89 @@ func (q *productCategoryController) saveFile(c fiber.Ctx, file *multipart.FileHe
 		return err
 	}
 	return c.SaveFile(file, helper.Sprintf(models.ProductCategoryPhotoCompressPath, filename))
+}
+
+func (q *productCategoryController) prepare(c fiber.Ctx) (
+	context.Context,
+	*session.Middleware,
+	*helper.FlashMessage,
+	*models.Admin,
+	string,
+) {
+	ctx := c.Context()
+	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	csrfToken := csrf.TokenFromContext(c)
+	return ctx, sess, flash, currentAdmin, csrfToken
+}
+
+func (q *productCategoryController) prepareCreate(
+	c fiber.Ctx,
+	flash *helper.FlashMessage,
+	currentAdmin *models.Admin,
+	csrfToken string,
+) (
+	*models.ProductCategory,
+	*models.Map,
+) {
+	request := &models.ProductCategory{}
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Kategori Produk Baru",
+		"request", request,
+		"productCategory", request,
+	)
+	return request, params
+}
+
+func (q *productCategoryController) prepareUpdate(
+	c fiber.Ctx,
+	ctx context.Context,
+	flash *helper.FlashMessage,
+	currentAdmin *models.Admin,
+	csrfToken string,
+	withParams ...bool,
+) (
+	*models.ProductCategory,
+	*models.Map,
+	error,
+) {
+	productCategoryID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return nil, nil, models.ErrProductCategoryNotFound
+	}
+	productCategory, err := q.productCategoryService.FindProductCategory(
+		ctx,
+		models.NewProductCategoryFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductCategoryIDs(productCategoryID),
+	)
+	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
+		return nil, nil, err
+	}
+	if productCategory == nil {
+		return nil, nil, models.ErrProductCategoryNotFound
+	}
+	var params *models.Map
+	if len(withParams) > 0 && withParams[0] {
+		params = models.NewMap().Push(
+			"baseURL", c.BaseURL(),
+			"flash", flash,
+			"path", c.OriginalURL(),
+			"csrfToken", csrfToken,
+			"currentAdmin", currentAdmin,
+			"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
+			"request", productCategory,
+			"productCategory", productCategory,
+		)
+	}
+	return productCategory, params, nil
 }
