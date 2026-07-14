@@ -1,44 +1,51 @@
-<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-<div class="row">
-	<div class="form-group col-lg-6">
-		<label for="stock_unit" class="label-title">Nama Satuan</label>
-		<input type="text" name="stock_unit" value="{{ request.StockUnit }}" id="stock_unit" placeholder="Nama Harga (misal 1 Kg)" class="form-control" />
-	</div>
-	<div class="form-group col-lg-4">
-		<label for="price" class="label-title">Harga</label>
-		<div class="input-group">
-			<div class="input-group-prepend">
-				<span class="input-group-text">Rp.</span>
+<form method="POST" action="{{ baseURL }}/admin/products/{{ product.ID }}/variants{{ if !productVariant.New() }}/{{ productVariant.ID}}{{ end }}">
+	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+	{{ if !productVariant.New() }}
+	<input type="hidden" name="id" value="{{ productVariant.ID }}" />
+	{{ end }}
+	<div class="row">
+		<div class="form-group col-lg-6">
+			<label for="stock_unit" class="label-title">Nama Satuan</label>
+			<input type="text" name="stock_unit" value="{{ request.StockUnit }}" id="stock_unit" placeholder="Nama Harga (misal 1 Kg)" class="form-control" />
+		</div>
+		<div class="form-group col-lg-4">
+			<label for="price" class="label-title">Harga</label>
+			<div class="input-group">
+				<div class="input-group-prepend">
+					<span class="input-group-text">Rp.</span>
+				</div>
+				<input type="number" name="price" value="{{ request.Price }}" id="price" placeholder="Harga" class="form-control" />
 			</div>
-			<input type="number" name="price" value="{{ request.Price }}" id="price" placeholder="Harga" class="form-control" />
+		</div>
+		<div class="form-group col-lg-4">
+			<label for="discount_rate" class="label-title">Diskon</label>
+			<div class="input-group">
+				<input type="number" name="discount_rate" value="{{ request.DiscountRate }}" id="discount_rate" placeholder="Diskon" class="form-control" min="0" />
+			</div>
+		</div>
+		<div class="form-group col-lg-4">
+			<label for="discount_type" class="label-title">Jenis Diskon</label>
+			<select name="discount_type" class="form-control" id="discount_type">
+				{{ range _, discountType := discountTypes}}
+				<option value="{{ discountType.Int() }}"{{ if request.DiscountType.Equal(discountType) }} selected{{ end }}>{{ discountType.String() }}</option>
+				{{ end }}
+			</select>
+		</div>
+		<div class="form-group col-lg-4">
+			<label for="discount_minimum_quantity" class="label-title">Diskon Minimum Quantity</label>
+			<div class="input-group">
+				<input type="number" name="discount_minimum_quantity" value="{{ request.DiscountMinimumQuantity }}" id="discount_minimum_quantity" placeholder="Diskon minimum quantity" class="form-control" min="0" />
+			</div>
+		</div>
+		<div class="form-group col-lg-12">
+			<label for="description" class="label-title">Keterangan (Opsional)</label>
+			<textarea name="description" id="description" placeholder="Keterangan Tambahan (Optional)" class="form-control">{{ request.Description }}</textarea>
 		</div>
 	</div>
-	<div class="form-group col-lg-4">
-		<label for="discount_rate" class="label-title">Diskon</label>
-		<div class="input-group">
-			<input type="number" name="discount_rate" value="{{ request.DiscountRate }}" id="discount_rate" placeholder="Diskon" class="form-control" min="0" />
-		</div>
-	</div>
-	<div class="form-group col-lg-4">
-		<label for="discount_type" class="label-title">Jenis Diskon</label>
-		<select name="discount_type" class="form-control" id="discount_type">
-			{{ range _, discountType := discountTypes}}
-			<option value="{{ discountType.Int() }}"{{ if request.DiscountType.Equal(discountType) }} selected{{ end }}>{{ discountType.String() }}</option>
-			{{ end }}
-		</select>
-	</div>
-	<div class="form-group col-lg-4">
-		<label for="discount_minimum_quantity" class="label-title">Diskon Minimum Quantity</label>
-		<div class="input-group">
-			<input type="number" name="discount_minimum_quantity" value="{{ request.DiscountMinimumQuantity }}" id="discount_minimum_quantity" placeholder="Diskon minimum quantity" class="form-control" min="0" />
-		</div>
-	</div>
-	<div class="form-group col-lg-12">
-		<label for="description" class="label-title">Keterangan (Opsional)</label>
-		<textarea name="description" id="description" placeholder="Keterangan Tambahan (Optional)" class="form-control">{{ request.Description }}</textarea>
-	</div>
-</div>
-<button type="submit" class="btn btn-success">Simpan Varian Produk</button>
-<a href="{{ baseURL }}/admin/products/{{ product.ID }}" class="btn btn-default ml-1">
-	Back to Detail Produk
-</a>
+	<button type="submit" class="btn btn-success">
+		Simpan{{ if !productVariant.New() }} Perubahan{{ end}} Data Varian Produk
+	</button>
+	<a href="{{ baseURL }}/admin/products/{{ product.ID }}" class="btn btn-default ml-1">
+		Back to Detail Produk
+	</a>
+</form>
