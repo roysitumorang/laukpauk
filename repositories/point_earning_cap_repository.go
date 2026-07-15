@@ -17,52 +17,52 @@ import (
 )
 
 type (
-	PointAccrualCapRepository interface {
-		FindPointAccrualCaps(
+	PointEarningCapRepository interface {
+		FindPointEarningCaps(
 			ctx context.Context,
-			request *models.PointAccrualCapFilter,
-		) ([]*models.PointAccrualCap, int64, int64, error)
-		FindPointAccrualCap(
+			request *models.PointEarningCapFilter,
+		) ([]*models.PointEarningCap, int64, int64, error)
+		FindPointEarningCap(
 			ctx context.Context,
-			request *models.PointAccrualCapFilter,
-		) (*models.PointAccrualCap, error)
-		CreatePointAccrualCap(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.PointAccrualCap,
-		) (*models.PointAccrualCap, error)
-		UpdatePointAccrualCap(
+			request *models.PointEarningCapFilter,
+		) (*models.PointEarningCap, error)
+		CreatePointEarningCap(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.PointAccrualCap,
-		) (*models.PointAccrualCap, error)
+			request *models.PointEarningCap,
+		) (*models.PointEarningCap, error)
+		UpdatePointEarningCap(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.PointEarningCap,
+		) (*models.PointEarningCap, error)
 	}
 
-	pointAccrualCapRepository struct {
+	pointEarningCapRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewPointAccrualCapRepository(
+func NewPointEarningCapRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) PointAccrualCapRepository {
-	return new(pointAccrualCapRepository{
+) PointEarningCapRepository {
+	return new(pointEarningCapRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	})
 }
 
-func (q *pointAccrualCapRepository) FindPointAccrualCaps(
+func (q *pointEarningCapRepository) FindPointEarningCaps(
 	ctx context.Context,
-	request *models.PointAccrualCapFilter,
-) ([]*models.PointAccrualCap, int64, int64, error) {
-	ctxt := "PointAccrualCapRepository-FindPointAccrualCaps"
+	request *models.PointEarningCapFilter,
+) ([]*models.PointEarningCap, int64, int64, error) {
+	ctxt := "PointEarningCapRepository-FindPointEarningCaps"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM point_accrual_caps %s", condition)
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM point_earning_caps %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -133,38 +133,38 @@ func (q *pointAccrualCapRepository) FindPointAccrualCaps(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.PointAccrualCap
+	var response []*models.PointEarningCap
 	for rows.Next() {
-		var pointAccrualCap models.PointAccrualCap
+		var pointEarningCap models.PointEarningCap
 		if err = rows.Scan(
-			&pointAccrualCap.ID,
-			&pointAccrualCap.RecordStatus,
-			&pointAccrualCap.MinimumPurchase,
-			&pointAccrualCap.DeletedMinimumPurchase,
-			&pointAccrualCap.EarnedPoints,
-			&pointAccrualCap.CreatedBy,
-			&pointAccrualCap.CreatedAt,
-			&pointAccrualCap.UpdatedBy,
-			&pointAccrualCap.UpdatedAt,
-			&pointAccrualCap.DeletedBy,
-			&pointAccrualCap.DeletedAt,
-			&pointAccrualCap.DeletionReason,
+			&pointEarningCap.ID,
+			&pointEarningCap.RecordStatus,
+			&pointEarningCap.MinimumPurchase,
+			&pointEarningCap.DeletedMinimumPurchase,
+			&pointEarningCap.EarnedPoints,
+			&pointEarningCap.CreatedBy,
+			&pointEarningCap.CreatedAt,
+			&pointEarningCap.UpdatedBy,
+			&pointEarningCap.UpdatedAt,
+			&pointEarningCap.DeletedBy,
+			&pointEarningCap.DeletedAt,
+			&pointEarningCap.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		offset++
-		pointAccrualCap.RowNo = offset
-		response = append(response, (&pointAccrualCap).Populate())
+		pointEarningCap.RowNo = offset
+		response = append(response, (&pointEarningCap).Populate())
 	}
 	return response, total, pages, nil
 }
 
-func (q *pointAccrualCapRepository) FindPointAccrualCap(
+func (q *pointEarningCapRepository) FindPointEarningCap(
 	ctx context.Context,
-	request *models.PointAccrualCapFilter,
-) (*models.PointAccrualCap, error) {
-	ctxt := "PointAccrualCapRepository-FindPointAccrualCap"
+	request *models.PointEarningCapFilter,
+) (*models.PointEarningCap, error) {
+	ctxt := "PointEarningCapRepository-FindPointEarningCap"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
@@ -183,11 +183,11 @@ func (q *pointAccrualCapRepository) FindPointAccrualCap(
 			, deleted_by
 			, deleted_at
 			, deletion_reason
-		FROM point_accrual_caps %s`,
+		FROM point_earning_caps %s`,
 		condition,
 	)
 	query := sb.String()
-	var response models.PointAccrualCap
+	var response models.PointEarningCap
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -203,7 +203,7 @@ func (q *pointAccrualCapRepository) FindPointAccrualCap(
 		&response.DeletionReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrPointAccrualCapNotFound
+		return nil, models.ErrPointEarningCapNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -212,16 +212,16 @@ func (q *pointAccrualCapRepository) FindPointAccrualCap(
 	return (&response).Populate(), nil
 }
 
-func (q *pointAccrualCapRepository) CreatePointAccrualCap(
+func (q *pointEarningCapRepository) CreatePointEarningCap(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.PointAccrualCap,
-) (*models.PointAccrualCap, error) {
-	ctxt := "PointAccrualCapRepository-CreatePointAccrualCap"
-	var response models.PointAccrualCap
+	request *models.PointEarningCap,
+) (*models.PointEarningCap, error) {
+	ctxt := "PointEarningCapRepository-CreatePointEarningCap"
+	var response models.PointEarningCap
 	err := tx.QueryRow(
 		ctx,
-		`INSERT INTO point_accrual_caps (
+		`INSERT INTO point_earning_caps (
 			record_status
 			, minimum_purchase
 			, earned_points
@@ -266,8 +266,8 @@ func (q *pointAccrualCapRepository) CreatePointAccrualCap(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_accrual_caps_minimum_purchase_key" {
-			err = models.ErrUniquePointAccrualCapMinimumPurchaseViolation
+			pgxErr.ConstraintName == "point_earning_caps_minimum_purchase_key" {
+			err = models.ErrUniquePointEarningCapMinimumPurchaseViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -276,16 +276,16 @@ func (q *pointAccrualCapRepository) CreatePointAccrualCap(
 	return (&response).Populate(), nil
 }
 
-func (q *pointAccrualCapRepository) UpdatePointAccrualCap(
+func (q *pointEarningCapRepository) UpdatePointEarningCap(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.PointAccrualCap,
-) (*models.PointAccrualCap, error) {
-	ctxt := "PointAccrualCapRepository-UpdatePointAccrualCap"
-	var response models.PointAccrualCap
+	request *models.PointEarningCap,
+) (*models.PointEarningCap, error) {
+	ctxt := "PointEarningCapRepository-UpdatePointEarningCap"
+	var response models.PointEarningCap
 	err := tx.QueryRow(
 		ctx,
-		`UPDATE point_accrual_caps SET
+		`UPDATE point_earning_caps SET
 			record_status = $1
 			, minimum_purchase = $2
 			, deleted_minimum_purchase = $3
@@ -335,8 +335,8 @@ func (q *pointAccrualCapRepository) UpdatePointAccrualCap(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_accrual_caps_minimum_purchase_key" {
-			err = models.ErrUniquePointAccrualCapMinimumPurchaseViolation
+			pgxErr.ConstraintName == "point_earning_caps_minimum_purchase_key" {
+			err = models.ErrUniquePointEarningCapMinimumPurchaseViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -345,13 +345,13 @@ func (q *pointAccrualCapRepository) UpdatePointAccrualCap(
 	return (&response).Populate(), nil
 }
 
-func (q *pointAccrualCapRepository) buildCondition(request *models.PointAccrualCapFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *pointEarningCapRepository) buildCondition(request *models.PointEarningCapFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.PointAccrualCapIDs) > 0 {
+	if len(request.PointEarningCapIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
-		for i, pointAccrualCapID := range request.PointAccrualCapIDs {
-			params = append(params, pointAccrualCapID)
+		for i, pointEarningCapID := range request.PointEarningCapIDs {
+			params = append(params, pointEarningCapID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -360,11 +360,11 @@ func (q *pointAccrualCapRepository) buildCondition(request *models.PointAccrualC
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ExcludedPointAccrualCapIDs) > 0 {
+	if len(request.ExcludedPointEarningCapIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id NOT IN (")
-		for i, excludedPointAccrualCapID := range request.ExcludedPointAccrualCapIDs {
-			params = append(params, excludedPointAccrualCapID)
+		for i, excludedPointEarningCapID := range request.ExcludedPointEarningCapIDs {
+			params = append(params, excludedPointEarningCapID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

@@ -15,9 +15,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindPointAccrualCaps(ctx context.Context, c fiber.Ctx) (*models.PointAccrualCapFilter, error) {
-	ctxt := "PointAccrualCapSanitizer-FindPointAccrualCaps"
-	response := models.NewPointAccrualCapFilter()
+func FindPointEarningCaps(ctx context.Context, c fiber.Ctx) (*models.PointEarningCapFilter, error) {
+	ctxt := "PointEarningCapSanitizer-FindPointEarningCaps"
+	response := models.NewPointEarningCapFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -36,7 +36,7 @@ func FindPointAccrualCaps(ctx context.Context, c fiber.Ctx) (*models.PointAccrua
 		var sortings []models.Sorting
 		for _, sorting := range sortBy {
 			if !strings.Contains(sorting, ":") {
-				if _, ok := models.MapPointAccrualCapSortings[sorting]; ok {
+				if _, ok := models.MapPointEarningCapSortings[sorting]; ok {
 					sortings = append(sortings, models.Sorting{
 						Field:     sorting,
 						Direction: models.SortingDirectionAsc,
@@ -44,7 +44,7 @@ func FindPointAccrualCaps(ctx context.Context, c fiber.Ctx) (*models.PointAccrua
 				}
 			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
 				field, order := items[0], items[1]
-				if _, ok := models.MapPointAccrualCapSortings[field]; ok &&
+				if _, ok := models.MapPointEarningCapSortings[field]; ok &&
 					(models.SortingDirectionAsc.Equal(order) ||
 						models.SortingDirectionDesc.Equal(order)) {
 					sortings = append(sortings, models.Sorting{
@@ -71,9 +71,9 @@ func FindPointAccrualCaps(ctx context.Context, c fiber.Ctx) (*models.PointAccrua
 	return response, nil
 }
 
-func ValidatePointAccrualCap(ctx context.Context, c fiber.Ctx) (*models.PointAccrualCap, int, error) {
-	ctxt := "PointAccrualCapSanitizer-ValidatePointAccrualCap"
-	var response models.PointAccrualCap
+func ValidatePointEarningCap(ctx context.Context, c fiber.Ctx) (*models.PointEarningCap, int, error) {
+	ctxt := "PointEarningCapSanitizer-ValidatePointEarningCap"
+	var response models.PointEarningCap
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

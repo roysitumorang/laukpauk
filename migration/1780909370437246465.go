@@ -1238,10 +1238,10 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// point_accrual_caps
+		// point_earning_caps
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE point_accrual_caps (
+			`CREATE TABLE point_earning_caps (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, minimum_purchase bigint UNIQUE
@@ -1261,36 +1261,36 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_accrual_caps (deleted_minimum_purchase);`,
+			`CREATE INDEX ON point_earning_caps (deleted_minimum_purchase);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_accrual_caps (created_by);`,
+			`CREATE INDEX ON point_earning_caps (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_accrual_caps (updated_by);`,
+			`CREATE INDEX ON point_earning_caps (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_accrual_caps (deleted_by);`,
+			`CREATE INDEX ON point_earning_caps (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// point_accruals
+		// point_earnings
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE point_accruals (
+			`CREATE TABLE point_earnings (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, buyer_id UUID NOT NULL REFERENCES users (id)
 				, start_date timestamp with time zone NOT NULL
@@ -1306,21 +1306,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_accruals (buyer_id);`,
+			`CREATE INDEX ON point_earnings (buyer_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_accruals (start_date);`,
+			`CREATE INDEX ON point_earnings (start_date);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_accruals (end_date);`,
+			`CREATE INDEX ON point_earnings (end_date);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

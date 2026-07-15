@@ -20,23 +20,23 @@ import (
 )
 
 type (
-	pointAccrualCapController struct {
+	pointEarningCapController struct {
 		adminService           services.AdminService
-		pointAccrualCapService services.PointAccrualCapService
+		pointEarningCapService services.PointEarningCapService
 	}
 )
 
-func NewPointAccrualCapController(
+func NewPointEarningCapController(
 	adminService services.AdminService,
-	pointAccrualCapService services.PointAccrualCapService,
-) *pointAccrualCapController {
-	return new(pointAccrualCapController{
+	pointEarningCapService services.PointEarningCapService,
+) *pointEarningCapController {
+	return new(pointEarningCapController{
 		adminService:           adminService,
-		pointAccrualCapService: pointAccrualCapService,
+		pointEarningCapService: pointEarningCapService,
 	})
 }
 
-func (q *pointAccrualCapController) Mount(r fiber.Router) {
+func (q *pointEarningCapController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
@@ -47,9 +47,9 @@ func (q *pointAccrualCapController) Mount(r fiber.Router) {
 		Post("/:id/delete", q.AdminDelete)
 }
 
-func (q *pointAccrualCapController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *pointEarningCapController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointAccrualCapController-AdminIndex"
+	ctxt := "PointEarningCapController-AdminIndex"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -58,8 +58,8 @@ func (q *pointAccrualCapController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.PointAccrualCapFilter)
-	rows := []*models.PointAccrualCap{}
+	request := new(models.PointEarningCapFilter)
+	rows := []*models.PointEarningCap{}
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -84,42 +84,42 @@ func (q *pointAccrualCapController) AdminIndex(c fiber.Ctx) (err error) {
 				Label:     "Oldest-Newest",
 			},
 			{
-				Field:     models.PointAccrualCapSortingFieldMinimumPurchase,
+				Field:     models.PointEarningCapSortingFieldMinimumPurchase,
 				Direction: models.SortingDirectionDesc,
 				Label:     "Max-Min",
 			},
 			{
-				Field:     models.PointAccrualCapSortingFieldMinimumPurchase,
+				Field:     models.PointEarningCapSortingFieldMinimumPurchase,
 				Direction: models.SortingDirectionAsc,
 				Label:     "Min-Max",
 			},
 		},
 	)
-	request, err = sanitizers.FindPointAccrualCaps(ctx, c)
+	request, err = sanitizers.FindPointEarningCaps(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointAccrualCaps")
-		return c.Render("/admin/point_accrual_cap_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCaps")
+		return c.Render("/admin/point_earning_cap_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if rows, pagination, err = q.pointAccrualCapService.FindPointAccrualCaps(
+	if rows, pagination, err = q.pointEarningCapService.FindPointEarningCaps(
 		c,
 		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointAccrualCaps")
-		return c.Render("/admin/point_accrual_cap_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCaps")
+		return c.Render("/admin/point_earning_cap_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("/admin/point_accrual_cap_index", params.Push(
+	return c.Render("/admin/point_earning_cap_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
 }
 
-func (q *pointAccrualCapController) AdminNew(c fiber.Ctx) (err error) {
+func (q *pointEarningCapController) AdminNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -128,7 +128,7 @@ func (q *pointAccrualCapController) AdminNew(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.PointAccrualCap)
+	request := new(models.PointEarningCap)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -138,12 +138,12 @@ func (q *pointAccrualCapController) AdminNew(c fiber.Ctx) (err error) {
 		"pageTitle", "Tambah Tarif Akumulasi Poin",
 		"request", request,
 	)
-	return c.Render("/admin/point_accrual_cap_new", params, "admin/layouts/authenticated")
+	return c.Render("/admin/point_earning_cap_new", params, "admin/layouts/authenticated")
 }
 
-func (q *pointAccrualCapController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *pointEarningCapController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointAccrualCapController-AdminCreate"
+	ctxt := "PointEarningCapController-AdminCreate"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -151,7 +151,7 @@ func (q *pointAccrualCapController) AdminCreate(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.PointAccrualCap)
+	request := new(models.PointEarningCap)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -161,12 +161,12 @@ func (q *pointAccrualCapController) AdminCreate(c fiber.Ctx) (err error) {
 		"pageTitle", "Tambah Tarif Akumulasi Poin",
 		"request", request,
 	)
-	request, statusCode, err := sanitizers.ValidatePointAccrualCap(ctx, c)
+	request, statusCode, err := sanitizers.ValidatePointEarningCap(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointAccrualCap")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointEarningCap")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("/admin/point_accrual_cap_new", params.Push(
+		return c.Render("/admin/point_earning_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -179,24 +179,24 @@ func (q *pointAccrualCapController) AdminCreate(c fiber.Ctx) (err error) {
 	request.UpdatedAt = now
 	params.Push("request", request)
 	if request.MinimumPurchase != nil {
-		pointAccrualCap, err := q.pointAccrualCapService.FindPointAccrualCap(
+		pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 			ctx,
-			models.NewPointAccrualCapFilter().
+			models.NewPointEarningCapFilter().
 				WithMinimumPurchases(*request.MinimumPurchase),
 		)
-		if err != nil && !errors.Is(err, models.ErrPointAccrualCapNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointAccrualCap")
-			return c.Render("admin/point_accrual_cap_new", params.Push(
+		if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
+			return c.Render("admin/point_earning_cap_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
-		if pointAccrualCap != nil {
-			if pointAccrualCap.RecordStatus == models.RecordStatusActive {
-				return c.Render("admin/point_accrual_cap_new", params.Push(
-					"flash", flash.Danger(models.ErrUniquePointAccrualCapMinimumPurchaseViolation.Error()),
+		if pointEarningCap != nil {
+			if pointEarningCap.RecordStatus == models.RecordStatusActive {
+				return c.Render("admin/point_earning_cap_new", params.Push(
+					"flash", flash.Danger(models.ErrUniquePointEarningCapMinimumPurchaseViolation.Error()),
 				), "admin/layouts/authenticated")
 			}
-			request.ID = pointAccrualCap.ID
+			request.ID = pointEarningCap.ID
 			request.DeletedMinimumPurchase = nil
 			request.DeletedBy = nil
 			request.DeletedAt = nil
@@ -207,7 +207,7 @@ func (q *pointAccrualCapController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("/admin/point_accrual_cap_new", params.Push(
+		return c.Render("/admin/point_earning_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -220,31 +220,31 @@ func (q *pointAccrualCapController) AdminCreate(c fiber.Ctx) (err error) {
 		}
 	}(ctx)
 	if request.ID.Compare(uuid.Nil()) == 0 {
-		if _, err = q.pointAccrualCapService.CreatePointAccrualCap(ctx, tx, request); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePointAccrualCap")
+		if _, err = q.pointEarningCapService.CreatePointEarningCap(ctx, tx, request); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePointEarningCap")
 		}
-	} else if _, err = q.pointAccrualCapService.UpdatePointAccrualCap(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointAccrualCap")
+	} else if _, err = q.pointEarningCapService.UpdatePointEarningCap(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointEarningCap")
 	}
 	if err != nil {
-		return c.Render("/admin/point_accrual_cap_new", params.Push(
+		return c.Render("/admin/point_earning_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("/admin/point_accrual_cap_new", params.Push(
+		return c.Render("/admin/point_earning_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("point accrual cap created successfully").
-		Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		Success("point earning cap created successfully").
+		Redirect(c, sess.Session, "/admin/point_earning_caps")
 }
 
-func (q *pointAccrualCapController) AdminEdit(c fiber.Ctx) (err error) {
+func (q *pointEarningCapController) AdminEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointAccrualCapController-AdminEdit"
+	ctxt := "PointEarningCapController-AdminEdit"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -253,25 +253,25 @@ func (q *pointAccrualCapController) AdminEdit(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	pointAccrualCapID, err := uuid.Parse(c.Params("id"))
+	pointEarningCapID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointAccrualCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		return flash.Danger(models.ErrPointEarningCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	pointAccrualCap, err := q.pointAccrualCapService.FindPointAccrualCap(
+	pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 		ctx,
-		models.NewPointAccrualCapFilter().
+		models.NewPointEarningCapFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithPointAccrualCapIDs(pointAccrualCapID),
+			WithPointEarningCapIDs(pointEarningCapID),
 	)
 	if err != nil {
-		if !errors.Is(err, models.ErrPointAccrualCapNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointAccrualCap")
+		if !errors.Is(err, models.ErrPointEarningCapNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
 		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	if pointAccrualCap == nil {
-		return flash.Danger(models.ErrPointAccrualCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+	if pointEarningCap == nil {
+		return flash.Danger(models.ErrPointEarningCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -279,16 +279,16 @@ func (q *pointAccrualCapController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointAccrualCap.MinimumPurchase),
-		"request", pointAccrualCap,
-		"pointAccrualCap", pointAccrualCap,
+		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointEarningCap.MinimumPurchase),
+		"request", pointEarningCap,
+		"pointEarningCap", pointEarningCap,
 	)
-	return c.Render("/admin/point_accrual_cap_edit", params, "admin/layouts/authenticated")
+	return c.Render("/admin/point_earning_cap_edit", params, "admin/layouts/authenticated")
 }
 
-func (q *pointAccrualCapController) AdminUpdate(c fiber.Ctx) (err error) {
+func (q *pointEarningCapController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointAccrualCapController-AdminUpdate"
+	ctxt := "PointEarningCapController-AdminUpdate"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -296,23 +296,23 @@ func (q *pointAccrualCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	pointAccrualCapID, err := uuid.Parse(c.Params("id"))
+	pointEarningCapID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointAccrualCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		return flash.Danger(models.ErrPointEarningCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	pointAccrualCap, err := q.pointAccrualCapService.FindPointAccrualCap(
+	pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 		ctx,
-		models.NewPointAccrualCapFilter().
+		models.NewPointEarningCapFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithPointAccrualCapIDs(pointAccrualCapID),
+			WithPointEarningCapIDs(pointEarningCapID),
 	)
-	if err != nil && !errors.Is(err, models.ErrPointAccrualCapNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointAccrualCap")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+	if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	if pointAccrualCap == nil {
-		return flash.Danger(models.ErrPointAccrualCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+	if pointEarningCap == nil {
+		return flash.Danger(models.ErrPointEarningCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -320,41 +320,41 @@ func (q *pointAccrualCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointAccrualCap.MinimumPurchase),
-		"request", pointAccrualCap,
-		"point", pointAccrualCap,
+		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointEarningCap.MinimumPurchase),
+		"request", pointEarningCap,
+		"point", pointEarningCap,
 	)
-	request, statusCode, err := sanitizers.ValidatePointAccrualCap(ctx, c)
+	request, statusCode, err := sanitizers.ValidatePointEarningCap(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointAccrualCap")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointEarningCap")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("/admin/point_accrual_cap_edit", params.Push(
+		return c.Render("/admin/point_earning_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if pointAccrualCap.MinimumPurchase != nil &&
+	if pointEarningCap.MinimumPurchase != nil &&
 		request.MinimumPurchase != nil &&
-		*pointAccrualCap.MinimumPurchase != *request.MinimumPurchase {
-		otherPointAccrualCap, err := q.pointAccrualCapService.FindPointAccrualCap(
+		*pointEarningCap.MinimumPurchase != *request.MinimumPurchase {
+		otherPointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 			ctx,
-			models.NewPointAccrualCapFilter().
+			models.NewPointEarningCapFilter().
 				WithMinimumPurchases(*request.MinimumPurchase).
-				WithExcludedPointAccrualCapIDs(pointAccrualCap.ID),
+				WithExcludedPointEarningCapIDs(pointEarningCap.ID),
 		)
-		if err != nil && !errors.Is(err, models.ErrPointAccrualCapNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointAccrualCap")
-			return c.Render("admin/point_accrual_cap_edit", params.Push(
+		if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
+			return c.Render("admin/point_earning_cap_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
-		if otherPointAccrualCap != nil {
-			return c.Render("admin/point_accrual_cap_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniquePointAccrualCapMinimumPurchaseViolation.Error()),
+		if otherPointEarningCap != nil {
+			return c.Render("admin/point_earning_cap_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniquePointEarningCapMinimumPurchaseViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
-	request.ID = pointAccrualCap.ID
+	request.ID = pointEarningCap.ID
 	request.DeletedMinimumPurchase = nil
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
@@ -362,7 +362,7 @@ func (q *pointAccrualCapController) AdminUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("/admin/point_accrual_cap_edit", params.Push(
+		return c.Render("/admin/point_earning_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -374,53 +374,53 @@ func (q *pointAccrualCapController) AdminUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.pointAccrualCapService.UpdatePointAccrualCap(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointAccrualCap")
-		return c.Render("/admin/point_accrual_cap_edit", params.Push(
+	if _, err = q.pointEarningCapService.UpdatePointEarningCap(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointEarningCap")
+		return c.Render("/admin/point_earning_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("/admin/point_accrual_cap_edit", params.Push(
+		return c.Render("/admin/point_earning_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("point accrual cap updated successfully").
-		Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		Success("point earning cap updated successfully").
+		Redirect(c, sess.Session, "/admin/point_earning_caps")
 }
 
-func (q *pointAccrualCapController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *pointEarningCapController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointAccrualCapController-AdminDelete"
+	ctxt := "PointEarningCapController-AdminDelete"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	pointAccrualCapID, err := uuid.Parse(c.Params("id"))
+	pointEarningCapID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointAccrualCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		return flash.Danger(models.ErrPointEarningCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	pointAccrualCap, err := q.pointAccrualCapService.FindPointAccrualCap(
+	pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 		ctx,
-		models.NewPointAccrualCapFilter().
+		models.NewPointEarningCapFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithPointAccrualCapIDs(pointAccrualCapID),
+			WithPointEarningCapIDs(pointEarningCapID),
 	)
-	if err != nil && !errors.Is(err, models.ErrPointAccrualCapNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointAccrualCap")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+	if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	if pointAccrualCap == nil {
-		return flash.Danger(models.ErrPointAccrualCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+	if pointEarningCap == nil {
+		return flash.Danger(models.ErrPointEarningCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	request := pointAccrualCap
+	request := pointEarningCap
 	if request.MinimumPurchase != nil {
-		request.DeletedMinimumPurchase = new(*pointAccrualCap.MinimumPurchase)
+		request.DeletedMinimumPurchase = new(*pointEarningCap.MinimumPurchase)
 	}
 	request.MinimumPurchase = nil
 	request.RecordStatus = models.RecordStatusDeleted
@@ -430,7 +430,7 @@ func (q *pointAccrualCapController) AdminDelete(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -440,15 +440,15 @@ func (q *pointAccrualCapController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.pointAccrualCapService.UpdatePointAccrualCap(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointAccrualCap")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+	if _, err = q.pointEarningCapService.UpdatePointEarningCap(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointEarningCap")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("point accrual cap deleted successfully").
-		Redirect(c, sess.Session, "/admin/point_accrual_caps")
+		Success("point earning cap deleted successfully").
+		Redirect(c, sess.Session, "/admin/point_earning_caps")
 }

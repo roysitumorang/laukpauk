@@ -37,7 +37,7 @@
 									<h5 class="mb-0">Tarif Akumulasi Poin Baru</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/point_accrual_caps">
+									<a href="{{ baseURL }}/admin/point_earning_caps">
 										<button class="btn btn-link btn-sm" type="button">List Tarif Akumulasi Poin</button>
 									</a>
 								</div>
@@ -49,8 +49,8 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/point_accrual_caps">
-								{{ include "_point_accrual_cap_form" }}
+							<form method="POST" action="{{ baseURL }}/admin/point_earning_caps">
+								{{ include "_point_earning_cap_form" }}
 							</form>
 						</div>
 					</div>
@@ -62,4 +62,3 @@
 	<!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
-

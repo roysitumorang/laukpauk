@@ -11,21 +11,21 @@ import (
 )
 
 var (
-	ErrPointAccrualCapNotFound                       = errors.New("point accrual cap not found")
-	ErrUniquePointAccrualCapMinimumPurchaseViolation = errors.New("minimum_purchase: already exists")
+	ErrPointEarningCapNotFound                       = errors.New("point earning cap not found")
+	ErrUniquePointEarningCapMinimumPurchaseViolation = errors.New("minimum_purchase: already exists")
 
-	MapPointAccrualCapSortings = map[string]struct{}{
+	MapPointEarningCapSortings = map[string]struct{}{
 		SortingFieldID: {},
-		PointAccrualCapSortingFieldMinimumPurchase: {},
+		PointEarningCapSortingFieldMinimumPurchase: {},
 	}
 )
 
 const (
-	PointAccrualCapSortingFieldMinimumPurchase = "minimum_purchase"
+	PointEarningCapSortingFieldMinimumPurchase = "minimum_purchase"
 )
 
 type (
-	PointAccrualCap struct {
+	PointEarningCap struct {
 		RowNo                  int64        `json:"-" form:"-"`
 		ID                     uuid.UUID    `json:"-" form:"id"`
 		RecordStatus           RecordStatus `json:"-" form:"-"`
@@ -42,9 +42,9 @@ type (
 		DeletionReason         *string      `json:"-" form:"-"`
 	}
 
-	PointAccrualCapFilter struct {
-		PointAccrualCapIDs,
-		ExcludedPointAccrualCapIDs []uuid.UUID
+	PointEarningCapFilter struct {
+		PointEarningCapIDs,
+		ExcludedPointEarningCapIDs []uuid.UUID
 		RecordStatuses   []RecordStatus
 		MinimumPurchases []int64
 		Keyword,
@@ -57,44 +57,44 @@ type (
 	}
 )
 
-func NewPointAccrualCapFilter() *PointAccrualCapFilter {
-	return new(PointAccrualCapFilter{
+func NewPointEarningCapFilter() *PointEarningCapFilter {
+	return new(PointEarningCapFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
 	})
 }
 
-func (q *PointAccrualCapFilter) WithPointAccrualCapIDs(pointAccrualIDs ...uuid.UUID) *PointAccrualCapFilter {
-	q.PointAccrualCapIDs = pointAccrualIDs
+func (q *PointEarningCapFilter) WithPointEarningCapIDs(pointEarningIDs ...uuid.UUID) *PointEarningCapFilter {
+	q.PointEarningCapIDs = pointEarningIDs
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithExcludedPointAccrualCapIDs(excludedPointAccrualIDs ...uuid.UUID) *PointAccrualCapFilter {
-	q.ExcludedPointAccrualCapIDs = excludedPointAccrualIDs
+func (q *PointEarningCapFilter) WithExcludedPointEarningCapIDs(excludedPointEarningIDs ...uuid.UUID) *PointEarningCapFilter {
+	q.ExcludedPointEarningCapIDs = excludedPointEarningIDs
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *PointEarningCapFilter {
 	q.RecordStatuses = recordStatuses
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithMinimumPurchases(minimumPurchases ...int64) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithMinimumPurchases(minimumPurchases ...int64) *PointEarningCapFilter {
 	q.MinimumPurchases = minimumPurchases
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithKeyword(keyword string) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithKeyword(keyword string) *PointEarningCapFilter {
 	q.Keyword = keyword
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithPaginationURL(paginationURL string) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithPaginationURL(paginationURL string) *PointEarningCapFilter {
 	q.PaginationURL = paginationURL
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithSortings(sortings ...Sorting) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithSortings(sortings ...Sorting) *PointEarningCapFilter {
 	q.Sortings = sortings
 	q.MapSortings.Clear()
 	for _, sorting := range sortings {
@@ -103,22 +103,22 @@ func (q *PointAccrualCapFilter) WithSortings(sortings ...Sorting) *PointAccrualC
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithLimit(limit int64) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithLimit(limit int64) *PointEarningCapFilter {
 	q.Limit = limit
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithPage(page int64) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithPage(page int64) *PointEarningCapFilter {
 	q.Page = page
 	return q
 }
 
-func (q *PointAccrualCapFilter) WithUrlValues(urlValues url.Values) *PointAccrualCapFilter {
+func (q *PointEarningCapFilter) WithUrlValues(urlValues url.Values) *PointEarningCapFilter {
 	q.UrlValues = urlValues
 	return q
 }
 
-func (q *PointAccrualCap) Validate() error {
+func (q *PointEarningCap) Validate() error {
 	if q.RawMinimumPurchase < 1 {
 		return errors.New("minimum_purchase: requires a positive integer")
 	}
@@ -129,7 +129,7 @@ func (q *PointAccrualCap) Validate() error {
 	return nil
 }
 
-func (q *PointAccrualCap) Populate() *PointAccrualCap {
+func (q *PointEarningCap) Populate() *PointEarningCap {
 	if q.MinimumPurchase != nil {
 		q.RawMinimumPurchase = *q.MinimumPurchase
 	}

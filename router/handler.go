@@ -45,7 +45,7 @@ type (
 		NonDeliveryDayService  services.NonDeliveryDayService
 		PointService           services.PointService
 		VoucherService         services.VoucherService
-		PointAccrualCapService services.PointAccrualCapService
+		PointEarningCapService services.PointEarningCapService
 		TransactionService     services.TransactionService
 	}
 )
@@ -122,7 +122,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	nonDeliveryDayRepository := repositories.NewNonDeliveryDayRepository(dbRead, dbWrite)
 	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
 	voucherRepository := repositories.NewVoucherRepository(dbRead, dbWrite)
-	pointAccrualCapRepository := repositories.NewPointAccrualCapRepository(dbRead, dbWrite)
+	pointEarningCapRepository := repositories.NewPointEarningCapRepository(dbRead, dbWrite)
 	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
@@ -139,7 +139,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	nonDeliveryDayService := services.NewNonDeliveryDayService(nonDeliveryDayRepository)
 	pointService := services.NewPointService(pointRepository)
 	voucherService := services.NewVoucherService(voucherRepository)
-	pointAccrualCapService := services.NewPointAccrualCapService(pointAccrualCapRepository)
+	pointEarningCapService := services.NewPointEarningCapService(pointEarningCapRepository)
 	transactionService := services.NewTransactionService(transactionRepository)
 	return &Service{
 		DbWrite:                dbWrite,
@@ -163,7 +163,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		NonDeliveryDayService:  nonDeliveryDayService,
 		PointService:           pointService,
 		VoucherService:         voucherService,
-		PointAccrualCapService: pointAccrualCapService,
+		PointEarningCapService: pointEarningCapService,
 		TransactionService:     transactionService,
 	}, nil
 }
