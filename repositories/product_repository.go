@@ -86,6 +86,7 @@ func (q *productRepository) FindProducts(
 		, p.description
 		, p.ready_stock
 		, p.pinned
+		, p.hits
 		, p.created_by
 		, p.created_at
 		, p.updated_by
@@ -152,6 +153,7 @@ func (q *productRepository) FindProducts(
 			&product.Description,
 			&product.ReadyStock,
 			&product.Pinned,
+			&product.Hits,
 			&product.CreatedBy,
 			&product.CreatedAt,
 			&product.UpdatedBy,
@@ -191,6 +193,7 @@ func (q *productRepository) FindProduct(
 			, p.description
 			, p.ready_stock
 			, p.pinned
+			, p.hits
 			, p.created_by
 			, p.created_at
 			, p.updated_by
@@ -215,6 +218,7 @@ func (q *productRepository) FindProduct(
 		&response.Description,
 		&response.ReadyStock,
 		&response.Pinned,
+		&response.Hits,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -252,11 +256,12 @@ func (q *productRepository) CreateProduct(
 				, description
 				, ready_stock
 				, pinned
+				, hits
 				, created_by
 				, created_at
 				, updated_by
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			RETURNING *
 		)
 		SELECT
@@ -270,6 +275,7 @@ func (q *productRepository) CreateProduct(
 			, p.description
 			, p.ready_stock
 			, p.pinned
+			, p.hits
 			, p.created_by
 			, p.created_at
 			, p.updated_by
@@ -287,6 +293,7 @@ func (q *productRepository) CreateProduct(
 		request.Description,
 		request.ReadyStock,
 		request.Pinned,
+		request.Hits,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -302,6 +309,7 @@ func (q *productRepository) CreateProduct(
 		&response.Description,
 		&response.ReadyStock,
 		&response.Pinned,
+		&response.Hits,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -341,12 +349,13 @@ func (q *productRepository) UpdateProduct(
 				, description = $6
 				, ready_stock = $7
 				, pinned = $8
-				, updated_by = $9
-				, updated_at = $10
-				, deleted_by = $11
-				, deleted_at = $12
-				, deletion_reason = $13
-			WHERE id = $14
+				, hits = $9
+				, updated_by = $10
+				, updated_at = $11
+				, deleted_by = $12
+				, deleted_at = $13
+				, deletion_reason = $14
+			WHERE id = $15
 			RETURNING *
 		)
 		SELECT
@@ -360,6 +369,7 @@ func (q *productRepository) UpdateProduct(
 			, p.description
 			, p.ready_stock
 			, p.pinned
+			, p.hits
 			, p.created_by
 			, p.created_at
 			, p.updated_by
@@ -377,6 +387,7 @@ func (q *productRepository) UpdateProduct(
 		request.Description,
 		request.ReadyStock,
 		request.Pinned,
+		request.Hits,
 		request.UpdatedBy,
 		request.UpdatedAt,
 		request.DeletedBy,
@@ -394,6 +405,7 @@ func (q *productRepository) UpdateProduct(
 		&response.Description,
 		&response.ReadyStock,
 		&response.Pinned,
+		&response.Hits,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,

@@ -181,6 +181,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
+	request.Hits = 0
 	request.CreatedBy = currentAdmin.ID
 	request.CreatedAt = now
 	request.UpdatedBy = currentAdmin.ID
@@ -359,6 +360,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	}
 	request.ID = product.ID
 	request.RecordStatus = product.RecordStatus
+	request.Hits = product.Hits
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil

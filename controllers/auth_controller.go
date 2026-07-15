@@ -240,7 +240,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	tokenString, err := helper.GenerateAccessToken(buyer.ID.String(), jsonWebToken.Token.String(), buyer.Username, jsonWebToken.CreatedAt, jsonWebToken.ExpiredAt)
+	tokenString, err := helper.GenerateAccessToken(buyer.ID.String(), jsonWebToken.ID.String(), buyer.Username, jsonWebToken.CreatedAt, jsonWebToken.ExpiredAt)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGenerateAccessToken")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).

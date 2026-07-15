@@ -53,6 +53,7 @@ type (
 		Description         string       `json:"-" form:"description"`
 		ReadyStock          bool         `json:"-" form:"ready_stock"`
 		Pinned              bool         `json:"-" form:"pinned"`
+		Hits                int64        `json:"-" form:"pinned"`
 		CreatedBy           uuid.UUID    `json:"-" form:"-"`
 		CreatedAt           time.Time    `json:"-" form:"-"`
 		UpdatedBy           uuid.UUID    `json:"-" form:"-"`

@@ -78,7 +78,6 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		"COUNT(1)",
 		`id
 		, user_id
-		, token
 		, created_at
 		, expired_at`,
 	)
@@ -132,7 +131,6 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		if err = rows.Scan(
 			&jsonWebToken.ID,
 			&jsonWebToken.UserID,
-			&jsonWebToken.Token,
 			&jsonWebToken.CreatedAt,
 			&jsonWebToken.ExpiredAt,
 		); err != nil {
@@ -159,7 +157,6 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 		`SELECT
 			id
 			, user_id
-			, token
 			, created_at
 			, expired_at
 		FROM json_web_tokens %s`,
@@ -170,7 +167,6 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.UserID,
-		&response.Token,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	)
@@ -190,45 +186,24 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 	request *models.JsonWebToken,
 ) (*models.JsonWebToken, error) {
 	ctxt := "JsonWebTokenRepository-CreateJsonWebToken"
-	var (
-		response models.JsonWebToken
-		count    int
-	)
-	for {
-		request.Token = uuid.New()
-		if err := tx.QueryRow(
-			ctx,
-			"SELECT COUNT(1) FROM json_web_tokens WHERE token = $1",
-			request.Token,
-		).Scan(&count); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-		if count == 0 {
-			break
-		}
-	}
+	var response models.JsonWebToken
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO json_web_tokens (
 			user_id
-			, token
 			, created_at
 			, expired_at
-		) VALUES ($1, $2, $3, $4)
+		) VALUES ($1, $2, $3)
 		RETURNING id
 			, user_id
-			, token
 			, created_at
 			, expired_at`,
 		request.UserID,
-		request.Token,
 		request.CreatedAt,
 		request.ExpiredAt,
 	).Scan(
 		&response.ID,
 		&response.UserID,
-		&response.Token,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	); err != nil {
@@ -287,19 +262,6 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 		_, _ = sb.WriteString("user_id IN (")
 		for i, userID := range request.UserIDs {
 			params = append(params, userID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.Tokens) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("token IN (")
-		for i, token := range request.Tokens {
-			params = append(params, token)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

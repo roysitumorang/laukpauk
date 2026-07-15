@@ -215,6 +215,7 @@ func init() {
 				, description character varying NOT NULL
 				, ready_stock BOOLEAN NOT NULL
 				, pinned BOOLEAN NOT NULL DEFAULT FALSE
+				, hits bigint NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -265,6 +266,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON products (pinned);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON products (hits);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1017,7 +1025,6 @@ func init() {
 			`CREATE TABLE json_web_tokens (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, user_id UUID NOT NULL REFERENCES users (id)
-				, token UUID NOT NULL UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, expired_at timestamp with time zone NOT NULL
 			);`,
@@ -1045,10 +1052,11 @@ func init() {
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, json_web_token_id UUID REFERENCES json_web_tokens (id)
+				, product_variant_id UUID NOT NULL REFERENCES product_variants (id)
+				, quantity bigint NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
-				, UNIQUE (buyer_id, json_web_token_id)
+				, UNIQUE (buyer_id, product_variant_id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1063,40 +1071,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON carts (json_web_token_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		// cart_items
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE cart_items (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, cart_id UUID NOT NULL REFERENCES carts (id)
-				, product_variant_id UUID NOT NULL REFERENCES product_variants (id)
-				, price bigint NOT NULL
-				, discount bigint NOT NULL
-				, quantity bigint NOT NULL
-				, note character varying NOT NULL
-				, created_at timestamp with time zone NOT NULL
-				, updated_at timestamp with time zone NOT NULL
-				, UNIQUE (cart_id, product_variant_id)
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON cart_items (cart_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON cart_items (product_variant_id);`,
+			`CREATE INDEX ON carts (product_variant_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

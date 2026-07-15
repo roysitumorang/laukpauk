@@ -20,15 +20,13 @@ type (
 		RowNo     int64     `json:"-" form:"-"`
 		ID        uuid.UUID `json:"-" form:"-"`
 		UserID    uuid.UUID `json:"-" form:"-"`
-		Token     uuid.UUID `json:"-" form:"-"`
 		CreatedAt time.Time `json:"-" form:"-"`
 		ExpiredAt time.Time `json:"-" form:"-"`
 	}
 
 	JsonWebTokenFilter struct {
 		JsonWebTokenIDs,
-		UserIDs,
-		Tokens []uuid.UUID
+		UserIDs []uuid.UUID
 		Expired *bool
 		Keyword,
 		PaginationURL string
@@ -54,11 +52,6 @@ func (q *JsonWebTokenFilter) WithJsonWebTokenIDs(jsonWebTokenIDs ...uuid.UUID) *
 
 func (q *JsonWebTokenFilter) WithUserIDs(userIDs ...uuid.UUID) *JsonWebTokenFilter {
 	q.UserIDs = userIDs
-	return q
-}
-
-func (q *JsonWebTokenFilter) WithTokens(tokens ...uuid.UUID) *JsonWebTokenFilter {
-	q.Tokens = tokens
 	return q
 }
 

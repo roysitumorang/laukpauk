@@ -32,8 +32,8 @@ func BuyerKeyAuth(
 			}
 			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).WriteResponse(c)
 		},
-		Validator: func(c fiber.Ctx, jsonWebToken string) (bool, error) {
-			claims, err := bearerVerify(jsonWebToken)
+		Validator: func(c fiber.Ctx, token string) (bool, error) {
+			claims, err := bearerVerify(token)
 			if err != nil {
 				return false, err
 			}
@@ -53,14 +53,14 @@ func BuyerKeyAuth(
 			if currentBuyer == nil {
 				return false, models.ErrBuyerNotFound
 			}
-			token, err := uuid.Parse(claims.Subject)
+			jsonWebTokenID, err := uuid.Parse(claims.Subject)
 			if err != nil {
 				return false, models.ErrBuyerNotFound
 			}
 			currentJsonWebToken, err := jsonWebTokenService.FindJsonWebToken(
 				ctx,
 				models.NewJsonWebTokenFilter().
-					WithTokens(token),
+					WithJsonWebTokenIDs(jsonWebTokenID),
 			)
 			if err != nil {
 				return false, err
