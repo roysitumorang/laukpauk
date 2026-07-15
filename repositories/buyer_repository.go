@@ -102,7 +102,6 @@ func (q *buyerRepository) FindBuyers(
 		, b.referrer_id
 		, b.referral_points
 		, b.reward_points
-		, b.points
 		, b.wallet`,
 	)
 	sb.Reset()
@@ -191,7 +190,6 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.ReferrerID,
 			&buyer.ReferralPoints,
 			&buyer.RewardPoints,
-			&buyer.Points,
 			&buyer.Wallet,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -253,7 +251,6 @@ func (q *buyerRepository) FindBuyer(
 			, b.referrer_id
 			, b.referral_points
 			, b.reward_points
-			, b.points
 			, b.wallet
 		FROM users u
 		JOIN buyers b ON u.id = b.user_id %s`,
@@ -300,7 +297,6 @@ func (q *buyerRepository) FindBuyer(
 		&response.ReferrerID,
 		&response.ReferralPoints,
 		&response.RewardPoints,
-		&response.Points,
 		&response.Wallet,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {

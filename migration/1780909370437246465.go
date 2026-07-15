@@ -126,7 +126,6 @@ func init() {
 				, referrer_id UUID REFERENCES users (id)
 				, referral_points bigint NOT NULL DEFAULT 0
 				, reward_points bigint NOT NULL DEFAULT 0
-				, points bigint NOT NULL DEFAULT 0
 				, wallet bigint NOT NULL DEFAULT 0
 			);`,
 		); err != nil {

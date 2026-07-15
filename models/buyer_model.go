@@ -21,7 +21,6 @@ type (
 		ReferrerID     *uuid.UUID `json:"-" form:"-"`
 		ReferralPoints int64      `json:"-" form:"-"`
 		RewardPoints   int64      `json:"-" form:"-"`
-		Points         int64      `json:"-" form:"-"`
 		Wallet         int64      `json:"-" form:"-"`
 	}
 
