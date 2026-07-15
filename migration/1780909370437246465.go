@@ -866,7 +866,9 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, voucher_type integer NOT NULL
-				, code character varying NOT NULL
+				, target_audience integer NOT NULL
+				, code character varying
+				, deleted_code character varying
 				, photo character varying NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, budget bigint NOT NULL
@@ -906,7 +908,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON vouchers (target_audience);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE UNIQUE INDEX vouchers_unique_code_idx ON vouchers (LOWER(code));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers (LOWER(deleted_code));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -963,6 +979,34 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON vouchers (deleted_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// vouchers_buyers
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE vouchers_buyers (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, voucher_id UUID NOT NULL REFERENCES vouchers (id)
+				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, created_at timestamp with time zone NOT NULL
+				, UNIQUE (voucher_id, buyer_id)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers_buyers (voucher_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers_buyers (buyer_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

@@ -15,10 +15,27 @@ var (
 	ErrVoucherNotFound            = errors.New("voucher not found")
 	ErrUniqueVoucherCodeViolation = errors.New("code: already exists")
 
-	VoucherTypes    = []VoucherType{VoucherTypeDeliveryCost, VoucherTypeShoppingCost}
+	VoucherTypes = []VoucherType{
+		VoucherTypeDeliveryCost,
+		VoucherTypeShoppingCost,
+	}
 	MapVoucherTypes = map[VoucherType]struct{}{
 		VoucherTypeDeliveryCost: {},
 		VoucherTypeShoppingCost: {},
+	}
+	VoucherTargetAudiences = []VoucherTargetAudience{
+		VoucherTargetAudienceAllBuyers,
+		VoucherTargetAudienceNewBuyers,
+		VoucherTargetAudienceLoyalty,
+		VoucherTargetAudienceEarlyShopping,
+		VoucherTargetAudienceInactiveBuyers,
+	}
+	MapVoucherTargetAudiences = map[VoucherTargetAudience]struct{}{
+		VoucherTargetAudienceAllBuyers:      {},
+		VoucherTargetAudienceNewBuyers:      {},
+		VoucherTargetAudienceLoyalty:        {},
+		VoucherTargetAudienceEarlyShopping:  {},
+		VoucherTargetAudienceInactiveBuyers: {},
 	}
 	MapVoucherSortings = map[string]struct{}{
 		SortingFieldID:          {},
@@ -32,52 +49,61 @@ const (
 )
 
 const (
-	VoucherSortingFieldName = "name"
+	VoucherTargetAudienceAllBuyers VoucherTargetAudience = iota
+	VoucherTargetAudienceNewBuyers
+	VoucherTargetAudienceLoyalty
+	VoucherTargetAudienceEarlyShopping
+	VoucherTargetAudienceInactiveBuyers
+)
 
-	VoucherPhotoName         = "voucher-%d%s"
-	VoucherPhotoPath         = "./images/voucher/%s"
-	VoucherPhotoCompressPath = "./images/voucher/compress/%s"
+const (
+	VoucherSortingFieldName = "name"
 )
 
 type (
-	VoucherType int
+	VoucherType           int
+	VoucherTargetAudience int
 
 	Voucher struct {
-		RowNo                 int64        `json:"-" form:"-"`
-		ID                    uuid.UUID    `json:"-" form:"-"`
-		RecordStatus          RecordStatus `json:"-" form:"-"`
-		VoucherType           VoucherType  `json:"-" form:"voucher_type"`
-		Code                  string       `json:"-" form:"code"`
-		Photo                 string       `json:"-" form:"photo"`
-		Name                  string       `json:"-" form:"name"`
-		Budget                int64        `json:"-" form:"budget"`
-		Discount              int64        `json:"-" form:"discount"`
-		MinimumPurchase       int64        `json:"-" form:"minimum_purchase"`
-		QuotaPerBuyer         int          `json:"-" form:"quota_per_buyer"`
-		EffectiveStartTime    time.Time    `json:"-" form:"-"`
-		RawEffectiveStartTime string       `json:"-" form:"effective_start_time"`
-		EffectiveEndTime      time.Time    `json:"-" form:"-"`
-		RawEffectiveEndTime   string       `json:"-" form:"effective_end_time"`
-		EffectiveStartDate    time.Time    `json:"-" form:"-"`
-		RawEffectiveStartDate string       `json:"-" form:"effective_start_date"`
-		EffectiveEndDate      time.Time    `json:"-" form:"-"`
-		RawEffectiveEndDate   string       `json:"-" form:"effective_end_date"`
-		Description           string       `json:"-" form:"description"`
-		CreatedBy             uuid.UUID    `json:"-" form:"-"`
-		CreatedAt             time.Time    `json:"-" form:"-"`
-		UpdatedBy             uuid.UUID    `json:"-" form:"-"`
-		UpdatedAt             time.Time    `json:"-" form:"-"`
-		DeletedBy             *uuid.UUID   `json:"-" form:"-"`
-		DeletedAt             *time.Time   `json:"-" form:"-"`
-		DeletionReason        *string      `json:"-" form:"-"`
+		RowNo                 int64                 `json:"-" form:"-"`
+		ID                    uuid.UUID             `json:"-" form:"id"`
+		RecordStatus          RecordStatus          `json:"-" form:"-"`
+		VoucherType           VoucherType           `json:"-" form:"voucher_type"`
+		TargetAudience        VoucherTargetAudience `json:"-" form:"target_audience"`
+		Code                  *string               `json:"-" form:"code"`
+		DeletedCode           *string               `json:"-" form:"-"`
+		Photo                 string                `json:"-" form:"photo"`
+		Name                  string                `json:"-" form:"name"`
+		Budget                int64                 `json:"-" form:"budget"`
+		Discount              int64                 `json:"-" form:"discount"`
+		MinimumPurchase       int64                 `json:"-" form:"minimum_purchase"`
+		QuotaPerBuyer         int                   `json:"-" form:"quota_per_buyer"`
+		EffectiveStartTime    time.Time             `json:"-" form:"-"`
+		RawEffectiveStartTime string                `json:"-" form:"effective_start_time"`
+		EffectiveEndTime      time.Time             `json:"-" form:"-"`
+		RawEffectiveEndTime   string                `json:"-" form:"effective_end_time"`
+		EffectiveStartDate    time.Time             `json:"-" form:"-"`
+		RawEffectiveStartDate string                `json:"-" form:"effective_start_date"`
+		EffectiveEndDate      time.Time             `json:"-" form:"-"`
+		RawEffectiveEndDate   string                `json:"-" form:"effective_end_date"`
+		Description           string                `json:"-" form:"description"`
+		CreatedBy             uuid.UUID             `json:"-" form:"-"`
+		CreatedAt             time.Time             `json:"-" form:"-"`
+		UpdatedBy             uuid.UUID             `json:"-" form:"-"`
+		UpdatedAt             time.Time             `json:"-" form:"-"`
+		DeletedBy             *uuid.UUID            `json:"-" form:"-"`
+		DeletedAt             *time.Time            `json:"-" form:"-"`
+		DeletionReason        *string               `json:"-" form:"-"`
+		BuyerIDs              []uuid.UUID           `json:"-" form:"-"`
 	}
 
 	VoucherFilter struct {
 		VoucherIDs,
 		ExcludedVoucherIDs []uuid.UUID
-		RecordStatuses []RecordStatus
-		VoucherTypes   []VoucherType
-		Codes          []string
+		RecordStatuses  []RecordStatus
+		VoucherTypes    []VoucherType
+		TargetAudiences []VoucherTargetAudience
+		Codes           []string
 		EffectiveStartTime,
 		EffectiveEndTime,
 		EffectiveStartDate,
@@ -116,6 +142,11 @@ func (q *VoucherFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *Vouc
 
 func (q *VoucherFilter) WithVoucherTypes(voucherTypes ...VoucherType) *VoucherFilter {
 	q.VoucherTypes = voucherTypes
+	return q
+}
+
+func (q *VoucherFilter) WithTargetAudiences(targetAudiences ...VoucherTargetAudience) *VoucherFilter {
+	q.TargetAudiences = targetAudiences
 	return q
 }
 
@@ -175,7 +206,15 @@ func (q *Voucher) Validate() (err error) {
 	if _, ok := MapVoucherTypes[q.VoucherType]; !ok {
 		return errors.New("voucher_type: not found")
 	}
-	if q.Code = strings.TrimSpace(q.Code); q.Code == "" {
+	if _, ok := MapVoucherTargetAudiences[q.TargetAudience]; !ok {
+		return errors.New("target_audience: not found")
+	}
+	if q.Code != nil {
+		if *q.Code = strings.TrimSpace(*q.Code); *q.Code == "" {
+			q.Code = nil
+		}
+	}
+	if q.Code == nil {
 		return errors.New("code: is required")
 	}
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
@@ -250,6 +289,10 @@ func (q *Voucher) Validate() (err error) {
 	return nil
 }
 
+func (q *Voucher) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
 func (q *Voucher) Populate() *Voucher {
 	location := helper.LoadTimeZone()
 	q.EffectiveStartTime = q.EffectiveStartTime.In(location)
@@ -261,6 +304,10 @@ func (q *Voucher) Populate() *Voucher {
 	q.EffectiveEndDate = q.EffectiveEndDate.In(location)
 	q.RawEffectiveEndDate = q.EffectiveEndDate.Format(time.DateOnly)
 	return q
+}
+
+func (q *Voucher) PhotoPath() string {
+	return helper.PhotoPath(q.Photo)
 }
 
 func (q *Voucher) Status() string {
@@ -283,6 +330,30 @@ func (q VoucherType) String() string {
 		return "shopping cost"
 	}
 	return "delivery cost"
+}
+
+func (q VoucherTargetAudience) Equal(v VoucherTargetAudience) bool {
+	return q.Int() == v.Int()
+}
+
+func (q VoucherTargetAudience) Int() int {
+	return int(q)
+}
+
+func (q VoucherTargetAudience) String() string {
+	if q == VoucherTargetAudienceNewBuyers {
+		return "new buyers"
+	}
+	if q == VoucherTargetAudienceLoyalty {
+		return "loyalty"
+	}
+	if q == VoucherTargetAudienceEarlyShopping {
+		return "belanja lebih awal"
+	}
+	if q == VoucherTargetAudienceInactiveBuyers {
+		return "inactive buyers"
+	}
+	return "all buyers"
 }
 
 func (q VoucherType) Equal(v VoucherType) bool {

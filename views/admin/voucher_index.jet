@@ -125,8 +125,8 @@
 									<td class="vam text-left">
 										<div class="row">
 											<div class="col-lg-4 text-center">
-												<a href="{{ baseURL }}/images/voucher/{{ row.Photo }}" target="_blank">
-													<img src="{{ baseURL }}/images/voucher/compress/{{ row.Photo }}"
+												<a href="{{ baseURL }}{{ row.PhotoPath() }}" target="_blank">
+													<img src="{{ baseURL }}{{ row.PhotoPath() }}"
 													class="img-circle cp" style="width:50px; height:50px;"
 													onerror="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 												</a>
@@ -141,6 +141,8 @@
 									<td class="vam text-left">
 										<span class="badge badge-info" data-toggle="tooltip"
 											data-placement="top" title="Voucher untuk mengurangi {{ row.VoucherType.String() }}">{{ row.VoucherType.String() }}</span>
+										<span class="badge badge-info" data-toggle="tooltip"
+											data-placement="top" title="Target buyers group {{ row.TargetAudience.String() }}">{{ row.TargetAudience.String() }}</span>
 									</td>
 									<td class="vam text-right">Rp. {{ row.Discount | Comma }}</td>
 									<td class="vam text-center">{{ row.QuotaPerBuyer }}x Pemakaian</td>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgerrcode"
@@ -79,7 +80,9 @@ func (q *voucherRepository) FindVouchers(
 		`id
 		, record_status
 		, voucher_type
+		, target_audience
 		, code
+		, deleted_code
 		, photo
 		, name
 		, budget
@@ -144,13 +147,20 @@ func (q *voucherRepository) FindVouchers(
 	}
 	defer rows.Close()
 	var response []*models.Voucher
+	params = []any{}
+	sb.Reset()
+	_, _ = sb.WriteString("SELECT voucher_id, buyer_id FROM vouchers_buyers WHERE voucher_id IN (")
+	var n int
+	mapVoucherIDs := map[uuid.UUID]int{}
 	for rows.Next() {
 		var voucher models.Voucher
 		if err = rows.Scan(
 			&voucher.ID,
 			&voucher.RecordStatus,
 			&voucher.VoucherType,
+			&voucher.TargetAudience,
 			&voucher.Code,
+			&voucher.DeletedCode,
 			&voucher.Photo,
 			&voucher.Name,
 			&voucher.Budget,
@@ -176,6 +186,43 @@ func (q *voucherRepository) FindVouchers(
 		offset++
 		voucher.RowNo = offset
 		response = append(response, (&voucher).Populate())
+		mapVoucherIDs[voucher.ID] = len(response) - 1
+		params = append(params, voucher.ID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, "$%d", n)
+	}
+	_, _ = sb.WriteString(") ORDER BY id")
+	if len(params) == 0 {
+		return response, total, pages, nil
+	}
+	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, 0, 0, err
+	}
+	defer rows.Close()
+	var (
+		voucherID,
+		buyerID uuid.UUID
+		i int
+	)
+	for rows.Next() {
+		if err = rows.Scan(
+			&voucherID,
+			&buyerID,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, 0, 0, err
+		}
+		i = mapVoucherIDs[voucherID]
+		voucher := response[i]
+		voucher.BuyerIDs = append(voucher.BuyerIDs, buyerID)
+		response[i] = voucher
 	}
 	return response, total, pages, nil
 }
@@ -194,7 +241,9 @@ func (q *voucherRepository) FindVoucher(
 			id
 			, record_status
 			, voucher_type
+			, target_audience
 			, code
+			, deleted_code
 			, photo
 			, name
 			, budget
@@ -222,7 +271,9 @@ func (q *voucherRepository) FindVoucher(
 		&response.ID,
 		&response.RecordStatus,
 		&response.VoucherType,
+		&response.TargetAudience,
 		&response.Code,
+		&response.DeletedCode,
 		&response.Photo,
 		&response.Name,
 		&response.Budget,
@@ -249,6 +300,30 @@ func (q *voucherRepository) FindVoucher(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
+	rows, err := q.dbRead.Query(
+		ctx,
+		`SELECT buyer_id
+		FROM vouchers_buyers
+		WHERE voucher_id = $1
+		ORDER BY id`,
+		response.ID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, err
+	}
+	defer rows.Close()
+	var buyerID uuid.UUID
+	for rows.Next() {
+		if err = rows.Scan(&buyerID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
+		response.BuyerIDs = append(response.BuyerIDs, buyerID)
+	}
 	return (&response).Populate(), nil
 }
 
@@ -264,6 +339,7 @@ func (q *voucherRepository) CreateVoucher(
 		`INSERT INTO vouchers (
 			record_status
 			, voucher_type
+			, target_audience
 			, code
 			, photo
 			, name
@@ -282,12 +358,14 @@ func (q *voucherRepository) CreateVoucher(
 			, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9,
-			$10, $11, $12, $13, $14, $15, $16, $17, $18
+			$10, $11, $12, $13, $14, $15, $16, $17, $18, $19
 		)
 		RETURNING id
 			, record_status
 			, voucher_type
+			, target_audience
 			, code
+			, deleted_code
 			, photo
 			, name
 			, budget
@@ -308,6 +386,7 @@ func (q *voucherRepository) CreateVoucher(
 			, deletion_reason`,
 		request.RecordStatus,
 		request.VoucherType,
+		request.TargetAudience,
 		request.Code,
 		request.Photo,
 		request.Name,
@@ -328,7 +407,9 @@ func (q *voucherRepository) CreateVoucher(
 		&response.ID,
 		&response.RecordStatus,
 		&response.VoucherType,
+		&response.TargetAudience,
 		&response.Code,
+		&response.DeletedCode,
 		&response.Photo,
 		&response.Name,
 		&response.Budget,
@@ -372,28 +453,32 @@ func (q *voucherRepository) UpdateVoucher(
 		`UPDATE vouchers SET
 			record_status = $1
 			, voucher_type = $2
-			, code = $3
-			, photo = $4
-			, name = $5
-			, budget = $6
-			, discount = $7
-			, minimum_purchase = $8
-			, quota_per_buyer = $9
-			, effective_start_time = $10
-			, effective_end_time = $11
-			, effective_start_date = $12
-			, effective_end_date = $13
-			, description = $14
-			, updated_by = $15
-			, updated_at = $16
-			, deleted_by = $17
-			, deleted_at = $18
-			, deletion_reason = $19
-		WHERE id = $20
+			, target_audience = $3
+			, code = $4
+			, deleted_code = $5
+			, photo = $6
+			, name = $7
+			, budget = $8
+			, discount = $9
+			, minimum_purchase = $10
+			, quota_per_buyer = $11
+			, effective_start_time = $12
+			, effective_end_time = $13
+			, effective_start_date = $14
+			, effective_end_date = $15
+			, description = $16
+			, updated_by = $17
+			, updated_at = $18
+			, deleted_by = $19
+			, deleted_at = $20
+			, deletion_reason = $21
+		WHERE id = $22
 		RETURNING id
 			, record_status
 			, voucher_type
+			, target_audience
 			, code
+			, deleted_code
 			, photo
 			, name
 			, budget
@@ -414,7 +499,9 @@ func (q *voucherRepository) UpdateVoucher(
 			, deletion_reason`,
 		request.RecordStatus,
 		request.VoucherType,
+		request.TargetAudience,
 		request.Code,
+		request.DeletedCode,
 		request.Photo,
 		request.Name,
 		request.Budget,
@@ -436,7 +523,9 @@ func (q *voucherRepository) UpdateVoucher(
 		&response.ID,
 		&response.RecordStatus,
 		&response.VoucherType,
+		&response.TargetAudience,
 		&response.Code,
+		&response.DeletedCode,
 		&response.Photo,
 		&response.Name,
 		&response.Budget,
@@ -463,6 +552,55 @@ func (q *voucherRepository) UpdateVoucher(
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
+		return nil, err
+	}
+	n := len(request.BuyerIDs)
+	if n == 0 {
+		return (&response).Populate(), nil
+	}
+	paramsCreate := make([]any, n+2)
+	paramsCreate[0] = response.ID
+	paramsCreate[1] = response.UpdatedAt
+	paramsDelete := make([]any, n+1)
+	paramsDelete[0] = response.ID
+	var sbCreate,
+		sbDelete strings.Builder
+	_, _ = sbCreate.WriteString("INSERT INTO vouchers_buyers (voucher_id, buyer_id, created_at) VALUES")
+	_, _ = sbDelete.WriteString("DELETE FROM vouchers_buyers WHERE voucher_id = $1 AND buyer_id NOT IN (")
+	for i := range request.BuyerIDs {
+		paramsCreate[i+2] = request.BuyerIDs[i]
+		paramsDelete[i+1] = request.BuyerIDs[i]
+		if i > 0 {
+			_, _ = sbCreate.WriteString(",")
+			_, _ = sbDelete.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sbCreate, " ($1, $%d, $2)", i+3)
+		_, _ = fmt.Fprintf(&sbDelete, "$%d", i+2)
+	}
+	_, _ = sbCreate.WriteString(" ON CONFLICT (voucher_id, buyer_id) DO UPDATE SET id = EXCLUDED.id RETURNING buyer_id")
+	_, _ = sbDelete.WriteString(")")
+	rows, err := tx.Query(ctx, sbCreate.String(), paramsCreate...)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, err
+	}
+	var buyerID uuid.UUID
+	for rows.Next() {
+		if err = rows.Scan(&buyerID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
+		response.BuyerIDs = append(response.BuyerIDs, buyerID)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, err
+	}
+	if _, err = tx.Exec(ctx, sbDelete.String(), paramsDelete...); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, err
 	}
 	return (&response).Populate(), nil
@@ -514,6 +652,19 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 		_, _ = sb.WriteString("voucher_type IN (")
 		for i, voucherType := range request.VoucherTypes {
 			params = append(params, voucherType)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.TargetAudiences) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("target_audience IN (")
+		for i, targetAudience := range request.TargetAudiences {
+			params = append(params, targetAudience)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

@@ -45,9 +45,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/vouchers" enctype="multipart/form-data">
-								{{ include "_voucher_form" }}
-							</form>
+							{{ include "_voucher_form" }}
 						</div>
 					</div>
 				</div>

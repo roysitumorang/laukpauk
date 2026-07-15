@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"mime/multipart"
 	"os"
 	"time"
 	"uuid"
@@ -147,7 +146,9 @@ func (q *voucherController) AdminNew(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Voucher",
 		"request", request,
+		"voucher", request,
 		"voucherTypes", models.VoucherTypes,
+		"targetAudiences", models.VoucherTargetAudiences,
 	)
 	return c.Render("admin/voucher_new", params, "admin/layouts/authenticated")
 }
@@ -184,8 +185,9 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Voucher",
-		"request", request,
+		"voucher", request,
 		"voucherTypes", models.VoucherTypes,
+		"targetAudiences", models.VoucherTargetAudiences,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
 	params.Push("request", request)
@@ -196,21 +198,23 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	voucher, err := q.voucherService.FindVoucher(
-		ctx,
-		models.NewVoucherFilter().
-			WithCodes(request.Code),
-	)
-	if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
-		return c.Render("admin/voucher_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if voucher != nil {
-		return c.Render("admin/voucher_new", params.Push(
-			"flash", flash.Danger(models.ErrUniqueVoucherCodeViolation.Error()),
-		), "admin/layouts/authenticated")
+	if request.Code != nil {
+		voucher, err := q.voucherService.FindVoucher(
+			ctx,
+			models.NewVoucherFilter().
+				WithCodes(*request.Code),
+		)
+		if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
+			return c.Render("admin/voucher_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if voucher != nil {
+			return c.Render("admin/voucher_new", params.Push(
+				"flash", flash.Danger(models.ErrUniqueVoucherCodeViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
 	}
 	createdBy := currentAdmin.ID
 	request.RecordStatus = models.RecordStatusActive
@@ -242,7 +246,7 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/voucher_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -292,6 +296,7 @@ func (q *voucherController) AdminEdit(c fiber.Ctx) (err error) {
 		"request", voucher,
 		"voucher", voucher,
 		"voucherTypes", models.VoucherTypes,
+		"targetAudiences", models.VoucherTargetAudiences,
 	)
 	return c.Render("admin/voucher_edit", params, "admin/layouts/authenticated")
 }
@@ -331,6 +336,7 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 		"request", voucher,
 		"voucher", voucher,
 		"voucherTypes", models.VoucherTypes,
+		"targetAudiences", models.VoucherTargetAudiences,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
 	params.Push("request", request)
@@ -341,11 +347,11 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if voucher.Code != request.Code {
+	if voucher.Code != nil && request.Code != nil && *voucher.Code != *request.Code {
 		otherVoucher, err := q.voucherService.FindVoucher(
 			ctx,
 			models.NewVoucherFilter().
-				WithCodes(request.Code).
+				WithCodes(*request.Code).
 				WithExcludedVoucherIDs(voucher.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
@@ -367,6 +373,7 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
+	request.BuyerIDs = voucher.BuyerIDs
 	if photo == nil {
 		request.Photo = voucher.Photo
 	}
@@ -392,7 +399,7 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/voucher_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -427,16 +434,18 @@ func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
 			WithRecordStatuses(models.RecordStatusActive).
 			WithVoucherIDs(voucherID),
 	)
-	if err != nil {
-		if !errors.Is(err, models.ErrVoucherNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
-		}
+	if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
 	}
 	if voucher == nil {
 		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
 	}
 	request := voucher
+	if request.Code != nil {
+		request.DeletedCode = new(*request.Code)
+	}
+	request.Code = nil
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -465,14 +474,4 @@ func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("voucher deleted successfully").
 		Redirect(c, sess.Session, "/admin/vouchers")
-}
-
-func (q *voucherController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
-	if file == nil {
-		return nil
-	}
-	if err := c.SaveFile(file, helper.Sprintf(models.VoucherPhotoPath, filename)); err != nil {
-		return err
-	}
-	return c.SaveFile(file, helper.Sprintf(models.VoucherPhotoCompressPath, filename))
 }
