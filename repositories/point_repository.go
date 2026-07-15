@@ -65,7 +65,8 @@ func (q *pointRepository) FindPoints(
 		`SELECT COUNT(1)
 		FROM points p
 		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id %s`,
+		JOIN buyers b ON u.id = b.user_id
+		LEFT JOIN transactions t ON p.transaction_id = t.id %s`,
 		condition,
 	)
 	query := sb.String()
@@ -82,6 +83,7 @@ func (q *pointRepository) FindPoints(
 		query,
 		"COUNT(1)",
 		`p.id
+		, p.record_status
 		, p.point_type
 		, p.buyer_id
 		, u.name
@@ -90,10 +92,15 @@ func (q *pointRepository) FindPoints(
 		, b.referral_code
 		, p.amount
 		, p.transaction_id
-		, p.spendable
+		, t.reference_number
 		, p.description
+		, p.created_by
 		, p.created_at
-		, p.updated_at`,
+		, p.updated_by
+		, p.updated_at
+		, p.deleted_by
+		, p.deleted_at
+		, p.deletion_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -144,6 +151,7 @@ func (q *pointRepository) FindPoints(
 		var point models.Point
 		if err = rows.Scan(
 			&point.ID,
+			&point.RecordStatus,
 			&point.PointType,
 			&point.BuyerID,
 			&point.BuyerName,
@@ -152,10 +160,15 @@ func (q *pointRepository) FindPoints(
 			&point.BuyerReferralCode,
 			&point.Amount,
 			&point.TransactionID,
-			&point.Spendable,
+			&point.TransactionReferenceNumber,
 			&point.Description,
+			&point.CreatedBy,
 			&point.CreatedAt,
+			&point.UpdatedBy,
 			&point.UpdatedAt,
+			&point.DeletedBy,
+			&point.DeletedAt,
+			&point.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -179,6 +192,7 @@ func (q *pointRepository) FindPoint(
 		&sb,
 		`SELECT
 			p.id
+			, p.record_status
 			, p.point_type
 			, p.buyer_id
 			, u.name
@@ -187,19 +201,26 @@ func (q *pointRepository) FindPoint(
 			, b.referral_code
 			, p.amount
 			, p.transaction_id
-			, p.spendable
+			, t.reference_number
 			, p.description
+			, p.created_by
 			, p.created_at
+			, p.updated_by
 			, p.updated_at
+			, p.deleted_by
+			, p.deleted_at
+			, p.deletion_reason
 		FROM points p
 		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id %s`,
+		JOIN buyers b ON u.id = b.user_id
+		LEFT JOIN transactions t ON p.transaction_id = t.id %s`,
 		condition,
 	)
 	query := sb.String()
 	var response models.Point
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
+		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
 		&response.BuyerName,
@@ -208,10 +229,15 @@ func (q *pointRepository) FindPoint(
 		&response.BuyerReferralCode,
 		&response.Amount,
 		&response.TransactionID,
-		&response.Spendable,
+		&response.TransactionReferenceNumber,
 		&response.Description,
+		&response.CreatedBy,
 		&response.CreatedAt,
+		&response.UpdatedBy,
 		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrPointNotFound
@@ -234,19 +260,22 @@ func (q *pointRepository) CreatePoint(
 		ctx,
 		`WITH p AS (
 			INSERT INTO points (
-				point_type
+				record_status
+				, point_type
 				, buyer_id
 				, amount
 				, transaction_id
-				, spendable
 				, description
+				, created_by
 				, created_at
+				, updated_by
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			RETURNING *
 		)
 		SELECT
 			p.id
+			, p.record_status
 			, p.point_type
 			, p.buyer_id
 			, u.name
@@ -255,23 +284,32 @@ func (q *pointRepository) CreatePoint(
 			, b.referral_code
 			, p.amount
 			, p.transaction_id
-			, p.spendable
+			, t.reference_number
 			, p.description
+			, p.created_by
 			, p.created_at
+			, p.updated_by
 			, p.updated_at
+			, p.deleted_by
+			, p.deleted_at
+			, p.deletion_reason
 		FROM p
 		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id`,
+		JOIN buyers b ON u.id = b.user_id
+		LEFT JOIN transactions t ON p.transaction_id = t.id`,
+		request.RecordStatus,
 		request.PointType,
 		request.BuyerID,
 		request.Amount,
 		request.TransactionID,
-		request.Spendable,
 		request.Description,
+		request.CreatedBy,
 		request.CreatedAt,
+		request.UpdatedBy,
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
 		&response.BuyerName,
@@ -280,10 +318,15 @@ func (q *pointRepository) CreatePoint(
 		&response.BuyerReferralCode,
 		&response.Amount,
 		&response.TransactionID,
-		&response.Spendable,
+		&response.TransactionReferenceNumber,
 		&response.Description,
+		&response.CreatedBy,
 		&response.CreatedAt,
+		&response.UpdatedBy,
 		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -303,13 +346,20 @@ func (q *pointRepository) UpdatePoint(
 		ctx,
 		`WITH p AS (
 			UPDATE points SET
-				spendable = $1
-				, updated_at = $2
-			WHERE id = $3
+				record_status = $1
+				, amount = $2
+				, description = $3
+				, updated_by = $4
+				, updated_at = $5
+				, deleted_by = $6
+				, deleted_at = $7
+				, deletion_reason = $8
+			WHERE id = $9
 			RETURNING *
 		)
 		SELECT
 			p.id
+			, p.record_status
 			, p.point_type
 			, p.buyer_id
 			, u.name
@@ -318,18 +368,31 @@ func (q *pointRepository) UpdatePoint(
 			, b.referral_code
 			, p.amount
 			, p.transaction_id
-			, p.spendable
+			, t.reference_number
 			, p.description
+			, p.created_by
 			, p.created_at
+			, p.updated_by
 			, p.updated_at
+			, p.deleted_by
+			, p.deleted_at
+			, p.deletion_reason
 		FROM p
 		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id`,
-		request.Spendable,
+		JOIN buyers b ON u.id = b.user_id
+		LEFT JOIN transactions t ON p.transaction_id = t.id`,
+		request.RecordStatus,
+		request.Amount,
+		request.Description,
+		request.UpdatedBy,
 		request.UpdatedAt,
+		request.DeletedBy,
+		request.DeletedAt,
+		request.DeletionReason,
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
 		&response.BuyerName,
@@ -338,10 +401,15 @@ func (q *pointRepository) UpdatePoint(
 		&response.BuyerReferralCode,
 		&response.Amount,
 		&response.TransactionID,
-		&response.Spendable,
+		&response.TransactionReferenceNumber,
 		&response.Description,
+		&response.CreatedBy,
 		&response.CreatedAt,
+		&response.UpdatedBy,
 		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -357,6 +425,19 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 		_, _ = sb.WriteString("p.id IN (")
 		for i, pointID := range request.PointIDs {
 			params = append(params, pointID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.RecordStatuses) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("p.record_status IN (")
+		for i, recordStatus := range request.RecordStatuses {
+			params = append(params, recordStatus)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -403,13 +484,6 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
-	}
-	if request.Spendable != nil {
-		if *request.Spendable {
-			conds = append(conds, "p.spendable")
-		} else {
-			conds = append(conds, "NOT p.spendable")
-		}
 	}
 	if request.Keyword != "" {
 		sb.Reset()

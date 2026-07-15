@@ -32,28 +32,34 @@ type (
 	PointType int
 
 	Point struct {
-		RowNo             int64      `json:"-" form:"-"`
-		ID                uuid.UUID  `json:"-" form:"id"`
-		PointType         PointType  `json:"-" form:"point_type"`
-		BuyerID           uuid.UUID  `json:"-" form:"buyer_id"`
-		BuyerName         string     `json:"-" form:"-"`
-		BuyerUsername     string     `json:"-" form:"-"`
-		BuyerMobilePhone  string     `json:"-" form:"-"`
-		BuyerReferralCode string     `json:"-" form:"-"`
-		Amount            int64      `json:"-" form:"amount"`
-		TransactionID     *uuid.UUID `json:"-" form:"-"`
-		Spendable         bool       `json:"-" form:"-"`
-		Description       string     `json:"-" form:"description"`
-		CreatedAt         time.Time  `json:"-" form:"-"`
-		UpdatedAt         time.Time  `json:"-" form:"-"`
+		RowNo                      int64        `json:"-" form:"-"`
+		ID                         uuid.UUID    `json:"-" form:"id"`
+		RecordStatus               RecordStatus `json:"-" form:"-"`
+		PointType                  PointType    `json:"-" form:"point_type"`
+		BuyerID                    uuid.UUID    `json:"-" form:"buyer_id"`
+		BuyerName                  string       `json:"-" form:"-"`
+		BuyerUsername              string       `json:"-" form:"-"`
+		BuyerMobilePhone           string       `json:"-" form:"-"`
+		BuyerReferralCode          string       `json:"-" form:"-"`
+		Amount                     int64        `json:"-" form:"amount"`
+		TransactionID              *uuid.UUID   `json:"-" form:"-"`
+		TransactionReferenceNumber *string      `json:"-" form:"-"`
+		Description                string       `json:"-" form:"description"`
+		CreatedBy                  *uuid.UUID   `json:"-" form:"-"`
+		CreatedAt                  time.Time    `json:"-" form:"-"`
+		UpdatedBy                  *uuid.UUID   `json:"-" form:"-"`
+		UpdatedAt                  time.Time    `json:"-" form:"-"`
+		DeletedBy                  *uuid.UUID   `json:"-" form:"-"`
+		DeletedAt                  *time.Time   `json:"-" form:"-"`
+		DeletionReason             *string      `json:"-" form:"-"`
 	}
 
 	PointFilter struct {
 		PointIDs,
 		BuyerIDs,
 		TransactionIDs []uuid.UUID
-		PointTypes []PointType
-		Spendable  *bool
+		RecordStatuses []RecordStatus
+		PointTypes     []PointType
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -86,13 +92,13 @@ func (q *PointFilter) WithTransactionIDs(transactionIDs ...uuid.UUID) *PointFilt
 	return q
 }
 
-func (q *PointFilter) WithPointTypes(pointTypes ...PointType) *PointFilter {
-	q.PointTypes = pointTypes
+func (q *PointFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *PointFilter {
+	q.RecordStatuses = recordStatuses
 	return q
 }
 
-func (q *PointFilter) WithSpendable(spendable *bool) *PointFilter {
-	q.Spendable = spendable
+func (q *PointFilter) WithPointTypes(pointTypes ...PointType) *PointFilter {
+	q.PointTypes = pointTypes
 	return q
 }
 
@@ -143,8 +149,15 @@ func (q *Point) Validate() error {
 	if q.Description = strings.TrimSpace(q.Description); q.Description == "" {
 		return errors.New("description: is required")
 	}
-	q.Spendable = q.PointType.Equal(PointTypeReward)
 	return nil
+}
+
+func (q *Point) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+func (q *Point) Spendable() bool {
+	return q.PointType.Equal(PointTypeReward)
 }
 
 func (q PointType) Int() int {

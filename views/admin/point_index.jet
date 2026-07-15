@@ -130,12 +130,12 @@
 									</td>
 									<td class="text-right">
 										<div class="text-right">
-											<h6 class="badge badge-{{ if row.Spendable }}success{{ else }}seconday{{ end }}">Rp. {{ row.Amount | Comma }}</h6>
+											<h6 class="badge badge-{{ if row.Spendable() }}success{{ else }}seconday{{ end }}">Rp. {{ row.Amount | Comma }}</h6>
 											<span class="text-muted text-sm">{{ row.Description }}</span>
 										</div>
 									</td>
 									<td class="text-left">
-										{{ row.PointType.String() }}<br>
+										{{ row.PointType.String() }}{{ if row.TransactionReferenceNumber }} transaksi {{ row.TransactionReferenceNumber }}{{ end }}<br>
 										<span class="text-sm text-muted">Dibuat pada <b>{{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05") }}</b></span>
 										{{ if row.UpdatedAt.After(row.CreatedAt) }}
 										<p class="text-sm mb-0 mt-1 text-muted">
@@ -151,6 +151,15 @@
 												title="Edit Data Point">
 											</span>
 										</a>
+										<form method="POST" action="{{ baseURL }}/admin/points/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+											<span class="fa fa-trash text-danger cp ml-2"
+												data-toggle="tooltip"
+												data-placement="top"
+												title="Hapus Data Point"
+												onclick="confirm('Are you sure to delete this item ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
+											</span>
+										</form>
 									</td>
 								</tr>
 								{{ end }}

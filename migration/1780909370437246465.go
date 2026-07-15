@@ -1378,15 +1378,27 @@ func init() {
 			ctx,
 			`CREATE TABLE points (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, point_type integer NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES users (id)
 				, amount bigint NOT NULL
-				, transaction_id UUID NOT NULL REFERENCES transactions (id)
-				, spendable BOOLEAN NOT NULL
+				, transaction_id UUID REFERENCES transactions (id)
 				, description character varying NOT NULL
+				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
+				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON points (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1414,14 +1426,28 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON points (spendable);`,
+			`CREATE INDEX ON points (LOWER(description));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON points (LOWER(description));`,
+			`CREATE INDEX ON points (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON points (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON points (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
