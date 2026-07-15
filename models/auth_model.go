@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/roysitumorang/laukpauk/helper"
 )
@@ -19,14 +20,20 @@ var (
 )
 
 type (
-	AdminLoginRequest struct {
+	LoginRequest struct {
 		Login          string `json:"login" form:"login"`
 		Base64Password string `json:"password" form:"password"`
 		Password       string `json:"-" form:"-"`
 	}
+
+	BuyerLoginResponse struct {
+		IDToken   string    `json:"id_token"`
+		ExpiredAt time.Time `json:"expired_at"`
+		Buyer     *Buyer    `json:"buyer"`
+	}
 )
 
-func (q *AdminLoginRequest) Validate() error {
+func (q *LoginRequest) Validate() error {
 	if q.Login = strings.TrimSpace(q.Login); q.Login == "" {
 		return errors.New("login: is required")
 	}

@@ -10,9 +10,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func ValidateAdminLogin(ctx context.Context, c fiber.Ctx) (*models.AdminLoginRequest, int, error) {
-	ctxt := "AuthSanitizer-ValidateAdminLogin"
-	var response models.AdminLoginRequest
+func ValidateLogin(ctx context.Context, c fiber.Ctx) (*models.LoginRequest, int, error) {
+	ctxt := "AuthSanitizer-ValidateLogin"
+	var response models.LoginRequest
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

@@ -51,7 +51,7 @@ func NewTransactionController(
 func (q *transactionController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService)
-	r.Group("/api/v1/buyer").
+	r.Group("/v1/buyer").
 		Post("", q.BuyerCreate, buyerKeyAuth).
 		Post("/:id/pay", q.Pay)
 	r.Group("/admin", adminSessionAuth).

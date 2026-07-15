@@ -22,21 +22,21 @@ type (
 
 	user struct {
 		RowNo                         int64      `json:"-" form:"-"`
-		ID                            uuid.UUID  `json:"-" form:"-"`
+		ID                            uuid.UUID  `json:"id" form:"-"`
 		UserType                      UserType   `json:"-" form:"-"`
 		UserStatus                    UserStatus `json:"-" form:"-"`
-		Name                          string     `json:"-" form:"-"`
+		Name                          string     `json:"name" form:"-"`
 		ConfirmationToken             *string    `json:"-" form:"-"`
 		ConfirmedAt                   *time.Time `json:"-" form:"-"`
 		UnconfirmedMobilePhone        *string    `json:"-" form:"-"`
 		MobilePhoneConfirmationSentAt *time.Time `json:"-" form:"-"`
 		MobilePhoneConfirmationToken  *string    `json:"-" form:"-"`
 		MobilePhoneConfirmedAt        *time.Time `json:"-" form:"-"`
-		MobilePhone                   *string    `json:"-" form:"-"`
+		MobilePhone                   *string    `json:"mobile_phone" form:"-"`
 		OtpToken                      *string    `json:"-" form:"-"`
 		OtpCreatedAt                  *time.Time `json:"-" form:"-"`
 		OtpExpiredAt                  *time.Time `json:"-" form:"-"`
-		Username                      string     `json:"-" form:"-"`
+		Username                      string     `json:"username" form:"-"`
 		UnconfirmedEmail              *string    `json:"-" form:"-"`
 		EmailConfirmationSentAt       *time.Time `json:"-" form:"-"`
 		EmailConfirmationToken        *string    `json:"-" form:"-"`
@@ -49,7 +49,7 @@ type (
 		Photo                         string     `json:"-" form:"-"`
 		UnreadNotifications           int64      `json:"-" form:"-"`
 		CreatedBy                     *uuid.UUID `json:"-" form:"-"`
-		CreatedAt                     time.Time  `json:"-" form:"-"`
+		CreatedAt                     time.Time  `json:"created_at" form:"-"`
 		UpdatedBy                     *uuid.UUID `json:"-" form:"-"`
 		UpdatedAt                     time.Time  `json:"-" form:"-"`
 		DeactivatedBy                 *uuid.UUID `json:"-" form:"-"`

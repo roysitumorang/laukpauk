@@ -48,6 +48,7 @@ type (
 		PointEarningCapService  services.PointEarningCapService
 		PointSpendingCapService services.PointSpendingCapService
 		TransactionService      services.TransactionService
+		JsonWebTokenService     services.JsonWebTokenService
 	}
 )
 
@@ -126,6 +127,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointEarningCapRepository := repositories.NewPointEarningCapRepository(dbRead, dbWrite)
 	pointSpendingCapRepository := repositories.NewPointSpendingCapRepository(dbRead, dbWrite)
 	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
+	jsonWebTokenRepository := repositories.NewJsonWebTokenRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -144,6 +146,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointEarningCapService := services.NewPointEarningCapService(pointEarningCapRepository)
 	pointSpendingCapService := services.NewPointSpendingCapService(pointSpendingCapRepository)
 	transactionService := services.NewTransactionService(transactionRepository)
+	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
 	return &Service{
 		DbWrite:                 dbWrite,
 		Migration:               migration,
@@ -169,6 +172,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		PointEarningCapService:  pointEarningCapService,
 		PointSpendingCapService: pointSpendingCapService,
 		TransactionService:      transactionService,
+		JsonWebTokenService:     jsonWebTokenService,
 	}, nil
 }
 

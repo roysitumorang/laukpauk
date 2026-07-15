@@ -1016,8 +1016,8 @@ func init() {
 			ctx,
 			`CREATE TABLE json_web_tokens (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, token character varying NOT NULL
+				, user_id UUID NOT NULL REFERENCES users (id)
+				, token UUID NOT NULL UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, expired_at timestamp with time zone NOT NULL
 			);`,
@@ -1027,7 +1027,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON json_web_tokens (buyer_id);`,
+			`CREATE INDEX ON json_web_tokens (user_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

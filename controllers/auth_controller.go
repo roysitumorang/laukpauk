@@ -1,40 +1,54 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
 	"github.com/roysitumorang/laukpauk/services"
 )
 
 type (
 	authController struct {
-		adminService services.AdminService
+		adminService        services.AdminService
+		buyerService        services.BuyerService
+		jsonWebTokenService services.JsonWebTokenService
 	}
 )
 
 func NewAuthController(
 	adminService services.AdminService,
+	buyerService services.BuyerService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *authController {
-	return new(authController{
-		adminService: adminService,
-	})
+	return &authController{
+		adminService:        adminService,
+		buyerService:        buyerService,
+		jsonWebTokenService: jsonWebTokenService,
+	}
 }
 
 func (q *authController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
-	admin := r.Group("/admin")
-	admin.Get("/login", q.AdminNewLogin).
+	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService)
+	r.Group("/admin").
+		Get("/login", q.AdminNewLogin).
 		Post("/login", q.AdminLogin).
 		Get("/me", adminSessionAuth, q.AdminProfile).
 		Get("/logout", q.AdminLogout)
+	r.Group("/v1/buyer").
+		Post("/login", q.V1BuyerLogin).
+		Get("/me", buyerKeyAuth, q.V1BuyerProfile)
 }
 
 func (q *authController) AdminNewLogin(c fiber.Ctx) error {
@@ -48,7 +62,7 @@ func (q *authController) AdminNewLogin(c fiber.Ctx) error {
 		return flash.Redirect(c, sess.Session, "/admin")
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.AdminLoginRequest)
+	request := new(models.LoginRequest)
 	return c.Render("admin/auth_login", models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -75,12 +89,12 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"request", new(models.AdminLoginRequest),
+		"request", new(models.LoginRequest),
 	)
-	request, statusCode, err := sanitizers.ValidateAdminLogin(ctx, c)
+	request, statusCode, err := sanitizers.ValidateLogin(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateAdminLogin")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLogin")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/auth_login", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -161,4 +175,97 @@ func (q *authController) AdminLogout(c fiber.Ctx) error {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
 	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin/auth/login")
+}
+
+func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
+	ctx := c.Context()
+	ctxt := "AuthController-V1BuyerLogin"
+	loginRequest, statusCode, err := sanitizers.ValidateLogin(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLogin")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	buyer, err := q.buyerService.FindBuyer(
+		ctx,
+		models.NewBuyerFilter().
+			WithLogin(loginRequest.Login).
+			WithUserStatuses(models.UserStatusActive),
+	)
+	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if buyer == nil ||
+		buyer.EncryptedPassword == nil {
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	encryptedPassword := helper.String2ByteSlice(*buyer.EncryptedPassword)
+	if !helper.MatchedHashAndPassword(encryptedPassword, helper.String2ByteSlice(loginRequest.Password)) {
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	now := time.Now()
+	expiredAt := now.Add(helper.GetAccessTokenAge())
+	jsonWebTokenRequest := &models.JsonWebToken{
+		UserID:    buyer.ID,
+		CreatedAt: now,
+		ExpiredAt: expiredAt,
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	jsonWebToken, err := q.jsonWebTokenService.CreateJsonWebToken(ctx, tx, jsonWebTokenRequest)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateJsonWebToken")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	tokenString, err := helper.GenerateAccessToken(buyer.ID.String(), jsonWebToken.Token.String(), buyer.Username, jsonWebToken.CreatedAt, jsonWebToken.ExpiredAt)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGenerateAccessToken")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	response := models.BuyerLoginResponse{
+		IDToken:   tokenString,
+		ExpiredAt: jsonWebToken.ExpiredAt,
+		Buyer:     buyer,
+	}
+	return helper.NewResponse(fiber.StatusCreated).
+		SetData(response).
+		WriteResponse(c)
+}
+
+func (q *authController) V1BuyerProfile(c fiber.Ctx) error {
+	currentBuyer := c.Locals(models.CurrentBuyer)
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(currentBuyer).
+		WriteResponse(c)
 }

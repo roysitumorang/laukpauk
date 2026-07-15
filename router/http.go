@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"math"
+	"net/http"
 	"os"
 	"runtime"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/gofiber/fiber/v3/middleware/rewrite"
 	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/gofiber/fiber/v3/middleware/skip"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/jet/v3"
 	"github.com/gofiber/utils/v2"
@@ -80,6 +82,18 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			}
 			return helper.NewResponse(statusCode).SetMessage(err.Error()).WriteResponse(ctx)
 		},
+	})
+	csrfMiddleware := csrf.New(csrf.Config{
+		CookieName:        "__Host-csrf_",
+		CookieSecure:      true,
+		CookieHTTPOnly:    true, // false for SPAs
+		CookieSameSite:    "Lax",
+		CookieSessionOnly: true,
+		Extractor:         extractors.FromForm("_csrf"),
+		Session:           sessionStore,
+		// Redaction is enabled by default. Set DisableValueRedaction when you must expose tokens or storage keys in diagnostics.
+		// DisableValueRedaction: true,
+		SingleUseToken: true,
 	})
 	middlewares := []any{
 		recover.New(recover.Config{
@@ -140,9 +154,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/transactions":            "/transactions/admin",
 				"/admin/transactions/*":          "/transactions/admin/$1",
 				"/admin/transactions/*/*":        "/transactions/admin/$1/$2",
-				"/api/v1/buyer/transactions":     "/transactions/api/v1/buyer",
-				"/api/v1/buyer/transactions/*":   "/transactions/api/v1/buyer/$1",
-				"/api/v1/buyer/transactions/*/*": "/transactions/api/v1/buyer/$1/$2",
+				"/v1/auth/buyer/*":               "/auth/v1/buyer/$1",
+				"/v1/buyer/transactions":         "/transactions/v1/buyer",
+				"/v1/buyer/transactions/*":       "/transactions/v1/buyer/$1",
+				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",
 				"/":                              "/blocks",
 				"/blogs":                         "/blocks/blogs",
 				"/read/*":                        "/blocks/blogs/$1",
@@ -153,18 +168,11 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		}),
 		cors.New(),
 		pprof.New(),
-		sessionMiddleware,
-		csrf.New(csrf.Config{
-			CookieName:        "__Host-csrf_",
-			CookieSecure:      true,
-			CookieHTTPOnly:    true, // false for SPAs
-			CookieSameSite:    "Lax",
-			CookieSessionOnly: true,
-			Extractor:         extractors.FromForm("_csrf"),
-			Session:           sessionStore,
-			// Redaction is enabled by default. Set DisableValueRedaction when you must expose tokens or storage keys in diagnostics.
-			// DisableValueRedaction: true,
-			SingleUseToken: true,
+		skip.New(sessionMiddleware, func(c fiber.Ctx) bool {
+			return strings.HasPrefix(c.OriginalURL(), "/v1/")
+		}),
+		skip.New(csrfMiddleware, func(c fiber.Ctx) bool {
+			return strings.HasPrefix(c.OriginalURL(), "/v1/")
 		}),
 	}
 	if sentryEnabled := os.Getenv("SENTRY_ENABLED") == "1"; sentryEnabled {
@@ -218,7 +226,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		Get("/images*", static.New("", static.Config{
 			FS: os.DirFS("images"),
 		}))
-	controllers.NewAuthController(q.AdminService).Mount(app.Group("/auth"))
+	controllers.NewAuthController(q.AdminService, q.BuyerService, q.JsonWebTokenService).Mount(app.Group("/auth"))
 	controllers.NewHomeController(q.AdminService).Mount(app.Group("/home"))
 	controllers.NewArticleController(q.AdminService, q.ArticleService).Mount(app.Group("/articles"))
 	controllers.NewBlogController(q.AdminService, q.BlogService).Mount(app.Group("/blogs"))
@@ -234,6 +242,11 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewPointSpendingCapController(q.AdminService, q.PointSpendingCapService).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(q.AdminService, q.BuyerService, q.TransactionService, q.VoucherService, q.PointService, q.ProductVariantService).Mount(app.Group("/transactions"))
 	app.Use(func(c fiber.Ctx) error {
+		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
+			return helper.NewResponse(fiber.StatusNotFound).
+				SetMessage(http.StatusText(fiber.StatusNotFound)).
+				WriteResponse(c)
+		}
 		c.Response().SetStatusCode(fiber.StatusNotFound)
 		return c.Render("404", fiber.Map{
 			"baseURL": c.BaseURL(),
