@@ -972,27 +972,10 @@ func init() {
 			ctx,
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, delivery_type character varying NOT NULL
-				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
+				, buyer_id UUID NOT NULL REFERENCES users (id) UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
-				, UNIQUE (buyer_id)
 			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON carts (buyer_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON carts (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1004,7 +987,6 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, cart_id UUID NOT NULL REFERENCES carts (id)
 				, product_variant_id UUID NOT NULL REFERENCES product_variants (id)
-				, product_id UUID NOT NULL REFERENCES products (id)
 				, price bigint NOT NULL
 				, discount bigint NOT NULL
 				, quantity bigint NOT NULL
@@ -1031,19 +1013,13 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON cart_items (product_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		// transactions
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE transactions (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, parent_id UUID REFERENCES transactions (id)
+				, reordered BOOLEAN NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES users (id)
 				, idempotency_key UUID NOT NULL
 				, reference_number character varying NOT NULL
@@ -1103,6 +1079,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (parent_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transactions (reordered);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

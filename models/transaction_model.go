@@ -43,6 +43,7 @@ type (
 		RowNo                   int64              `json:"-" form:"-"`
 		ID                      uuid.UUID          `json:"-" form:"id"`
 		ParentID                *uuid.UUID         `json:"-" form:"parent_id"`
+		Reordered               bool               `json:"-" form:"reordered"`
 		BuyerID                 uuid.UUID          `json:"-" form:"buyer_id"`
 		IdempotencyKey          uuid.UUID          `json:"-" form:"idempotency_key"`
 		ReferenceNumber         string             `json:"-" form:"-"`

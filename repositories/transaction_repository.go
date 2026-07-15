@@ -79,6 +79,7 @@ func (q *transactionRepository) FindTransactions(
 		"COUNT(1)",
 		`id
 		, parent_id
+		, reordered
 		, buyer_id
 		, idempotency_key
 		, reference_number
@@ -205,6 +206,7 @@ func (q *transactionRepository) FindTransactions(
 		if err = rows.Scan(
 			&transaction.ID,
 			&transaction.ParentID,
+			&transaction.Reordered,
 			&transaction.BuyerID,
 			&transaction.IdempotencyKey,
 			&transaction.ReferenceNumber,
@@ -323,6 +325,7 @@ func (q *transactionRepository) FindTransaction(
 		`SELECT
 			id
 			, parent_id
+			, reordered
 			, buyer_id
 			, idempotency_key
 			, reference_number
@@ -382,6 +385,7 @@ func (q *transactionRepository) FindTransaction(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.ParentID,
+		&response.Reordered,
 		&response.BuyerID,
 		&response.IdempotencyKey,
 		&response.ReferenceNumber,
@@ -530,6 +534,7 @@ func (q *transactionRepository) CreateTransaction(
 		ctx,
 		`INSERT INTO transactions (
 			parent_id
+			, reordered
 			, buyer_id
 			, idempotency_key
 			, reference_number
@@ -566,11 +571,12 @@ func (q *transactionRepository) CreateTransaction(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27, POINT($28, $29), $30
-			, $31, $32, $34, $35
+			, $21, $22, $23, $24, $25, $26, $27, $28, POINT($29, $30)
+			, $31, $32, $34, $35, $36
 		)
 		RETURNING id
 			, parent_id
+			, reordered
 			, buyer_id
 			, idempotency_key
 			, reference_number
@@ -623,6 +629,7 @@ func (q *transactionRepository) CreateTransaction(
 			, delivered_by
 			, delivered_at`,
 		request.ParentID,
+		request.Reordered,
 		request.BuyerID,
 		request.IdempotencyKey,
 		request.ReferenceNumber,
@@ -660,6 +667,7 @@ func (q *transactionRepository) CreateTransaction(
 	).Scan(
 		&response.ID,
 		&response.ParentID,
+		&response.Reordered,
 		&response.BuyerID,
 		&response.IdempotencyKey,
 		&response.ReferenceNumber,
@@ -865,6 +873,7 @@ func (q *transactionRepository) UpdateTransaction(
 		WHERE id = $19
 		RETURNING id
 			, parent_id
+			, reordered
 			, buyer_id
 			, idempotency_key
 			, reference_number
@@ -938,6 +947,7 @@ func (q *transactionRepository) UpdateTransaction(
 	).Scan(
 		&response.ID,
 		&response.ParentID,
+		&response.Reordered,
 		&response.BuyerID,
 		&response.IdempotencyKey,
 		&response.ReferenceNumber,
