@@ -27,6 +27,7 @@ type (
 
 	BuyerFilter struct {
 		userFilter
+		ReferralCodes []string
 	}
 )
 
@@ -79,6 +80,11 @@ func (q *BuyerFilter) WithMobilePhone(mobilePhone string) *BuyerFilter {
 
 func (q *BuyerFilter) WithPasswordResetToken(passwordResetToken string) *BuyerFilter {
 	q.PasswordResetToken = passwordResetToken
+	return q
+}
+
+func (q *BuyerFilter) WithReferralCodes(referralCodes ...string) *BuyerFilter {
+	q.ReferralCodes = referralCodes
 	return q
 }
 

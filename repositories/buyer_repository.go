@@ -401,6 +401,19 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		_, _ = fmt.Fprintf(sb, "u.password_reset_token = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
+	if len(request.ReferralCodes) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("LOWER(b.referral_code) IN (")
+		for i, referralCode := range request.ReferralCodes {
+			params = append(params, referralCode)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if len(conds) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("WHERE")

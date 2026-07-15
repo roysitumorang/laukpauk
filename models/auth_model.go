@@ -10,6 +10,7 @@ import (
 
 const (
 	CurrentAdmin = "current_admin"
+	CurrentBuyer = "current_buyer"
 	UserID       = "user_id"
 )
 

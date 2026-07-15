@@ -48,10 +48,10 @@ func NewProductVariantRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) ProductVariantRepository {
-	return new(productVariantRepository{
+	return &productVariantRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *productVariantRepository) FindProductVariants(
@@ -62,7 +62,7 @@ func (q *productVariantRepository) FindProductVariants(
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM product_variants %s", condition)
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM product_variants v JOIN products p ON v.product_id = p.id %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -76,24 +76,26 @@ func (q *productVariantRepository) FindProductVariants(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`id
-		, record_status
-		, product_id
-		, stock_unit
-		, price
-		, discount_type
-		, discount_rate
-		, discount_minimum_quantity
-		, discount_amount
-		, sale_price
-		, description
-		, created_by
-		, created_at
-		, updated_by
-		, updated_at
-		, deleted_by
-		, deleted_at
-		, deletion_reason`,
+		`v.id
+		, v.record_status
+		, v.product_id
+		, p.name
+		, p.ready_stock
+		, v.stock_unit
+		, v.price
+		, v.discount_type
+		, v.discount_rate
+		, v.discount_minimum_quantity
+		, v.discount_amount
+		, v.sale_price
+		, v.description
+		, v.created_by
+		, v.created_at
+		, v.updated_by
+		, v.updated_at
+		, v.deleted_by
+		, v.deleted_at
+		, v.deletion_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -106,7 +108,7 @@ func (q *productVariantRepository) FindProductVariants(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(&sb, " v.%s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -146,6 +148,8 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ID,
 			&productVariant.RecordStatus,
 			&productVariant.ProductID,
+			&productVariant.ProductName,
+			&productVariant.ProductReadyStock,
 			&productVariant.StockUnit,
 			&productVariant.Price,
 			&productVariant.DiscountType,
@@ -183,25 +187,28 @@ func (q *productVariantRepository) FindProductVariant(
 	_, _ = fmt.Fprintf(
 		&sb,
 		`SELECT
-			id
-			, record_status
-			, product_id
-			, stock_unit
-			, price
-			, discount_type
-			, discount_rate
-			, discount_minimum_quantity
-			, discount_amount
-			, sale_price
-			, description
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason
-		FROM product_variants %s`,
+			v.id
+			, v.record_status
+			, v.product_id
+			, p.name
+			, p.ready_stock
+			, v.stock_unit
+			, v.price
+			, v.discount_type
+			, v.discount_rate
+			, v.discount_minimum_quantity
+			, v.discount_amount
+			, v.sale_price
+			, v.description
+			, v.created_by
+			, v.created_at
+			, v.updated_by
+			, v.updated_at
+			, v.deleted_by
+			, v.deleted_at
+			, v.deletion_reason
+		FROM product_variants v
+		JOIN products p ON v.product_id = p.id %s`,
 		condition,
 	)
 	query := sb.String()
@@ -210,6 +217,8 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
+		&response.ProductName,
+		&response.ProductReadyStock,
 		&response.StockUnit,
 		&response.Price,
 		&response.DiscountType,
@@ -245,40 +254,48 @@ func (q *productVariantRepository) CreateProductVariant(
 	var response models.ProductVariant
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO product_variants (
-			record_status
-			, product_id
-			, stock_unit
-			, price
-			, discount_type
-			, discount_rate
-			, discount_minimum_quantity
-			, discount_amount
-			, sale_price
-			, description
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-		RETURNING id
-			, record_status
-			, product_id
-			, stock_unit
-			, price
-			, discount_type
-			, discount_rate
-			, discount_minimum_quantity
-			, discount_amount
-			, sale_price
-			, description
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
+		`WITH v AS (
+			INSERT INTO product_variants (
+				record_status
+				, product_id
+				, stock_unit
+				, price
+				, discount_type
+				, discount_rate
+				, discount_minimum_quantity
+				, discount_amount
+				, sale_price
+				, description
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			RETURNING *
+		)
+		SELECT
+			v.id
+			, v.record_status
+			, v.product_id
+			, p.name
+			, p.ready_stock
+			, v.stock_unit
+			, v.price
+			, v.discount_type
+			, v.discount_rate
+			, v.discount_minimum_quantity
+			, v.discount_amount
+			, v.sale_price
+			, v.description
+			, v.created_by
+			, v.created_at
+			, v.updated_by
+			, v.updated_at
+			, v.deleted_by
+			, v.deleted_at
+			, v.deletion_reason
+		FROM v
+		JOIN products p ON v.product_id = p.id`,
 		request.RecordStatus,
 		request.ProductID,
 		request.StockUnit,
@@ -297,6 +314,8 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
+		&response.ProductName,
+		&response.ProductReadyStock,
 		&response.StockUnit,
 		&response.Price,
 		&response.DiscountType,
@@ -334,40 +353,48 @@ func (q *productVariantRepository) UpdateProductVariant(
 	var response models.ProductVariant
 	if err := tx.QueryRow(
 		ctx,
-		`UPDATE product_variants SET
-			record_status = $1
-			, stock_unit = $2
-			, price = $3
-			, discount_type = $4
-			, discount_rate = $5
-			, discount_minimum_quantity = $6
-			, discount_amount = $7
-			, sale_price = $8
-			, description = $9
-			, updated_by = $10
-			, updated_at = $11
-			, deleted_by = $12
-			, deleted_at = $13
-			, deletion_reason = $14
-		WHERE id = $15
-		RETURNING id
-			, record_status
-			, product_id
-			, stock_unit
-			, price
-			, discount_type
-			, discount_rate
-			, discount_minimum_quantity
-			, discount_amount
-			, sale_price
-			, description
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
+		`WITH v AS (
+			UPDATE product_variants SET
+				record_status = $1
+				, stock_unit = $2
+				, price = $3
+				, discount_type = $4
+				, discount_rate = $5
+				, discount_minimum_quantity = $6
+				, discount_amount = $7
+				, sale_price = $8
+				, description = $9
+				, updated_by = $10
+				, updated_at = $11
+				, deleted_by = $12
+				, deleted_at = $13
+				, deletion_reason = $14
+			WHERE id = $15
+			RETURNING *
+		)
+ 		SELECT
+			v.id
+			, v.record_status
+			, v.product_id
+			, p.name
+			, p.ready_stock
+			, v.stock_unit
+			, v.price
+			, v.discount_type
+			, v.discount_rate
+			, v.discount_minimum_quantity
+			, v.discount_amount
+			, v.sale_price
+			, v.description
+			, v.created_by
+			, v.created_at
+			, v.updated_by
+			, v.updated_at
+			, v.deleted_by
+			, v.deleted_at
+			, v.deletion_reason
+		FROM v
+		JOIN products p ON v.product_id = p.id`,
 		request.RecordStatus,
 		request.StockUnit,
 		request.Price,
@@ -387,6 +414,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
+		&response.ProductName,
+		&response.ProductReadyStock,
 		&response.StockUnit,
 		&response.Price,
 		&response.DiscountType,
@@ -419,7 +448,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 	var conds []string
 	if len(request.ProductIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("product_id IN (")
+		_, _ = sb.WriteString("v.product_id IN (")
 		for i, productID := range request.ProductIDs {
 			params = append(params, productID)
 			if i > 0 {
@@ -432,7 +461,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 	}
 	if len(request.ProductVariantIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("id IN (")
+		_, _ = sb.WriteString("v.id IN (")
 		for i, productVariantID := range request.ProductVariantIDs {
 			params = append(params, productVariantID)
 			if i > 0 {
@@ -445,7 +474,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 	}
 	if len(request.RecordStatuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("record_status IN (")
+		_, _ = sb.WriteString("v.record_status IN (")
 		for i, recordStatus := range request.RecordStatuses {
 			params = append(params, recordStatus)
 			if i > 0 {
@@ -458,7 +487,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 	}
 	if len(request.StockUnits) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(stock_unit) IN (")
+		_, _ = sb.WriteString("LOWER(v.stock_unit) IN (")
 		for i, stockUnit := range request.StockUnits {
 			params = append(params, strings.ToLower(stockUnit))
 			if i > 0 {

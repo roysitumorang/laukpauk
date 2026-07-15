@@ -21,24 +21,39 @@ import (
 
 type (
 	transactionController struct {
-		adminService       services.AdminService
-		transactionService services.TransactionService
+		adminService          services.AdminService
+		buyerService          services.BuyerService
+		transactionService    services.TransactionService
+		voucherService        services.VoucherService
+		pointService          services.PointService
+		productVariantService services.ProductVariantService
 	}
 )
 
 func NewTransactionController(
 	adminService services.AdminService,
+	buyerService services.BuyerService,
 	transactionService services.TransactionService,
+	voucherService services.VoucherService,
+	pointService services.PointService,
+	productVariantService services.ProductVariantService,
 ) *transactionController {
 	return new(transactionController{
-		adminService:       adminService,
-		transactionService: transactionService,
+		adminService:          adminService,
+		buyerService:          buyerService,
+		transactionService:    transactionService,
+		voucherService:        voucherService,
+		pointService:          pointService,
+		productVariantService: productVariantService,
 	})
 }
 
 func (q *transactionController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
-	r.Post("/:id/pay", q.Pay)
+	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService)
+	r.Group("/api/v1/buyer").
+		Post("", q.BuyerCreate, buyerKeyAuth).
+		Post("/:id/pay", q.Pay)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/:id", q.AdminShow).
@@ -47,6 +62,152 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Post("/:id/ship", q.AdminShip).
 		Post("/:id/deliver", q.AdminDeliver)
 
+}
+
+func (q *transactionController) BuyerCreate(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "TransactionController-BuyerCreate"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	request, statusCode, err := sanitizers.ValidateTransaction(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
+		c.Response().SetStatusCode(statusCode)
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	now := time.Now()
+	if request.ReferralCode != nil {
+		referrer, err := q.buyerService.FindBuyer(
+			ctx,
+			models.NewBuyerFilter().
+				WithReferralCodes(*request.ReferralCode),
+		)
+		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if referrer == nil {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrBuyerNotFound.Error()).
+				WriteResponse(c)
+		}
+		if currentBuyer.ReferrerID != nil && currentBuyer.ReferrerID.Compare(referrer.ID) != 0 {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrBuyerNotFound.Error()).
+				WriteResponse(c)
+		}
+		currentBuyer.ReferrerID = &referrer.ID
+		request.ReferrerID = &referrer.ID
+	}
+	if request.VoucherCode != nil {
+		voucher, err := q.voucherService.FindVoucher(
+			ctx,
+			models.NewVoucherFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithCodes(*request.VoucherCode),
+		)
+		if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if voucher == nil {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrVoucherNotFound.Error()).
+				WriteResponse(c)
+		}
+		location := helper.LoadTimeZone()
+		currentTime := now.In(location).Format(time.TimeOnly)
+		if voucher.EffectiveStartDate.After(now) ||
+			voucher.EffectiveEndDate.Before(now) ||
+			voucher.EffectiveStartTime.In(location).Format(time.TimeOnly) > currentTime ||
+			voucher.EffectiveEndDate.In(location).Format(time.TimeOnly) < currentTime {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage("voucher_code: not found").
+				WriteResponse(c)
+		}
+		request.VoucherDiscount = voucher.Discount
+		request.VoucherType = &voucher.VoucherType
+	}
+	if n := len(request.Items); n > 0 {
+		productVariantIDs := make([]uuid.UUID, len(request.Items))
+		for i, item := range request.Items {
+			productVariantIDs[i] = item.ProductVariantID
+		}
+		productVariants, _, err := q.productVariantService.FindProductVariants(
+			ctx,
+			models.NewProductVariantFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductVariantIDs(productVariantIDs...),
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		mapProductVariants := make(map[uuid.UUID]*models.ProductVariant, len(productVariants))
+		for _, productVariant := range productVariants {
+			mapProductVariants[productVariant.ID] = productVariant
+		}
+		for i, item := range request.Items {
+			productVariant, ok := mapProductVariants[item.ProductVariantID]
+			if !ok {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(helper.Sprintf("items[%d].product_variant_id: not found", i)).
+					WriteResponse(c)
+			}
+			if !productVariant.ProductReadyStock {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(helper.Sprintf("items[%d].product_variant_id: out of stock", i)).
+					WriteResponse(c)
+			}
+			item.ProductID = productVariant.ProductID
+			item.ProductName = productVariant.ProductName
+			item.StockUnit = productVariant.StockUnit
+			item.DiscountMinimumQuantity = productVariant.DiscountMinimumQuantity
+			item.Price = productVariant.Price
+			request.Items[i] = item
+		}
+	}
+	request.BuyerID = currentBuyer.ID
+	request.CreatedAt = now
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	response, err := q.transactionService.CreateTransaction(ctx, tx, request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusCreated).
+		SetMessage("transaction created successfully").
+		SetData(response).
+		WriteResponse(c)
 }
 
 func (q *transactionController) AdminIndex(c fiber.Ctx) (err error) {

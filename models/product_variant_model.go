@@ -22,6 +22,8 @@ type (
 		ID                      uuid.UUID    `json:"-" form:"id"`
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
+		ProductName             string       `json:"-" form:"-"`
+		ProductReadyStock       bool         `json:"-" form:"-"`
 		StockUnit               string       `json:"-" form:"stock_unit"`
 		Price                   int64        `json:"-" form:"price"`
 		DiscountType            DiscountType `json:"-" form:"discount_type"`
