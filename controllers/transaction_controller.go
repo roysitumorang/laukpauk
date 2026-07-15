@@ -27,6 +27,7 @@ type (
 		voucherService        services.VoucherService
 		pointService          services.PointService
 		productVariantService services.ProductVariantService
+		jsonWebTokenService   services.JsonWebTokenService
 	}
 )
 
@@ -37,20 +38,22 @@ func NewTransactionController(
 	voucherService services.VoucherService,
 	pointService services.PointService,
 	productVariantService services.ProductVariantService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *transactionController {
-	return new(transactionController{
+	return &transactionController{
 		adminService:          adminService,
 		buyerService:          buyerService,
 		transactionService:    transactionService,
 		voucherService:        voucherService,
 		pointService:          pointService,
 		productVariantService: productVariantService,
-	})
+		jsonWebTokenService:   jsonWebTokenService,
+	}
 }
 
 func (q *transactionController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
-	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService)
+	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
 	r.Group("/v1/buyer").
 		Post("", q.BuyerCreate, buyerKeyAuth).
 		Post("/:id/pay", q.Pay)

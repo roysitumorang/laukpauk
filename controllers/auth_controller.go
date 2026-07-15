@@ -40,7 +40,7 @@ func NewAuthController(
 
 func (q *authController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
-	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService)
+	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
 	r.Group("/admin").
 		Get("/login", q.AdminNewLogin).
 		Post("/login", q.AdminLogin).

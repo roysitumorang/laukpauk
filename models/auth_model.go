@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	CurrentAdmin = "current_admin"
-	CurrentBuyer = "current_buyer"
-	UserID       = "user_id"
+	CurrentAdmin        = "current_admin"
+	CurrentBuyer        = "current_buyer"
+	CurrentJsonWebToken = "current_jwt"
+	UserID              = "user_id"
 )
 
 var (

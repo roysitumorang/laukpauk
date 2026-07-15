@@ -18,6 +18,7 @@ import (
 
 func BuyerKeyAuth(
 	buyerService services.BuyerService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) fiber.Handler {
 	var sb strings.Builder
 	_, _ = fmt.Fprintf(&sb, "header: %s", fiber.HeaderAuthorization)
@@ -31,16 +32,16 @@ func BuyerKeyAuth(
 			}
 			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).WriteResponse(c)
 		},
-		Validator: func(c fiber.Ctx, token string) (bool, error) {
-			claims, err := bearerVerify(token)
+		Validator: func(c fiber.Ctx, jsonWebToken string) (bool, error) {
+			claims, err := bearerVerify(jsonWebToken)
 			if err != nil {
 				return false, err
 			}
-			ctx := c.Context()
 			buyerID, err := uuid.Parse(claims.ID)
 			if err != nil {
 				return false, models.ErrBuyerNotFound
 			}
+			ctx := c.Context()
 			currentBuyer, err := buyerService.FindBuyer(
 				ctx,
 				models.NewBuyerFilter().
@@ -52,7 +53,23 @@ func BuyerKeyAuth(
 			if currentBuyer == nil {
 				return false, models.ErrBuyerNotFound
 			}
+			token, err := uuid.Parse(claims.Subject)
+			if err != nil {
+				return false, models.ErrBuyerNotFound
+			}
+			currentJsonWebToken, err := jsonWebTokenService.FindJsonWebToken(
+				ctx,
+				models.NewJsonWebTokenFilter().
+					WithTokens(token),
+			)
+			if err != nil {
+				return false, err
+			}
+			if currentJsonWebToken == nil {
+				return false, models.ErrBuyerNotFound
+			}
 			c.Locals(models.CurrentBuyer, currentBuyer)
+			c.Locals(models.CurrentJsonWebToken, currentJsonWebToken)
 			return true, nil
 		},
 	})
