@@ -16,7 +16,6 @@ var (
 	ErrTransactionNotFound                        = errors.New("transaction not found")
 	ErrUniqueTransactionIdempotencyKeyViolation   = errors.New("idempotency_key: already exists")
 	ErrUniqueTransactionReferenceNumberViolation  = errors.New("reference_number: already exists")
-	ErrUniqueTransactionCodeViolation             = errors.New("unique_code: already exists")
 	ErrUniqueTransactionProductVariantIdViolation = errors.New("product_variant_id: already exists")
 
 	MapTransactionSortings = map[string]struct{}{
@@ -53,19 +52,24 @@ type (
 		RawRecipientMobilePhone string             `json:"-" form:"recipient_mobile_phone"`
 		BuyerNote               string             `json:"-" form:"buyer_note"`
 		UniqueCode              int64              `json:"-" form:"-"`
-		Subtotal                int64              `json:"-" form:"-"`
+		ShoppingCost            int64              `json:"-" form:"-"`
 		ReferrerID              *uuid.UUID         `json:"-" form:"-"`
 		ReferralCode            *string            `json:"-" form:"referral_code"`
+		ReferralPoints          int64              `json:"-" form:"-"`
 		VoucherID               *uuid.UUID         `json:"-" form:"-"`
 		VoucherType             *VoucherType       `json:"-" form:"-"`
 		VoucherCode             *string            `json:"-" form:"voucher_code"`
 		VoucherDiscount         int64              `json:"-" form:"-"`
-		PointDiscount           int64              `json:"-" form:"point_discount"`
-		WalletDiscount          int64              `json:"-" form:"wallet_discount"`
-		ShoppingCost            int64              `json:"-" form:"-"`
+		RewardPointsDiscounted  bool               `json:"-" form:"reward_points_discounted"`
+		RewardPointsDiscount    int64              `json:"-" form:"-"`
+		WalletDiscounted        bool               `json:"-" form:"wallet_discounted"`
+		WalletAmount            int64              `json:"-" form:"-"`
+		WalletDiscount          int64              `json:"-" form:"-"`
+		DiscountedShoppingCost  int64              `json:"-" form:"-"`
 		PaymentAmount           int64              `json:"-" form:"-"`
 		PaymentDeadline         time.Time          `json:"-" form:"-"`
 		DeliveryCost            int64              `json:"-" form:"-"`
+		DiscountedDeliveryCost  int64              `json:"-" form:"-"`
 		DeliveryLatitude        float64            `json:"-" form:"delivery_latitude"`
 		DeliveryLongitude       float64            `json:"-" form:"delivery_longitude"`
 		DeliveryAddress         string             `json:"-" form:"delivery_address"`
@@ -231,12 +235,6 @@ func (q *Transaction) Validate() error {
 			q.VoucherCode = nil
 		}
 	}
-	if q.PointDiscount < 0 {
-		return errors.New("point_discount: requires a positive integer")
-	}
-	if q.WalletDiscount < 0 {
-		return errors.New("wallet_discount: requires a positive integer")
-	}
 	if q.DeliveryAddress = strings.TrimSpace(q.DeliveryAddress); q.DeliveryAddress == "" {
 		return errors.New("delivery_address: is required")
 	}
@@ -266,7 +264,8 @@ func (q *Transaction) Validate() error {
 }
 
 func (q *Transaction) Calculate() {
-	q.Subtotal = 0
+	q.UniqueCode = helper.RandomInteger(1000)
+	q.ShoppingCost = q.UniqueCode
 	for i, item := range q.Items {
 		if item.OutOfStock {
 			item.Subtotal = 0
@@ -277,23 +276,45 @@ func (q *Transaction) Calculate() {
 		} else {
 			item.Subtotal = item.Price * item.Quantity
 		}
-		q.Subtotal += item.Subtotal
+		q.ShoppingCost += item.Subtotal
 		q.Items[i] = item
 	}
-	q.ShoppingCost = q.Subtotal
-	if q.ReferralCode != nil || q.PointDiscount > 0 {
-		q.ShoppingCost = max(0, q.ShoppingCost-q.PointDiscount)
+	q.DiscountedShoppingCost = q.ShoppingCost
+	q.DiscountedDeliveryCost = q.DeliveryCost
+	if q.RewardPointsDiscounted && q.RewardPointsDiscount > 0 {
+		rewardPointsAmount := q.RewardPointsDiscount
+		if q.DiscountedShoppingCost > 0 {
+			rewardPointsDiscount := min(q.DiscountedShoppingCost, rewardPointsAmount)
+			q.DiscountedShoppingCost -= rewardPointsDiscount
+			rewardPointsAmount -= rewardPointsDiscount
+		}
+		if q.DiscountedDeliveryCost > 0 && rewardPointsAmount > 0 {
+			rewardPointsDiscount := min(q.DiscountedDeliveryCost, rewardPointsAmount)
+			q.DiscountedDeliveryCost -= rewardPointsDiscount
+		}
 	} else if q.VoucherCode != nil && q.VoucherType != nil {
 		if *q.VoucherType == VoucherTypeShoppingCost {
-			q.ShoppingCost = max(0, q.ShoppingCost-q.VoucherDiscount)
+			q.DiscountedShoppingCost = max(0, q.DiscountedShoppingCost-q.VoucherDiscount)
 		} else {
-			q.DeliveryCost = max(0, q.DeliveryCost-q.VoucherDiscount)
+			q.DiscountedDeliveryCost = max(0, q.DeliveryCost-q.VoucherDiscount)
 		}
-	} else if q.WalletDiscount > 0 {
-		q.ShoppingCost = max(0, q.ShoppingCost-q.WalletDiscount)
 	}
-	q.UniqueCode = helper.RandomInteger(1000)
-	q.PaymentAmount = q.ShoppingCost + q.DeliveryCost + q.UniqueCode
+	q.WalletDiscount = 0
+	if q.WalletDiscounted && q.WalletAmount > 0 {
+		walletAmount := q.WalletAmount
+		if q.DiscountedShoppingCost > 0 {
+			walletDiscount := min(q.DiscountedShoppingCost, q.WalletAmount)
+			q.DiscountedShoppingCost -= walletDiscount
+			walletAmount -= walletDiscount
+			q.WalletDiscount += walletDiscount
+		}
+		if q.DiscountedDeliveryCost > 0 && walletAmount > 0 {
+			walletDiscount := min(q.DiscountedDeliveryCost, q.WalletAmount)
+			q.DiscountedDeliveryCost -= walletDiscount
+			q.WalletDiscount += walletDiscount
+		}
+	}
+	q.PaymentAmount = q.DiscountedShoppingCost + q.DiscountedDeliveryCost
 }
 
 func (q TransactionStatus) Int() int {

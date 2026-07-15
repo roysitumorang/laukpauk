@@ -87,19 +87,24 @@ func (q *transactionRepository) FindTransactions(
 		, recipient_mobile_phone
 		, buyer_note
 		, unique_code
-		, subtotal
+		, shopping_cost
 		, referrer_id
 		, referral_code
+		, referral_points
 		, voucher_id
 		, voucher_type
 		, voucher_code
 		, voucher_discount
-		, point_discount
+		, reward_points_discounted
+		, reward_points_discount
+		, wallet_discounted
+		, wallet_amount
 		, wallet_discount
-		, shopping_cost
+		, discounted_shopping_cost
 		, payment_amount
 		, payment_deadline
 		, delivery_cost
+		, discounted_delivery_cost
 		, delivery_coordinates[0]
 		, delivery_coordinates[1]
 		, delivery_address
@@ -189,7 +194,7 @@ func (q *transactionRepository) FindTransactions(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, subtotal
+			, shopping_cost
 			, buyer_note
 			, out_of_stock
 		FROM transaction_items
@@ -208,19 +213,24 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.RecipientMobilePhone,
 			&transaction.BuyerNote,
 			&transaction.UniqueCode,
-			&transaction.Subtotal,
+			&transaction.ShoppingCost,
 			&transaction.ReferrerID,
 			&transaction.ReferralCode,
+			&transaction.ReferralPoints,
 			&transaction.VoucherID,
 			&transaction.VoucherType,
 			&transaction.VoucherCode,
 			&transaction.VoucherDiscount,
-			&transaction.PointDiscount,
+			&transaction.RewardPointsDiscounted,
+			&transaction.RewardPointsDiscount,
+			&transaction.WalletDiscounted,
+			&transaction.WalletAmount,
 			&transaction.WalletDiscount,
-			&transaction.ShoppingCost,
+			&transaction.DiscountedShoppingCost,
 			&transaction.PaymentAmount,
 			&transaction.PaymentDeadline,
 			&transaction.DeliveryCost,
+			&transaction.DiscountedDeliveryCost,
 			&transaction.DeliveryLongitude,
 			&transaction.DeliveryLatitude,
 			&transaction.DeliveryAddress,
@@ -321,19 +331,24 @@ func (q *transactionRepository) FindTransaction(
 			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
-			, subtotal
+			, shopping_cost
 			, referrer_id
 			, referral_code
+			, referral_points
 			, voucher_id
 			, voucher_type
 			, voucher_code
 			, voucher_discount
-			, point_discount
+			, reward_points_discounted
+			, reward_points_discount
+			, wallet_discounted
+			, wallet_amount
 			, wallet_discount
-			, shopping_cost
+			, discounted_shopping_cost
 			, payment_amount
 			, payment_deadline
 			, delivery_cost
+			, discounted_delivery_cost
 			, delivery_coordinates[0]
 			, delivery_coordinates[1]
 			, delivery_address
@@ -375,19 +390,24 @@ func (q *transactionRepository) FindTransaction(
 		&response.RecipientMobilePhone,
 		&response.BuyerNote,
 		&response.UniqueCode,
-		&response.Subtotal,
+		&response.ShoppingCost,
 		&response.ReferrerID,
 		&response.ReferralCode,
+		&response.ReferralPoints,
 		&response.VoucherID,
 		&response.VoucherType,
 		&response.VoucherCode,
 		&response.VoucherDiscount,
-		&response.PointDiscount,
+		&response.RewardPointsDiscounted,
+		&response.RewardPointsDiscount,
+		&response.WalletDiscounted,
+		&response.WalletAmount,
 		&response.WalletDiscount,
-		&response.ShoppingCost,
+		&response.DiscountedShoppingCost,
 		&response.PaymentAmount,
 		&response.PaymentDeadline,
 		&response.DeliveryCost,
+		&response.DiscountedDeliveryCost,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
 		&response.DeliveryAddress,
@@ -434,7 +454,7 @@ func (q *transactionRepository) FindTransaction(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, subtotal
+			, shopping_cost
 			, buyer_note
 			, out_of_stock
 		FROM transaction_items
@@ -518,19 +538,24 @@ func (q *transactionRepository) CreateTransaction(
 			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
-			, subtotal
+			, shopping_cost
 			, referrer_id
 			, referral_code
+			, referral_points
 			, voucher_id
 			, voucher_type
 			, voucher_code
 			, voucher_discount
-			, point_discount
+			, reward_points_discounted
+			, reward_points_discount
+			, wallet_discounted
+			, wallet_amount
 			, wallet_discount
-			, shopping_cost
+			, discounted_shopping_cost
 			, payment_amount
 			, payment_deadline
 			, delivery_cost
+			, discounted_delivery_cost
 			, delivery_coordinates
 			, delivery_address
 			, delivery_instruction
@@ -541,7 +566,8 @@ func (q *transactionRepository) CreateTransaction(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, POINT($23, $24), $25, $26, $27, $28, $29, $30
+			, $21, $22, $23, $24, $25, $26, $27, POINT($28, $29), $30
+			, $31, $32, $34, $35
 		)
 		RETURNING id
 			, parent_id
@@ -553,19 +579,24 @@ func (q *transactionRepository) CreateTransaction(
 			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
-			, subtotal
+			, shopping_cost
 			, referrer_id
 			, referral_code
+			, referral_points
 			, voucher_id
 			, voucher_type
 			, voucher_code
 			, voucher_discount
-			, point_discount
+			, reward_points_discounted
+			, reward_points_discount
+			, wallet_discounted
+			, wallet_amount
 			, wallet_discount
-			, shopping_cost
+			, discounted_shopping_cost
 			, payment_amount
 			, payment_deadline
 			, delivery_cost
+			, discounted_delivery_cost
 			, delivery_coordinates[0]
 			, delivery_coordinates[1]
 			, delivery_address
@@ -600,19 +631,24 @@ func (q *transactionRepository) CreateTransaction(
 		request.RecipientMobilePhone,
 		request.BuyerNote,
 		request.UniqueCode,
-		request.Subtotal,
+		request.ShoppingCost,
 		request.ReferrerID,
 		request.ReferralCode,
+		request.ReferralPoints,
 		request.VoucherID,
 		request.VoucherType,
 		request.VoucherCode,
 		request.VoucherDiscount,
-		request.PointDiscount,
+		request.RewardPointsDiscounted,
+		request.RewardPointsDiscount,
+		request.WalletDiscounted,
+		request.WalletAmount,
 		request.WalletDiscount,
-		request.ShoppingCost,
+		request.DiscountedShoppingCost,
 		request.PaymentAmount,
 		request.PaymentDeadline,
 		request.DeliveryCost,
+		request.DiscountedDeliveryCost,
 		request.DeliveryLongitude,
 		request.DeliveryLatitude,
 		request.DeliveryAddress,
@@ -632,19 +668,24 @@ func (q *transactionRepository) CreateTransaction(
 		&response.RecipientMobilePhone,
 		&response.BuyerNote,
 		&response.UniqueCode,
-		&response.Subtotal,
+		&response.ShoppingCost,
 		&response.ReferrerID,
 		&response.ReferralCode,
+		&response.ReferralPoints,
 		&response.VoucherID,
 		&response.VoucherType,
 		&response.VoucherCode,
 		&response.VoucherDiscount,
-		&response.PointDiscount,
+		&response.RewardPointsDiscounted,
+		&response.RewardPointsDiscount,
+		&response.WalletDiscounted,
+		&response.WalletAmount,
 		&response.WalletDiscount,
-		&response.ShoppingCost,
+		&response.DiscountedShoppingCost,
 		&response.PaymentAmount,
 		&response.PaymentDeadline,
 		&response.DeliveryCost,
+		&response.DiscountedDeliveryCost,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
 		&response.DeliveryAddress,
@@ -679,8 +720,6 @@ func (q *transactionRepository) CreateTransaction(
 				err = models.ErrUniqueTransactionIdempotencyKeyViolation
 			case "transactions_unique_reference_number_idx":
 				err = models.ErrUniqueTransactionReferenceNumberViolation
-			case "transactions_unique_code_idx":
-				err = models.ErrUniqueTransactionCodeViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -703,7 +742,7 @@ func (q *transactionRepository) CreateTransaction(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, subtotal
+			, shopping_cost
 			, buyer_note
 			, out_of_stock
 		) VALUES`,
@@ -745,7 +784,7 @@ func (q *transactionRepository) CreateTransaction(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, subtotal
+			, shopping_cost
 			, buyer_note
 			, out_of_stock`,
 	)
@@ -834,19 +873,24 @@ func (q *transactionRepository) UpdateTransaction(
 			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
-			, subtotal
+			, shopping_cost
 			, referrer_id
 			, referral_code
+			, referral_points
 			, voucher_id
 			, voucher_type
 			, voucher_code
 			, voucher_discount
-			, point_discount
+			, reward_points_discounted
+			, reward_points_discount
+			, wallet_discounted
+			, wallet_amount
 			, wallet_discount
-			, shopping_cost
+			, discounted_shopping_cost
 			, payment_amount
 			, payment_deadline
 			, delivery_cost
+			, discounted_delivery_cost
 			, delivery_coordinates[0]
 			, delivery_coordinates[1]
 			, delivery_address
@@ -902,19 +946,24 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.RecipientMobilePhone,
 		&response.BuyerNote,
 		&response.UniqueCode,
-		&response.Subtotal,
+		&response.ShoppingCost,
 		&response.ReferrerID,
 		&response.ReferralCode,
+		&response.ReferralPoints,
 		&response.VoucherID,
 		&response.VoucherType,
 		&response.VoucherCode,
 		&response.VoucherDiscount,
-		&response.PointDiscount,
+		&response.RewardPointsDiscounted,
+		&response.RewardPointsDiscount,
+		&response.WalletDiscounted,
+		&response.WalletAmount,
 		&response.WalletDiscount,
-		&response.ShoppingCost,
+		&response.DiscountedShoppingCost,
 		&response.PaymentAmount,
 		&response.PaymentDeadline,
 		&response.DeliveryCost,
+		&response.DiscountedDeliveryCost,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
 		&response.DeliveryAddress,
@@ -963,7 +1012,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, discount_minimum_quantity
 				, discount_amount
 				, quantity
-				, subtotal
+				, shopping_cost
 				, buyer_note
 				, out_of_stock`,
 			requestItem.OutOfStock,

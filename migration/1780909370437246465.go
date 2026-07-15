@@ -1052,19 +1052,24 @@ func init() {
 				, recipient_mobile_phone character varying NOT NULL
 				, buyer_note character varying NOT NULL
 				, unique_code bigint NOT NULL
-				, subtotal bigint NOT NULL
+				, shopping_cost bigint NOT NULL
 				, referrer_id UUID REFERENCES users (id)
 				, referral_code character varying
+				, referral_points bigint NOT NULL
 				, voucher_id UUID REFERENCES vouchers (id)
 				, voucher_type integer
 				, voucher_code character varying
 				, voucher_discount bigint NOT NULL
-				, point_discount bigint NOT NULL
+				, reward_points_discounted BOOLEAN NOT NULL
+				, reward_points_discount bigint NOT NULL
+				, wallet_discounted BOOLEAN NOT NULL
+				, wallet_amount bigint NOT NULL
 				, wallet_discount bigint NOT NULL
-				, shopping_cost bigint NOT NULL
+				, discounted_shopping_cost bigint NOT NULL
 				, payment_amount bigint NOT NULL
 				, payment_deadline timestamp with time zone NOT NULL
 				, delivery_cost bigint NOT NULL
+				, discounted_delivery_cost bigint NOT NULL
 				, delivery_coordinates POINT NOT NULL
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
