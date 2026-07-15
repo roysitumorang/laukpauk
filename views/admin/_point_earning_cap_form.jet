@@ -1,39 +1,41 @@
-<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-{{ if request.ID }}<input type="hidden" name="id" value="{{ request.ID }}" />{{ end }}
-<div class="row">
-	<div class="col-lg-12">
-		<div class="row">
-			<div class="col-lg-6">
-				<div class="form-group">
-					<label for="minimum_purchase" class="label-nilai">Minimal Pembelian</label>
-					<div class="input-group">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Rp.</span>
+<form method="POST" action="{{ baseURL }}/admin/point_earning_caps{{ if !pointEarningCap.New() }}/{{ pointEarningCap.ID }}{{ end }}" id="formPoin">
+	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+	{{ if !pointEarningCap.New() }}<input type="hidden" name="id" value="{{ pointEarningCap.ID }}" />{{ end }}
+	<div class="row">
+		<div class="col-lg-12">
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group">
+						<label for="minimum_purchase" class="label-nilai">Minimal Pembelian</label>
+						<div class="input-group">
+							<div class="input-group-prepend">
+								<span class="input-group-text">Rp.</span>
+							</div>
+							<input type="number" name="minimum_purchase" value="{{ request.RawMinimumPurchase }}" class="form-control input" id="minimum_purchase"
+								placeholder="Minimal Pembelian" required />
 						</div>
-						<input type="number" name="minimum_purchase" value="{{ request.RawMinimumPurchase }}" class="form-control input" id="minimum_purchase"
-							placeholder="Minimal Pembelian" required />
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group">
+						<label for="earned_points" class="label-nilai">Poin</label>
+						<div class="input-group">
+							<div class="input-group-prepend">
+								<span class="input-group-text">Rp.</span>
+							</div>
+							<input type="number" name="earned_points" value="{{ request.EarnedPoints }}" class="form-control input" id="earned_points"
+								placeholder="Poin" required />
+						</div>
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-6">
-				<div class="form-group">
-					<label for="earned_points" class="label-nilai">Poin</label>
-					<div class="input-group">
-						<div class="input-group-prepend">
-							<span class="input-group-text">Rp.</span>
-						</div>
-						<input type="number" name="earned_points" value="{{ request.EarnedPoints }}" class="form-control input" id="earned_points"
-							placeholder="Poin" required />
-					</div>
-				</div>
-			</div>
+			<hr class="mb-4" />
+			<button type="submit" class="btn btn-success mr-1" id="btnSubmit">
+				Simpan Data Tarif Akumulasi Poin
+			</button>
+			<a href="{{ baseURL }}/admin/point_earning_caps" class="btn btn-link btn-sm">
+				List Tarif Akumulasi Poin
+			</a>
 		</div>
-		<hr class="mb-4" />
-		<button type="submit" class="btn btn-success mr-1" id="btnSubmit">
-			Simpan Data Tarif Akumulasi Poin
-		</button>
-		<a href="{{ baseURL }}/admin/points" class="btn btn-link btn-sm">
-			List Tarif Akumulasi Poin
-		</a>
 	</div>
-</div>
+</form>

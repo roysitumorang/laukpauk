@@ -1325,6 +1325,55 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// point_spending_caps
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE point_spending_caps (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
+				, minimum_purchase bigint UNIQUE
+				, deleted_minimum_purchase bigint
+				, disposable_points bigint NOT NULL
+				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_at timestamp with time zone NOT NULL
+				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_at timestamp with time zone NOT NULL
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON point_spending_caps (deleted_minimum_purchase);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON point_spending_caps (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON point_spending_caps (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON point_spending_caps (deleted_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// points
 		if _, err = tx.Exec(
 			ctx,

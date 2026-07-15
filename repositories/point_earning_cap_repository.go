@@ -48,10 +48,10 @@ func NewPointEarningCapRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) PointEarningCapRepository {
-	return new(pointEarningCapRepository{
+	return &pointEarningCapRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *pointEarningCapRepository) FindPointEarningCaps(

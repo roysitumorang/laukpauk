@@ -1,0 +1,41 @@
+<form method="POST" action="{{ baseURL }}/admin/point_spending_caps{{ if !pointSpendingCap.New() }}/{{ pointSpendingCap.ID }}{{ end }}" id="formPoin">
+	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+	{{ if !pointSpendingCap.New() }}<input type="hidden" name="id" value="{{ pointSpendingCap.ID }}" />{{ end }}
+	<div class="row">
+		<div class="col-lg-12">
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group">
+						<label for="minimum_purchase" class="label-nilai">Minimal Pembelian</label>
+						<div class="input-group">
+							<div class="input-group-prepend">
+								<span class="input-group-text">Rp.</span>
+							</div>
+							<input type="number" name="minimum_purchase" value="{{ request.RawMinimumPurchase }}" class="form-control input" id="minimum_purchase"
+								placeholder="Minimal Pembelian" required />
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group">
+						<label for="disposable_points" class="label-nilai">Poin</label>
+						<div class="input-group">
+							<div class="input-group-prepend">
+								<span class="input-group-text">Rp.</span>
+							</div>
+							<input type="number" name="disposable_points" value="{{ request.DisposablePoints }}" class="form-control input" id="disposable_points"
+								placeholder="Poin" required />
+						</div>
+					</div>
+				</div>
+			</div>
+			<hr class="mb-4" />
+			<button type="submit" class="btn btn-success mr-1" id="btnSubmit">
+				Simpan{{ if !pointSpendingCap.New() }} Perubahan{{ end }} Data Tarif Penggunaan Poin
+			</button>
+			<a href="{{ baseURL }}/admin/point_spending_caps" class="btn btn-link btn-sm">
+				List Tarif Penggunaan Poin
+			</a>
+		</div>
+	</div>
+</form>

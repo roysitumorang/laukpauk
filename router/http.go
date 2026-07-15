@@ -134,6 +134,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/point_earning_caps":      "/point_earning_caps/admin",
 				"/admin/point_earning_caps/*":    "/point_earning_caps/admin/$1",
 				"/admin/point_earning_caps/*/*":  "/point_earning_caps/admin/$1/$2",
+				"/admin/point_spending_caps":     "/point_spending_caps/admin",
+				"/admin/point_spending_caps/*":   "/point_spending_caps/admin/$1",
+				"/admin/point_spending_caps/*/*": "/point_spending_caps/admin/$1/$2",
 				"/admin/transactions":            "/transactions/admin",
 				"/admin/transactions/*":          "/transactions/admin/$1",
 				"/admin/transactions/*/*":        "/transactions/admin/$1/$2",
@@ -228,6 +231,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewPointController(q.AdminService, q.BuyerService, q.PointService).Mount(app.Group("/points"))
 	controllers.NewVoucherController(q.AdminService, q.VoucherService).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(q.AdminService, q.PointEarningCapService).Mount(app.Group("/point_earning_caps"))
+	controllers.NewPointSpendingCapController(q.AdminService, q.PointSpendingCapService).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(q.AdminService, q.BuyerService, q.TransactionService, q.VoucherService, q.PointService, q.ProductVariantService).Mount(app.Group("/transactions"))
 	app.Use(func(c fiber.Ctx) error {
 		c.Response().SetStatusCode(fiber.StatusNotFound)

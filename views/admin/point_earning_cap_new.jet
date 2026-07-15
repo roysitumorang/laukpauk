@@ -49,9 +49,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/point_earning_caps">
-								{{ include "_point_earning_cap_form" }}
-							</form>
+							{{ include "_point_earning_cap_form" }}
 						</div>
 					</div>
 				</div>

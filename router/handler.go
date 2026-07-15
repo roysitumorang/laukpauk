@@ -24,29 +24,30 @@ import (
 
 type (
 	Service struct {
-		DbWrite                *pgxpool.Pool
-		Migration              *migration.Migration
-		KafkaConsumer          *consumers.KafkaConsumer
-		FcmConsumer            *consumers.FcmConsumer
-		ZenzivaConsumer        *consumers.ZenzivaConsumer
-		Storage                fiber.Storage
-		AdminService           services.AdminService
-		BuyerService           services.BuyerService
-		ArticleService         services.ArticleService
-		BlogService            services.BlogService
-		BlockService           services.BlockService
-		MessageService         services.MessageService
-		ProductCategoryService services.ProductCategoryService
-		ProductService         services.ProductService
-		ProductVariantService  services.ProductVariantService
-		SmsMessageService      services.SmsMessageService
-		SettingService         services.SettingService
-		DeliveryPlanService    services.DeliveryPlanService
-		NonDeliveryDayService  services.NonDeliveryDayService
-		PointService           services.PointService
-		VoucherService         services.VoucherService
-		PointEarningCapService services.PointEarningCapService
-		TransactionService     services.TransactionService
+		DbWrite                 *pgxpool.Pool
+		Migration               *migration.Migration
+		KafkaConsumer           *consumers.KafkaConsumer
+		FcmConsumer             *consumers.FcmConsumer
+		ZenzivaConsumer         *consumers.ZenzivaConsumer
+		Storage                 fiber.Storage
+		AdminService            services.AdminService
+		BuyerService            services.BuyerService
+		ArticleService          services.ArticleService
+		BlogService             services.BlogService
+		BlockService            services.BlockService
+		MessageService          services.MessageService
+		ProductCategoryService  services.ProductCategoryService
+		ProductService          services.ProductService
+		ProductVariantService   services.ProductVariantService
+		SmsMessageService       services.SmsMessageService
+		SettingService          services.SettingService
+		DeliveryPlanService     services.DeliveryPlanService
+		NonDeliveryDayService   services.NonDeliveryDayService
+		PointService            services.PointService
+		VoucherService          services.VoucherService
+		PointEarningCapService  services.PointEarningCapService
+		PointSpendingCapService services.PointSpendingCapService
+		TransactionService      services.TransactionService
 	}
 )
 
@@ -123,6 +124,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
 	voucherRepository := repositories.NewVoucherRepository(dbRead, dbWrite)
 	pointEarningCapRepository := repositories.NewPointEarningCapRepository(dbRead, dbWrite)
+	pointSpendingCapRepository := repositories.NewPointSpendingCapRepository(dbRead, dbWrite)
 	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
@@ -140,31 +142,33 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointService := services.NewPointService(pointRepository)
 	voucherService := services.NewVoucherService(voucherRepository)
 	pointEarningCapService := services.NewPointEarningCapService(pointEarningCapRepository)
+	pointSpendingCapService := services.NewPointSpendingCapService(pointSpendingCapRepository)
 	transactionService := services.NewTransactionService(transactionRepository)
 	return &Service{
-		DbWrite:                dbWrite,
-		Migration:              migration,
-		KafkaConsumer:          kafkaConsumer,
-		FcmConsumer:            fcmConsumer,
-		ZenzivaConsumer:        zenzivaConsumer,
-		Storage:                storage,
-		AdminService:           adminService,
-		BuyerService:           buyerService,
-		ArticleService:         articleService,
-		BlogService:            blogService,
-		BlockService:           blockService,
-		MessageService:         messageService,
-		ProductCategoryService: productCategoryService,
-		ProductService:         productService,
-		ProductVariantService:  productVariantService,
-		SmsMessageService:      smsMessageService,
-		SettingService:         settingService,
-		DeliveryPlanService:    deliveryPlanService,
-		NonDeliveryDayService:  nonDeliveryDayService,
-		PointService:           pointService,
-		VoucherService:         voucherService,
-		PointEarningCapService: pointEarningCapService,
-		TransactionService:     transactionService,
+		DbWrite:                 dbWrite,
+		Migration:               migration,
+		KafkaConsumer:           kafkaConsumer,
+		FcmConsumer:             fcmConsumer,
+		ZenzivaConsumer:         zenzivaConsumer,
+		Storage:                 storage,
+		AdminService:            adminService,
+		BuyerService:            buyerService,
+		ArticleService:          articleService,
+		BlogService:             blogService,
+		BlockService:            blockService,
+		MessageService:          messageService,
+		ProductCategoryService:  productCategoryService,
+		ProductService:          productService,
+		ProductVariantService:   productVariantService,
+		SmsMessageService:       smsMessageService,
+		SettingService:          settingService,
+		DeliveryPlanService:     deliveryPlanService,
+		NonDeliveryDayService:   nonDeliveryDayService,
+		PointService:            pointService,
+		VoucherService:          voucherService,
+		PointEarningCapService:  pointEarningCapService,
+		PointSpendingCapService: pointSpendingCapService,
+		TransactionService:      transactionService,
 	}, nil
 }
 

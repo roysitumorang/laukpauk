@@ -30,10 +30,10 @@ func NewPointEarningCapController(
 	adminService services.AdminService,
 	pointEarningCapService services.PointEarningCapService,
 ) *pointEarningCapController {
-	return new(pointEarningCapController{
+	return &pointEarningCapController{
 		adminService:           adminService,
 		pointEarningCapService: pointEarningCapService,
-	})
+	}
 }
 
 func (q *pointEarningCapController) Mount(r fiber.Router) {
@@ -58,9 +58,9 @@ func (q *pointEarningCapController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.PointEarningCapFilter)
+	request := &models.PointEarningCapFilter{}
 	rows := []*models.PointEarningCap{}
-	pagination := new(models.Pagination)
+	pagination := &models.Pagination{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -128,7 +128,7 @@ func (q *pointEarningCapController) AdminNew(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.PointEarningCap)
+	request := &models.PointEarningCap{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -137,6 +137,7 @@ func (q *pointEarningCapController) AdminNew(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Tambah Tarif Akumulasi Poin",
 		"request", request,
+		"pointEarningCap", request,
 	)
 	return c.Render("/admin/point_earning_cap_new", params, "admin/layouts/authenticated")
 }
@@ -151,7 +152,7 @@ func (q *pointEarningCapController) AdminCreate(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.PointEarningCap)
+	request := &models.PointEarningCap{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -160,6 +161,7 @@ func (q *pointEarningCapController) AdminCreate(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Tambah Tarif Akumulasi Poin",
 		"request", request,
+		"pointEarningCap", request,
 	)
 	request, statusCode, err := sanitizers.ValidatePointEarningCap(ctx, c)
 	params.Push("request", request)
@@ -219,14 +221,8 @@ func (q *pointEarningCapController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if request.ID.Compare(uuid.Nil()) == 0 {
-		if _, err = q.pointEarningCapService.CreatePointEarningCap(ctx, tx, request); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePointEarningCap")
-		}
-	} else if _, err = q.pointEarningCapService.UpdatePointEarningCap(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointEarningCap")
-	}
-	if err != nil {
+	if _, err = q.pointEarningCapService.SavePointEarningCap(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSavePointEarningCap")
 		return c.Render("/admin/point_earning_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -264,10 +260,8 @@ func (q *pointEarningCapController) AdminEdit(c fiber.Ctx) (err error) {
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointEarningCapIDs(pointEarningCapID),
 	)
-	if err != nil {
-		if !errors.Is(err, models.ErrPointEarningCapNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
-		}
+	if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
 	if pointEarningCap == nil {
@@ -322,7 +316,7 @@ func (q *pointEarningCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointEarningCap.MinimumPurchase),
 		"request", pointEarningCap,
-		"point", pointEarningCap,
+		"pointEarningCap", pointEarningCap,
 	)
 	request, statusCode, err := sanitizers.ValidatePointEarningCap(ctx, c)
 	params.Push("request", request)

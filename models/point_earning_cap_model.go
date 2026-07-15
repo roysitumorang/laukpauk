@@ -135,3 +135,7 @@ func (q *PointEarningCap) Populate() *PointEarningCap {
 	}
 	return q
 }
+
+func (q *PointEarningCap) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
