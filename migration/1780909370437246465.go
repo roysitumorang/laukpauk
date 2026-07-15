@@ -967,15 +967,59 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// json_web_tokens
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE json_web_tokens (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, token character varying NOT NULL
+				, created_at timestamp with time zone NOT NULL
+				, expired_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON json_web_tokens (buyer_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON json_web_tokens (expired_at);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// carts
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) UNIQUE
+				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, json_web_token_id UUID REFERENCES json_web_tokens (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
+				, UNIQUE (buyer_id, json_web_token_id)
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON carts (buyer_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON carts (json_web_token_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1436,6 +1480,42 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON points (deleted_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// wallets
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE wallets (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, wallet_transfer_type integer NOT NULL
+				, transaction_id UUID REFERENCES transactions (id)
+				, amount bigint NOT NULL
+				, created_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON wallets (buyer_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON wallets (wallet_transfer_type);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON wallets (transaction_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
