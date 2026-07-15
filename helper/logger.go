@@ -29,13 +29,17 @@ func NewLogger() *slog.Logger {
 func logContext(args ...string) []any {
 	n := len(args)
 	fields := make([]any, 2+n/2)
-	fields[0] = slog.String("topic", Sprintf("%s-service-log", config.AppName))
-	fields[1] = slog.String("service", config.AppName)
+	var j int
+	fields[j] = slog.String("topic", Sprintf("%s-service-log", config.AppName))
+	j++
+	fields[j] = slog.String("service", config.AppName)
+	j++
 	for i := 0; i < n; i += 2 {
 		if i+1 >= n {
 			break
 		}
-		fields[i+2] = slog.String(args[i], args[i+1])
+		fields[j] = slog.String(args[i], args[i+1])
+		j++
 	}
 	return fields
 }
