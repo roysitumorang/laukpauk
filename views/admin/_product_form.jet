@@ -40,12 +40,8 @@
 				</select>
 			</div>
 			<div class="form-group">
-				<label for="stock_status" class="label-title">Stok</label>
-				<select name="stock_status" class="form-control input" id="stock_status">
-					{{ range _, stockStatus := stockStatuses }}
-					<option value="{{ stockStatus.Int() }}"{{ if request.StockStatus == stockStatus.Int() }} selected{{ end }}>{{ stockStatus }}</option>
-					{{ end }}
-				</select>
+				<input type="checkbox" name="ready_stock" id="ready_stock" class="mr-2"{{ if request.ReadyStock }} checked{{ end }} />
+				<label for="ready_stock" class="label-title cp">Tersedia</label>
 			</div>
 			<div class="form-group">
 				<label for="description" class="label-title">Keterangan Produk (Opsional)</label>
@@ -60,9 +56,14 @@
 			<button type="submit" class="btn btn-success mr-1">
 				Simpan{{ if !product.New() }} Perubahan{{end}} Data Produk
 			</button>
-			<a href="{{ baseURL }}/admin/products">
-				<button type="button" class="btn btn-default ml-1">Back to List Produk</button>
+			<a href="{{ baseURL }}/admin/products" class="btn btn-default ml-1">
+				Back to List Produk
 			</a>
+			{{ if !product.New() }}
+			<a href="{{ baseURL }}/admin/products/{{ product.ID }}" class="btn btn-default ml-1">
+				Back to Detail Produk
+			</a>
+			{{ end }}
 		</div>
 	</div>
 </form>

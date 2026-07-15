@@ -61,8 +61,8 @@
 											<tr class="text-sm">
 												<td class="border-top-0 text-left">Stok</td>
 												<td class="border-top-0 text-left">
-													<span class="badge badge-success">
-														{{ product.StockStatus.String() }}
+													<span class="badge badge-{{ if product.ReadyStock }}success{{ else }}secondary{{ end }}">
+														{{ product.StockStatus() }}
 													</span>
 												</td>
 											</tr>

@@ -770,7 +770,6 @@ func (q *productController) prepareProduct(
 			"request", product,
 			"product", product,
 			"productTypes", models.ProductTypes,
-			"stockStatuses", models.StockStatuses,
 		)
 	}
 	if c.Params("id") != "" {

@@ -214,7 +214,7 @@ func init() {
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, photo character varying NOT NULL
 				, description character varying NOT NULL
-				, stock_status integer NOT NULL
+				, ready_stock BOOLEAN NOT NULL
 				, pinned BOOLEAN NOT NULL DEFAULT FALSE
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
@@ -258,7 +258,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON products (stock_status);`,
+			`CREATE INDEX ON products (ready_stock);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

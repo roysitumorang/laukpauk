@@ -84,7 +84,7 @@ func (q *productRepository) FindProducts(
 		, p.name
 		, p.photo
 		, p.description
-		, p.stock_status
+		, p.ready_stock
 		, p.pinned
 		, p.created_by
 		, p.created_at
@@ -150,7 +150,7 @@ func (q *productRepository) FindProducts(
 			&product.Name,
 			&product.Photo,
 			&product.Description,
-			&product.StockStatus,
+			&product.ReadyStock,
 			&product.Pinned,
 			&product.CreatedBy,
 			&product.CreatedAt,
@@ -189,7 +189,7 @@ func (q *productRepository) FindProduct(
 			, p.name
 			, p.photo
 			, p.description
-			, p.stock_status
+			, p.ready_stock
 			, p.pinned
 			, p.created_by
 			, p.created_at
@@ -213,7 +213,7 @@ func (q *productRepository) FindProduct(
 		&response.Name,
 		&response.Photo,
 		&response.Description,
-		&response.StockStatus,
+		&response.ReadyStock,
 		&response.Pinned,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -250,7 +250,7 @@ func (q *productRepository) CreateProduct(
 				, name
 				, photo
 				, description
-				, stock_status
+				, ready_stock
 				, pinned
 				, created_by
 				, created_at
@@ -268,7 +268,7 @@ func (q *productRepository) CreateProduct(
 			, p.name
 			, p.photo
 			, p.description
-			, p.stock_status
+			, p.ready_stock
 			, p.pinned
 			, p.created_by
 			, p.created_at
@@ -285,7 +285,7 @@ func (q *productRepository) CreateProduct(
 		request.Name,
 		request.Photo,
 		request.Description,
-		request.StockStatus,
+		request.ReadyStock,
 		request.Pinned,
 		request.CreatedBy,
 		request.CreatedAt,
@@ -300,7 +300,7 @@ func (q *productRepository) CreateProduct(
 		&response.Name,
 		&response.Photo,
 		&response.Description,
-		&response.StockStatus,
+		&response.ReadyStock,
 		&response.Pinned,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -339,7 +339,7 @@ func (q *productRepository) UpdateProduct(
 				, name = $4
 				, photo = $5
 				, description = $6
-				, stock_status = $7
+				, ready_stock = $7
 				, pinned = $8
 				, updated_by = $9
 				, updated_at = $10
@@ -358,7 +358,7 @@ func (q *productRepository) UpdateProduct(
 			, p.name
 			, p.photo
 			, p.description
-			, p.stock_status
+			, p.ready_stock
 			, p.pinned
 			, p.created_by
 			, p.created_at
@@ -375,7 +375,7 @@ func (q *productRepository) UpdateProduct(
 		request.Name,
 		request.Photo,
 		request.Description,
-		request.StockStatus,
+		request.ReadyStock,
 		request.Pinned,
 		request.UpdatedBy,
 		request.UpdatedAt,
@@ -392,7 +392,7 @@ func (q *productRepository) UpdateProduct(
 		&response.Name,
 		&response.Photo,
 		&response.Description,
-		&response.StockStatus,
+		&response.ReadyStock,
 		&response.Pinned,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -494,18 +494,12 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.StockStatuses) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("p.stock_status IN (")
-		for i, stockStatus := range request.StockStatuses {
-			params = append(params, stockStatus)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+	if request.ReadyStock != nil {
+		if *request.ReadyStock {
+			conds = append(conds, "p.ready_stock")
+		} else {
+			conds = append(conds, "NOT p.ready_stock")
 		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()

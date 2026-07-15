@@ -21,12 +21,6 @@ var (
 		ProductTypeBundled:    {},
 	}
 
-	StockStatuses    = []StockStatus{StockStatusInStock, StockStatusOutOfStock}
-	MapStockStatuses = map[StockStatus]struct{}{
-		StockStatusInStock:    {},
-		StockStatusOutOfStock: {},
-	}
-
 	MapProductSortings = map[string]struct{}{
 		SortingFieldID:   {},
 		SortingFieldName: {},
@@ -43,14 +37,9 @@ const (
 	ProductTypeStandalone ProductType = iota
 	ProductTypeBundled
 )
-const (
-	StockStatusInStock StockStatus = iota
-	StockStatusOutOfStock
-)
 
 type (
 	ProductType int
-	StockStatus int
 
 	Product struct {
 		RowNo               int64        `json:"-" form:"-"`
@@ -62,7 +51,7 @@ type (
 		Name                string       `json:"-" form:"name"`
 		Photo               string       `json:"-" form:"photo"`
 		Description         string       `json:"-" form:"description"`
-		StockStatus         StockStatus  `json:"-" form:"stock_status"`
+		ReadyStock          bool         `json:"-" form:"ready_stock"`
 		Pinned              bool         `json:"-" form:"pinned"`
 		CreatedBy           uuid.UUID    `json:"-" form:"-"`
 		CreatedAt           time.Time    `json:"-" form:"-"`
@@ -80,7 +69,7 @@ type (
 		RecordStatuses []RecordStatus
 		ProductTypes   []ProductType
 		Names          []string
-		StockStatuses  []StockStatus
+		ReadyStock     *bool
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -128,8 +117,8 @@ func (q *ProductFilter) WithNames(names ...string) *ProductFilter {
 	return q
 }
 
-func (q *ProductFilter) WithStockStatus(stockStatuses ...StockStatus) *ProductFilter {
-	q.StockStatuses = stockStatuses
+func (q *ProductFilter) WithReadyStock(readyStock *bool) *ProductFilter {
+	q.ReadyStock = readyStock
 	return q
 }
 
@@ -177,9 +166,6 @@ func (q *Product) Validate() error {
 	if _, ok := MapProductTypes[q.ProductType]; !ok {
 		return errors.New("product_type: invalid")
 	}
-	if _, ok := MapStockStatuses[q.StockStatus]; !ok {
-		return errors.New("stock_status: invalid")
-	}
 	q.Description = strings.TrimSpace(q.Description)
 	return nil
 }
@@ -197,6 +183,13 @@ func (q *Product) PhotoPath() string {
 	return helper.PhotoPath(q.Photo)
 }
 
+func (q *Product) StockStatus() string {
+	if !q.ReadyStock {
+		return "tidak tersedia"
+	}
+	return "tersedia"
+}
+
 func (q ProductType) Int() int {
 	return int(q)
 }
@@ -206,15 +199,4 @@ func (q ProductType) String() string {
 		return "paket"
 	}
 	return "non paket"
-}
-
-func (q StockStatus) Int() int {
-	return int(q)
-}
-
-func (q StockStatus) String() string {
-	if q == StockStatusOutOfStock {
-		return "tidak tersedia"
-	}
-	return "tersedia"
 }
