@@ -195,7 +195,7 @@ func (q *transactionRepository) FindTransactions(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, shopping_cost
+			, subtotal
 			, buyer_note
 			, out_of_stock
 		FROM transaction_items
@@ -458,7 +458,7 @@ func (q *transactionRepository) FindTransaction(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, shopping_cost
+			, subtotal
 			, buyer_note
 			, out_of_stock
 		FROM transaction_items
@@ -572,7 +572,7 @@ func (q *transactionRepository) CreateTransaction(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, POINT($29, $30)
-			, $31, $32, $34, $35, $36
+			, $31, $32, $33, $34, $35, $36
 		)
 		RETURNING id
 			, parent_id
@@ -750,7 +750,7 @@ func (q *transactionRepository) CreateTransaction(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, shopping_cost
+			, subtotal
 			, buyer_note
 			, out_of_stock
 		) VALUES`,
@@ -792,7 +792,7 @@ func (q *transactionRepository) CreateTransaction(
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
-			, shopping_cost
+			, subtotal
 			, buyer_note
 			, out_of_stock`,
 	)
@@ -1022,7 +1022,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, discount_minimum_quantity
 				, discount_amount
 				, quantity
-				, shopping_cost
+				, subtotal
 				, buyer_note
 				, out_of_stock`,
 			requestItem.OutOfStock,

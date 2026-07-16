@@ -55,8 +55,10 @@ func (q *transactionController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
 	r.Group("/v1/buyer").
-		Post("", q.BuyerCreate, buyerKeyAuth).
-		Post("/:id/pay", q.Pay)
+		Get("", buyerKeyAuth, q.V1BuyerIndex).
+		Post("", buyerKeyAuth, q.V1BuyerCreate).
+		Get("/:id", buyerKeyAuth, q.V1BuyerShow).
+		Post("/:id/pay", q.V1Pay)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/:id", q.AdminShow).
@@ -67,9 +69,39 @@ func (q *transactionController) Mount(r fiber.Router) {
 
 }
 
-func (q *transactionController) BuyerCreate(c fiber.Ctx) (err error) {
+func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "TransactionController-BuyerCreate"
+	ctxt := "TransactionController-V1BuyerIndex"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	request, err := sanitizers.FindTransactions(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	rows, pagination, err := q.transactionService.FindTransactions(
+		c,
+		request.WithBuyerIDs(currentBuyer.ID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	pagination.Rows = make([]any, len(rows))
+	for i := range rows {
+		pagination.Rows[i] = rows[i]
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
+}
+
+func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "TransactionController-V1BuyerCreate"
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	request, statusCode, err := sanitizers.ValidateTransaction(ctx, c)
 	if err != nil {
@@ -213,6 +245,39 @@ func (q *transactionController) BuyerCreate(c fiber.Ctx) (err error) {
 		WriteResponse(c)
 }
 
+func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "TransactionController-V1BuyerShow"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	transactionID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	response, err := q.transactionService.FindTransaction(
+		c,
+		models.NewTransactionFilter().
+			WithBuyerIDs(currentBuyer.ID).
+			WithTransactionIDs(transactionID),
+	)
+	if err != nil && !errors.Is(err, models.ErrTransactionNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if response == nil {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
+}
+
 func (q *transactionController) AdminIndex(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-AdminIndex"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
@@ -285,9 +350,9 @@ func (q *transactionController) AdminShow(c fiber.Ctx) (err error) {
 	return c.Render("admin/transaction_show", params, "admin/layouts/authenticated")
 }
 
-func (q *transactionController) Pay(c fiber.Ctx) (err error) {
+func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "TransactionController-Pay"
+	ctxt := "TransactionController-V1Pay"
 	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")

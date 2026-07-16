@@ -41,29 +41,29 @@ type (
 
 	Transaction struct {
 		RowNo                   int64              `json:"-" form:"-"`
-		ID                      uuid.UUID          `json:"-" form:"id"`
-		ParentID                *uuid.UUID         `json:"-" form:"parent_id"`
-		Reordered               bool               `json:"-" form:"reordered"`
-		BuyerID                 uuid.UUID          `json:"-" form:"buyer_id"`
-		CartID                  *uuid.UUID         `json:"-" form:"cart_id"`
+		ID                      uuid.UUID          `json:"id" form:"id"`
+		ParentID                *uuid.UUID         `json:"parent_id" form:"parent_id"`
+		Reordered               bool               `json:"reordered" form:"reordered"`
+		BuyerID                 uuid.UUID          `json:"buyer_id" form:"buyer_id"`
+		CartID                  *uuid.UUID         `json:"cart_id" form:"cart_id"`
 		ReferenceNumber         string             `json:"-" form:"-"`
 		TransactionStatus       TransactionStatus  `json:"-" form:"-"`
-		RecipientName           string             `json:"-" form:"recipient_name"`
+		RecipientName           string             `json:"recipient_name" form:"recipient_name"`
 		RecipientMobilePhone    string             `json:"-" form:"-"`
-		RawRecipientMobilePhone string             `json:"-" form:"recipient_mobile_phone"`
-		BuyerNote               string             `json:"-" form:"buyer_note"`
+		RawRecipientMobilePhone string             `json:"recipient_mobile_phone" form:"recipient_mobile_phone"`
+		BuyerNote               string             `json:"buyer_note" form:"buyer_note"`
 		UniqueCode              int64              `json:"-" form:"-"`
 		ShoppingCost            int64              `json:"-" form:"-"`
 		ReferrerID              *uuid.UUID         `json:"-" form:"-"`
-		ReferralCode            *string            `json:"-" form:"referral_code"`
+		ReferralCode            *string            `json:"referral_code" form:"referral_code"`
 		ReferralPoints          int64              `json:"-" form:"-"`
 		VoucherID               *uuid.UUID         `json:"-" form:"-"`
 		VoucherType             *VoucherType       `json:"-" form:"-"`
-		VoucherCode             *string            `json:"-" form:"voucher_code"`
+		VoucherCode             *string            `json:"voucher_code" form:"voucher_code"`
 		VoucherDiscount         int64              `json:"-" form:"-"`
-		RewardPointsDiscounted  bool               `json:"-" form:"reward_points_discounted"`
+		RewardPointsDiscounted  bool               `json:"reward_points_discounted" form:"reward_points_discounted"`
 		RewardPointsDiscount    int64              `json:"-" form:"-"`
-		WalletDiscounted        bool               `json:"-" form:"wallet_discounted"`
+		WalletDiscounted        bool               `json:"wallet_discounted" form:"wallet_discounted"`
 		WalletAmount            int64              `json:"-" form:"-"`
 		WalletDiscount          int64              `json:"-" form:"-"`
 		DiscountedShoppingCost  int64              `json:"-" form:"-"`
@@ -71,13 +71,13 @@ type (
 		PaymentDeadline         time.Time          `json:"-" form:"-"`
 		DeliveryCost            int64              `json:"-" form:"-"`
 		DiscountedDeliveryCost  int64              `json:"-" form:"-"`
-		DeliveryLatitude        float64            `json:"-" form:"delivery_latitude"`
-		DeliveryLongitude       float64            `json:"-" form:"delivery_longitude"`
-		DeliveryAddress         string             `json:"-" form:"delivery_address"`
-		DeliveryInstruction     string             `json:"-" form:"delivery_instruction"`
-		DeliveryPlanID          uuid.UUID          `json:"-" form:"delivery_plan_id"`
+		DeliveryLatitude        float64            `json:"delivery_latitude" form:"delivery_latitude"`
+		DeliveryLongitude       float64            `json:"delivery_longitude" form:"delivery_longitude"`
+		DeliveryAddress         string             `json:"delivery_address" form:"delivery_address"`
+		DeliveryInstruction     string             `json:"delivery_instruction" form:"delivery_instruction"`
+		DeliveryPlanID          uuid.UUID          `json:"delivery_plan_id" form:"delivery_plan_id"`
 		DeliverySpeed           DeliverySpeed      `json:"-" form:"-"`
-		DeliveryDatetime        time.Time          `json:"-" form:"delivery_datetime"`
+		DeliveryDatetime        time.Time          `json:"delivery_datetime" form:"delivery_datetime"`
 		CreatedAt               time.Time          `json:"-" form:"-"`
 		PaidAt                  *time.Time         `json:"-" form:"-"`
 		PaymentRequestID        *uuid.UUID         `json:"-" form:"-"`
@@ -96,24 +96,24 @@ type (
 		ShippedAt               *time.Time         `json:"-" form:"-"`
 		DeliveredBy             *uuid.UUID         `json:"-" form:"-"`
 		DeliveredAt             *time.Time         `json:"-" form:"-"`
-		Items                   []*TransactionItem `json:"-" form:"items"`
+		Items                   []*TransactionItem `json:"items" form:"items"`
 	}
 
 	TransactionItem struct {
 		RowNo                   int64     `json:"-" form:"-"`
-		ID                      uuid.UUID `json:"-" form:"-"`
+		ID                      uuid.UUID `json:"id" form:"-"`
 		TransactionID           uuid.UUID `json:"-" form:"-"`
-		ProductVariantID        uuid.UUID `json:"-" form:"product_variant_id"`
+		ProductVariantID        uuid.UUID `json:"product_variant_id" form:"product_variant_id"`
 		ProductID               uuid.UUID `json:"-" form:"-"`
 		ProductName             string    `json:"-" form:"-"`
 		StockUnit               string    `json:"-" form:"-"`
 		Price                   int64     `json:"-" form:"-"`
 		DiscountMinimumQuantity int64     `json:"-" form:"-"`
 		DiscountAmount          int64     `json:"-" form:"-"`
-		Quantity                int64     `json:"-" form:"quantity"`
+		Quantity                int64     `json:"quantity" form:"quantity"`
 		Subtotal                int64     `json:"-" form:"-"`
-		BuyerNote               string    `json:"-" form:"buyer_note"`
-		OutOfStock              bool      `json:"-" form:"out_of_stock"`
+		BuyerNote               string    `json:"buyer_note" form:"buyer_note"`
+		OutOfStock              bool      `json:"out_of_stock" form:"out_of_stock"`
 	}
 
 	TransactionFilter struct {
