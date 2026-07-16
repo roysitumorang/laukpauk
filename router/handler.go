@@ -49,7 +49,6 @@ type (
 		PointSpendingCapService services.PointSpendingCapService
 		TransactionService      services.TransactionService
 		JsonWebTokenService     services.JsonWebTokenService
-		IdempotencyKeyService   services.IdempotencyKeyService
 		FcmRegistrationService  services.FcmRegistrationService
 		CartService             services.CartService
 		CartItemService         services.CartItemService
@@ -132,7 +131,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointSpendingCapRepository := repositories.NewPointSpendingCapRepository(dbRead, dbWrite)
 	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
 	jsonWebTokenRepository := repositories.NewJsonWebTokenRepository(dbRead, dbWrite)
-	idempotencyKeyRepository := repositories.NewIdempotencyKeyRepository(dbRead, dbWrite)
 	fcmRegistrationRepository := repositories.NewFcmRegistrationRepository(dbRead, dbWrite)
 	cartRepository := repositories.NewCartRepository(dbRead, dbWrite)
 	cartItemRepository := repositories.NewCartItemRepository(dbRead, dbWrite)
@@ -155,7 +153,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointSpendingCapService := services.NewPointSpendingCapService(pointSpendingCapRepository)
 	transactionService := services.NewTransactionService(transactionRepository)
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
-	idempotencyKeyService := services.NewIdempotencyKeyService(idempotencyKeyRepository)
 	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
 	cartService := services.NewCartService(cartRepository)
 	cartItemService := services.NewCartItemService(cartItemRepository)
@@ -185,7 +182,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		PointSpendingCapService: pointSpendingCapService,
 		TransactionService:      transactionService,
 		JsonWebTokenService:     jsonWebTokenService,
-		IdempotencyKeyService:   idempotencyKeyService,
 		FcmRegistrationService:  fcmRegistrationService,
 		CartService:             cartService,
 		CartItemService:         cartItemService,

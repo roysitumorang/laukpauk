@@ -159,7 +159,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/transactions/*":          "/transactions/admin/$1",
 				"/admin/transactions/*/*":        "/transactions/admin/$1/$2",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
-				"/v1/buyer/idempotency_keys":     "/idempotency_keys/v1/buyer",
 				"/v1/buyer/fcm_registrations":    "/fcm_registrations/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
 				"/v1/buyer/products":             "/products/v1/buyer",
@@ -253,7 +252,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewPointEarningCapController(q.AdminService, q.PointEarningCapService).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(q.AdminService, q.PointSpendingCapService).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(q.AdminService, q.BuyerService, q.TransactionService, q.VoucherService, q.PointService, q.ProductVariantService, q.JsonWebTokenService).Mount(app.Group("/transactions"))
-	controllers.NewIdempotencyKeyController(q.BuyerService, q.IdempotencyKeyService, q.JsonWebTokenService).Mount(app.Group("/idempotency_keys"))
 	controllers.NewFcmRegistrationController(q.BuyerService, q.FcmRegistrationService, q.JsonWebTokenService).Mount(app.Group("/fcm_registrations"))
 	controllers.NewCartController(q.BuyerService, q.ProductVariantService, q.CartService, q.CartItemService, q.JsonWebTokenService).Mount(app.Group("/cart"))
 	app.Use(func(c fiber.Ctx) error {
