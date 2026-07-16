@@ -19,7 +19,7 @@ type (
 		Message    string    `json:"message" example:""`
 		Timestamp  time.Time `json:"timestamp" example:"2025-02-05T12:22:47.608963985+07:00"`
 		Latency    string    `json:"latency" example:"7.746177ms"`
-		Data       any       `json:"data,omitempty"`
+		Data       any       `json:"data,omitzero"`
 		App        string    `json:"app" example:"laukpauk"`
 	}
 )

@@ -51,6 +51,8 @@ type (
 		JsonWebTokenService     services.JsonWebTokenService
 		IdempotencyKeyService   services.IdempotencyKeyService
 		FcmRegistrationService  services.FcmRegistrationService
+		CartService             services.CartService
+		CartItemService         services.CartItemService
 	}
 )
 
@@ -132,6 +134,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	jsonWebTokenRepository := repositories.NewJsonWebTokenRepository(dbRead, dbWrite)
 	idempotencyKeyRepository := repositories.NewIdempotencyKeyRepository(dbRead, dbWrite)
 	fcmRegistrationRepository := repositories.NewFcmRegistrationRepository(dbRead, dbWrite)
+	cartRepository := repositories.NewCartRepository(dbRead, dbWrite)
+	cartItemRepository := repositories.NewCartItemRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -153,6 +157,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
 	idempotencyKeyService := services.NewIdempotencyKeyService(idempotencyKeyRepository)
 	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
+	cartService := services.NewCartService(cartRepository)
+	cartItemService := services.NewCartItemService(cartItemRepository)
 	return &Service{
 		DbWrite:                 dbWrite,
 		Migration:               migration,
@@ -181,6 +187,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		JsonWebTokenService:     jsonWebTokenService,
 		IdempotencyKeyService:   idempotencyKeyService,
 		FcmRegistrationService:  fcmRegistrationService,
+		CartService:             cartService,
+		CartItemService:         cartItemService,
 	}, nil
 }
 

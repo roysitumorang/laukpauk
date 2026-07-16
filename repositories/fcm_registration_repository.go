@@ -271,8 +271,8 @@ func (q *fcmRegistrationRepository) buildCondition(request *models.FcmRegistrati
 	if len(request.UserIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("user_id IN (")
-		for i, buyerID := range request.UserIDs {
-			params = append(params, buyerID)
+		for i, userID := range request.UserIDs {
+			params = append(params, userID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

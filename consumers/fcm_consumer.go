@@ -29,7 +29,7 @@ type (
 	FcmNotification struct {
 		Title string `json:"title"`
 		Body  string `json:"body"`
-		Image string `json:"image,omitempty"`
+		Image string `json:"image,omitzero"`
 	}
 
 	FcmRequest struct {
