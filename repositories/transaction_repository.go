@@ -81,7 +81,7 @@ func (q *transactionRepository) FindTransactions(
 		, parent_id
 		, reordered
 		, buyer_id
-		, idempotency_key
+		, idempotency_key_id
 		, reference_number
 		, transaction_status
 		, recipient_name
@@ -208,7 +208,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.ParentID,
 			&transaction.Reordered,
 			&transaction.BuyerID,
-			&transaction.IdempotencyKey,
+			&transaction.IdempotencyKeyID,
 			&transaction.ReferenceNumber,
 			&transaction.TransactionStatus,
 			&transaction.RecipientName,
@@ -327,7 +327,7 @@ func (q *transactionRepository) FindTransaction(
 			, parent_id
 			, reordered
 			, buyer_id
-			, idempotency_key
+			, idempotency_key_id
 			, reference_number
 			, transaction_status
 			, recipient_name
@@ -387,7 +387,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.ParentID,
 		&response.Reordered,
 		&response.BuyerID,
-		&response.IdempotencyKey,
+		&response.IdempotencyKeyID,
 		&response.ReferenceNumber,
 		&response.TransactionStatus,
 		&response.RecipientName,
@@ -536,7 +536,7 @@ func (q *transactionRepository) CreateTransaction(
 			parent_id
 			, reordered
 			, buyer_id
-			, idempotency_key
+			, idempotency_key_id
 			, reference_number
 			, transaction_status
 			, recipient_name
@@ -578,7 +578,7 @@ func (q *transactionRepository) CreateTransaction(
 			, parent_id
 			, reordered
 			, buyer_id
-			, idempotency_key
+			, idempotency_key_id
 			, reference_number
 			, transaction_status
 			, recipient_name
@@ -631,7 +631,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.ParentID,
 		request.Reordered,
 		request.BuyerID,
-		request.IdempotencyKey,
+		request.IdempotencyKeyID,
 		request.ReferenceNumber,
 		request.TransactionStatus,
 		request.RecipientName,
@@ -669,7 +669,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.ParentID,
 		&response.Reordered,
 		&response.BuyerID,
-		&response.IdempotencyKey,
+		&response.IdempotencyKeyID,
 		&response.ReferenceNumber,
 		&response.TransactionStatus,
 		&response.RecipientName,
@@ -724,8 +724,8 @@ func (q *transactionRepository) CreateTransaction(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "transactions_buyer_id_idempotency_key_key":
-				err = models.ErrUniqueTransactionIdempotencyKeyViolation
+			case "transactions_buyer_id_idempotency_key_id_key":
+				err = models.ErrUniqueTransactionIdempotencyKeyIdViolation
 			case "transactions_unique_reference_number_idx":
 				err = models.ErrUniqueTransactionReferenceNumberViolation
 			}
@@ -875,7 +875,7 @@ func (q *transactionRepository) UpdateTransaction(
 			, parent_id
 			, reordered
 			, buyer_id
-			, idempotency_key
+			, idempotency_key_id
 			, reference_number
 			, transaction_status
 			, recipient_name
@@ -949,7 +949,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.ParentID,
 		&response.Reordered,
 		&response.BuyerID,
-		&response.IdempotencyKey,
+		&response.IdempotencyKeyID,
 		&response.ReferenceNumber,
 		&response.TransactionStatus,
 		&response.RecipientName,
@@ -1092,10 +1092,10 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.IdempotencyKeys) > 0 {
+	if len(request.IdempotencyKeyIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("idempotency_key IN (")
-		for i, idempotencyKey := range request.IdempotencyKeys {
+		_, _ = sb.WriteString("idempotency_key_id IN (")
+		for i, idempotencyKey := range request.IdempotencyKeyIDs {
 			params = append(params, idempotencyKey)
 			if i > 0 {
 				_, _ = sb.WriteString(",")

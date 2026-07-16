@@ -1076,6 +1076,41 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// idempotency_keys
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE idempotency_keys (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, occupied BOOLEAN NOT NULL
+				, created_at timestamp with time zone NOT NULL
+				, expired_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON idempotency_keys (buyer_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON idempotency_keys (occupied);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON idempotency_keys (expired_at);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// transactions
 		if _, err = tx.Exec(
 			ctx,
@@ -1084,7 +1119,7 @@ func init() {
 				, parent_id UUID REFERENCES transactions (id)
 				, reordered BOOLEAN NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, idempotency_key UUID NOT NULL
+				, idempotency_key_id UUID REFERENCES idempotency_keys (id) ON DELETE SET NULL UNIQUE
 				, reference_number character varying NOT NULL
 				, transaction_status integer NOT NULL
 				, recipient_name character varying NOT NULL
@@ -1133,7 +1168,6 @@ func init() {
 				, shipped_at timestamp with time zone
 				, delivered_by UUID REFERENCES users (id)
 				, delivered_at timestamp with time zone
-				, UNIQUE (buyer_id, idempotency_key)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1156,13 +1190,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (buyer_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transactions (idempotency_key);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

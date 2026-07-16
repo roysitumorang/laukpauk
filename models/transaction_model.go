@@ -14,7 +14,7 @@ import (
 
 var (
 	ErrTransactionNotFound                        = errors.New("transaction not found")
-	ErrUniqueTransactionIdempotencyKeyViolation   = errors.New("idempotency_key: already exists")
+	ErrUniqueTransactionIdempotencyKeyIdViolation = errors.New("idempotency_key_id: already exists")
 	ErrUniqueTransactionReferenceNumberViolation  = errors.New("reference_number: already exists")
 	ErrUniqueTransactionProductVariantIdViolation = errors.New("product_variant_id: already exists")
 
@@ -45,7 +45,7 @@ type (
 		ParentID                *uuid.UUID         `json:"-" form:"parent_id"`
 		Reordered               bool               `json:"-" form:"reordered"`
 		BuyerID                 uuid.UUID          `json:"-" form:"buyer_id"`
-		IdempotencyKey          uuid.UUID          `json:"-" form:"idempotency_key"`
+		IdempotencyKeyID        *uuid.UUID         `json:"-" form:"idempotency_key_id"`
 		ReferenceNumber         string             `json:"-" form:"-"`
 		TransactionStatus       TransactionStatus  `json:"-" form:"-"`
 		RecipientName           string             `json:"-" form:"recipient_name"`
@@ -120,7 +120,7 @@ type (
 		TransactionIDs,
 		ExcludedTransactionIDs,
 		BuyerIDs,
-		IdempotencyKeys,
+		IdempotencyKeyIDs,
 		PaymentRequestIDs []uuid.UUID
 		TransactionStatuses []TransactionStatus
 		ReferralCodes       []string
@@ -156,8 +156,8 @@ func (q *TransactionFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *TransactionFilt
 	return q
 }
 
-func (q *TransactionFilter) WithIdempotencyKeys(idempotencyKeys ...uuid.UUID) *TransactionFilter {
-	q.IdempotencyKeys = idempotencyKeys
+func (q *TransactionFilter) WithIdempotencyKeyIDs(idempotencyKeyIDs ...uuid.UUID) *TransactionFilter {
+	q.IdempotencyKeyIDs = idempotencyKeyIDs
 	return q
 }
 
@@ -211,8 +211,10 @@ func (q *TransactionFilter) WithUrlValues(urlValues url.Values) *TransactionFilt
 }
 
 func (q *Transaction) Validate() error {
-	if q.IdempotencyKey.Compare(uuid.Nil()) == 0 {
-		return errors.New("idempotency_key: is required")
+	if q.New() &&
+		(q.IdempotencyKeyID == nil ||
+			q.IdempotencyKeyID.Compare(uuid.Nil()) == 0) {
+		return errors.New("idempotency_key_id: is required")
 	}
 	if q.RecipientName = strings.TrimSpace(q.RecipientName); q.RecipientName == "" {
 		return errors.New("recipient_name: is required")
@@ -262,6 +264,10 @@ func (q *Transaction) Validate() error {
 		item.BuyerNote = strings.TrimSpace(item.BuyerNote)
 	}
 	return nil
+}
+
+func (q *Transaction) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
 }
 
 func (q *Transaction) Calculate() {

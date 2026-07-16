@@ -155,6 +155,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/transactions/*":          "/transactions/admin/$1",
 				"/admin/transactions/*/*":        "/transactions/admin/$1/$2",
 				"/v1/auth/buyer/*":               "/auth/v1/buyer/$1",
+				"/v1/idempotency_keys/buyer":     "/idempotency_keys/v1/buyer",
 				"/v1/buyer/transactions":         "/transactions/v1/buyer",
 				"/v1/buyer/transactions/*":       "/transactions/v1/buyer/$1",
 				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",
@@ -241,6 +242,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewPointEarningCapController(q.AdminService, q.PointEarningCapService).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(q.AdminService, q.PointSpendingCapService).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(q.AdminService, q.BuyerService, q.TransactionService, q.VoucherService, q.PointService, q.ProductVariantService, q.JsonWebTokenService).Mount(app.Group("/transactions"))
+	controllers.NewIdempotencyKeyController(q.BuyerService, q.IdempotencyKeyService, q.JsonWebTokenService).Mount(app.Group("/idempotency_keys"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).

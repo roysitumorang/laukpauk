@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -30,7 +29,7 @@ type (
 		DeleteJsonWebToken(
 			ctx context.Context,
 			tx pgx.Tx,
-			jsonWebTokenIDs ...uuid.UUID,
+			request *models.JsonWebTokenFilter,
 		) (int64, error)
 	}
 
@@ -105,10 +104,10 @@ func (q *jsonWebTokenService) CreateJsonWebToken(
 func (q *jsonWebTokenService) DeleteJsonWebToken(
 	ctx context.Context,
 	tx pgx.Tx,
-	jsonWebTokenIDs ...uuid.UUID,
+	request *models.JsonWebTokenFilter,
 ) (int64, error) {
 	ctxt := "JsonWebTokenService-DeleteJsonWebToken"
-	response, err := q.jsonWebTokenRepository.DeleteJsonWebToken(ctx, tx, jsonWebTokenIDs...)
+	response, err := q.jsonWebTokenRepository.DeleteJsonWebToken(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteJsonWebToken")
 	}

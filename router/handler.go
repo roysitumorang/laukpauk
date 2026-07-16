@@ -49,6 +49,7 @@ type (
 		PointSpendingCapService services.PointSpendingCapService
 		TransactionService      services.TransactionService
 		JsonWebTokenService     services.JsonWebTokenService
+		IdempotencyKeyService   services.IdempotencyKeyService
 	}
 )
 
@@ -128,6 +129,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointSpendingCapRepository := repositories.NewPointSpendingCapRepository(dbRead, dbWrite)
 	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
 	jsonWebTokenRepository := repositories.NewJsonWebTokenRepository(dbRead, dbWrite)
+	idempotencyKeyRepository := repositories.NewIdempotencyKeyRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -147,6 +149,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointSpendingCapService := services.NewPointSpendingCapService(pointSpendingCapRepository)
 	transactionService := services.NewTransactionService(transactionRepository)
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
+	idempotencyKeyService := services.NewIdempotencyKeyService(idempotencyKeyRepository)
 	return &Service{
 		DbWrite:                 dbWrite,
 		Migration:               migration,
@@ -173,6 +176,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		PointSpendingCapService: pointSpendingCapService,
 		TransactionService:      transactionService,
 		JsonWebTokenService:     jsonWebTokenService,
+		IdempotencyKeyService:   idempotencyKeyService,
 	}, nil
 }
 

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"strings"
 	"time"
-	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
@@ -34,7 +33,7 @@ type (
 		DeleteJsonWebToken(
 			ctx context.Context,
 			tx pgx.Tx,
-			jsonWebTokenIDs ...uuid.UUID,
+			request *models.JsonWebTokenFilter,
 		) (int64, error)
 	}
 
@@ -216,24 +215,16 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	ctx context.Context,
 	tx pgx.Tx,
-	jsonWebTokenIDs ...uuid.UUID,
+	request *models.JsonWebTokenFilter,
 ) (int64, error) {
 	ctxt := "JsonWebTokenRepository-DeleteJsonWebToken"
-	n := len(jsonWebTokenIDs)
-	if n == 0 {
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
+	if len(params) == 0 {
 		return 0, nil
 	}
-	params := make([]any, n)
-	var sb strings.Builder
-	_, _ = sb.WriteString("DELETE FROM json_web_tokens WHERE id IN (")
-	for i := range jsonWebTokenIDs {
-		params[i] = jsonWebTokenIDs[i]
-		if i > 0 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, "$%d", i+1)
-	}
-	_, _ = sb.WriteString(")")
+	sb.Reset()
+	_, _ = fmt.Fprintf(&sb, "DELETE FROM json_web_tokens %s", condition)
 	result, err := tx.Exec(ctx, sb.String(), params...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
