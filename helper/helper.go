@@ -303,8 +303,12 @@ func PhotoDirectory() string {
 	return os.Getenv("PHOTO_DIRECTORY")
 }
 
-func PhotoPath(filename string) string {
-	return Sprintf("/%s/%s", PhotoDirectory(), filename)
+func PhotoPath(filename string, baseURLs ...string) string {
+	var baseURL string
+	if len(baseURLs) > 0 {
+		baseURL = baseURLs[0]
+	}
+	return Sprintf("%s/%s/%s", baseURL, PhotoDirectory(), filename)
 }
 
 func PhotoLocation(filename string) string {

@@ -46,6 +46,8 @@ func (q *productCategoryController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
 		Post("/:id/delete", q.AdminDelete)
+	r.Group("/v1/buyer").
+		Get("", q.V1BuyerIndex)
 }
 
 func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
@@ -440,4 +442,34 @@ func (q *productCategoryController) prepareProductCategory(
 		}
 	}
 	return productCategory, params, nil
+}
+
+func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "ProductCategoryController-V1BuyerIndex"
+	request, err := sanitizers.FindProductCategories(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	rows, pagination, err := q.productCategoryService.FindProductCategories(
+		c,
+		request.WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	pagination.Rows = make([]any, len(rows))
+	for i, row := range rows {
+		row.Photo = row.PhotoPath(c.BaseURL())
+		pagination.Rows[i] = row
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
 }

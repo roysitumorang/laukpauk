@@ -157,6 +157,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/idempotency_keys":     "/idempotency_keys/v1/buyer",
 				"/v1/buyer/fcm_registrations":    "/fcm_registrations/v1/buyer",
+				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
 				"/v1/buyer/transactions":         "/transactions/v1/buyer",
 				"/v1/buyer/transactions/*":       "/transactions/v1/buyer/$1",
 				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",

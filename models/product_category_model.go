@@ -28,11 +28,11 @@ const (
 type (
 	ProductCategory struct {
 		RowNo          int64        `json:"-" form:"-"`
-		ID             uuid.UUID    `json:"-" form:"id"`
+		ID             uuid.UUID    `json:"id" form:"id"`
 		RecordStatus   RecordStatus `json:"-" form:"-"`
-		Name           string       `json:"-" form:"name"`
-		Description    string       `json:"-" form:"description"`
-		Photo          string       `json:"-" form:"photo"`
+		Name           string       `json:"name" form:"name"`
+		Description    string       `json:"description" form:"description"`
+		Photo          string       `json:"photo" form:"photo"`
 		CreatedBy      uuid.UUID    `json:"-" form:"-"`
 		CreatedAt      time.Time    `json:"-" form:"-"`
 		UpdatedBy      uuid.UUID    `json:"-" form:"-"`
@@ -134,6 +134,6 @@ func (q *ProductCategory) SetPhoto(photo string) *ProductCategory {
 	return q
 }
 
-func (q *ProductCategory) PhotoPath() string {
-	return helper.PhotoPath(q.Photo)
+func (q *ProductCategory) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.Photo, baseURLs...)
 }

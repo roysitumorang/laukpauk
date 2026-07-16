@@ -22,6 +22,7 @@ type (
 			Pages int64 `json:"pages" example:"3"`
 			Total int64 `json:"total" example:"3"`
 		} `json:"info"`
+		Rows []any `json:"rows"`
 	}
 )
 
