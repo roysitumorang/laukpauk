@@ -167,6 +167,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/cart/*":               "/cart/v1/buyer/$1",
 				"/v1/buyer/cart/*/*":             "/cart/v1/buyer/$1/$2",
 				"/v1/buyer/vouchers/*":           "/vouchers/v1/buyer/$1",
+				"/v1/buyer/delivery_plans":       "/delivery_plans/v1/buyer",
 				"/v1/buyer/transactions":         "/transactions/v1/buyer",
 				"/v1/buyer/transactions/*":       "/transactions/v1/buyer/$1",
 				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",
@@ -246,7 +247,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewProductCategoryController(q.AdminService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
 	controllers.NewProductController(q.AdminService, q.ProductCategoryService, q.ProductService, q.ProductVariantService).Mount(app.Group("/products"))
 	controllers.NewSettingController(q.AdminService, q.SettingService).Mount(app.Group("/settings"))
-	controllers.NewDeliveryPlanController(q.AdminService, q.DeliveryPlanService).Mount(app.Group("/delivery_plans"))
+	controllers.NewDeliveryPlanController(q.AdminService, q.DeliveryPlanService, q.BuyerService, q.JsonWebTokenService).Mount(app.Group("/delivery_plans"))
 	controllers.NewNonDeliveryDayController(q.AdminService, q.NonDeliveryDayService, q.DeliveryPlanService).Mount(app.Group("/non_delivery_days"))
 	controllers.NewPointController(q.AdminService, q.BuyerService, q.PointService).Mount(app.Group("/points"))
 	controllers.NewVoucherController(q.AdminService, q.VoucherService, q.BuyerService, q.JsonWebTokenService).Mount(app.Group("/vouchers"))

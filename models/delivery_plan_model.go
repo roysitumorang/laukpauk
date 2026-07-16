@@ -33,37 +33,37 @@ type (
 
 	DeliveryPlan struct {
 		RowNo                   int64          `json:"-" form:"-"`
-		ID                      uuid.UUID      `json:"-" form:"-"`
+		ID                      uuid.UUID      `json:"id" form:"-"`
 		RecordStatus            RecordStatus   `json:"-" form:"-"`
-		Name                    string         `json:"-" form:"name"`
-		TransactionWindowMin    time.Time      `json:"-" form:"-"`
+		Name                    string         `json:"name" form:"name"`
+		TransactionWindowMin    time.Time      `json:"transaction_window_min" form:"-"`
 		RawTransactionWindowMin string         `json:"-" form:"transaction_window_min"`
-		TransactionWindowMax    time.Time      `json:"-" form:"-"`
+		TransactionWindowMax    time.Time      `json:"transaction_window_max" form:"-"`
 		RawTransactionWindowMax string         `json:"-" form:"transaction_window_max"`
-		SameDay                 bool           `json:"-" form:"same_day"`
+		SameDay                 bool           `json:"same_day" form:"same_day"`
 		SameDayWindowMin        *time.Time     `json:"-" form:"-"`
 		RawSameDayWindowMin     string         `json:"-" form:"same_day_window_min"`
 		SameDayWindowMax        *time.Time     `json:"-" form:"-"`
 		RawSameDayWindowMax     string         `json:"-" form:"same_day_window_max"`
 		SameDayInterval         *time.Duration `json:"-" form:"-"`
 		RawSameDayInterval      *string        `json:"-" form:"same_day_interval"`
-		SameDayHours            []time.Time    `json:"-" form:"-"`
-		NextDay                 bool           `json:"-" form:"next_day"`
+		SameDayHours            []time.Time    `json:"same_day_hours" form:"-"`
+		NextDay                 bool           `json:"next_day" form:"next_day"`
 		NextDayWindowMin        *time.Time     `json:"-" form:"-"`
 		RawNextDayWindowMin     string         `json:"-" form:"next_day_window_min"`
 		NextDayWindowMax        *time.Time     `json:"-" form:"-"`
 		RawNextDayWindowMax     string         `json:"-" form:"next_day_window_max"`
 		NextDayInterval         *time.Duration `json:"-" form:"-"`
 		RawNextDayInterval      *string        `json:"-" form:"next_day_interval"`
-		NextDayHours            []time.Time    `json:"-" form:"-"`
-		NextTwoDay              bool           `json:"-" form:"next_two_day"`
+		NextDayHours            []time.Time    `json:"next_day_hours" form:"-"`
+		NextTwoDay              bool           `json:"next_two_day" form:"next_two_day"`
 		NextTwoDayWindowMin     *time.Time     `json:"-" form:"-"`
 		RawNextTwoDayWindowMin  string         `json:"-" form:"next_two_day_window_min"`
 		NextTwoDayWindowMax     *time.Time     `json:"-" form:"-"`
 		RawNextTwoDayWindowMax  string         `json:"-" form:"next_two_day_window_max"`
 		NextTwoDayInterval      *time.Duration `json:"-" form:"-"`
 		RawNextTwoDayInterval   *string        `json:"-" form:"next_two_day_interval"`
-		NextTwoDayHours         []time.Time    `json:"-" form:"-"`
+		NextTwoDayHours         []time.Time    `json:"next_two_day_hours" form:"-"`
 		CreatedBy               uuid.UUID      `json:"-" form:"-"`
 		CreatedAt               time.Time      `json:"-" form:"-"`
 		UpdatedBy               uuid.UUID      `json:"-" form:"-"`
@@ -294,13 +294,54 @@ func (q *DeliveryPlan) Validate() (err error) {
 
 func (q *DeliveryPlan) Populate() *DeliveryPlan {
 	location := helper.LoadTimeZone()
+	now := time.Now().In(location)
 	q.TransactionWindowMin = q.TransactionWindowMin.In(location)
+	q.TransactionWindowMin = time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		q.TransactionWindowMin.Hour(),
+		q.TransactionWindowMin.Minute(),
+		q.TransactionWindowMin.Second(),
+		q.TransactionWindowMin.Nanosecond(),
+		q.TransactionWindowMin.Location(),
+	)
 	q.TransactionWindowMax = q.TransactionWindowMax.In(location)
+	q.TransactionWindowMax = time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		q.TransactionWindowMax.Hour(),
+		q.TransactionWindowMax.Minute(),
+		q.TransactionWindowMax.Second(),
+		q.TransactionWindowMax.Nanosecond(),
+		q.TransactionWindowMax.Location(),
+	)
 	if q.SameDay && q.SameDayWindowMin != nil && q.SameDayWindowMax != nil && q.RawSameDayInterval != nil {
 		interval, _ := time.ParseDuration(*q.RawSameDayInterval)
 		q.SameDayInterval = &interval
 		*q.SameDayWindowMin = q.SameDayWindowMin.In(location)
+		*q.SameDayWindowMin = time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			q.SameDayWindowMin.Hour(),
+			q.SameDayWindowMin.Minute(),
+			q.SameDayWindowMin.Second(),
+			q.SameDayWindowMin.Nanosecond(),
+			q.SameDayWindowMin.Location(),
+		)
 		*q.SameDayWindowMax = q.SameDayWindowMax.In(location)
+		*q.SameDayWindowMax = time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			q.SameDayWindowMax.Hour(),
+			q.SameDayWindowMax.Minute(),
+			q.SameDayWindowMax.Second(),
+			q.SameDayWindowMax.Nanosecond(),
+			q.SameDayWindowMax.Location(),
+		)
 		sameDayWindowMin := *q.SameDayWindowMin
 		sameDayWindowMax := *q.SameDayWindowMax
 		for {
@@ -311,11 +352,32 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 			sameDayWindowMin = sameDayWindowMin.Add(*q.SameDayInterval)
 		}
 	}
+	now = now.AddDate(0, 0, 1)
 	if q.NextDay && q.NextDayWindowMin != nil && q.NextDayWindowMax != nil && q.RawNextDayInterval != nil {
 		interval, _ := time.ParseDuration(*q.RawNextDayInterval)
 		q.NextDayInterval = &interval
 		*q.NextDayWindowMin = q.NextDayWindowMin.In(location)
+		*q.NextDayWindowMin = time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			q.NextDayWindowMin.Hour(),
+			q.NextDayWindowMin.Minute(),
+			q.NextDayWindowMin.Second(),
+			q.NextDayWindowMin.Nanosecond(),
+			q.NextDayWindowMin.Location(),
+		)
 		*q.NextDayWindowMax = q.NextDayWindowMax.In(location)
+		*q.NextDayWindowMax = time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			q.NextDayWindowMax.Hour(),
+			q.NextDayWindowMax.Minute(),
+			q.NextDayWindowMax.Second(),
+			q.NextDayWindowMax.Nanosecond(),
+			q.NextDayWindowMax.Location(),
+		)
 		nextDayWindowMin := *q.NextDayWindowMin
 		nextDayWindowMax := *q.NextDayWindowMax
 		for {
@@ -326,11 +388,32 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 			nextDayWindowMin = nextDayWindowMin.Add(*q.NextDayInterval)
 		}
 	}
+	now = now.AddDate(0, 0, 1)
 	if q.NextTwoDay && q.NextTwoDayWindowMin != nil && q.NextTwoDayWindowMax != nil && q.RawNextTwoDayInterval != nil {
 		interval, _ := time.ParseDuration(*q.RawNextTwoDayInterval)
 		q.NextTwoDayInterval = &interval
 		*q.NextTwoDayWindowMin = q.NextTwoDayWindowMin.In(location)
+		*q.NextTwoDayWindowMin = time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			q.NextTwoDayWindowMin.Hour(),
+			q.NextTwoDayWindowMin.Minute(),
+			q.NextTwoDayWindowMin.Second(),
+			q.NextTwoDayWindowMin.Nanosecond(),
+			q.NextTwoDayWindowMin.Location(),
+		)
 		*q.NextTwoDayWindowMax = q.NextTwoDayWindowMax.In(location)
+		*q.NextTwoDayWindowMax = time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			q.NextTwoDayWindowMax.Hour(),
+			q.NextTwoDayWindowMax.Minute(),
+			q.NextTwoDayWindowMax.Second(),
+			q.NextTwoDayWindowMax.Nanosecond(),
+			q.NextTwoDayWindowMax.Location(),
+		)
 		nextTwoDayWindowMin := *q.NextTwoDayWindowMin
 		nextTwoDayWindowMax := *q.NextTwoDayWindowMax
 		for {

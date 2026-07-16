@@ -23,16 +23,22 @@ type (
 	deliveryPlanController struct {
 		adminService        services.AdminService
 		deliveryPlanService services.DeliveryPlanService
+		buyerService        services.BuyerService
+		jsonWebTokenService services.JsonWebTokenService
 	}
 )
 
 func NewDeliveryPlanController(
 	adminService services.AdminService,
 	deliveryPlanService services.DeliveryPlanService,
+	buyerService services.BuyerService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *deliveryPlanController {
 	return new(deliveryPlanController{
 		adminService:        adminService,
 		deliveryPlanService: deliveryPlanService,
+		buyerService:        buyerService,
+		jsonWebTokenService: jsonWebTokenService,
 	})
 }
 
@@ -45,6 +51,9 @@ func (q *deliveryPlanController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
 		Post("/:id/delete", q.AdminDelete)
+	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
+	r.Group("/v1/buyer", buyerKeyAuth).
+		Get("", q.V1BuyerIndex)
 }
 
 func (q *deliveryPlanController) AdminIndex(c fiber.Ctx) (err error) {
@@ -479,4 +488,23 @@ func (q *deliveryPlanController) AdminDelete(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("delivery plan deleted successfully").
 		Redirect(c, sess.Session, "/admin/delivery_plans")
+}
+
+func (q *deliveryPlanController) V1BuyerIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "DeliveryPlanController-V1BuyerIndex"
+	response, _, err := q.deliveryPlanService.FindDeliveryPlans(
+		ctx,
+		models.NewDeliveryPlanFilter().
+			WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
 }
