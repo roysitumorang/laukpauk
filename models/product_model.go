@@ -28,12 +28,6 @@ var (
 )
 
 const (
-	ProductPhotoName         = "product-%d%s"
-	ProductPhotoPath         = "./images/product/%s"
-	ProductPhotoCompressPath = "./images/product/compress/%s"
-)
-
-const (
 	ProductTypeStandalone ProductType = iota
 	ProductTypeBundled
 )
