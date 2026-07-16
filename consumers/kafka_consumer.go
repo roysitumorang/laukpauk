@@ -2,12 +2,12 @@ package consumers
 
 import (
 	"context"
+	"encoding/json/v2"
 	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/goccy/go-json"
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"

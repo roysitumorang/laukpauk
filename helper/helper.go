@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"math"
@@ -21,7 +22,6 @@ import (
 	"uuid"
 
 	"github.com/bwmarrin/snowflake"
-	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
@@ -171,10 +171,10 @@ func GetEnv() string {
 
 func Transcode(input, output any) error {
 	buffer := new(bytes.Buffer)
-	if err := json.NewEncoder(buffer).Encode(input); err != nil {
+	if err := json.MarshalWrite(buffer, input); err != nil {
 		return err
 	}
-	return json.NewDecoder(buffer).Decode(output)
+	return json.UnmarshalRead(buffer, output)
 }
 
 func GetJwtIssuer() string {

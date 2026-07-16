@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json/v2"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goccy/go-json"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/valyala/fasthttp"

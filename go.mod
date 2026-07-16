@@ -8,7 +8,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gabriel-vasile/mimetype v1.4.13
 	github.com/getsentry/sentry-go v0.48.0
-	github.com/goccy/go-json v0.10.6
 	github.com/gofiber/contrib/v3/monitor v1.1.1
 	github.com/gofiber/contrib/v3/sentry v1.1.8
 	github.com/gofiber/contrib/v3/swaggo v1.0.8
