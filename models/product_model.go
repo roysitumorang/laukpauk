@@ -42,26 +42,27 @@ type (
 	ProductType int
 
 	Product struct {
-		RowNo               int64        `json:"-" form:"-"`
-		ID                  uuid.UUID    `json:"id" form:"id"`
-		RecordStatus        RecordStatus `json:"-" form:"-"`
-		ProductCategoryID   uuid.UUID    `json:"category_id" form:"product_category_id"`
-		ProductCategoryName string       `json:"category_name" form:"-"`
-		ProductType         ProductType  `json:"product_type" form:"product_type"`
-		ProductTypeName     string       `json:"product_type_name" form:"-"`
-		Name                string       `json:"name" form:"name"`
-		Photo               string       `json:"photo" form:"photo"`
-		Description         string       `json:"description" form:"description"`
-		ReadyStock          bool         `json:"ready_stock" form:"ready_stock"`
-		Pinned              bool         `json:"-" form:"pinned"`
-		Hits                int64        `json:"-" form:"-"`
-		CreatedBy           uuid.UUID    `json:"-" form:"-"`
-		CreatedAt           time.Time    `json:"-" form:"-"`
-		UpdatedBy           uuid.UUID    `json:"-" form:"-"`
-		UpdatedAt           time.Time    `json:"-" form:"-"`
-		DeletedBy           *uuid.UUID   `json:"-" form:"-"`
-		DeletedAt           *time.Time   `json:"-" form:"-"`
-		DeletionReason      *string      `json:"-" form:"-"`
+		RowNo               int64             `json:"-" form:"-"`
+		ID                  uuid.UUID         `json:"id" form:"id"`
+		RecordStatus        RecordStatus      `json:"-" form:"-"`
+		ProductCategoryID   uuid.UUID         `json:"category_id" form:"product_category_id"`
+		ProductCategoryName string            `json:"category_name" form:"-"`
+		ProductType         ProductType       `json:"product_type" form:"product_type"`
+		ProductTypeName     string            `json:"product_type_name" form:"-"`
+		Name                string            `json:"name" form:"name"`
+		Photo               string            `json:"photo" form:"photo"`
+		Description         string            `json:"description" form:"description"`
+		ReadyStock          bool              `json:"ready_stock" form:"ready_stock"`
+		Pinned              bool              `json:"-" form:"pinned"`
+		Hits                int64             `json:"-" form:"-"`
+		CreatedBy           uuid.UUID         `json:"-" form:"-"`
+		CreatedAt           time.Time         `json:"-" form:"-"`
+		UpdatedBy           uuid.UUID         `json:"-" form:"-"`
+		UpdatedAt           time.Time         `json:"-" form:"-"`
+		DeletedBy           *uuid.UUID        `json:"-" form:"-"`
+		DeletedAt           *time.Time        `json:"-" form:"-"`
+		DeletionReason      *string           `json:"-" form:"-"`
+		Variants            []*ProductVariant `json:"variants" form:"-"`
 	}
 
 	ProductFilter struct {

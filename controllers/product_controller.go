@@ -934,6 +934,18 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrProductNotFound.Error()).
 			WriteResponse(c)
 	}
+	variants, _, err := q.productVariantService.FindProductVariants(
+		ctx,
+		models.NewProductVariantFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductIDs(response.ID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	request := new(*response)
 	request.Hits++
 	tx, err := repositories.BeginTx(ctx)
@@ -964,6 +976,8 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	response.Photo = response.PhotoPath(c.BaseURL())
+	response.Variants = make([]*models.ProductVariant, len(variants))
+	copy(response.Variants, variants)
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)

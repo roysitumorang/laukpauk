@@ -19,19 +19,20 @@ var (
 type (
 	ProductVariant struct {
 		RowNo                   int64        `json:"-" form:"-"`
-		ID                      uuid.UUID    `json:"-" form:"id"`
+		ID                      uuid.UUID    `json:"id" form:"id"`
 		RecordStatus            RecordStatus `json:"-" form:"-"`
 		ProductID               uuid.UUID    `json:"-" form:"-"`
 		ProductName             string       `json:"-" form:"-"`
 		ProductReadyStock       bool         `json:"-" form:"-"`
-		StockUnit               string       `json:"-" form:"stock_unit"`
-		Price                   int64        `json:"-" form:"price"`
-		DiscountType            DiscountType `json:"-" form:"discount_type"`
-		DiscountRate            int64        `json:"-" form:"discount_rate"`
-		DiscountMinimumQuantity int64        `json:"-" form:"discount_minimum_quantity"`
-		DiscountAmount          int64        `json:"-" form:"-"`
-		SalePrice               int64        `json:"-" form:"-"`
-		Description             string       `json:"-" form:"description"`
+		StockUnit               string       `json:"stock_unit" form:"stock_unit"`
+		Price                   int64        `json:"price" form:"price"`
+		DiscountType            DiscountType `json:"discount_type" form:"discount_type"`
+		DiscountTypeName        string       `json:"discount_type_name" form:"-"`
+		DiscountRate            int64        `json:"discount_rate" form:"discount_rate"`
+		DiscountMinimumQuantity int64        `json:"discount_minimum_quantity" form:"discount_minimum_quantity"`
+		DiscountAmount          int64        `json:"discount_amount" form:"-"`
+		SalePrice               int64        `json:"sale_price" form:"-"`
+		Description             string       `json:"description" form:"description"`
 		CreatedBy               uuid.UUID    `json:"-" form:"-"`
 		CreatedAt               time.Time    `json:"-" form:"-"`
 		UpdatedBy               uuid.UUID    `json:"-" form:"-"`
@@ -166,4 +167,9 @@ func (q *ProductVariant) Validate() error {
 
 func (q *ProductVariant) New() bool {
 	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+func (q *ProductVariant) Populate() *ProductVariant {
+	q.DiscountTypeName = q.DiscountType.String()
+	return q
 }

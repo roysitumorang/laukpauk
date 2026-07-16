@@ -171,7 +171,7 @@ func (q *productVariantRepository) FindProductVariants(
 		}
 		offset++
 		productVariant.RowNo = offset
-		response = append(response, &productVariant)
+		response = append(response, (&productVariant).Populate())
 	}
 	return response, total, pages, nil
 }
@@ -242,7 +242,7 @@ func (q *productVariantRepository) FindProductVariant(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *productVariantRepository) CreateProductVariant(
@@ -341,7 +341,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *productVariantRepository) UpdateProductVariant(
@@ -441,7 +441,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *productVariantRepository) buildCondition(request *models.ProductVariantFilter, sb *strings.Builder) (condition string, params []any) {
