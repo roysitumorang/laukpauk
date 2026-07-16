@@ -43,17 +43,18 @@ type (
 
 	Product struct {
 		RowNo               int64        `json:"-" form:"-"`
-		ID                  uuid.UUID    `json:"-" form:"id"`
+		ID                  uuid.UUID    `json:"id" form:"id"`
 		RecordStatus        RecordStatus `json:"-" form:"-"`
-		ProductCategoryID   uuid.UUID    `json:"-" form:"product_category_id"`
-		ProductCategoryName string       `json:"-" form:"-"`
-		ProductType         ProductType  `json:"-" form:"product_type"`
-		Name                string       `json:"-" form:"name"`
-		Photo               string       `json:"-" form:"photo"`
-		Description         string       `json:"-" form:"description"`
-		ReadyStock          bool         `json:"-" form:"ready_stock"`
+		ProductCategoryID   uuid.UUID    `json:"category_id" form:"product_category_id"`
+		ProductCategoryName string       `json:"category_name" form:"-"`
+		ProductType         ProductType  `json:"product_type" form:"product_type"`
+		ProductTypeName     string       `json:"product_type_name" form:"-"`
+		Name                string       `json:"name" form:"name"`
+		Photo               string       `json:"photo" form:"photo"`
+		Description         string       `json:"description" form:"description"`
+		ReadyStock          bool         `json:"ready_stock" form:"ready_stock"`
 		Pinned              bool         `json:"-" form:"pinned"`
-		Hits                int64        `json:"-" form:"pinned"`
+		Hits                int64        `json:"-" form:"-"`
 		CreatedBy           uuid.UUID    `json:"-" form:"-"`
 		CreatedAt           time.Time    `json:"-" form:"-"`
 		UpdatedBy           uuid.UUID    `json:"-" form:"-"`
@@ -180,8 +181,8 @@ func (q *Product) SetPhoto(photo string) *Product {
 	return q
 }
 
-func (q *Product) PhotoPath() string {
-	return helper.PhotoPath(q.Photo)
+func (q *Product) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.Photo, baseURLs...)
 }
 
 func (q *Product) StockStatus() string {
@@ -189,6 +190,11 @@ func (q *Product) StockStatus() string {
 		return "tidak tersedia"
 	}
 	return "tersedia"
+}
+
+func (q *Product) Populate() *Product {
+	q.ProductTypeName = q.ProductType.String()
+	return q
 }
 
 func (q ProductType) Int() int {

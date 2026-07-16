@@ -58,6 +58,9 @@ func (q *productController) Mount(r fiber.Router) {
 		Get("/:id/variants/:product_variant_id/edit", q.AdminEditVariant).
 		Post("/:id/variants/:product_variant_id", q.AdminUpdateVariant).
 		Post("/:id/variants/:product_variant_id/delete", q.AdminDeleteVariant)
+	r.Group("/v1/buyer").
+		Get("", q.V1BuyerIndex).
+		Get("/:id", q.V1BuyerShow)
 }
 
 func (q *productController) AdminIndex(c fiber.Ctx) (err error) {
@@ -872,4 +875,96 @@ func (q *productController) prepareProductVariant(
 		}
 	}
 	return product, productVariant, params, nil
+}
+
+func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "ProductController-V1BuyerIndex"
+	request, err := sanitizers.FindProducts(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	rows, pagination, err := q.productService.FindProducts(
+		c,
+		request.WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	pagination.Rows = make([]any, len(rows))
+	for i, row := range rows {
+		row.Photo = row.PhotoPath(c.BaseURL())
+		pagination.Rows[i] = row
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
+}
+
+func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "ProductController-V1BuyerShow"
+	productID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrProductNotFound.Error()).
+			WriteResponse(c)
+	}
+	response, err := q.productService.FindProduct(
+		c,
+		models.NewProductFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductIDs(productID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if response == nil {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrProductNotFound.Error()).
+			WriteResponse(c)
+	}
+	request := new(*response)
+	request.Hits++
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	if response, err = q.productService.UpdateProduct(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	response.Photo = response.PhotoPath(c.BaseURL())
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
 }

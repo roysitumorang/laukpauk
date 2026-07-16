@@ -167,7 +167,7 @@ func (q *productRepository) FindProducts(
 		}
 		offset++
 		product.RowNo = offset
-		response = append(response, &product)
+		response = append(response, (&product).Populate())
 	}
 	return response, total, pages, nil
 }
@@ -234,7 +234,7 @@ func (q *productRepository) FindProduct(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *productRepository) CreateProduct(
@@ -327,7 +327,7 @@ func (q *productRepository) CreateProduct(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *productRepository) UpdateProduct(
@@ -423,7 +423,7 @@ func (q *productRepository) UpdateProduct(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *productRepository) buildCondition(request *models.ProductFilter, sb *strings.Builder) (condition string, params []any) {
