@@ -39,7 +39,7 @@ func BuyerKeyAuth(
 			}
 			buyerID, err := uuid.Parse(claims.ID)
 			if err != nil {
-				return false, models.ErrBuyerNotFound
+				return false, keyauth.ErrMissingOrMalformedAPIKey
 			}
 			ctx := c.Context()
 			currentBuyer, err := buyerService.FindBuyer(
@@ -47,26 +47,20 @@ func BuyerKeyAuth(
 				models.NewBuyerFilter().
 					WithBuyerIDs(buyerID),
 			)
-			if err != nil {
-				return false, err
-			}
-			if currentBuyer == nil {
-				return false, models.ErrBuyerNotFound
+			if err != nil || currentBuyer == nil {
+				return false, keyauth.ErrMissingOrMalformedAPIKey
 			}
 			jsonWebTokenID, err := uuid.Parse(claims.Subject)
 			if err != nil {
-				return false, models.ErrBuyerNotFound
+				return false, keyauth.ErrMissingOrMalformedAPIKey
 			}
 			currentJsonWebToken, err := jsonWebTokenService.FindJsonWebToken(
 				ctx,
 				models.NewJsonWebTokenFilter().
 					WithJsonWebTokenIDs(jsonWebTokenID),
 			)
-			if err != nil {
-				return false, err
-			}
-			if currentJsonWebToken == nil {
-				return false, models.ErrBuyerNotFound
+			if err != nil || currentJsonWebToken == nil {
+				return false, keyauth.ErrMissingOrMalformedAPIKey
 			}
 			c.Locals(models.CurrentBuyer, currentBuyer)
 			c.Locals(models.CurrentJsonWebToken, currentJsonWebToken)

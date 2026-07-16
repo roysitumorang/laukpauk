@@ -50,6 +50,7 @@ type (
 		TransactionService      services.TransactionService
 		JsonWebTokenService     services.JsonWebTokenService
 		IdempotencyKeyService   services.IdempotencyKeyService
+		FcmRegistrationService  services.FcmRegistrationService
 	}
 )
 
@@ -130,6 +131,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
 	jsonWebTokenRepository := repositories.NewJsonWebTokenRepository(dbRead, dbWrite)
 	idempotencyKeyRepository := repositories.NewIdempotencyKeyRepository(dbRead, dbWrite)
+	fcmRegistrationRepository := repositories.NewFcmRegistrationRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -150,6 +152,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	transactionService := services.NewTransactionService(transactionRepository)
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
 	idempotencyKeyService := services.NewIdempotencyKeyService(idempotencyKeyRepository)
+	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
 	return &Service{
 		DbWrite:                 dbWrite,
 		Migration:               migration,
@@ -177,6 +180,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		TransactionService:      transactionService,
 		JsonWebTokenService:     jsonWebTokenService,
 		IdempotencyKeyService:   idempotencyKeyService,
+		FcmRegistrationService:  fcmRegistrationService,
 	}, nil
 }
 

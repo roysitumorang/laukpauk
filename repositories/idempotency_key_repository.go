@@ -52,10 +52,10 @@ func NewIdempotencyKeyRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) IdempotencyKeyRepository {
-	return new(idempotencyKeyRepository{
+	return &idempotencyKeyRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *idempotencyKeyRepository) FindIdempotencyKeys(

@@ -576,6 +576,35 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// fcm_registrations
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE fcm_registrations (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, user_id UUID NOT NULL REFERENCES users (id)
+				, token character varying NOT NULL UNIQUE
+				, created_at timestamp with time zone NOT NULL
+				, updated_at timestamp with time zone NOT NULL
+				, expired_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON fcm_registrations (user_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON fcm_registrations (expired_at);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// notification_templates
 		if _, err = tx.Exec(
 			ctx,

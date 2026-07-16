@@ -38,8 +38,8 @@ func NewIdempotencyKeyController(
 
 func (q *idempotencyKeyController) Mount(r fiber.Router) {
 	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", buyerKeyAuth).
-		Post("", q.V1BuyerCreate)
+	r.Group("/v1/buyer").
+		Post("", buyerKeyAuth, q.V1BuyerCreate)
 }
 
 func (q *idempotencyKeyController) V1BuyerCreate(c fiber.Ctx) (err error) {
@@ -76,13 +76,13 @@ func (q *idempotencyKeyController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	response, err := q.idempotencyKeyService.CreateIdempotencyKey(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateIdempotencyKey")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
