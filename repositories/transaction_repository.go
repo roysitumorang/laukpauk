@@ -514,7 +514,7 @@ func (q *transactionRepository) CreateTransaction(
 		_, _ = fmt.Fprintf(
 			&sb,
 			models.TransactionReferenceNumberFormat,
-			helper.RandomString(12),
+			strings.ToUpper(helper.RandomString(12)),
 		)
 		request.ReferenceNumber = sb.String()
 		if err := tx.QueryRow(
