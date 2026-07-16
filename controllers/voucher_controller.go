@@ -22,23 +22,30 @@ import (
 
 type (
 	voucherController struct {
-		adminService   services.AdminService
-		voucherService services.VoucherService
+		adminService        services.AdminService
+		voucherService      services.VoucherService
+		buyerService        services.BuyerService
+		jsonWebTokenService services.JsonWebTokenService
 	}
 )
 
 func NewVoucherController(
 	adminService services.AdminService,
 	voucherService services.VoucherService,
+	buyerService services.BuyerService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *voucherController {
-	return new(voucherController{
-		adminService:   adminService,
-		voucherService: voucherService,
-	})
+	return &voucherController{
+		adminService:        adminService,
+		voucherService:      voucherService,
+		buyerService:        buyerService,
+		jsonWebTokenService: jsonWebTokenService,
+	}
 }
 
 func (q *voucherController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
+	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).
@@ -46,6 +53,8 @@ func (q *voucherController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
 		Post("/:id/delete", q.AdminDelete)
+	r.Group("/v1/buyer", buyerKeyAuth).
+		Get("/:id", q.V1BuyerShow)
 }
 
 func (q *voucherController) AdminIndex(c fiber.Ctx) (err error) {
@@ -474,4 +483,30 @@ func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("voucher deleted successfully").
 		Redirect(c, sess.Session, "/admin/vouchers")
+}
+
+func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "VoucherController-V1BuyerShow"
+	response, err := q.voucherService.FindVoucher(
+		ctx,
+		models.NewVoucherFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithCodes(c.Params("id")),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if response == nil {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrVoucherNotFound.Error()).
+			WriteResponse(c)
+	}
+	response.Photo = response.PhotoPath(c.BaseURL())
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
 }

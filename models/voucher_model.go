@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 	"uuid"
@@ -14,6 +15,8 @@ import (
 var (
 	ErrVoucherNotFound            = errors.New("voucher not found")
 	ErrUniqueVoucherCodeViolation = errors.New("code: already exists")
+
+	VoucherCodeRegex = regexp.MustCompile("^[a-zA-Z0-9-]+$")
 
 	VoucherTypes = []VoucherType{
 		VoucherTypeDeliveryCost,
@@ -66,27 +69,29 @@ type (
 
 	Voucher struct {
 		RowNo                 int64                 `json:"-" form:"-"`
-		ID                    uuid.UUID             `json:"-" form:"id"`
+		ID                    uuid.UUID             `json:"id" form:"id"`
 		RecordStatus          RecordStatus          `json:"-" form:"-"`
-		VoucherType           VoucherType           `json:"-" form:"voucher_type"`
-		TargetAudience        VoucherTargetAudience `json:"-" form:"target_audience"`
-		Code                  *string               `json:"-" form:"code"`
+		VoucherType           VoucherType           `json:"voucher_type" form:"voucher_type"`
+		VoucherTypeName       string                `json:"voucher_type_name" form:"-"`
+		TargetAudience        VoucherTargetAudience `json:"target_audience" form:"target_audience"`
+		TargetAudienceName    string                `json:"target_audience_name" form:"-"`
+		Code                  *string               `json:"code" form:"code"`
 		DeletedCode           *string               `json:"-" form:"-"`
-		Photo                 string                `json:"-" form:"photo"`
-		Name                  string                `json:"-" form:"name"`
+		Photo                 string                `json:"photo" form:"photo"`
+		Name                  string                `json:"name" form:"name"`
 		Budget                int64                 `json:"-" form:"budget"`
-		Discount              int64                 `json:"-" form:"discount"`
-		MinimumPurchase       int64                 `json:"-" form:"minimum_purchase"`
+		Discount              int64                 `json:"discount" form:"discount"`
+		MinimumPurchase       int64                 `json:"minimum_purchase" form:"minimum_purchase"`
 		QuotaPerBuyer         int                   `json:"-" form:"quota_per_buyer"`
-		EffectiveStartTime    time.Time             `json:"-" form:"-"`
+		EffectiveStartTime    time.Time             `json:"effective_start_time" form:"-"`
 		RawEffectiveStartTime string                `json:"-" form:"effective_start_time"`
-		EffectiveEndTime      time.Time             `json:"-" form:"-"`
+		EffectiveEndTime      time.Time             `json:"effective_end_time" form:"-"`
 		RawEffectiveEndTime   string                `json:"-" form:"effective_end_time"`
-		EffectiveStartDate    time.Time             `json:"-" form:"-"`
+		EffectiveStartDate    time.Time             `json:"effective_start_date" form:"-"`
 		RawEffectiveStartDate string                `json:"-" form:"effective_start_date"`
-		EffectiveEndDate      time.Time             `json:"-" form:"-"`
+		EffectiveEndDate      time.Time             `json:"effective_end_date" form:"-"`
 		RawEffectiveEndDate   string                `json:"-" form:"effective_end_date"`
-		Description           string                `json:"-" form:"description"`
+		Description           string                `json:"description" form:"description"`
 		CreatedBy             uuid.UUID             `json:"-" form:"-"`
 		CreatedAt             time.Time             `json:"-" form:"-"`
 		UpdatedBy             uuid.UUID             `json:"-" form:"-"`
@@ -217,6 +222,9 @@ func (q *Voucher) Validate() (err error) {
 	if q.Code == nil {
 		return errors.New("code: is required")
 	}
+	if !VoucherCodeRegex.MatchString(*q.Code) {
+		return errors.New("code: is invalid")
+	}
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
@@ -295,6 +303,8 @@ func (q *Voucher) New() bool {
 
 func (q *Voucher) Populate() *Voucher {
 	location := helper.LoadTimeZone()
+	q.VoucherTypeName = q.VoucherType.String()
+	q.TargetAudienceName = q.TargetAudience.String()
 	q.EffectiveStartTime = q.EffectiveStartTime.In(location)
 	q.RawEffectiveStartTime = q.EffectiveStartTime.Format(time.TimeOnly)
 	q.EffectiveEndTime = q.EffectiveEndTime.In(location)
@@ -306,8 +316,8 @@ func (q *Voucher) Populate() *Voucher {
 	return q
 }
 
-func (q *Voucher) PhotoPath() string {
-	return helper.PhotoPath(q.Photo)
+func (q *Voucher) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.Photo, baseURLs...)
 }
 
 func (q *Voucher) Status() string {
