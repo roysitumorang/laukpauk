@@ -26,11 +26,11 @@ type (
 			tx pgx.Tx,
 			request *models.Cart,
 		) (*models.Cart, error)
-		DeleteCart(
+		UpdateCart(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.CartFilter,
-		) (int64, error)
+			request *models.Cart,
+		) (*models.Cart, error)
 	}
 
 	cartService struct {
@@ -101,15 +101,15 @@ func (q *cartService) SaveCart(
 	return response, err
 }
 
-func (q *cartService) DeleteCart(
+func (q *cartService) UpdateCart(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.CartFilter,
-) (int64, error) {
-	ctxt := "CartService-DeleteCart"
-	response, err := q.cartRepository.DeleteCart(ctx, tx, request)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteCart")
+	request *models.Cart,
+) (*models.Cart, error) {
+	ctxt := "CartService-UpdateCart"
+	response, err := q.cartRepository.UpdateCart(ctx, tx, request)
+	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCart")
 	}
 	return response, nil
 }

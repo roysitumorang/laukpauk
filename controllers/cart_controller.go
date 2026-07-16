@@ -68,13 +68,13 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	if response == nil {
 		response = &models.Cart{
-			BuyerID: currentBuyer.ID,
+			BuyerID: &currentBuyer.ID,
 		}
 		return helper.NewResponse(fiber.StatusOK).
 			SetData(response).
 			WriteResponse(c)
 	}
-	if response.Items, _, err = q.cartItemService.FindCartItems(
+	cartItems, _, err := q.cartItemService.FindCartItems(
 		ctx,
 		models.NewCartItemFilter().
 			WithCartIDs(response.ID).
@@ -82,11 +82,17 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 				Field:     models.SortingFieldID,
 				Direction: models.SortingDirectionAsc,
 			}),
-	); err != nil {
+	)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCartItems")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
+	}
+	response.Items = make([]*models.CartItem, len(cartItems))
+	for i, cartItem := range cartItems {
+		response.Items[i] = cartItem
+		response.Quantity += cartItem.Quantity
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
@@ -121,7 +127,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetMessage("product_variant_id: not found").
 			WriteResponse(c)
 	}
-	cart, err := q.cartService.FindCart(
+	response, err := q.cartService.FindCart(
 		ctx,
 		models.NewCartFilter().
 			WithCartIDs(currentBuyer.ID),
@@ -131,29 +137,6 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
-	}
-	now := time.Now()
-	if cart == nil {
-		cart = &models.Cart{
-			BuyerID:   currentBuyer.ID,
-			CreatedAt: now,
-		}
-	}
-	if cart.Items, _, err = q.cartItemService.FindCartItems(
-		ctx,
-		models.NewCartItemFilter().
-			WithCartIDs(cart.ID),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCartItems")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	cart.Quantity = request.Quantity
-	for _, cartItem := range cart.Items {
-		if cartItem.ProductVariantID.Compare(productVariant.ID) != 0 {
-			cart.Quantity += cartItem.Quantity
-		}
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -170,13 +153,22 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	cart.UpdatedAt = now
-	response, err := q.cartService.SaveCart(ctx, tx, cart)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
+	now := time.Now()
+	if response == nil {
+		if response, err = q.cartService.SaveCart(
+			ctx,
+			tx,
+			&models.Cart{
+				BuyerID:   &currentBuyer.ID,
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
 	}
 	request.CartID = response.ID
 	request.CreatedAt = now
@@ -193,7 +185,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if response.Items, _, err = q.cartItemService.FindCartItems(
+	cartItems, _, err := q.cartItemService.FindCartItems(
 		ctx,
 		models.NewCartItemFilter().
 			WithCartIDs(response.ID).
@@ -201,11 +193,17 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 				Field:     models.SortingFieldID,
 				Direction: models.SortingDirectionAsc,
 			}),
-	); err != nil {
+	)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCartItems")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
+	}
+	response.Items = make([]*models.CartItem, len(cartItems))
+	for i, cartItem := range cartItems {
+		response.Items[i] = cartItem
+		response.Quantity += cartItem.Quantity
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
@@ -254,22 +252,14 @@ func (q *cartController) V1BuyerDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	quantity, err := q.cartItemService.DeleteCartItem(
+	if _, err = q.cartItemService.DeleteCartItem(
 		ctx,
 		tx,
 		models.NewCartItemFilter().
 			WithCartIDs(cart.ID).
 			WithCartItemIDs(cartItemID),
-	)
-	if err != nil {
+	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteCartItem")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	cart.Quantity -= quantity
-	if _, err = q.cartService.SaveCart(ctx, tx, cart); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)

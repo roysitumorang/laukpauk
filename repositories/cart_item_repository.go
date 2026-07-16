@@ -236,21 +236,19 @@ func (q *cartItemRepository) DeleteCartItem(
 	request *models.CartItemFilter,
 ) (int64, error) {
 	ctxt := "CartItemRepository-DeleteCartItem"
-	var (
-		sb       strings.Builder
-		quantity int64
-	)
+	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	if len(params) == 0 {
 		return 0, nil
 	}
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "DELETE FROM cart_items %s RETURNING quantity", condition)
-	if err := tx.QueryRow(ctx, sb.String(), params...).Scan(&quantity); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+	_, _ = fmt.Fprintf(&sb, "DELETE FROM cart_items %s", condition)
+	result, err := tx.Exec(ctx, sb.String(), params...)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return 0, err
 	}
-	return quantity, nil
+	return result.RowsAffected(), nil
 }
 
 func (q *cartItemRepository) buildCondition(request *models.CartItemFilter, sb *strings.Builder) (condition string, params []any) {

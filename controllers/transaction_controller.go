@@ -24,6 +24,8 @@ type (
 		adminService          services.AdminService
 		buyerService          services.BuyerService
 		transactionService    services.TransactionService
+		cartService           services.CartService
+		cartItemService       services.CartItemService
 		voucherService        services.VoucherService
 		pointService          services.PointService
 		productVariantService services.ProductVariantService
@@ -35,6 +37,8 @@ func NewTransactionController(
 	adminService services.AdminService,
 	buyerService services.BuyerService,
 	transactionService services.TransactionService,
+	cartService services.CartService,
+	cartItemService services.CartItemService,
 	voucherService services.VoucherService,
 	pointService services.PointService,
 	productVariantService services.ProductVariantService,
@@ -44,6 +48,8 @@ func NewTransactionController(
 		adminService:          adminService,
 		buyerService:          buyerService,
 		transactionService:    transactionService,
+		cartService:           cartService,
+		cartItemService:       cartItemService,
 		voucherService:        voucherService,
 		pointService:          pointService,
 		productVariantService: productVariantService,
@@ -111,6 +117,22 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	cart, err := q.cartService.FindCart(
+		ctx,
+		models.NewCartFilter().
+			WithCartIDs(currentBuyer.ID),
+	)
+	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if cart == nil || request.CartID == nil || request.CartID.Compare(cart.ID) != 0 {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("cart_id: not found").
+			WriteResponse(c)
+	}
 	now := time.Now()
 	if request.ReferralCode != nil {
 		referrer, err := q.buyerService.FindBuyer(
@@ -137,7 +159,8 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		currentBuyer.ReferrerID = &referrer.ID
 		request.ReferrerID = &referrer.ID
 	}
-	if request.VoucherCode != nil {
+	if request.RewardPointsDiscounted {
+	} else if request.VoucherCode != nil {
 		voucher, err := q.voucherService.FindVoucher(
 			ctx,
 			models.NewVoucherFilter().
@@ -211,6 +234,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	}
 	request.BuyerID = currentBuyer.ID
 	request.CreatedAt = now
+	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -229,6 +253,26 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	response, err := q.transactionService.CreateTransaction(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	cart.BuyerID = nil
+	cart.DeletedBuyerID = &currentBuyer.ID
+	cart.UpdatedAt = now
+	if _, err = q.cartService.UpdateCart(ctx, tx, cart); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCart")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if _, err = q.cartItemService.DeleteCartItem(
+		ctx,
+		tx,
+		models.NewCartItemFilter().
+			WithCartIDs(cart.ID),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteCartItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -271,6 +315,33 @@ func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
 	if response == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	if _, err = q.transactionService.UpdateTransaction(ctx, tx, response); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).

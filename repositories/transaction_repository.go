@@ -106,14 +106,16 @@ func (q *transactionRepository) FindTransactions(
 		, payment_deadline
 		, delivery_cost
 		, discounted_delivery_cost
-		, delivery_coordinates[0]
-		, delivery_coordinates[1]
+		, delivery_longitude
+		, delivery_latitude
+		, delivery_distance_km
 		, delivery_address
 		, delivery_instruction
 		, delivery_plan_id
 		, delivery_speed
 		, delivery_datetime
 		, created_at
+		, updated_at
 		, paid_at
 		, payment_request_id
 		, payment_id
@@ -129,8 +131,8 @@ func (q *transactionRepository) FindTransactions(
 		, cancellation_reason
 		, shipped_by
 		, shipped_at
-		, delivered_by
-		, delivered_at`,
+		, completed_by
+		, completed_at`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -235,12 +237,14 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DiscountedDeliveryCost,
 			&transaction.DeliveryLongitude,
 			&transaction.DeliveryLatitude,
+			&transaction.DeliveryDistanceKM,
 			&transaction.DeliveryAddress,
 			&transaction.DeliveryInstruction,
 			&transaction.DeliveryPlanID,
 			&transaction.DeliverySpeed,
 			&transaction.DeliveryDatetime,
 			&transaction.CreatedAt,
+			&transaction.UpdatedAt,
 			&transaction.PaidAt,
 			&transaction.PaymentRequestID,
 			&transaction.PaymentID,
@@ -256,8 +260,8 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.CancellationReason,
 			&transaction.ShippedBy,
 			&transaction.ShippedAt,
-			&transaction.DeliveredBy,
-			&transaction.DeliveredAt,
+			&transaction.CompletedBy,
+			&transaction.CompletedAt,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -352,14 +356,16 @@ func (q *transactionRepository) FindTransaction(
 			, payment_deadline
 			, delivery_cost
 			, discounted_delivery_cost
-			, delivery_coordinates[0]
-			, delivery_coordinates[1]
+			, delivery_longitude
+			, delivery_latitude
+			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
 			, delivery_plan_id
 			, delivery_speed
 			, delivery_datetime
 			, created_at
+			, updated_at
 			, paid_at
 			, payment_request_id
 			, payment_id
@@ -375,8 +381,8 @@ func (q *transactionRepository) FindTransaction(
 			, cancellation_reason
 			, shipped_by
 			, shipped_at
-			, delivered_by
-			, delivered_at
+			, completed_by
+			, completed_at
 		FROM transactions %s`,
 		condition,
 	)
@@ -414,12 +420,14 @@ func (q *transactionRepository) FindTransaction(
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
+		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryPlanID,
 		&response.DeliverySpeed,
 		&response.DeliveryDatetime,
 		&response.CreatedAt,
+		&response.UpdatedAt,
 		&response.PaidAt,
 		&response.PaymentRequestID,
 		&response.PaymentID,
@@ -435,8 +443,8 @@ func (q *transactionRepository) FindTransaction(
 		&response.CancellationReason,
 		&response.ShippedBy,
 		&response.ShippedAt,
-		&response.DeliveredBy,
-		&response.DeliveredAt,
+		&response.CompletedBy,
+		&response.CompletedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrTransactionNotFound
@@ -561,18 +569,22 @@ func (q *transactionRepository) CreateTransaction(
 			, payment_deadline
 			, delivery_cost
 			, discounted_delivery_cost
-			, delivery_coordinates
+			, delivery_longitude
+			, delivery_latitude
+			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
 			, delivery_plan_id
 			, delivery_speed
 			, delivery_datetime
 			, created_at
+			, updated_at
+			, revised_payment_amount
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27, $28, POINT($29, $30)
-			, $31, $32, $33, $34, $35, $36
+			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+			, $31, $32, $33, $34, $35, $36, $37, $38, $39
 		)
 		RETURNING id
 			, parent_id
@@ -603,14 +615,16 @@ func (q *transactionRepository) CreateTransaction(
 			, payment_deadline
 			, delivery_cost
 			, discounted_delivery_cost
-			, delivery_coordinates[0]
-			, delivery_coordinates[1]
+			, delivery_longitude
+			, delivery_latitude
+			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
 			, delivery_plan_id
 			, delivery_speed
 			, delivery_datetime
 			, created_at
+			, updated_at
 			, paid_at
 			, payment_request_id
 			, payment_id
@@ -626,8 +640,8 @@ func (q *transactionRepository) CreateTransaction(
 			, cancellation_reason
 			, shipped_by
 			, shipped_at
-			, delivered_by
-			, delivered_at`,
+			, completed_by
+			, completed_at`,
 		request.ParentID,
 		request.Reordered,
 		request.BuyerID,
@@ -658,12 +672,15 @@ func (q *transactionRepository) CreateTransaction(
 		request.DiscountedDeliveryCost,
 		request.DeliveryLongitude,
 		request.DeliveryLatitude,
+		request.DeliveryDistanceKM,
 		request.DeliveryAddress,
 		request.DeliveryInstruction,
 		request.DeliveryPlanID,
 		request.DeliverySpeed,
 		request.DeliveryDatetime,
 		request.CreatedAt,
+		request.UpdatedAt,
+		request.RevisedPaymentAmount,
 	).Scan(
 		&response.ID,
 		&response.ParentID,
@@ -696,12 +713,14 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
+		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryPlanID,
 		&response.DeliverySpeed,
 		&response.DeliveryDatetime,
 		&response.CreatedAt,
+		&response.UpdatedAt,
 		&response.PaidAt,
 		&response.PaymentRequestID,
 		&response.PaymentID,
@@ -717,8 +736,8 @@ func (q *transactionRepository) CreateTransaction(
 		&response.CancellationReason,
 		&response.ShippedBy,
 		&response.ShippedAt,
-		&response.DeliveredBy,
-		&response.DeliveredAt,
+		&response.CompletedBy,
+		&response.CompletedAt,
 	)
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
@@ -868,9 +887,10 @@ func (q *transactionRepository) UpdateTransaction(
 			, cancellation_reason = $14
 			, shipped_by = $15
 			, shipped_at = $16
-			, delivered_by = $17
-			, delivered_at = $18
-		WHERE id = $19
+			, completed_by = $17
+			, completed_at = $18
+			, updated_at = $19
+		WHERE id = $20
 		RETURNING id
 			, parent_id
 			, reordered
@@ -900,14 +920,16 @@ func (q *transactionRepository) UpdateTransaction(
 			, payment_deadline
 			, delivery_cost
 			, discounted_delivery_cost
-			, delivery_coordinates[0]
-			, delivery_coordinates[1]
+			, delivery_longitude
+			, delivery_latitude
+			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
 			, delivery_plan_id
 			, delivery_speed
 			, delivery_datetime
 			, created_at
+			, updated_at
 			, paid_at
 			, payment_request_id
 			, payment_id
@@ -923,8 +945,8 @@ func (q *transactionRepository) UpdateTransaction(
 			, cancellation_reason
 			, shipped_by
 			, shipped_at
-			, delivered_by
-			, delivered_at`,
+			, completed_by
+			, completed_at`,
 		request.TransactionStatus,
 		request.PaidAt,
 		request.PaymentRequestID,
@@ -941,8 +963,9 @@ func (q *transactionRepository) UpdateTransaction(
 		request.CancellationReason,
 		request.ShippedBy,
 		request.ShippedAt,
-		request.DeliveredBy,
-		request.DeliveredAt,
+		request.CompletedBy,
+		request.CompletedAt,
+		request.UpdatedAt,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -976,12 +999,14 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
+		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryPlanID,
 		&response.DeliverySpeed,
 		&response.DeliveryDatetime,
 		&response.CreatedAt,
+		&response.UpdatedAt,
 		&response.PaidAt,
 		&response.PaymentRequestID,
 		&response.PaymentID,
@@ -997,8 +1022,8 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.CancellationReason,
 		&response.ShippedBy,
 		&response.ShippedAt,
-		&response.DeliveredBy,
-		&response.DeliveredAt,
+		&response.CompletedBy,
+		&response.CompletedAt,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

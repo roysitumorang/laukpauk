@@ -8,6 +8,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/govalues/decimal"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/roysitumorang/laukpauk/helper"
 )
@@ -71,21 +72,23 @@ type (
 		PaymentDeadline         time.Time          `json:"-" form:"-"`
 		DeliveryCost            int64              `json:"-" form:"-"`
 		DiscountedDeliveryCost  int64              `json:"-" form:"-"`
-		DeliveryLatitude        float64            `json:"delivery_latitude" form:"delivery_latitude"`
-		DeliveryLongitude       float64            `json:"delivery_longitude" form:"delivery_longitude"`
+		DeliveryLatitude        decimal.Decimal    `json:"delivery_latitude" form:"delivery_latitude"`
+		DeliveryLongitude       decimal.Decimal    `json:"delivery_longitude" form:"delivery_longitude"`
+		DeliveryDistanceKM      int64              `json:"delivery_distance_km" form:"-"`
 		DeliveryAddress         string             `json:"delivery_address" form:"delivery_address"`
 		DeliveryInstruction     string             `json:"delivery_instruction" form:"delivery_instruction"`
 		DeliveryPlanID          uuid.UUID          `json:"delivery_plan_id" form:"delivery_plan_id"`
 		DeliverySpeed           DeliverySpeed      `json:"-" form:"-"`
 		DeliveryDatetime        time.Time          `json:"delivery_datetime" form:"delivery_datetime"`
 		CreatedAt               time.Time          `json:"-" form:"-"`
+		UpdatedAt               time.Time          `json:"-" form:"-"`
 		PaidAt                  *time.Time         `json:"-" form:"-"`
 		PaymentRequestID        *uuid.UUID         `json:"-" form:"-"`
 		PaymentID               *uuid.UUID         `json:"-" form:"-"`
 		PaymentStatus           *string            `json:"-" form:"-"`
 		ProcessedBy             *uuid.UUID         `json:"-" form:"-"`
 		ProcessedAt             *time.Time         `json:"-" form:"-"`
-		RevisedPaymentAmount    *int64             `json:"-" form:"-"`
+		RevisedPaymentAmount    int64              `json:"-" form:"-"`
 		RefundAmount            *int64             `json:"-" form:"-"`
 		RefundedAt              *time.Time         `json:"-" form:"-"`
 		RefundID                *uuid.UUID         `json:"-" form:"-"`
@@ -94,8 +97,8 @@ type (
 		CancellationReason      *string            `json:"-" form:"-"`
 		ShippedBy               *uuid.UUID         `json:"-" form:"-"`
 		ShippedAt               *time.Time         `json:"-" form:"-"`
-		DeliveredBy             *uuid.UUID         `json:"-" form:"-"`
-		DeliveredAt             *time.Time         `json:"-" form:"-"`
+		CompletedBy             *uuid.UUID         `json:"-" form:"-"`
+		CompletedAt             *time.Time         `json:"-" form:"-"`
 		Items                   []*TransactionItem `json:"items" form:"items"`
 	}
 
@@ -233,7 +236,8 @@ func (q *Transaction) Validate() error {
 			q.ReferralCode = nil
 		}
 	}
-	if q.VoucherCode != nil {
+	if q.RewardPointsDiscounted {
+	} else if q.VoucherCode != nil {
 		if *q.VoucherCode = strings.TrimSpace(*q.VoucherCode); *q.VoucherCode == "" {
 			q.VoucherCode = nil
 		}

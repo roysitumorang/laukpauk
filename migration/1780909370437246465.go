@@ -1080,11 +1080,18 @@ func init() {
 			ctx,
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) UNIQUE
-				, quantity bigint NOT NULL
+				, buyer_id UUID REFERENCES users (id) UNIQUE
+				, deleted_buyer_id UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON carts (deleted_buyer_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1105,6 +1112,7 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON cart_items (cart_id);`,
@@ -1127,7 +1135,7 @@ func init() {
 				, parent_id UUID REFERENCES transactions (id)
 				, reordered BOOLEAN NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, cart_id UUID REFERENCES carts (id) ON DELETE SET NULL UNIQUE
+				, cart_id UUID NOT NULL REFERENCES carts (id) UNIQUE
 				, reference_number character varying NOT NULL
 				, transaction_status integer NOT NULL
 				, recipient_name character varying NOT NULL
@@ -1152,20 +1160,23 @@ func init() {
 				, payment_deadline timestamp with time zone NOT NULL
 				, delivery_cost bigint NOT NULL
 				, discounted_delivery_cost bigint NOT NULL
-				, delivery_coordinates POINT NOT NULL
+				, delivery_latitude character varying NOT NULL
+				, delivery_longitude character varying NOT NULL
+				, delivery_distance_km integer NOT NULL
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
 				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
 				, delivery_speed integer NOT NULL
 				, delivery_datetime timestamp with time zone NOT NULL
 				, created_at timestamp with time zone NOT NULL
+				, updated_at timestamp with time zone NOT NULL
 				, paid_at timestamp with time zone
 				, payment_request_id UUID
 				, payment_id UUID
 				, payment_status character varying
 				, processed_by UUID REFERENCES users (id)
 				, processed_at timestamp with time zone
-				, revised_payment_amount bigint
+				, revised_payment_amount bigint NOT NULL
 				, refund_amount bigint
 				, refunded_at timestamp with time zone
 				, refund_id UUID
@@ -1174,8 +1185,8 @@ func init() {
 				, cancellation_reason character varying
 				, shipped_by UUID REFERENCES users (id)
 				, shipped_at timestamp with time zone
-				, delivered_by UUID REFERENCES users (id)
-				, delivered_at timestamp with time zone
+				, completed_by UUID REFERENCES users (id)
+				, completed_at timestamp with time zone
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1232,13 +1243,6 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions USING GiST(delivery_coordinates);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
 			`CREATE INDEX ON transactions (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1274,7 +1278,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions (delivered_by);`,
+			`CREATE INDEX ON transactions (completed_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

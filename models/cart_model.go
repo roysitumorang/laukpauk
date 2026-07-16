@@ -16,13 +16,14 @@ var (
 
 type (
 	Cart struct {
-		RowNo     int64       `json:"-" form:"-"`
-		ID        uuid.UUID   `json:"id" form:"-"`
-		BuyerID   uuid.UUID   `json:"buyer_id" form:"-"`
-		Quantity  int64       `json:"quantity" form:"-"`
-		CreatedAt time.Time   `json:"-" form:"-"`
-		UpdatedAt time.Time   `json:"-" form:"-"`
-		Items     []*CartItem `json:"items" form:"-"`
+		RowNo          int64       `json:"-" form:"-"`
+		ID             uuid.UUID   `json:"id" form:"-"`
+		BuyerID        *uuid.UUID  `json:"buyer_id" form:"-"`
+		DeletedBuyerID *uuid.UUID  `json:"-" form:"-"`
+		Quantity       int64       `json:"quantity" form:"-"`
+		CreatedAt      time.Time   `json:"-" form:"-"`
+		UpdatedAt      time.Time   `json:"-" form:"-"`
+		Items          []*CartItem `json:"items" form:"-"`
 	}
 
 	CartFilter struct {

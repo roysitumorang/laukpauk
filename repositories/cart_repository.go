@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
@@ -29,11 +30,11 @@ type (
 			tx pgx.Tx,
 			request *models.Cart,
 		) (*models.Cart, error)
-		DeleteCart(
+		UpdateCart(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.CartFilter,
-		) (int64, error)
+			request *models.Cart,
+		) (*models.Cart, error)
 	}
 
 	cartRepository struct {
@@ -76,7 +77,7 @@ func (q *cartRepository) FindCarts(
 		"COUNT(1)",
 		`id
 		, buyer_id
-		, quantity
+		, deleted_buyer_id
 		, created_at
 		, updated_at`,
 	)
@@ -130,7 +131,7 @@ func (q *cartRepository) FindCarts(
 		if err = rows.Scan(
 			&cart.ID,
 			&cart.BuyerID,
-			&cart.Quantity,
+			&cart.DeletedBuyerID,
 			&cart.CreatedAt,
 			&cart.UpdatedAt,
 		); err != nil {
@@ -157,7 +158,7 @@ func (q *cartRepository) FindCart(
 		`SELECT
 			id
 			, buyer_id
-			, quantity
+			, deleted_buyer_id
 			, created_at
 			, updated_at
 		FROM carts %s`,
@@ -168,7 +169,7 @@ func (q *cartRepository) FindCart(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.BuyerID,
-		&response.Quantity,
+		&response.DeletedBuyerID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
@@ -193,26 +194,23 @@ func (q *cartRepository) SaveCart(
 		ctx,
 		`INSERT INTO carts (
 			buyer_id
-			, quantity
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4)
+		) VALUES ($1, $2, $3)
 		ON CONFLICT (buyer_id) DO UPDATE SET
-			quantity = $2
-			, updated_at = $4
+			buyer_id = $1
 		RETURNING id
 			, buyer_id
-			, quantity
+			, deleted_buyer_id
 			, created_at
 			, updated_at`,
 		request.BuyerID,
-		request.Quantity,
 		request.CreatedAt,
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
 		&response.BuyerID,
-		&response.Quantity,
+		&response.DeletedBuyerID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	); err != nil {
@@ -222,25 +220,53 @@ func (q *cartRepository) SaveCart(
 	return &response, nil
 }
 
-func (q *cartRepository) DeleteCart(
+func (q *cartRepository) UpdateCart(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.CartFilter,
-) (int64, error) {
-	ctxt := "CartRepository-DeleteCart"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
-	if len(params) == 0 {
-		return 0, nil
+	request *models.Cart,
+) (*models.Cart, error) {
+	ctxt := "CartRepository-UpdateCart"
+	var (
+		response models.Cart
+		buyerID  uuid.UUID
+	)
+	if request.BuyerID != nil {
+		buyerID = *request.BuyerID
+	} else if request.DeletedBuyerID != nil {
+		buyerID = *request.DeletedBuyerID
 	}
-	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "DELETE FROM carts %s", condition)
-	result, err := tx.Exec(ctx, sb.String(), params...)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return 0, err
+	if err := tx.QueryRow(
+		ctx,
+		`UPDATE carts SET
+			buyer_id = $1
+			, deleted_buyer_id = $2
+			, updated_at = $3
+		WHERE id = $4 AND buyer_id = $5
+		RETURNING id
+			, buyer_id
+			, deleted_buyer_id
+			, created_at
+			, updated_at`,
+		request.BuyerID,
+		request.DeletedBuyerID,
+		request.UpdatedAt,
+		request.ID,
+		buyerID,
+	).Scan(
+		&response.ID,
+		&response.BuyerID,
+		&response.DeletedBuyerID,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = models.ErrCartNotFound
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
+		return nil, err
 	}
-	return result.RowsAffected(), nil
+	return &response, nil
 }
 
 func (q *cartRepository) buildCondition(request *models.CartFilter, sb *strings.Builder) (condition string, params []any) {
