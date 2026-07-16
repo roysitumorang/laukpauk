@@ -67,7 +67,9 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	if response == nil {
-		response = &models.Cart{}
+		response = &models.Cart{
+			BuyerID: currentBuyer.ID,
+		}
 		return helper.NewResponse(fiber.StatusOK).
 			SetData(response).
 			WriteResponse(c)
