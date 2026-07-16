@@ -82,9 +82,6 @@
 										<td class="border-top-0 text-left">Status Transaksi</td>
 										<td class="border-top-0 text-left">
 											{{ transaction.TransactionStatus.String() }}
-											<p class="text-sm text-muted mb-0">
-												<span class="text-sm">pada {{ transaction.UpdatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}</span>
-											</p>
 										</td>
 									</tr>
 									<tr class="text-sm">
@@ -96,7 +93,7 @@
 									<tr class="text-sm">
 									<td class="border-top-0 text-left">Total Belanja</td>
 										<td class="border-top-0 text-left">
-											<b class="text-success">Rp. {{ transaction.Subtotal | Comma }}</b>
+											<b class="text-success">Rp. {{ transaction.ShoppingCost | Comma }}</b>
 										</td>
 									</tr>
 									<tr class="text-sm">
@@ -119,7 +116,7 @@
 										<td class="border-top-0 text-left">Potongan Point</td>
 										<td class="border-top-0 text-left">
 											<p class="text-sm mb-0">
-												Rp. {{ transaction.PointDiscount | Comma }}
+												Rp. {{ transaction.RewardPointsDiscount | Comma }}
 											</p>
 										</td>
 									</tr>
@@ -135,7 +132,7 @@
 										<td class="border-top-0 text-left">GRAND TOTAL (Sesudah Pemeriksaan)</td>
 										<td class="border-top-0 text-left">
 											<p class="text-sm mb-0 text-bold text-success">
-												Rp. {{ transaction.RevisedPaymentAmount | Comma }}
+												Rp. {{ if transaction.RevisedPaymentAmount }}{{ transaction.RevisedPaymentAmount | Comma }}{{ else }}0{{ end }}
 											</p>
 										</td>
 									</tr>
@@ -182,13 +179,13 @@
 									<td class="vam text-left">
 										<div class="row">
 											<div class="col-lg-4 text-center">
-												<img src="{{ baseURL }}/images/product/compress/{{ item.ProductPhoto }}"
+												<img src="{{ baseURL }}/assets/img/no-image.png"
 													alt="{{ item.ProductName }}" class="img-circle"
 													style="width:50px; height:50px;"
 													onerror="this.src='{{ baseURL }}/assets/img/no-image.png'" />
 											</div>
 											<div class="col-lg-8">
-												<h6 class="text-primary mb-1">"{{ item.ProductName }}</h6>
+												<h6 class="text-primary mb-1">{{ item.ProductName }}</h6>
 											</div>
 										</div>
 									</td>

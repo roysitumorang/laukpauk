@@ -128,7 +128,7 @@
 										<span class="badge badge-primary">{{ row.TransactionStatus.String() }}</span>
 									</td>
 									<td class="vam text-right">
-										<b class="text-success">Rp. {{ row.RevisedPaymentAmount | Comma }}</b>
+										<b class="text-success">Rp. {{ if row.RevisedPaymentAmount }}{{ row.RevisedPaymentAmount | Comma }}{{ else }}0{{ end }}</b>
 									</td>
 									<td class="vam text-right">
 										<b class="text-success">Rp. {{ row.ShoppingCost | Comma }}</b>
