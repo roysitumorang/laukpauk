@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -20,6 +21,11 @@ type (
 			ctx context.Context,
 			request *models.BuyerFilter,
 		) (*models.Buyer, error)
+		UpdateBuyer(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.Buyer,
+		) (*models.Buyer, error)
 	}
 
 	buyerService struct {
@@ -30,9 +36,9 @@ type (
 func NewBuyerService(
 	buyerRepository repositories.BuyerRepository,
 ) BuyerService {
-	return new(buyerService{
+	return &buyerService{
 		buyerRepository: buyerRepository,
-	})
+	}
 }
 
 func (q *buyerService) FindBuyers(
@@ -73,6 +79,19 @@ func (q *buyerService) FindBuyer(
 	response, err := q.buyerRepository.FindBuyer(ctx, request)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+	}
+	return response, err
+}
+
+func (q *buyerService) UpdateBuyer(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.Buyer,
+) (*models.Buyer, error) {
+	ctxt := "BuyerService-UpdateBuyer"
+	response, err := q.buyerRepository.UpdateBuyer(ctx, tx, request)
+	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
 	}
 	return response, err
 }

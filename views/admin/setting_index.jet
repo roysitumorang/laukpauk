@@ -120,14 +120,7 @@
 								{{ range _, row := rows }}
 								<tr class="text-sm tr-parent">
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
-									<td class="text-left">
-										{{ row.Key }}
-										<p class="mb-0">
-											<span class="badge badge-{{ if row.Active }}success{{ else }}dark{{ end }}">
-												Pengaturan{{ if !row.Active }} Non{{ end }} Aktif
-											</span>
-										</p>
-									</td>
+									<td class="text-left">{{ row.Name }}</td>
 									<td class="text-left">{{ row.Value }}</td>
 									<td class="text-left">{{ row.Description }}</td>
 									<td class="vam text-center">
@@ -136,16 +129,6 @@
 											data-toggle="tooltip" data-placement="left"
 											title="Edit Data Pengaturan"></span>
 										</a>
-										<form method="POST" action="{{ baseURL }}/admin/settings/{{ row.ID }}/switch" id="toggle-{{ row.ID }}">
-											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-												<span class="fa fa-eye text-{{ if row.Active }}success{{ else }}dark{{ end }} cp ml-2"
-												data-toggle="tooltip"
-												data-placement="top"
-												title="Switch Data Pengaturan"
-												onclick="confirm('Are you sure to switch this item visibility ?')&&document.getElementById('toggle-{{ row.ID }}').submit()">
-											</span>
-										</form>
-
 									</td>
 								</tr>
 								{{ end }}

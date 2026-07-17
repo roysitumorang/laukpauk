@@ -33,7 +33,7 @@
 					<div class="row">
 						<div class="col-lg-4">
 							<h5>Edit Data Pengaturan</h5>
-							<p class="mb-0 text-muted text-sm">{{ setting.Key }}</p>
+							<p class="mb-0 text-muted text-sm">{{ setting.Name }}</p>
 						</div>
 						<div class="col-lg-8 text-right"></div>
 					</div>
@@ -44,9 +44,7 @@
 						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 					</div>
 					{{ end }}
-					<form method="POST" action="{{ baseURL }}/admin/settings/{{ setting.ID }}">
-						{{ include "_setting_form" }}
-					</form>
+					{{ include "_setting_form" }}
 				</div>
 			</div>
 		</div>

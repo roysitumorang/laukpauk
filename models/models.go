@@ -70,6 +70,10 @@ var (
 		Field:     SortingFieldID,
 		Direction: SortingDirectionDesc,
 	}
+	DefaultAscendingSortBy = Sorting{
+		Field:     SortingFieldID,
+		Direction: SortingDirectionAsc,
+	}
 	DiscountTypes    = []DiscountType{DiscountTypeFixedAmount, DiscountTypePercentage}
 	MapDiscountTypes = map[DiscountType]struct{}{
 		DiscountTypeFixedAmount: {},

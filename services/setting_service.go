@@ -41,9 +41,9 @@ type (
 func NewSettingService(
 	settingRepository repositories.SettingRepository,
 ) SettingService {
-	return new(settingService{
+	return &settingService{
 		settingRepository: settingRepository,
-	})
+	}
 }
 
 func (q *settingService) FindSettings(
@@ -97,10 +97,10 @@ func (q *settingService) CreateSetting(
 	response, err := q.settingRepository.CreateSetting(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateSetting")
-		return nil, err
 	}
-	return response, nil
+	return response, err
 }
+
 func (q *settingService) UpdateSetting(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -110,7 +110,6 @@ func (q *settingService) UpdateSetting(
 	response, err := q.settingRepository.UpdateSetting(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSetting")
-		return nil, err
 	}
-	return response, nil
+	return response, err
 }

@@ -2,10 +2,14 @@ package migration
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/models"
 )
 
 func init() {
@@ -686,13 +690,12 @@ func init() {
 			ctx,
 			`CREATE TABLE settings (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, active BOOLEAN NOT NULL
-				, key character varying NOT NULL COLLATE "natural_sort"
+				, name character varying NOT NULL COLLATE "natural_sort"
 				, value character varying NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -701,14 +704,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON settings (active);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE UNIQUE INDEX settings_unique_key_idx ON settings (LOWER(key));`,
+			`CREATE UNIQUE INDEX settings_unique_name_idx ON settings (LOWER(name));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -724,6 +720,33 @@ func init() {
 			ctx,
 			`CREATE INDEX ON settings (updated_by);`,
 		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		var (
+			sb     strings.Builder
+			params []any
+		)
+		now := time.Now()
+		params = append(params, now, "")
+		_, _ = sb.WriteString(
+			`INSERT INTO settings (
+				name
+				, value
+				, description
+				, created_at
+				, updated_at
+			) VALUES`,
+		)
+		var n int
+		for i := range models.SettingNames {
+			params = append(params, models.SettingNames[i])
+			if n = len(params); n > 3 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sb, " ($%d, $2, $2, $1, $1)", n)
+		}
+		if _, err = tx.Exec(ctx, sb.String(), params...); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
@@ -1126,7 +1149,7 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// distances
+		// delivery_routes
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE delivery_routes (
@@ -1135,7 +1158,8 @@ func init() {
 				, origin_latitude character varying NOT NULL
 				, destination_longitude character varying NOT NULL
 				, destination_latitude character varying NOT NULL
-				, distance_km integer NOT NULL
+				, distance_meters bigint NOT NULL
+				, distance_km bigint NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, UNIQUE (
@@ -1177,6 +1201,21 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		if _, err = tx.Exec(
+			ctx,
+			`ALTER TABLE buyers
+				ADD COLUMN delivery_route_id UUID REFERENCES delivery_routes (id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON buyers (delivery_route_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// transactions
 		if _, err = tx.Exec(
 			ctx,
@@ -1213,7 +1252,7 @@ func init() {
 				, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id)
 				, delivery_latitude character varying NOT NULL
 				, delivery_longitude character varying NOT NULL
-				, delivery_distance_km integer NOT NULL
+				, delivery_distance_km bigint NOT NULL
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
 				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)

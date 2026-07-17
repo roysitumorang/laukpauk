@@ -335,3 +335,11 @@ func RandomInteger(bound int64) int64 {
 	}
 	return n.Int64()
 }
+
+func ValidLatitude(latitude float64) bool {
+	return latitude >= -90 && latitude <= 90
+}
+
+func ValidLongitude(longitude float64) bool {
+	return longitude >= -180 && longitude <= 180
+}

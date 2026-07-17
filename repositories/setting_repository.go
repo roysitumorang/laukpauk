@@ -48,10 +48,10 @@ func NewSettingRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) SettingRepository {
-	return new(settingRepository{
+	return &settingRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *settingRepository) FindSettings(
@@ -77,8 +77,7 @@ func (q *settingRepository) FindSettings(
 		query,
 		"COUNT(1)",
 		`id
-		, active
-		, key
+		, name
 		, value
 		, description
 		, created_by
@@ -135,8 +134,7 @@ func (q *settingRepository) FindSettings(
 		var setting models.Setting
 		if err = rows.Scan(
 			&setting.ID,
-			&setting.Active,
-			&setting.Key,
+			&setting.Name,
 			&setting.Value,
 			&setting.Description,
 			&setting.CreatedBy,
@@ -166,8 +164,7 @@ func (q *settingRepository) FindSetting(
 		&sb,
 		`SELECT
 			id
-			, active
-			, key
+			, name
 			, value
 			, description
 			, created_by
@@ -177,12 +174,10 @@ func (q *settingRepository) FindSetting(
 		FROM settings %s`,
 		condition,
 	)
-	query := sb.String()
 	var response models.Setting
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.Active,
-		&response.Key,
+		&response.Name,
 		&response.Value,
 		&response.Description,
 		&response.CreatedBy,
@@ -197,7 +192,7 @@ func (q *settingRepository) FindSetting(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *settingRepository) CreateSetting(
@@ -210,26 +205,23 @@ func (q *settingRepository) CreateSetting(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO settings (
-			active
-			, key
+			name
 			, value
 			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
-			, active
-			, key
+			, name
 			, value
 			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at`,
-		request.Active,
-		request.Key,
+		request.Name,
 		request.Value,
 		request.Description,
 		request.CreatedBy,
@@ -238,8 +230,7 @@ func (q *settingRepository) CreateSetting(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.Active,
-		&response.Key,
+		&response.Name,
 		&response.Value,
 		&response.Description,
 		&response.CreatedBy,
@@ -247,19 +238,16 @@ func (q *settingRepository) CreateSetting(
 		&response.UpdatedBy,
 		&response.UpdatedAt,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "settings_unique_key_idx" {
-			err = models.ErrUniqueSettingKeyViolation
+			pgxErr.ConstraintName == "settings_unique_name_idx" {
+			err = models.ErrUniqueSettingNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *settingRepository) UpdateSetting(
@@ -272,24 +260,19 @@ func (q *settingRepository) UpdateSetting(
 	if err := tx.QueryRow(
 		ctx,
 		`UPDATE settings SET
-			active = $1
-			, key = $2
-			, value = $3
-			, description = $4
-			, updated_by = $5
-			, updated_at = $6
-		WHERE id = $7
+			value = $1
+			, description = $2
+			, updated_by = $3
+			, updated_at = $4
+		WHERE id = $5
 		RETURNING id
-			, active
-			, key
+			, name
 			, value
 			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at`,
-		request.Active,
-		request.Key,
 		request.Value,
 		request.Description,
 		request.UpdatedBy,
@@ -297,8 +280,7 @@ func (q *settingRepository) UpdateSetting(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.Active,
-		&response.Key,
+		&response.Name,
 		&response.Value,
 		&response.Description,
 		&response.CreatedBy,
@@ -306,19 +288,16 @@ func (q *settingRepository) UpdateSetting(
 		&response.UpdatedBy,
 		&response.UpdatedAt,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "settings_unique_key_idx" {
-			err = models.ErrUniqueSettingKeyViolation
+			pgxErr.ConstraintName == "settings_unique_name_idx" {
+			err = models.ErrUniqueSettingNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *settingRepository) buildCondition(request *models.SettingFilter, sb *strings.Builder) (condition string, params []any) {
@@ -349,18 +328,11 @@ func (q *settingRepository) buildCondition(request *models.SettingFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if request.Active != nil {
-		if *request.Active {
-			conds = append(conds, "active")
-		} else {
-			conds = append(conds, "NOT active")
-		}
-	}
-	if len(request.Keys) > 0 {
+	if len(request.Names) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(key) IN (")
-		for i, key := range request.Keys {
-			params = append(params, strings.ToLower(key))
+		_, _ = sb.WriteString("LOWER(name) IN (")
+		for i, name := range request.Names {
+			params = append(params, strings.ToLower(name))
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -374,7 +346,7 @@ func (q *settingRepository) buildCondition(request *models.SettingFilter, sb *st
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(key) LIKE $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

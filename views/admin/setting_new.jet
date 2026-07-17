@@ -43,9 +43,7 @@
 						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 					</div>
 					{{ end }}
-					<form method="POST" action="{{ baseURL }}/admin/settings">
-						{{ include "_setting_form" }}
-					</form>
+					{{ include "_setting_form" }}
 				</div>
 			</div>
 		</div>

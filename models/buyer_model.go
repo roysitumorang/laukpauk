@@ -16,12 +16,13 @@ var (
 type (
 	Buyer struct {
 		user
-		ReferralCode   string     `json:"referral_code" form:"-"`
-		Address        string     `json:"address" form:"-"`
-		ReferrerID     *uuid.UUID `json:"referrer_id" form:"-"`
-		ReferralPoints int64      `json:"referral_points" form:"-"`
-		RewardPoints   int64      `json:"reward_points" form:"-"`
-		Wallet         int64      `json:"wallet" form:"-"`
+		ReferralCode    string     `json:"referral_code" form:"-"`
+		Address         string     `json:"address" form:"-"`
+		ReferrerID      *uuid.UUID `json:"referrer_id" form:"-"`
+		ReferralPoints  int64      `json:"referral_points" form:"-"`
+		RewardPoints    int64      `json:"reward_points" form:"-"`
+		Wallet          int64      `json:"wallet" form:"-"`
+		DeliveryRouteID *uuid.UUID `json:"delivery_route_id" form:"-"`
 	}
 
 	BuyerFilter struct {

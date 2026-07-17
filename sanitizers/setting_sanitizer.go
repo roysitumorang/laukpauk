@@ -56,7 +56,7 @@ func FindSettings(ctx context.Context, c fiber.Ctx) (*models.SettingFilter, erro
 		}
 		response.WithSortings(sortings...)
 	} else {
-		response.WithSortings(models.DefaultSortBy)
+		response.WithSortings(models.DefaultAscendingSortBy)
 	}
 	limit, _ := utils.ParseInt(c.Query("limit"))
 	if _, ok := models.MapLimits[limit]; !ok {
