@@ -72,6 +72,7 @@ type (
 		PaymentDeadline         time.Time          `json:"-" form:"-"`
 		DeliveryCost            int64              `json:"-" form:"-"`
 		DiscountedDeliveryCost  int64              `json:"-" form:"-"`
+		DeliveryRouteID         uuid.UUID          `json:"delivery_route_id" form:"-"`
 		DeliveryLatitude        decimal.Decimal    `json:"delivery_latitude" form:"delivery_latitude"`
 		DeliveryLongitude       decimal.Decimal    `json:"delivery_longitude" form:"delivery_longitude"`
 		DeliveryDistanceKM      int64              `json:"delivery_distance_km" form:"-"`
@@ -241,6 +242,9 @@ func (q *Transaction) Validate() error {
 		if *q.VoucherCode = strings.TrimSpace(*q.VoucherCode); *q.VoucherCode == "" {
 			q.VoucherCode = nil
 		}
+	}
+	if q.DeliveryRouteID.Compare(uuid.Nil()) == 0 {
+		return errors.New("delivery_route_id: is required")
 	}
 	if q.DeliveryAddress = strings.TrimSpace(q.DeliveryAddress); q.DeliveryAddress == "" {
 		return errors.New("delivery_address: is required")

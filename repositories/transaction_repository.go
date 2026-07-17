@@ -106,6 +106,7 @@ func (q *transactionRepository) FindTransactions(
 		, payment_deadline
 		, delivery_cost
 		, discounted_delivery_cost
+		, delivery_route_id
 		, delivery_longitude
 		, delivery_latitude
 		, delivery_distance_km
@@ -231,6 +232,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.WalletAmount,
 			&transaction.WalletDiscount,
 			&transaction.DiscountedShoppingCost,
+			&transaction.DeliveryRouteID,
 			&transaction.PaymentAmount,
 			&transaction.PaymentDeadline,
 			&transaction.DeliveryCost,
@@ -352,6 +354,7 @@ func (q *transactionRepository) FindTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
+			, delivery_route_id
 			, payment_amount
 			, payment_deadline
 			, delivery_cost
@@ -414,6 +417,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
+		&response.DeliveryRouteID,
 		&response.PaymentAmount,
 		&response.PaymentDeadline,
 		&response.DeliveryCost,
@@ -569,6 +573,7 @@ func (q *transactionRepository) CreateTransaction(
 			, payment_deadline
 			, delivery_cost
 			, discounted_delivery_cost
+			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
 			, delivery_distance_km
@@ -584,7 +589,7 @@ func (q *transactionRepository) CreateTransaction(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32, $33, $34, $35, $36, $37, $38, $39
+			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
 		)
 		RETURNING id
 			, parent_id
@@ -615,6 +620,7 @@ func (q *transactionRepository) CreateTransaction(
 			, payment_deadline
 			, delivery_cost
 			, discounted_delivery_cost
+			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
 			, delivery_distance_km
@@ -670,6 +676,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.PaymentDeadline,
 		request.DeliveryCost,
 		request.DiscountedDeliveryCost,
+		request.DeliveryRouteID,
 		request.DeliveryLongitude,
 		request.DeliveryLatitude,
 		request.DeliveryDistanceKM,
@@ -711,6 +718,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.PaymentDeadline,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
+		&response.DeliveryRouteID,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
 		&response.DeliveryDistanceKM,
@@ -920,6 +928,7 @@ func (q *transactionRepository) UpdateTransaction(
 			, payment_deadline
 			, delivery_cost
 			, discounted_delivery_cost
+			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
 			, delivery_distance_km
@@ -997,6 +1006,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.PaymentDeadline,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
+		&response.DeliveryRouteID,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
 		&response.DeliveryDistanceKM,

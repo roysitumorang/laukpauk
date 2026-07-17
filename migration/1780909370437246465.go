@@ -1112,7 +1112,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON cart_items (cart_id);`,
@@ -1123,6 +1122,57 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON cart_items (product_variant_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// distances
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE delivery_routes (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, origin_longitude character varying NOT NULL
+				, origin_latitude character varying NOT NULL
+				, destination_longitude character varying NOT NULL
+				, destination_latitude character varying NOT NULL
+				, distance_km integer NOT NULL
+				, created_at timestamp with time zone NOT NULL
+				, updated_at timestamp with time zone NOT NULL
+				, UNIQUE (
+					origin_longitude
+					, origin_latitude
+					, destination_longitude
+					, destination_latitude
+				)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_routes (origin_longitude);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_routes (origin_latitude);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_routes (destination_longitude);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_routes (destination_latitude);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1160,6 +1210,7 @@ func init() {
 				, payment_deadline timestamp with time zone NOT NULL
 				, delivery_cost bigint NOT NULL
 				, discounted_delivery_cost bigint NOT NULL
+				, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id)
 				, delivery_latitude character varying NOT NULL
 				, delivery_longitude character varying NOT NULL
 				, delivery_distance_km integer NOT NULL
@@ -1237,6 +1288,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (voucher_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transactions (delivery_route_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
