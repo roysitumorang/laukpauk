@@ -341,6 +341,19 @@ func (q *settingRepository) buildCondition(request *models.SettingFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.SettingNames) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("LOWER(name) IN (")
+		for i, settingName := range request.SettingNames {
+			params = append(params, strings.ToLower(settingName.String()))
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))

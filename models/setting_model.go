@@ -87,7 +87,8 @@ type (
 	SettingFilter struct {
 		SettingIDs,
 		ExcludedSettingIDs []uuid.UUID
-		Names []string
+		Names        []string
+		SettingNames []SettingName
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -117,6 +118,11 @@ func (q *SettingFilter) WithExcludedSettingIDs(excludedSettingIDs ...uuid.UUID) 
 
 func (q *SettingFilter) WithNames(names ...string) *SettingFilter {
 	q.Names = names
+	return q
+}
+
+func (q *SettingFilter) WithSettingNames(settingNames ...SettingName) *SettingFilter {
+	q.SettingNames = settingNames
 	return q
 }
 
