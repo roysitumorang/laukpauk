@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/consumers"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
@@ -25,6 +26,7 @@ type (
 		deliveryRouteService services.DeliveryRouteService
 		settingService       services.SettingService
 		jsonWebTokenService  services.JsonWebTokenService
+		routesApiConsumer    *consumers.RoutesApiConsumer
 	}
 )
 
@@ -34,6 +36,7 @@ func NewDeliveryRouteController(
 	deliveryRouteService services.DeliveryRouteService,
 	settingService services.SettingService,
 	jsonWebTokenService services.JsonWebTokenService,
+	routesApiConsumer *consumers.RoutesApiConsumer,
 ) *deliveryRouteController {
 	return &deliveryRouteController{
 		adminService:         adminService,
@@ -41,6 +44,7 @@ func NewDeliveryRouteController(
 		deliveryRouteService: deliveryRouteService,
 		settingService:       settingService,
 		jsonWebTokenService:  jsonWebTokenService,
+		routesApiConsumer:    routesApiConsumer,
 	}
 }
 
@@ -106,6 +110,37 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			}
 		}
 	}
+	response, err := q.deliveryRouteService.FindDeliveryRoute(
+		ctx,
+		models.NewDeliveryRouteFilter().
+			WithOriginLongitude(&originLongitude).
+			WithOriginLatitude(&originLatitude).
+			WithDestinationLongitude(&request.DestinationLongitude).
+			WithDestinationLatitude(&request.DestinationLatitude),
+	)
+	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryRoute")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if response != nil {
+		return helper.NewResponse(fiber.StatusOK).
+			SetData(response).
+			WriteResponse(c)
+	}
+	if request.DistanceMeters, err = q.routesApiConsumer.ComputeDistanceMeters(
+		ctx,
+		originLongitude.String(),
+		originLatitude.String(),
+		request.DestinationLongitude.String(),
+		request.DestinationLatitude.String(),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrComputeDistanceMeters")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	distanceMeters, err := decimal.New(request.DistanceMeters, 0)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
@@ -141,8 +176,7 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	response, err := q.deliveryRouteService.SaveDeliveryRoute(ctx, tx, request)
-	if err != nil {
+	if response, err = q.deliveryRouteService.SaveDeliveryRoute(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveDeliveryRoute")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).

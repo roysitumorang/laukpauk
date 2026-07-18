@@ -29,6 +29,7 @@ type (
 		KafkaConsumer             *consumers.KafkaConsumer
 		FcmConsumer               *consumers.FcmConsumer
 		ZenzivaConsumer           *consumers.ZenzivaConsumer
+		RoutesApiConsumer         *consumers.RoutesApiConsumer
 		Storage                   fiber.Storage
 		AdminService              services.AdminService
 		BuyerService              services.BuyerService
@@ -109,6 +110,16 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		zenzivaMessageMaxLength,
 		zenzivaTimeoutDuration,
 	)
+	routesApiTimeoutDuration, err := time.ParseDuration(os.Getenv("ROUTES_API_TIMEOUT_DURATION"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
+		return nil, err
+	}
+	routesApiConsumer := consumers.NewRoutesApiConsumer(
+		os.Getenv("ROUTES_API_ENDPOINT"),
+		os.Getenv("GOOGLE_API_KEY"),
+		routesApiTimeoutDuration,
+	)
 	storage := valkey.New(valkey.Config{
 		URL: os.Getenv("REDIS_URL"),
 	})
@@ -165,6 +176,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		KafkaConsumer:             kafkaConsumer,
 		FcmConsumer:               fcmConsumer,
 		ZenzivaConsumer:           zenzivaConsumer,
+		RoutesApiConsumer:         routesApiConsumer,
 		Storage:                   storage,
 		AdminService:              adminService,
 		BuyerService:              buyerService,

@@ -62,13 +62,13 @@ func NewFcmConsumer(
 ) *FcmConsumer {
 	var sb strings.Builder
 	_, _ = fmt.Fprintf(&sb, "https://fcm.googleapis.com/v1/projects/%s/messages:send", projectID)
-	return new(FcmConsumer{
+	return &FcmConsumer{
 		baseURL: sb.String(),
-		client: new(fasthttp.Client{
+		client: &fasthttp.Client{
 			ReadTimeout:  timeout,
 			WriteTimeout: timeout,
-		}),
-	})
+		},
+	}
 }
 
 func (q *FcmConsumer) Send(ctx context.Context, token, title, body, image string, data map[string]string) (*string, error) {
@@ -113,7 +113,7 @@ func (q *FcmConsumer) Send(ctx context.Context, token, title, body, image string
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
 	}
-	return new(response.Name), nil
+	return &response.Name, nil
 }
 
 func (q *FcmConsumer) CreateOauth2Token(ctx context.Context) (*FcmTokenResponse, error) {
@@ -182,5 +182,5 @@ func (q *FcmConsumer) CreateOauth2Token(ctx context.Context) (*FcmTokenResponse,
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
 	}
-	return new(tokenResp), nil
+	return &tokenResp, nil
 }
