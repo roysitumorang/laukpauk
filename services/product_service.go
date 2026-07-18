@@ -36,6 +36,10 @@ type (
 			tx pgx.Tx,
 			request *models.Product,
 		) (*models.Product, error)
+		IncreaseProductHits(
+			ctx context.Context,
+			request *models.ProductFilter,
+		) (*models.Product, error)
 	}
 
 	productService struct {
@@ -48,10 +52,10 @@ func NewProductService(
 	productRepository repositories.ProductRepository,
 	productCategoryRepository repositories.ProductCategoryRepository,
 ) ProductService {
-	return new(productService{
+	return &productService{
 		productRepository:         productRepository,
 		productCategoryRepository: productCategoryRepository,
-	})
+	}
 }
 
 func (q *productService) FindProducts(
@@ -134,6 +138,18 @@ func (q *productService) SaveProduct(
 		}
 	} else if response, err = q.productRepository.UpdateProduct(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+	}
+	return response, err
+}
+
+func (q *productService) IncreaseProductHits(
+	ctx context.Context,
+	request *models.ProductFilter,
+) (*models.Product, error) {
+	ctxt := "ProductService-IncreaseProductHits"
+	response, err := q.productRepository.IncreaseProductHits(ctx, request)
+	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrIncreaseProductHits")
 	}
 	return response, err
 }

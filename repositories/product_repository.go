@@ -36,6 +36,10 @@ type (
 			tx pgx.Tx,
 			request *models.Product,
 		) (*models.Product, error)
+		IncreaseProductHits(
+			ctx context.Context,
+			request *models.ProductFilter,
+		) (*models.Product, error)
 	}
 
 	productRepository struct {
@@ -349,13 +353,12 @@ func (q *productRepository) UpdateProduct(
 				, description = $6
 				, ready_stock = $7
 				, pinned = $8
-				, hits = $9
-				, updated_by = $10
-				, updated_at = $11
-				, deleted_by = $12
-				, deleted_at = $13
-				, deletion_reason = $14
-			WHERE id = $15
+				, updated_by = $9
+				, updated_at = $10
+				, deleted_by = $11
+				, deleted_at = $12
+				, deletion_reason = $13
+			WHERE id = $14
 			RETURNING *
 		)
 		SELECT
@@ -387,7 +390,6 @@ func (q *productRepository) UpdateProduct(
 		request.Description,
 		request.ReadyStock,
 		request.Pinned,
-		request.Hits,
 		request.UpdatedBy,
 		request.UpdatedAt,
 		request.DeletedBy,
@@ -533,4 +535,77 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 		condition = sb.String()
 	}
 	return
+}
+
+func (q *productRepository) IncreaseProductHits(
+	ctx context.Context,
+	request *models.ProductFilter,
+) (*models.Product, error) {
+	ctxt := "ProductRepository-IncreaseProductHits"
+	var sb strings.Builder
+	condition, params := q.buildCondition(request, &sb)
+	if len(params) == 0 {
+		return nil, models.ErrProductNotFound
+	}
+	sb.Reset()
+	_, _ = fmt.Fprintf(
+		&sb,
+		`WITH p AS (
+			UPDATE products p SET
+				hits = hits + 1
+			%s
+			RETURNING *
+		)
+		SELECT
+			p.id
+			, p.record_status
+			, p.product_category_id
+			, c.name
+			, p.product_type
+			, p.name
+			, p.photo
+			, p.description
+			, p.ready_stock
+			, p.pinned
+			, p.hits
+			, p.created_by
+			, p.created_at
+			, p.updated_by
+			, p.updated_at
+			, p.deleted_by
+			, p.deleted_at
+			, p.deletion_reason
+		FROM p
+		JOIN product_categories c ON p.product_category_id = c.id`,
+		condition,
+	)
+	var response models.Product
+	if err := q.dbWrite.QueryRow(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.ProductCategoryID,
+		&response.ProductCategoryName,
+		&response.ProductType,
+		&response.Name,
+		&response.Photo,
+		&response.Description,
+		&response.ReadyStock,
+		&response.Pinned,
+		&response.Hits,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = models.ErrProductNotFound
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
+		return nil, err
+	}
+	return (&response).Populate(), nil
 }

@@ -917,14 +917,14 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrProductNotFound.Error()).
 			WriteResponse(c)
 	}
-	response, err := q.productService.FindProduct(
+	response, err := q.productService.IncreaseProductHits(
 		c,
 		models.NewProductFilter().
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(productID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrIncreaseProductHits")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -942,35 +942,6 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	request := new(*response)
-	request.Hits++
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	if response, err = q.productService.UpdateProduct(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
