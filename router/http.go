@@ -253,7 +253,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewVoucherController(q.AdminService, q.VoucherService, q.BuyerService, q.JsonWebTokenService).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(q.AdminService, q.PointEarningCapService).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(q.AdminService, q.PointSpendingCapService).Mount(app.Group("/point_spending_caps"))
-	controllers.NewTransactionController(q.AdminService, q.BuyerService, q.TransactionService, q.CartService, q.CartItemService, q.VoucherService, q.PointService, q.ProductVariantService, q.JsonWebTokenService).Mount(app.Group("/transactions"))
+	controllers.NewTransactionController(q.AdminService, q.BuyerService, q.TransactionService, q.TransactionCounterService, q.CartService, q.CartItemService, q.VoucherService, q.PointService, q.ProductVariantService, q.JsonWebTokenService).Mount(app.Group("/transactions"))
 	controllers.NewFcmRegistrationController(q.BuyerService, q.FcmRegistrationService, q.JsonWebTokenService).Mount(app.Group("/fcm_registrations"))
 	controllers.NewCartController(q.BuyerService, q.ProductVariantService, q.CartService, q.CartItemService, q.JsonWebTokenService).Mount(app.Group("/cart"))
 	app.Use(func(c fiber.Ctx) error {

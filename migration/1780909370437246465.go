@@ -1424,6 +1424,20 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// transaction_counters
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE transaction_counters (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, transaction_window character varying NOT NULL UNIQUE
+				, hits bigint NOT NULL CHECK (hits >= 0)
+				, created_at timestamp with time zone NOT NULL
+				, updated_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// point_earning_caps
 		if _, err = tx.Exec(
 			ctx,

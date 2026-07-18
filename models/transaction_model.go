@@ -25,7 +25,7 @@ var (
 )
 
 const (
-	TransactionReferenceNumberFormat = "LP%s"
+	TransactionReferenceNumberFormat = "LP%s%03d%s"
 )
 
 const (

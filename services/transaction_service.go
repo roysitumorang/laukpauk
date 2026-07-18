@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -25,6 +26,7 @@ type (
 			ctx context.Context,
 			tx pgx.Tx,
 			request *models.Transaction,
+			sb *strings.Builder,
 		) (*models.Transaction, error)
 		UpdateTransaction(
 			ctx context.Context,
@@ -92,9 +94,10 @@ func (q *transactionService) CreateTransaction(
 	ctx context.Context,
 	tx pgx.Tx,
 	request *models.Transaction,
+	sb *strings.Builder,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionService-CreateTransaction"
-	response, err := q.transactionRepository.CreateTransaction(ctx, tx, request)
+	response, err := q.transactionRepository.CreateTransaction(ctx, tx, request, sb)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
 		return nil, err

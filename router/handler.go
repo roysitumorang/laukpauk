@@ -24,34 +24,35 @@ import (
 
 type (
 	Service struct {
-		DbWrite                 *pgxpool.Pool
-		Migration               *migration.Migration
-		KafkaConsumer           *consumers.KafkaConsumer
-		FcmConsumer             *consumers.FcmConsumer
-		ZenzivaConsumer         *consumers.ZenzivaConsumer
-		Storage                 fiber.Storage
-		AdminService            services.AdminService
-		BuyerService            services.BuyerService
-		ArticleService          services.ArticleService
-		BlogService             services.BlogService
-		BlockService            services.BlockService
-		MessageService          services.MessageService
-		ProductCategoryService  services.ProductCategoryService
-		ProductService          services.ProductService
-		ProductVariantService   services.ProductVariantService
-		SmsMessageService       services.SmsMessageService
-		SettingService          services.SettingService
-		DeliveryPlanService     services.DeliveryPlanService
-		NonDeliveryDayService   services.NonDeliveryDayService
-		PointService            services.PointService
-		VoucherService          services.VoucherService
-		PointEarningCapService  services.PointEarningCapService
-		PointSpendingCapService services.PointSpendingCapService
-		TransactionService      services.TransactionService
-		JsonWebTokenService     services.JsonWebTokenService
-		FcmRegistrationService  services.FcmRegistrationService
-		CartService             services.CartService
-		CartItemService         services.CartItemService
+		DbWrite                   *pgxpool.Pool
+		Migration                 *migration.Migration
+		KafkaConsumer             *consumers.KafkaConsumer
+		FcmConsumer               *consumers.FcmConsumer
+		ZenzivaConsumer           *consumers.ZenzivaConsumer
+		Storage                   fiber.Storage
+		AdminService              services.AdminService
+		BuyerService              services.BuyerService
+		ArticleService            services.ArticleService
+		BlogService               services.BlogService
+		BlockService              services.BlockService
+		MessageService            services.MessageService
+		ProductCategoryService    services.ProductCategoryService
+		ProductService            services.ProductService
+		ProductVariantService     services.ProductVariantService
+		SmsMessageService         services.SmsMessageService
+		SettingService            services.SettingService
+		DeliveryPlanService       services.DeliveryPlanService
+		NonDeliveryDayService     services.NonDeliveryDayService
+		PointService              services.PointService
+		VoucherService            services.VoucherService
+		PointEarningCapService    services.PointEarningCapService
+		PointSpendingCapService   services.PointSpendingCapService
+		TransactionService        services.TransactionService
+		JsonWebTokenService       services.JsonWebTokenService
+		FcmRegistrationService    services.FcmRegistrationService
+		CartService               services.CartService
+		CartItemService           services.CartItemService
+		TransactionCounterService services.TransactionCounterService
 	}
 )
 
@@ -134,6 +135,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	fcmRegistrationRepository := repositories.NewFcmRegistrationRepository(dbRead, dbWrite)
 	cartRepository := repositories.NewCartRepository(dbRead, dbWrite)
 	cartItemRepository := repositories.NewCartItemRepository(dbRead, dbWrite)
+	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -156,35 +158,37 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
 	cartService := services.NewCartService(cartRepository)
 	cartItemService := services.NewCartItemService(cartItemRepository)
+	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	return &Service{
-		DbWrite:                 dbWrite,
-		Migration:               migration,
-		KafkaConsumer:           kafkaConsumer,
-		FcmConsumer:             fcmConsumer,
-		ZenzivaConsumer:         zenzivaConsumer,
-		Storage:                 storage,
-		AdminService:            adminService,
-		BuyerService:            buyerService,
-		ArticleService:          articleService,
-		BlogService:             blogService,
-		BlockService:            blockService,
-		MessageService:          messageService,
-		ProductCategoryService:  productCategoryService,
-		ProductService:          productService,
-		ProductVariantService:   productVariantService,
-		SmsMessageService:       smsMessageService,
-		SettingService:          settingService,
-		DeliveryPlanService:     deliveryPlanService,
-		NonDeliveryDayService:   nonDeliveryDayService,
-		PointService:            pointService,
-		VoucherService:          voucherService,
-		PointEarningCapService:  pointEarningCapService,
-		PointSpendingCapService: pointSpendingCapService,
-		TransactionService:      transactionService,
-		JsonWebTokenService:     jsonWebTokenService,
-		FcmRegistrationService:  fcmRegistrationService,
-		CartService:             cartService,
-		CartItemService:         cartItemService,
+		DbWrite:                   dbWrite,
+		Migration:                 migration,
+		KafkaConsumer:             kafkaConsumer,
+		FcmConsumer:               fcmConsumer,
+		ZenzivaConsumer:           zenzivaConsumer,
+		Storage:                   storage,
+		AdminService:              adminService,
+		BuyerService:              buyerService,
+		ArticleService:            articleService,
+		BlogService:               blogService,
+		BlockService:              blockService,
+		MessageService:            messageService,
+		ProductCategoryService:    productCategoryService,
+		ProductService:            productService,
+		ProductVariantService:     productVariantService,
+		SmsMessageService:         smsMessageService,
+		SettingService:            settingService,
+		DeliveryPlanService:       deliveryPlanService,
+		NonDeliveryDayService:     nonDeliveryDayService,
+		PointService:              pointService,
+		VoucherService:            voucherService,
+		PointEarningCapService:    pointEarningCapService,
+		PointSpendingCapService:   pointSpendingCapService,
+		TransactionService:        transactionService,
+		JsonWebTokenService:       jsonWebTokenService,
+		FcmRegistrationService:    fcmRegistrationService,
+		CartService:               cartService,
+		CartItemService:           cartItemService,
+		TransactionCounterService: transactionCounterService,
 	}, nil
 }
 

@@ -31,6 +31,7 @@ type (
 			ctx context.Context,
 			tx pgx.Tx,
 			request *models.Transaction,
+			sb *strings.Builder,
 		) (*models.Transaction, error)
 		UpdateTransaction(
 			ctx context.Context,
@@ -515,32 +516,9 @@ func (q *transactionRepository) CreateTransaction(
 	ctx context.Context,
 	tx pgx.Tx,
 	request *models.Transaction,
+	sb *strings.Builder,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionRepository-CreateTransaction"
-	var (
-		sb    strings.Builder
-		count int
-	)
-	for {
-		sb.Reset()
-		_, _ = fmt.Fprintf(
-			&sb,
-			models.TransactionReferenceNumberFormat,
-			strings.ToUpper(helper.RandomString(12)),
-		)
-		request.ReferenceNumber = sb.String()
-		if err := tx.QueryRow(
-			ctx,
-			"SELECT COUNT(1) FROM transactions WHERE LOWER(reference_number) = $1",
-			strings.ToLower(request.ReferenceNumber),
-		).Scan(&count); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-		if count == 0 {
-			break
-		}
-	}
 	var response models.Transaction
 	err := tx.QueryRow(
 		ctx,
@@ -803,7 +781,7 @@ func (q *transactionRepository) CreateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(
-			&sb,
+			sb,
 			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
 			n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
 		)

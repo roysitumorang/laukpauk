@@ -3,7 +3,9 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 	"uuid"
 
@@ -21,15 +23,16 @@ import (
 
 type (
 	transactionController struct {
-		adminService          services.AdminService
-		buyerService          services.BuyerService
-		transactionService    services.TransactionService
-		cartService           services.CartService
-		cartItemService       services.CartItemService
-		voucherService        services.VoucherService
-		pointService          services.PointService
-		productVariantService services.ProductVariantService
-		jsonWebTokenService   services.JsonWebTokenService
+		adminService              services.AdminService
+		buyerService              services.BuyerService
+		transactionService        services.TransactionService
+		transactionCounterService services.TransactionCounterService
+		cartService               services.CartService
+		cartItemService           services.CartItemService
+		voucherService            services.VoucherService
+		pointService              services.PointService
+		productVariantService     services.ProductVariantService
+		jsonWebTokenService       services.JsonWebTokenService
 	}
 )
 
@@ -37,6 +40,7 @@ func NewTransactionController(
 	adminService services.AdminService,
 	buyerService services.BuyerService,
 	transactionService services.TransactionService,
+	transactionCounterService services.TransactionCounterService,
 	cartService services.CartService,
 	cartItemService services.CartItemService,
 	voucherService services.VoucherService,
@@ -45,15 +49,16 @@ func NewTransactionController(
 	jsonWebTokenService services.JsonWebTokenService,
 ) *transactionController {
 	return &transactionController{
-		adminService:          adminService,
-		buyerService:          buyerService,
-		transactionService:    transactionService,
-		cartService:           cartService,
-		cartItemService:       cartItemService,
-		voucherService:        voucherService,
-		pointService:          pointService,
-		productVariantService: productVariantService,
-		jsonWebTokenService:   jsonWebTokenService,
+		adminService:              adminService,
+		buyerService:              buyerService,
+		transactionService:        transactionService,
+		transactionCounterService: transactionCounterService,
+		cartService:               cartService,
+		cartItemService:           cartItemService,
+		voucherService:            voucherService,
+		pointService:              pointService,
+		productVariantService:     productVariantService,
+		jsonWebTokenService:       jsonWebTokenService,
 	}
 }
 
@@ -133,7 +138,8 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage("cart_id: not found").
 			WriteResponse(c)
 	}
-	now := time.Now()
+	location := helper.LoadTimeZone()
+	now := time.Now().In(location)
 	if request.ReferralCode != nil {
 		referrer, err := q.buyerService.FindBuyer(
 			ctx,
@@ -232,7 +238,32 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			request.Items[i] = item
 		}
 	}
+	var sb strings.Builder
+	_, _ = fmt.Fprintf(&sb, "%s%03d", now.Format("06"), now.YearDay())
+	counter, err := q.transactionCounterService.SaveTransactionCounter(
+		ctx,
+		&models.TransactionCounter{
+			TransactionWindow: sb.String(),
+			CreatedAt:         now,
+			UpdatedAt:         now,
+		},
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveTransactionCounter")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	sb.Reset()
+	_, _ = fmt.Fprintf(
+		&sb,
+		models.TransactionReferenceNumberFormat,
+		counter.TransactionWindow,
+		counter.Hits,
+		strings.ToUpper(helper.RandomString(4)),
+	)
 	request.BuyerID = currentBuyer.ID
+	request.ReferenceNumber = sb.String()
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
@@ -250,7 +281,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	response, err := q.transactionService.CreateTransaction(ctx, tx, request)
+	response, err := q.transactionService.CreateTransaction(ctx, tx, request, &sb)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
