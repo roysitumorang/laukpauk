@@ -240,20 +240,57 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		Get("/images*", static.New("", static.Config{
 			FS: os.DirFS("images"),
 		}))
-	controllers.NewAuthController(q.AdminService, q.BuyerService, q.JsonWebTokenService).Mount(app.Group("/auth"))
+	controllers.NewAuthController(
+		q.AdminService,
+		q.BuyerService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/auth"))
 	controllers.NewHomeController(q.AdminService).Mount(app.Group("/home"))
 	controllers.NewArticleController(q.AdminService, q.ArticleService).Mount(app.Group("/articles"))
 	controllers.NewBlogController(q.AdminService, q.BlogService).Mount(app.Group("/blogs"))
-	controllers.NewBlockController(q.AdminService, q.BlockService, q.BlogService, q.MessageService).Mount(app.Group("/blocks"))
+	controllers.NewBlockController(
+		q.AdminService,
+		q.BlockService,
+		q.BlogService,
+		q.MessageService,
+	).Mount(app.Group("/blocks"))
 	controllers.NewProductCategoryController(q.AdminService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
-	controllers.NewProductController(q.AdminService, q.ProductCategoryService, q.ProductService, q.ProductVariantService).Mount(app.Group("/products"))
-	controllers.NewSettingController(q.AdminService, q.SettingService).Mount(app.Group("/settings"))
-	controllers.NewDeliveryPlanController(q.AdminService, q.DeliveryPlanService, q.BuyerService, q.JsonWebTokenService).Mount(app.Group("/delivery_plans"))
-	controllers.NewNonDeliveryDayController(q.AdminService, q.NonDeliveryDayService, q.DeliveryPlanService).Mount(app.Group("/non_delivery_days"))
-	controllers.NewPointController(q.AdminService, q.BuyerService, q.PointService).Mount(app.Group("/points"))
-	controllers.NewVoucherController(q.AdminService, q.VoucherService, q.BuyerService, q.JsonWebTokenService).Mount(app.Group("/vouchers"))
-	controllers.NewPointEarningCapController(q.AdminService, q.PointEarningCapService).Mount(app.Group("/point_earning_caps"))
-	controllers.NewPointSpendingCapController(q.AdminService, q.PointSpendingCapService).Mount(app.Group("/point_spending_caps"))
+	controllers.NewProductController(
+		q.AdminService,
+		q.ProductCategoryService,
+		q.ProductService,
+		q.ProductVariantService,
+	).Mount(app.Group("/products"))
+	controllers.NewDeliveryPlanController(
+		q.AdminService,
+		q.DeliveryPlanService,
+		q.BuyerService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/delivery_plans"))
+	controllers.NewNonDeliveryDayController(
+		q.AdminService,
+		q.NonDeliveryDayService,
+		q.DeliveryPlanService,
+	).Mount(app.Group("/non_delivery_days"))
+	controllers.NewPointController(
+		q.AdminService,
+		q.BuyerService,
+		q.PointService,
+	).Mount(app.Group("/points"))
+	controllers.NewVoucherController(
+		q.AdminService,
+		q.VoucherService,
+		q.BuyerService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/vouchers"))
+	controllers.NewPointEarningCapController(
+		q.AdminService,
+		q.PointEarningCapService,
+	).Mount(app.Group("/point_earning_caps"))
+	controllers.NewPointSpendingCapController(
+		q.AdminService,
+		q.PointSpendingCapService,
+	).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(
 		q.AdminService,
 		q.BuyerService,
@@ -262,16 +299,33 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.CartService,
 		q.CartItemService,
 		q.DeliveryRouteService,
-		q.SettingService,
+		q.VariableService,
 		q.VoucherService,
 		q.PointSpendingCapService,
 		q.PointService,
 		q.ProductVariantService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/transactions"))
-	controllers.NewFcmRegistrationController(q.BuyerService, q.FcmRegistrationService, q.JsonWebTokenService).Mount(app.Group("/fcm_registrations"))
-	controllers.NewCartController(q.BuyerService, q.ProductVariantService, q.CartService, q.CartItemService, q.JsonWebTokenService).Mount(app.Group("/cart"))
-	controllers.NewDeliveryRouteController(q.AdminService, q.BuyerService, q.DeliveryRouteService, q.SettingService, q.JsonWebTokenService, q.RoutesApiConsumer).Mount(app.Group("/delivery_routes"))
+	controllers.NewFcmRegistrationController(
+		q.BuyerService,
+		q.FcmRegistrationService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/fcm_registrations"))
+	controllers.NewCartController(
+		q.BuyerService,
+		q.ProductVariantService,
+		q.CartService,
+		q.CartItemService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/cart"))
+	controllers.NewDeliveryRouteController(
+		q.AdminService,
+		q.BuyerService,
+		q.DeliveryRouteService,
+		q.VariableService,
+		q.JsonWebTokenService,
+		q.RoutesApiConsumer,
+	).Mount(app.Group("/delivery_routes"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).

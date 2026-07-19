@@ -2,11 +2,11 @@ package migration
 
 import (
 	"context"
-	"fmt"
+	"encoding/json/v2"
 	"log/slog"
-	"strings"
 	"time"
 
+	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -685,14 +685,13 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// settings
+		// variables
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE settings (
+			`CREATE TABLE variables (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, name character varying NOT NULL COLLATE "natural_sort"
-				, value character varying NOT NULL
-				, description character varying NOT NULL
+				, value JSONB NOT NULL
 				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
@@ -704,49 +703,76 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX settings_unique_name_idx ON settings (LOWER(name));`,
+			`CREATE UNIQUE INDEX variables_unique_name_idx ON variables (LOWER(name));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON settings (created_by);`,
+			`CREATE INDEX ON variables (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON settings (updated_by);`,
+			`CREATE INDEX ON variables (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		var (
-			sb     strings.Builder
-			params []any
-		)
+		longitude, err := decimal.Parse("98.64455685385735")
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
+			return
+		}
+		latitude, err := decimal.Parse("3.5394011973709434")
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
+			return
+		}
+		variable := models.VariableSetting{
+			VoucherEnabled:                       true,
+			ReferralPointsEnabled:                true,
+			ReferralPointsBudget:                 3_000_000,
+			ReferralPointsPerReferee:             25_000,
+			ReferralPointsSlots:                  []int64{15_000, 10_000},
+			RewardPointsAccumulationWindowInDays: 30,
+			DeliveryOriginLongitude:              longitude,
+			DeliveryOriginLatitude:               latitude,
+			DeliveryCostPerKM:                    3_000,
+			DeliveryMaxDistanceKM:                15,
+			WhatsappPhoneNumber:                  "628116099887",
+		}
+		variableByte, err := json.Marshal(variable)
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMarshal")
+			return
+		}
+		var variableValue map[string]any
+		if err = json.Unmarshal(variableByte, &variableValue); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUnmarshal")
+			return
+		}
 		now := time.Now()
-		params = append(params, now, "")
-		_, _ = sb.WriteString(
-			`INSERT INTO settings (
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO variables (
 				name
 				, value
-				, description
+				, created_by
 				, created_at
+				, updated_by
 				, updated_at
-			) VALUES`,
-		)
-		var n int
-		for i := range models.SettingNames {
-			params = append(params, models.SettingNames[i])
-			if n = len(params); n > 3 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $2, $2, $1, $1)", n)
-		}
-		if _, err = tx.Exec(ctx, sb.String(), params...); err != nil {
+			) VALUES ($1, $2, $3, $4, $5, $6)`,
+			"setting",
+			variableValue,
+			nil,
+			now,
+			nil,
+			now,
+		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}

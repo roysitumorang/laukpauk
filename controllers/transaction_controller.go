@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 	"uuid"
@@ -31,7 +30,7 @@ type (
 		cartService               services.CartService
 		cartItemService           services.CartItemService
 		deliveryRouteService      services.DeliveryRouteService
-		settingService            services.SettingService
+		variableService           services.VariableService
 		voucherService            services.VoucherService
 		pointSpendingCapService   services.PointSpendingCapService
 		pointService              services.PointService
@@ -48,7 +47,7 @@ func NewTransactionController(
 	cartService services.CartService,
 	cartItemService services.CartItemService,
 	deliveryRouteService services.DeliveryRouteService,
-	settingService services.SettingService,
+	variableService services.VariableService,
 	voucherService services.VoucherService,
 	pointSpendingCapService services.PointSpendingCapService,
 	pointService services.PointService,
@@ -63,7 +62,7 @@ func NewTransactionController(
 		cartService:               cartService,
 		cartItemService:           cartItemService,
 		deliveryRouteService:      deliveryRouteService,
-		settingService:            settingService,
+		variableService:           variableService,
 		voucherService:            voucherService,
 		pointSpendingCapService:   pointSpendingCapService,
 		pointService:              pointService,
@@ -165,49 +164,14 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
-	settings, _, err := q.settingService.FindSettings(
-		ctx,
-		models.NewSettingFilter().
-			WithSettingNames(
-				models.SettingNameVoucherEnabled,
-				models.SettingNameReferralPointsEnabled,
-				models.SettingNameReferralPointsAllocations,
-				models.SettingNameDeliveryCostPerKM,
-			),
-	)
+	setting, err := q.variableService.FindVariableSetting(ctx)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSettings")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVariableSetting")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	var (
-		voucherEnabled,
-		referralPointsEnabled bool
-		referralPointsAllocations []int64
-		deliveryCostPerKM         int64
-	)
-	for _, setting := range settings {
-		switch setting.Name {
-		case models.SettingNameVoucherEnabled.String():
-			voucherEnabled, _ = strconv.ParseBool(setting.Value)
-		case models.SettingNameReferralPointsEnabled.String():
-			referralPointsEnabled, _ = strconv.ParseBool(setting.Value)
-		case models.SettingNameReferralPointsAllocations.String():
-			allocations := strings.Split(setting.Value, ",")
-			n := len(allocations)
-			if n > 0 && allocations[0] != "" {
-				referralPointsAllocations = make([]int64, n)
-				for i := range allocations {
-					allocation, _ := strconv.ParseInt(allocations[i], 10, 64)
-					referralPointsAllocations[i] = allocation
-				}
-			}
-		case models.SettingNameDeliveryCostPerKM.String():
-			deliveryCostPerKM, _ = strconv.ParseInt(setting.Value, 10, 64)
-		}
-	}
-	request.DeliveryCost = request.DeliveryDistanceKM * deliveryCostPerKM
+	request.DeliveryCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
 	location := helper.LoadTimeZone()
 	now := time.Now().In(location)
 	if request.ReferralCode != nil {
@@ -240,14 +204,14 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		if referrer == nil ||
 			(currentBuyer.ReferrerID != nil &&
 				currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
-			total >= len(referralPointsAllocations) {
+			total >= len(setting.ReferralPointsSlots) {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage("referral_code: is invalid").
 				WriteResponse(c)
 		}
 		currentBuyer.ReferrerID = &referrer.ID
 		request.ReferrerID = &referrer.ID
-		request.ReferralPoints = referralPointsAllocations[total]
+		request.ReferralPoints = setting.ReferralPointsSlots[total]
 	}
 	if n := len(request.Items); n > 0 {
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
@@ -291,7 +255,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.CalculateShoppingCost()
-	if referralPointsEnabled {
+	if setting.ReferralPointsEnabled {
 		if request.RewardPointsDiscounted {
 			pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 				ctx,
@@ -311,7 +275,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		} else {
 			request.RewardPointsDiscount = 0
 		}
-	} else if voucherEnabled {
+	} else if setting.VoucherEnabled {
 		if request.VoucherCode != nil {
 			voucher, err := q.voucherService.FindVoucher(
 				ctx,

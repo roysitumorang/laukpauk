@@ -41,7 +41,7 @@ type (
 		ProductService            services.ProductService
 		ProductVariantService     services.ProductVariantService
 		SmsMessageService         services.SmsMessageService
-		SettingService            services.SettingService
+		VariableService           services.VariableService
 		DeliveryPlanService       services.DeliveryPlanService
 		NonDeliveryDayService     services.NonDeliveryDayService
 		PointService              services.PointService
@@ -135,7 +135,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productRepository := repositories.NewProductRepository(dbRead, dbWrite)
 	productVariantRepository := repositories.NewProductVariantRepository(dbRead, dbWrite)
 	smsMessageRepository := repositories.NewSmsMessageRepository(dbRead, dbWrite)
-	settingRepository := repositories.NewSettingRepository(dbRead, dbWrite)
+	variableRepository := repositories.NewVariableRepository(dbRead, dbWrite)
 	deliveryPlanRepository := repositories.NewDeliveryPlanRepository(dbRead, dbWrite)
 	nonDeliveryDayRepository := repositories.NewNonDeliveryDayRepository(dbRead, dbWrite)
 	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
@@ -159,7 +159,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productService := services.NewProductService(productRepository, productCategoryRepository)
 	productVariantService := services.NewProductVariantService(productVariantRepository, productRepository)
 	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaConsumer, zenzivaConsumer)
-	settingService := services.NewSettingService(settingRepository)
+	variableService := services.NewVariableService(variableRepository)
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
 	nonDeliveryDayService := services.NewNonDeliveryDayService(nonDeliveryDayRepository)
 	pointService := services.NewPointService(pointRepository)
@@ -191,7 +191,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		ProductService:            productService,
 		ProductVariantService:     productVariantService,
 		SmsMessageService:         smsMessageService,
-		SettingService:            settingService,
+		VariableService:           variableService,
 		DeliveryPlanService:       deliveryPlanService,
 		NonDeliveryDayService:     nonDeliveryDayService,
 		PointService:              pointService,

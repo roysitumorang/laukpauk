@@ -17,52 +17,47 @@ import (
 )
 
 type (
-	SettingRepository interface {
-		FindSettings(
+	VariableRepository interface {
+		FindVariables(
 			ctx context.Context,
-			request *models.SettingFilter,
-		) ([]*models.Setting, int64, int64, error)
-		FindSetting(
+			request *models.VariableFilter,
+		) ([]*models.Variable, int64, int64, error)
+		FindVariable(
 			ctx context.Context,
-			request *models.SettingFilter,
-		) (*models.Setting, error)
-		CreateSetting(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Setting,
-		) (*models.Setting, error)
-		UpdateSetting(
+			request *models.VariableFilter,
+		) (*models.Variable, error)
+		SaveVariable(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.Setting,
-		) (*models.Setting, error)
+			request *models.Variable,
+		) (*models.Variable, error)
 	}
 
-	settingRepository struct {
+	variableRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewSettingRepository(
+func NewVariableRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) SettingRepository {
-	return &settingRepository{
+) VariableRepository {
+	return &variableRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	}
 }
 
-func (q *settingRepository) FindSettings(
+func (q *variableRepository) FindVariables(
 	ctx context.Context,
-	request *models.SettingFilter,
-) ([]*models.Setting, int64, int64, error) {
-	ctxt := "SettingRepository-FindSettings"
+	request *models.VariableFilter,
+) ([]*models.Variable, int64, int64, error) {
+	ctxt := "VariableRepository-FindVariables"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM settings %s", condition)
+	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM variables %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -79,7 +74,6 @@ func (q *settingRepository) FindSettings(
 		`id
 		, name
 		, value
-		, description
 		, created_by
 		, created_at
 		, updated_by
@@ -129,34 +123,33 @@ func (q *settingRepository) FindSettings(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.Setting
+	var response []*models.Variable
 	for rows.Next() {
-		var setting models.Setting
+		var variable models.Variable
 		if err = rows.Scan(
-			&setting.ID,
-			&setting.Name,
-			&setting.Value,
-			&setting.Description,
-			&setting.CreatedBy,
-			&setting.CreatedAt,
-			&setting.UpdatedBy,
-			&setting.UpdatedAt,
+			&variable.ID,
+			&variable.Name,
+			&variable.Value,
+			&variable.CreatedBy,
+			&variable.CreatedAt,
+			&variable.UpdatedBy,
+			&variable.UpdatedAt,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		offset++
-		setting.RowNo = offset
-		response = append(response, &setting)
+		variable.RowNo = offset
+		response = append(response, &variable)
 	}
 	return response, total, pages, nil
 }
 
-func (q *settingRepository) FindSetting(
+func (q *variableRepository) FindVariable(
 	ctx context.Context,
-	request *models.SettingFilter,
-) (*models.Setting, error) {
-	ctxt := "SettingRepository-FindSetting"
+	request *models.VariableFilter,
+) (*models.Variable, error) {
+	ctxt := "VariableRepository-FindVariable"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
@@ -166,27 +159,25 @@ func (q *settingRepository) FindSetting(
 			id
 			, name
 			, value
-			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		FROM settings %s`,
+		FROM variables %s`,
 		condition,
 	)
-	var response models.Setting
+	var response models.Variable
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.Name,
 		&response.Value,
-		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
 		&response.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrSettingNotFound
+		return nil, models.ErrVariableNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -195,35 +186,36 @@ func (q *settingRepository) FindSetting(
 	return &response, nil
 }
 
-func (q *settingRepository) CreateSetting(
+func (q *variableRepository) SaveVariable(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.Setting,
-) (*models.Setting, error) {
-	ctxt := "SettingRepository-CreateSetting"
-	var response models.Setting
+	request *models.Variable,
+) (*models.Variable, error) {
+	ctxt := "VariableRepository-SaveVariable"
+	var response models.Variable
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO settings (
+		`INSERT INTO variables (
 			name
 			, value
-			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (LOWER(name)) DO UPDATE SET
+			value = $2
+			, updated_by = $5
+			, updated_at = $6
 		RETURNING id
 			, name
 			, value
-			, description
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at`,
 		request.Name,
 		request.Value,
-		request.Description,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -232,7 +224,6 @@ func (q *settingRepository) CreateSetting(
 		&response.ID,
 		&response.Name,
 		&response.Value,
-		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -240,8 +231,8 @@ func (q *settingRepository) CreateSetting(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "settings_unique_name_idx" {
-			err = models.ErrUniqueSettingNameViolation
+			pgxErr.ConstraintName == "variables_unique_name_idx" {
+			err = models.ErrUniqueVariableNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -250,63 +241,13 @@ func (q *settingRepository) CreateSetting(
 	return &response, nil
 }
 
-func (q *settingRepository) UpdateSetting(
-	ctx context.Context,
-	tx pgx.Tx,
-	request *models.Setting,
-) (*models.Setting, error) {
-	ctxt := "SettingRepository-UpdateSetting"
-	var response models.Setting
-	if err := tx.QueryRow(
-		ctx,
-		`UPDATE settings SET
-			value = $1
-			, description = $2
-			, updated_by = $3
-			, updated_at = $4
-		WHERE id = $5
-		RETURNING id
-			, name
-			, value
-			, description
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at`,
-		request.Value,
-		request.Description,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.ID,
-	).Scan(
-		&response.ID,
-		&response.Name,
-		&response.Value,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "settings_unique_name_idx" {
-			err = models.ErrUniqueSettingNameViolation
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
-		return nil, err
-	}
-	return &response, nil
-}
-
-func (q *settingRepository) buildCondition(request *models.SettingFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *variableRepository) buildCondition(request *models.VariableFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.SettingIDs) > 0 {
+	if len(request.VariableIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
-		for i, settingID := range request.SettingIDs {
-			params = append(params, settingID)
+		for i, variableID := range request.VariableIDs {
+			params = append(params, variableID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -315,11 +256,11 @@ func (q *settingRepository) buildCondition(request *models.SettingFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ExcludedSettingIDs) > 0 {
+	if len(request.ExcludedVariableIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id NOT IN (")
-		for i, excludedSettingID := range request.ExcludedSettingIDs {
-			params = append(params, excludedSettingID)
+		for i, excludedVariableID := range request.ExcludedVariableIDs {
+			params = append(params, excludedVariableID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -333,19 +274,6 @@ func (q *settingRepository) buildCondition(request *models.SettingFilter, sb *st
 		_, _ = sb.WriteString("LOWER(name) IN (")
 		for i, name := range request.Names {
 			params = append(params, strings.ToLower(name))
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.SettingNames) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) IN (")
-		for i, settingName := range request.SettingNames {
-			params = append(params, strings.ToLower(settingName.String()))
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
