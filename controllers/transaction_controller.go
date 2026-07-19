@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 	"uuid"
@@ -29,7 +30,10 @@ type (
 		transactionCounterService services.TransactionCounterService
 		cartService               services.CartService
 		cartItemService           services.CartItemService
+		deliveryRouteService      services.DeliveryRouteService
+		settingService            services.SettingService
 		voucherService            services.VoucherService
+		pointSpendingCapService   services.PointSpendingCapService
 		pointService              services.PointService
 		productVariantService     services.ProductVariantService
 		jsonWebTokenService       services.JsonWebTokenService
@@ -43,7 +47,10 @@ func NewTransactionController(
 	transactionCounterService services.TransactionCounterService,
 	cartService services.CartService,
 	cartItemService services.CartItemService,
+	deliveryRouteService services.DeliveryRouteService,
+	settingService services.SettingService,
 	voucherService services.VoucherService,
+	pointSpendingCapService services.PointSpendingCapService,
 	pointService services.PointService,
 	productVariantService services.ProductVariantService,
 	jsonWebTokenService services.JsonWebTokenService,
@@ -55,7 +62,10 @@ func NewTransactionController(
 		transactionCounterService: transactionCounterService,
 		cartService:               cartService,
 		cartItemService:           cartItemService,
+		deliveryRouteService:      deliveryRouteService,
+		settingService:            settingService,
 		voucherService:            voucherService,
+		pointSpendingCapService:   pointSpendingCapService,
 		pointService:              pointService,
 		productVariantService:     productVariantService,
 		jsonWebTokenService:       jsonWebTokenService,
@@ -138,6 +148,66 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage("cart_id: not found").
 			WriteResponse(c)
 	}
+	deliveryRoute, err := q.deliveryRouteService.FindDeliveryRoute(
+		ctx,
+		models.NewDeliveryRouteFilter().
+			WithDeliveryRouteIDs(request.DeliveryRouteID),
+	)
+	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryRoute")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if deliveryRoute == nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("delivery_route_id: not found").
+			WriteResponse(c)
+	}
+	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
+	settings, _, err := q.settingService.FindSettings(
+		ctx,
+		models.NewSettingFilter().
+			WithSettingNames(
+				models.SettingNameVoucherEnabled,
+				models.SettingNameReferralPointsEnabled,
+				models.SettingNameReferralPointsAllocations,
+				models.SettingNameDeliveryCostPerKM,
+			),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSettings")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	var (
+		voucherEnabled,
+		referralPointsEnabled bool
+		referralPointsAllocations []int64
+		deliveryCostPerKM         int64
+	)
+	for _, setting := range settings {
+		switch setting.Name {
+		case models.SettingNameVoucherEnabled.String():
+			voucherEnabled, _ = strconv.ParseBool(setting.Value)
+		case models.SettingNameReferralPointsEnabled.String():
+			referralPointsEnabled, _ = strconv.ParseBool(setting.Value)
+		case models.SettingNameReferralPointsAllocations.String():
+			allocations := strings.Split(setting.Value, ",")
+			n := len(allocations)
+			if n > 0 && allocations[0] != "" {
+				referralPointsAllocations = make([]int64, n)
+				for i := range allocations {
+					allocation, _ := strconv.ParseInt(allocations[i], 10, 64)
+					referralPointsAllocations[i] = allocation
+				}
+			}
+		case models.SettingNameDeliveryCostPerKM.String():
+			deliveryCostPerKM, _ = strconv.ParseInt(setting.Value, 10, 64)
+		}
+	}
+	request.DeliveryCost = request.DeliveryDistanceKM * deliveryCostPerKM
 	location := helper.LoadTimeZone()
 	now := time.Now().In(location)
 	if request.ReferralCode != nil {
@@ -152,50 +222,32 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
-		if referrer == nil {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(models.ErrBuyerNotFound.Error()).
-				WriteResponse(c)
-		}
-		if currentBuyer.ReferrerID != nil && currentBuyer.ReferrerID.Compare(referrer.ID) != 0 {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(models.ErrBuyerNotFound.Error()).
-				WriteResponse(c)
-		}
-		currentBuyer.ReferrerID = &referrer.ID
-		request.ReferrerID = &referrer.ID
-	}
-	if request.RewardPointsDiscounted {
-	} else if request.VoucherCode != nil {
-		voucher, err := q.voucherService.FindVoucher(
+		_, pagination, err := q.transactionService.FindTransactions(
 			ctx,
-			models.NewVoucherFilter().
-				WithRecordStatuses(models.RecordStatusActive).
-				WithCodes(*request.VoucherCode),
+			models.NewTransactionFilter().
+				WithBuyerIDs(currentBuyer.ID).
+				WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
+				WithReferrerIDs(referrer.ID).
+				WithReturnCountOnly(true),
 		)
-		if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
-		if voucher == nil {
+		total := int(pagination.Info.Total)
+		if referrer == nil ||
+			(currentBuyer.ReferrerID != nil &&
+				currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
+			total >= len(referralPointsAllocations) {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(models.ErrVoucherNotFound.Error()).
+				SetMessage("referral_code: is invalid").
 				WriteResponse(c)
 		}
-		location := helper.LoadTimeZone()
-		currentTime := now.In(location).Format(time.TimeOnly)
-		if voucher.EffectiveStartDate.After(now) ||
-			voucher.EffectiveEndDate.Before(now) ||
-			voucher.EffectiveStartTime.In(location).Format(time.TimeOnly) > currentTime ||
-			voucher.EffectiveEndDate.In(location).Format(time.TimeOnly) < currentTime {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage("voucher_code: not found").
-				WriteResponse(c)
-		}
-		request.VoucherDiscount = voucher.Discount
-		request.VoucherType = &voucher.VoucherType
+		currentBuyer.ReferrerID = &referrer.ID
+		request.ReferrerID = &referrer.ID
+		request.ReferralPoints = referralPointsAllocations[total]
 	}
 	if n := len(request.Items); n > 0 {
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
@@ -238,6 +290,77 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			request.Items[i] = item
 		}
 	}
+	request.CalculateShoppingCost()
+	if referralPointsEnabled {
+		if request.RewardPointsDiscounted {
+			pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
+				ctx,
+				models.NewPointSpendingCapFilter().
+					WithRecordStatuses(models.RecordStatusActive).
+					WithShoppingCosts(request.ShoppingCost),
+			)
+			if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(err.Error()).
+					WriteResponse(c)
+			}
+			if pointSpendingCap != nil {
+				request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
+			}
+		} else {
+			request.RewardPointsDiscount = 0
+		}
+	} else if voucherEnabled {
+		if request.VoucherCode != nil {
+			voucher, err := q.voucherService.FindVoucher(
+				ctx,
+				models.NewVoucherFilter().
+					WithRecordStatuses(models.RecordStatusActive).
+					WithCodes(*request.VoucherCode).
+					WithTransactionDatetime(now).
+					WithBuyerIDs(currentBuyer.ID),
+			)
+			if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(err.Error()).
+					WriteResponse(c)
+			}
+			if voucher == nil {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(models.ErrVoucherNotFound.Error()).
+					WriteResponse(c)
+			}
+			if voucher.QuotaPerBuyer > 0 {
+				_, pagination, err := q.transactionService.FindTransactions(
+					ctx,
+					models.NewTransactionFilter().
+						WithBuyerIDs(currentBuyer.ID).
+						WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
+						WithVoucherIDs(voucher.ID).
+						WithReturnCountOnly(true),
+				)
+				if err != nil {
+					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+					return helper.NewResponse(fiber.StatusUnprocessableEntity).
+						SetMessage(err.Error()).
+						WriteResponse(c)
+				}
+				if pagination.Info.Total >= int64(voucher.QuotaPerBuyer) {
+					return helper.NewResponse(fiber.StatusUnprocessableEntity).
+						SetMessage("voucher quota exceeded").
+						WriteResponse(c)
+				}
+			}
+			request.VoucherDiscount = voucher.Discount
+			request.VoucherType = &voucher.VoucherType
+		} else {
+			request.VoucherDiscount = 0
+			request.VoucherType = nil
+		}
+	}
+	request.CalculateDiscount()
 	var sb strings.Builder
 	_, _ = fmt.Fprintf(&sb, "%s%03d", now.Format("06"), now.YearDay())
 	counter, err := q.transactionCounterService.SaveTransactionCounter(
@@ -650,7 +773,7 @@ func (q *transactionController) AdminDeliver(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
 	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
-	transaction.TransactionStatus = models.TransactionStatusDelivered
+	transaction.TransactionStatus = models.TransactionStatusCompleted
 	params.Push("request", transaction)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {

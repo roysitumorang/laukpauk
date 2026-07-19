@@ -34,7 +34,7 @@ const (
 	TransactionStatusPaid
 	TransactionStatusProcessed
 	TransactionStatusShipped
-	TransactionStatusDelivered
+	TransactionStatusCompleted
 )
 
 type (
@@ -125,9 +125,12 @@ type (
 		ExcludedTransactionIDs,
 		BuyerIDs,
 		CartIDs,
+		ReferrerIDs,
+		VoucherIDs,
 		PaymentRequestIDs []uuid.UUID
-		TransactionStatuses []TransactionStatus
-		ReferralCodes       []string
+		TransactionStatuses,
+		ExcludedTransactionStatuses []TransactionStatus
+		ReturnCountOnly bool
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -165,6 +168,16 @@ func (q *TransactionFilter) WithCartIDs(cartIDs ...uuid.UUID) *TransactionFilter
 	return q
 }
 
+func (q *TransactionFilter) WithReferrerIDs(referrerIDs ...uuid.UUID) *TransactionFilter {
+	q.ReferrerIDs = referrerIDs
+	return q
+}
+
+func (q *TransactionFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *TransactionFilter {
+	q.VoucherIDs = voucherIDs
+	return q
+}
+
 func (q *TransactionFilter) WithPaymentRequestIDs(paymentRequestIDs ...uuid.UUID) *TransactionFilter {
 	q.PaymentRequestIDs = paymentRequestIDs
 	return q
@@ -175,8 +188,13 @@ func (q *TransactionFilter) WithTransactionStatuses(transactionStatuses ...Trans
 	return q
 }
 
-func (q *TransactionFilter) WithReferralCodes(referralCodes ...string) *TransactionFilter {
-	q.ReferralCodes = referralCodes
+func (q *TransactionFilter) WithExcludedTransactionStatuses(excludedTransactionStatuses ...TransactionStatus) *TransactionFilter {
+	q.ExcludedTransactionStatuses = excludedTransactionStatuses
+	return q
+}
+
+func (q *TransactionFilter) WithReturnCountOnly(returnCountOnly bool) *TransactionFilter {
+	q.ReturnCountOnly = returnCountOnly
 	return q
 }
 
@@ -278,7 +296,7 @@ func (q *Transaction) New() bool {
 	return q.ID.Compare(uuid.Nil()) == 0
 }
 
-func (q *Transaction) Calculate() {
+func (q *Transaction) CalculateShoppingCost() {
 	q.UniqueCode = helper.RandomInteger(1000)
 	q.ShoppingCost = q.UniqueCode
 	for i, item := range q.Items {
@@ -294,6 +312,9 @@ func (q *Transaction) Calculate() {
 		q.ShoppingCost += item.Subtotal
 		q.Items[i] = item
 	}
+}
+
+func (q *Transaction) CalculateDiscount() {
 	q.DiscountedShoppingCost = q.ShoppingCost
 	q.DiscountedDeliveryCost = q.DeliveryCost
 	if q.RewardPointsDiscounted && q.RewardPointsDiscount > 0 {
@@ -346,7 +367,7 @@ func (q TransactionStatus) String() string {
 		return "processed"
 	case TransactionStatusShipped:
 		return "otw"
-	case TransactionStatusDelivered:
+	case TransactionStatusCompleted:
 		return "delivered"
 	case TransactionStatusPending:
 		fallthrough

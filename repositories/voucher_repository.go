@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 	"uuid"
 
 	"github.com/govalues/decimal"
@@ -693,6 +694,47 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 		n := len(params)
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "(LOWER(code) LIKE $%d OR LOWER(name) LIKE $%d)", n, n)
+		conds = append(conds, sb.String())
+	}
+	if len(request.BuyerIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString(
+			`EXISTS(
+				SELECT 1
+				FROM vouchers_users
+				WHERE vouchers_users.voucher_id = vouchers.id
+					AND vouchers_users.buyer_id IN (`,
+		)
+		for i, buyerID := range request.BuyerIDs {
+			params = append(params, buyerID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString("))")
+		conds = append(conds, sb.String())
+	}
+	if !request.TransactionDatetime.IsZero() {
+		t := time.Date(
+			1,
+			1,
+			1,
+			request.TransactionDatetime.Hour(),
+			request.TransactionDatetime.Minute(),
+			request.TransactionDatetime.Second(),
+			request.TransactionDatetime.Nanosecond(),
+			request.TransactionDatetime.Location(),
+		)
+		params = append(params, request.TransactionDatetime, t)
+		n := len(params)
+		sb.Reset()
+		_, _ = fmt.Fprintf(
+			sb,
+			`($%d BETWEEN effective_start_date AND effective_end_date
+			AND $%d BETWEEN effective_start_time AND effective_end_time)`,
+			n-1, n,
+		)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

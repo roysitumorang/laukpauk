@@ -171,6 +171,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/transactions":         "/transactions/v1/buyer",
 				"/v1/buyer/transactions/*":       "/transactions/v1/buyer/$1",
 				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",
+				"/v1/buyer/delivery_routes":      "/delivery_routes/v1/buyer",
 				"/":                              "/blocks",
 				"/blogs":                         "/blocks/blogs",
 				"/read/*":                        "/blocks/blogs/$1",
@@ -260,13 +261,17 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TransactionCounterService,
 		q.CartService,
 		q.CartItemService,
+		q.DeliveryRouteService,
+		q.SettingService,
 		q.VoucherService,
+		q.PointSpendingCapService,
 		q.PointService,
 		q.ProductVariantService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/transactions"))
 	controllers.NewFcmRegistrationController(q.BuyerService, q.FcmRegistrationService, q.JsonWebTokenService).Mount(app.Group("/fcm_registrations"))
 	controllers.NewCartController(q.BuyerService, q.ProductVariantService, q.CartService, q.CartItemService, q.JsonWebTokenService).Mount(app.Group("/cart"))
+	controllers.NewDeliveryRouteController(q.AdminService, q.BuyerService, q.DeliveryRouteService, q.SettingService, q.JsonWebTokenService, q.RoutesApiConsumer).Mount(app.Group("/delivery_routes"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).

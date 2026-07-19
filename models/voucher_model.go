@@ -104,15 +104,13 @@ type (
 
 	VoucherFilter struct {
 		VoucherIDs,
-		ExcludedVoucherIDs []uuid.UUID
-		RecordStatuses  []RecordStatus
-		VoucherTypes    []VoucherType
-		TargetAudiences []VoucherTargetAudience
-		Codes           []string
-		EffectiveStartTime,
-		EffectiveEndTime,
-		EffectiveStartDate,
-		EffectiveEndDate time.Time
+		ExcludedVoucherIDs,
+		BuyerIDs []uuid.UUID
+		RecordStatuses      []RecordStatus
+		VoucherTypes        []VoucherType
+		TargetAudiences     []VoucherTargetAudience
+		Codes               []string
+		TransactionDatetime time.Time
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -124,10 +122,10 @@ type (
 )
 
 func NewVoucherFilter() *VoucherFilter {
-	return new(VoucherFilter{
+	return &VoucherFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *VoucherFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *VoucherFilter {
@@ -137,6 +135,11 @@ func (q *VoucherFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *VoucherFilter {
 
 func (q *VoucherFilter) WithExcludedVoucherIDs(excludedVoucherIDs ...uuid.UUID) *VoucherFilter {
 	q.ExcludedVoucherIDs = excludedVoucherIDs
+	return q
+}
+
+func (q *VoucherFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *VoucherFilter {
+	q.BuyerIDs = buyerIDs
 	return q
 }
 
@@ -160,15 +163,8 @@ func (q *VoucherFilter) WithCodes(codes ...string) *VoucherFilter {
 	return q
 }
 
-func (q *VoucherFilter) WithEffectiveTime(effectiveStartTime, effectiveEndTime time.Time) *VoucherFilter {
-	q.EffectiveStartTime = effectiveStartTime
-	q.EffectiveEndTime = effectiveEndTime
-	return q
-}
-
-func (q *VoucherFilter) WithEffectiveDate(effectiveStartDate, effectiveEndDate time.Time) *VoucherFilter {
-	q.EffectiveStartDate = effectiveStartDate
-	q.EffectiveEndDate = effectiveEndDate
+func (q *VoucherFilter) WithTransactionDatetime(transactionDatetime time.Time) *VoucherFilter {
+	q.TransactionDatetime = transactionDatetime
 	return q
 }
 

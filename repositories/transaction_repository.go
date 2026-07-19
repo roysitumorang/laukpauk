@@ -50,10 +50,10 @@ func NewTransactionRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) TransactionRepository {
-	return new(transactionRepository{
+	return &transactionRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *transactionRepository) FindTransactions(
@@ -72,8 +72,8 @@ func (q *transactionRepository) FindTransactions(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
 	}
-	if total == 0 {
-		return nil, 0, 0, nil
+	if total == 0 || request.ReturnCountOnly {
+		return nil, total, 0, nil
 	}
 	query = strings.ReplaceAll(
 		query,
@@ -1118,6 +1118,19 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.VoucherIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("voucher_id IN (")
+		for i, voucherID := range request.VoucherIDs {
+			params = append(params, voucherID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if len(request.PaymentRequestIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("payment_request_id IN (")
@@ -1144,11 +1157,24 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ReferralCodes) > 0 {
+	if len(request.ExcludedTransactionStatuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("referral_code IN (")
-		for i, referralCode := range request.ReferralCodes {
-			params = append(params, referralCode)
+		_, _ = sb.WriteString("transaction_status NOT IN (")
+		for i, excludedTransactionStatus := range request.ExcludedTransactionStatuses {
+			params = append(params, excludedTransactionStatus)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ReferrerIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("referrer_id IN (")
+		for i, referrerID := range request.ReferrerIDs {
+			params = append(params, referrerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
