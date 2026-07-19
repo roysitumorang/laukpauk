@@ -78,8 +78,8 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		"COUNT(1)",
 		`id
 		, record_status
-		, minimum_purchase
-		, deleted_minimum_purchase
+		, LOWER(shopping_cost)
+		, UPPER(shopping_cost)
 		, disposable_points
 		, created_by
 		, created_at
@@ -100,7 +100,11 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		field := item.Field
+		if item.Field == "minimum_shopping_cost" {
+			field = "LOWER(shopping_cost)"
+		}
+		_, _ = fmt.Fprintf(&sb, " %s %s", field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -139,8 +143,8 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		if err = rows.Scan(
 			&pointSpendingCap.ID,
 			&pointSpendingCap.RecordStatus,
-			&pointSpendingCap.MinimumPurchase,
-			&pointSpendingCap.DeletedMinimumPurchase,
+			&pointSpendingCap.MinimumShoppingCost,
+			&pointSpendingCap.MaximumShoppingCost,
 			&pointSpendingCap.DisposablePoints,
 			&pointSpendingCap.CreatedBy,
 			&pointSpendingCap.CreatedAt,
@@ -173,8 +177,8 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 		`SELECT
 			id
 			, record_status
-			, minimum_purchase
-			, deleted_minimum_purchase
+			, LOWER(shopping_cost)
+			, UPPER(shopping_cost)
 			, disposable_points
 			, created_by
 			, created_at
@@ -191,8 +195,8 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.MinimumPurchase,
-		&response.DeletedMinimumPurchase,
+		&response.MinimumShoppingCost,
+		&response.MaximumShoppingCost,
 		&response.DisposablePoints,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -223,17 +227,17 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 		ctx,
 		`INSERT INTO point_spending_caps (
 			record_status
-			, minimum_purchase
+			, shopping_cost
 			, disposable_points
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, int8range($2, $3, '[)'), $4, $5, $6, $7, $8)
 		RETURNING id
 			, record_status
-			, minimum_purchase
-			, deleted_minimum_purchase
+			, LOWER(shopping_cost)
+			, UPPER(shopping_cost)
 			, disposable_points
 			, created_by
 			, created_at
@@ -243,7 +247,8 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 			, deleted_at
 			, deletion_reason`,
 		request.RecordStatus,
-		request.MinimumPurchase,
+		request.MinimumShoppingCost,
+		request.MaximumShoppingCost,
 		request.DisposablePoints,
 		request.CreatedBy,
 		request.CreatedAt,
@@ -252,8 +257,8 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.MinimumPurchase,
-		&response.DeletedMinimumPurchase,
+		&response.MinimumShoppingCost,
+		&response.MaximumShoppingCost,
 		&response.DisposablePoints,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -265,9 +270,9 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 	)
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_spending_caps_minimum_purchase_key" {
-			err = models.ErrUniquePointSpendingCapMinimumPurchaseViolation
+			pgxErr.Code == pgerrcode.ExclusionViolation &&
+			pgxErr.ConstraintName == "point_spending_caps_shopping_cost_key" {
+			err = models.ErrPointSpendingCapShoppingCostOverlapping
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -287,8 +292,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		ctx,
 		`UPDATE point_spending_caps SET
 			record_status = $1
-			, minimum_purchase = $2
-			, deleted_minimum_purchase = $3
+			, shopping_cost = int8range($2, $3, '[)')
 			, disposable_points = $4
 			, updated_by = $5
 			, updated_at = $6
@@ -298,8 +302,8 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		WHERE id = $10
 		RETURNING id
 			, record_status
-			, minimum_purchase
-			, deleted_minimum_purchase
+			, LOWER(shopping_cost)
+			, UPPER(shopping_cost)
 			, disposable_points
 			, created_by
 			, created_at
@@ -309,8 +313,8 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 			, deleted_at
 			, deletion_reason`,
 		request.RecordStatus,
-		request.MinimumPurchase,
-		request.DeletedMinimumPurchase,
+		request.MinimumShoppingCost,
+		request.MaximumShoppingCost,
 		request.DisposablePoints,
 		request.UpdatedBy,
 		request.UpdatedAt,
@@ -321,8 +325,8 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
-		&response.MinimumPurchase,
-		&response.DeletedMinimumPurchase,
+		&response.MinimumShoppingCost,
+		&response.MaximumShoppingCost,
 		&response.DisposablePoints,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -334,9 +338,9 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 	)
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_spending_caps_minimum_purchase_key" {
-			err = models.ErrUniquePointSpendingCapMinimumPurchaseViolation
+			pgxErr.Code == pgerrcode.ExclusionViolation &&
+			pgxErr.ConstraintName == "point_spending_caps_shopping_cost_key" {
+			err = models.ErrPointSpendingCapShoppingCostOverlapping
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -386,23 +390,17 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.MinimumPurchases) > 0 {
+	if len(request.ShoppingCosts) > 0 {
 		sb.Reset()
-		for i, minimumPurchase := range request.MinimumPurchases {
-			params = append(params, minimumPurchase)
+		_, _ = sb.WriteString("(")
+		for i, shoppingCost := range request.ShoppingCosts {
+			params = append(params, shoppingCost)
 			if i > 0 {
-				_, _ = sb.WriteString(",")
+				_, _ = sb.WriteString("OR")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = fmt.Fprintf(sb, " $%d BETWEEN LOWER(shopping_cost) AND UPPER(shopping_cost)", len(params))
 		}
-		placeholder := sb.String()
-		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			"(minimum_purchase IN (%s) OR deleted_minimum_purchase IN (%s))",
-			placeholder,
-			placeholder,
-		)
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {

@@ -6,13 +6,25 @@
 			<div class="row">
 				<div class="col-lg-6">
 					<div class="form-group">
-						<label for="minimum_purchase" class="label-nilai">Minimal Pembelian</label>
+						<label for="minimum_shopping_cost" class="label-nilai">Minimal Belanja</label>
 						<div class="input-group">
 							<div class="input-group-prepend">
 								<span class="input-group-text">Rp.</span>
 							</div>
-							<input type="number" name="minimum_purchase" value="{{ request.RawMinimumPurchase }}" class="form-control input" id="minimum_purchase"
-								placeholder="Minimal Pembelian" required />
+							<input type="number" name="minimum_shopping_cost" value="{{ request.MinimumShoppingCost }}" class="form-control input" id="minimum_shopping_cost"
+								placeholder="Minimal Belanja" required />
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group">
+						<label for="maximum_shopping_cost" class="label-nilai">Maksimal Belanja</label>
+						<div class="input-group">
+							<div class="input-group-prepend">
+								<span class="input-group-text">Rp.</span>
+							</div>
+							<input type="number" name="maximum_shopping_cost" value="{{ request.MaximumShoppingCost }}" class="form-control input" id="maximum_shopping_cost"
+								placeholder="Maksimal Belanja" required />
 						</div>
 					</div>
 				</div>

@@ -109,7 +109,7 @@
 							<thead>
 								<tr>
 									<th class="text-center">No.</th>
-									<th class="text-right">Minimum Belanja</th>
+									<th class="text-right">Belanja</th>
 									<th class="text-right">Poin</th>
 									<th class="text-center">Opsi</th>
 								</tr>
@@ -118,7 +118,7 @@
 								{{ range _, row := rows }}
 								<tr class="text-sm tr-parent">
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
-									<td class="text-right">Rp. {{ row.RawMinimumPurchase | Comma }}</td>
+									<td class="text-right">Rp. {{ row.MinimumShoppingCost | Comma }} - Rp. {{ row.MaximumShoppingCost | Comma }}</td>
 									<td class="text-right">{{ row.DisposablePoints | Comma }}</td>
 									<td class="vam text-center">
 										<a href="{{ baseURL }}/admin/point_spending_caps/{{ row.ID }}/edit">

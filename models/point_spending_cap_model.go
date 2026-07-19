@@ -11,42 +11,41 @@ import (
 )
 
 var (
-	ErrPointSpendingCapNotFound                       = errors.New("point spending cap not found")
-	ErrUniquePointSpendingCapMinimumPurchaseViolation = errors.New("minimum_purchase: already exists")
+	ErrPointSpendingCapNotFound                = errors.New("point spending cap not found")
+	ErrPointSpendingCapShoppingCostOverlapping = errors.New("shopping cost range already exists")
 
 	MapPointSpendingCapSortings = map[string]struct{}{
 		SortingFieldID: {},
-		PointSpendingCapSortingFieldMinimumPurchase: {},
+		PointSpendingCapSortingFieldMinimumShoppingCost: {},
 	}
 )
 
 const (
-	PointSpendingCapSortingFieldMinimumPurchase = "minimum_purchase"
+	PointSpendingCapSortingFieldMinimumShoppingCost = "minimum_shopping_cost"
 )
 
 type (
 	PointSpendingCap struct {
-		RowNo                  int64        `json:"-" form:"-"`
-		ID                     uuid.UUID    `json:"-" form:"id"`
-		RecordStatus           RecordStatus `json:"-" form:"-"`
-		RawMinimumPurchase     int64        `json:"-" form:"minimum_purchase"`
-		MinimumPurchase        *int64       `json:"-" form:"-"`
-		DeletedMinimumPurchase *int64       `json:"-" form:"-"`
-		DisposablePoints       int64        `json:"-" form:"disposable_points"`
-		CreatedBy              uuid.UUID    `json:"-" form:"-"`
-		CreatedAt              time.Time    `json:"-" form:"-"`
-		UpdatedBy              uuid.UUID    `json:"-" form:"-"`
-		UpdatedAt              time.Time    `json:"-" form:"-"`
-		DeletedBy              *uuid.UUID   `json:"-" form:"-"`
-		DeletedAt              *time.Time   `json:"-" form:"-"`
-		DeletionReason         *string      `json:"-" form:"-"`
+		RowNo               int64        `json:"-" form:"-"`
+		ID                  uuid.UUID    `json:"-" form:"id"`
+		RecordStatus        RecordStatus `json:"-" form:"-"`
+		MinimumShoppingCost int64        `json:"-" form:"minimum_shopping_cost"`
+		MaximumShoppingCost int64        `json:"-" form:"maximum_shopping_cost"`
+		DisposablePoints    int64        `json:"-" form:"disposable_points"`
+		CreatedBy           uuid.UUID    `json:"-" form:"-"`
+		CreatedAt           time.Time    `json:"-" form:"-"`
+		UpdatedBy           uuid.UUID    `json:"-" form:"-"`
+		UpdatedAt           time.Time    `json:"-" form:"-"`
+		DeletedBy           *uuid.UUID   `json:"-" form:"-"`
+		DeletedAt           *time.Time   `json:"-" form:"-"`
+		DeletionReason      *string      `json:"-" form:"-"`
 	}
 
 	PointSpendingCapFilter struct {
 		PointSpendingCapIDs,
 		ExcludedPointSpendingCapIDs []uuid.UUID
-		RecordStatuses   []RecordStatus
-		MinimumPurchases []int64
+		ShoppingCosts  []int64
+		RecordStatuses []RecordStatus
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -58,10 +57,10 @@ type (
 )
 
 func NewPointSpendingCapFilter() *PointSpendingCapFilter {
-	return new(PointSpendingCapFilter{
+	return &PointSpendingCapFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *PointSpendingCapFilter) WithPointSpendingCapIDs(pointSpendingIDs ...uuid.UUID) *PointSpendingCapFilter {
@@ -79,8 +78,8 @@ func (q *PointSpendingCapFilter) WithRecordStatuses(recordStatuses ...RecordStat
 	return q
 }
 
-func (q *PointSpendingCapFilter) WithMinimumPurchases(minimumPurchases ...int64) *PointSpendingCapFilter {
-	q.MinimumPurchases = minimumPurchases
+func (q *PointSpendingCapFilter) WithShoppingCosts(shoppingCosts ...int64) *PointSpendingCapFilter {
+	q.ShoppingCosts = shoppingCosts
 	return q
 }
 
@@ -119,10 +118,15 @@ func (q *PointSpendingCapFilter) WithUrlValues(urlValues url.Values) *PointSpend
 }
 
 func (q *PointSpendingCap) Validate() error {
-	if q.RawMinimumPurchase < 1 {
-		return errors.New("minimum_purchase: requires a positive integer")
+	if q.MinimumShoppingCost < 1 {
+		return errors.New("minimum_shopping_cost: requires a positive integer")
 	}
-	q.MinimumPurchase = &q.RawMinimumPurchase
+	if q.MaximumShoppingCost < 1 {
+		return errors.New("maximum_shopping_cost: requires a positive integer")
+	}
+	if q.MinimumShoppingCost >= q.MaximumShoppingCost {
+		return errors.New("maximum_shopping_cost: should exceed minimum_shopping_cost")
+	}
 	if q.DisposablePoints < 1 {
 		return errors.New("disposable_points: requires a positive integer")
 	}
@@ -130,9 +134,6 @@ func (q *PointSpendingCap) Validate() error {
 }
 
 func (q *PointSpendingCap) Populate() *PointSpendingCap {
-	if q.MinimumPurchase != nil {
-		q.RawMinimumPurchase = *q.MinimumPurchase
-	}
 	return q
 }
 

@@ -84,12 +84,12 @@ func (q *pointSpendingCapController) AdminIndex(c fiber.Ctx) (err error) {
 				Label:     "Oldest-Newest",
 			},
 			{
-				Field:     models.PointSpendingCapSortingFieldMinimumPurchase,
+				Field:     models.PointSpendingCapSortingFieldMinimumShoppingCost,
 				Direction: models.SortingDirectionDesc,
 				Label:     "Max-Min",
 			},
 			{
-				Field:     models.PointSpendingCapSortingFieldMinimumPurchase,
+				Field:     models.PointSpendingCapSortingFieldMinimumShoppingCost,
 				Direction: models.SortingDirectionAsc,
 				Label:     "Min-Max",
 			},
@@ -180,30 +180,27 @@ func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
 	request.UpdatedBy = createdBy
 	request.UpdatedAt = now
 	params.Push("request", request)
-	if request.MinimumPurchase != nil {
-		pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
-			ctx,
-			models.NewPointSpendingCapFilter().
-				WithMinimumPurchases(*request.MinimumPurchase),
-		)
-		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
+	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
+		ctx,
+		models.NewPointSpendingCapFilter().
+			WithShoppingCosts(request.MinimumShoppingCost, request.MaximumShoppingCost),
+	)
+	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
+		return c.Render("admin/point_spending_cap_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if pointSpendingCap != nil {
+		if pointSpendingCap.RecordStatus == models.RecordStatusActive {
 			return c.Render("admin/point_spending_cap_new", params.Push(
-				"flash", flash.Danger(err.Error()),
+				"flash", flash.Danger(models.ErrPointSpendingCapShoppingCostOverlapping.Error()),
 			), "admin/layouts/authenticated")
 		}
-		if pointSpendingCap != nil {
-			if pointSpendingCap.RecordStatus == models.RecordStatusActive {
-				return c.Render("admin/point_spending_cap_new", params.Push(
-					"flash", flash.Danger(models.ErrUniquePointSpendingCapMinimumPurchaseViolation.Error()),
-				), "admin/layouts/authenticated")
-			}
-			request.ID = pointSpendingCap.ID
-			request.DeletedMinimumPurchase = nil
-			request.DeletedBy = nil
-			request.DeletedAt = nil
-			request.DeletionReason = nil
-		}
+		request.ID = pointSpendingCap.ID
+		request.DeletedBy = nil
+		request.DeletedAt = nil
+		request.DeletionReason = nil
 	}
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
@@ -275,7 +272,7 @@ func (q *pointSpendingCapController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Tarif Penggunaan Poin|%d", pointSpendingCap.MinimumPurchase),
+		"pageTitle", "Edit Tarif Penggunaan Poin",
 		"request", pointSpendingCap,
 		"pointSpendingCap", pointSpendingCap,
 	)
@@ -316,7 +313,7 @@ func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Tarif Penggunaan Poin|%d", pointSpendingCap.MinimumPurchase),
+		"pageTitle", "Edit Tarif Penggunaan Poin",
 		"request", pointSpendingCap,
 		"pointSpendingCap", pointSpendingCap,
 	)
@@ -329,13 +326,12 @@ func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if pointSpendingCap.MinimumPurchase != nil &&
-		request.MinimumPurchase != nil &&
-		*pointSpendingCap.MinimumPurchase != *request.MinimumPurchase {
+	if pointSpendingCap.MinimumShoppingCost != request.MinimumShoppingCost ||
+		pointSpendingCap.MinimumShoppingCost != request.MaximumShoppingCost {
 		otherPointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 			ctx,
 			models.NewPointSpendingCapFilter().
-				WithMinimumPurchases(*request.MinimumPurchase).
+				WithShoppingCosts(request.MinimumShoppingCost, request.MaximumShoppingCost).
 				WithExcludedPointSpendingCapIDs(pointSpendingCap.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
@@ -346,12 +342,11 @@ func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 		if otherPointSpendingCap != nil {
 			return c.Render("admin/point_spending_cap_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniquePointSpendingCapMinimumPurchaseViolation.Error()),
+				"flash", flash.Danger(models.ErrPointSpendingCapShoppingCostOverlapping.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
 	request.ID = pointSpendingCap.ID
-	request.DeletedMinimumPurchase = nil
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	params.Push("request", request)
@@ -401,7 +396,7 @@ func (q *pointSpendingCapController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
 	}
-	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
+	request, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
 			WithRecordStatuses(models.RecordStatusActive).
@@ -411,14 +406,9 @@ func (q *pointSpendingCapController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
 	}
-	if pointSpendingCap == nil {
+	if request == nil {
 		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
 	}
-	request := pointSpendingCap
-	if request.MinimumPurchase != nil {
-		request.DeletedMinimumPurchase = new(*pointSpendingCap.MinimumPurchase)
-	}
-	request.MinimumPurchase = nil
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
