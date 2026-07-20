@@ -299,6 +299,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TransactionCounterService,
 		q.CartService,
 		q.CartItemService,
+		q.DeliveryPlanService,
 		q.DeliveryRouteService,
 		q.SettingService,
 		q.VoucherService,

@@ -34,12 +34,12 @@ func NewDeliveryPlanController(
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *deliveryPlanController {
-	return new(deliveryPlanController{
+	return &deliveryPlanController{
 		adminService:        adminService,
 		deliveryPlanService: deliveryPlanService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
-	})
+	}
 }
 
 func (q *deliveryPlanController) Mount(r fiber.Router) {

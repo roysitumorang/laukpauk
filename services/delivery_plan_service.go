@@ -41,9 +41,9 @@ type (
 func NewDeliveryPlanService(
 	deliveryPlanRepository repositories.DeliveryPlanRepository,
 ) DeliveryPlanService {
-	return new(deliveryPlanService{
+	return &deliveryPlanService{
 		deliveryPlanRepository: deliveryPlanRepository,
-	})
+	}
 }
 
 func (q *deliveryPlanService) FindDeliveryPlans(

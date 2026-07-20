@@ -48,10 +48,10 @@ func NewDeliveryPlanRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) DeliveryPlanRepository {
-	return new(deliveryPlanRepository{
+	return &deliveryPlanRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *deliveryPlanRepository) FindDeliveryPlans(

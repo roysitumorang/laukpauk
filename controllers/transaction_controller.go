@@ -31,6 +31,7 @@ type (
 		transactionCounterService services.TransactionCounterService
 		cartService               services.CartService
 		cartItemService           services.CartItemService
+		deliveryPlanService       services.DeliveryPlanService
 		deliveryRouteService      services.DeliveryRouteService
 		settingService            services.SettingService
 		voucherService            services.VoucherService
@@ -48,6 +49,7 @@ func NewTransactionController(
 	transactionCounterService services.TransactionCounterService,
 	cartService services.CartService,
 	cartItemService services.CartItemService,
+	deliveryPlanService services.DeliveryPlanService,
 	deliveryRouteService services.DeliveryRouteService,
 	settingService services.SettingService,
 	voucherService services.VoucherService,
@@ -63,6 +65,7 @@ func NewTransactionController(
 		transactionCounterService: transactionCounterService,
 		cartService:               cartService,
 		cartItemService:           cartItemService,
+		deliveryPlanService:       deliveryPlanService,
 		deliveryRouteService:      deliveryRouteService,
 		settingService:            settingService,
 		voucherService:            voucherService,
@@ -168,6 +171,56 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
 	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
+	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
+		ctx,
+		models.NewDeliveryPlanFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithDeliveryPlanIDs(request.DeliveryPlanID),
+	)
+	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if deliveryPlan == nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("delivery_plan_id: not found").
+			WriteResponse(c)
+	}
+	var deliveryDatetimeValid bool
+	if deliveryPlan.SameDay {
+		for _, sameDayHour := range deliveryPlan.SameDayHours {
+			if deliveryDatetimeValid = deliveryDatetimeValid ||
+				request.DeliveryDatetime.Equal(sameDayHour); deliveryDatetimeValid {
+				request.DeliverySpeed = models.DeliverySpeedSameDay
+				break
+			}
+		}
+	}
+	if !deliveryDatetimeValid && deliveryPlan.NextDay {
+		for _, nextDayHour := range deliveryPlan.NextDayHours {
+			if deliveryDatetimeValid = deliveryDatetimeValid ||
+				request.DeliveryDatetime.Equal(nextDayHour); deliveryDatetimeValid {
+				request.DeliverySpeed = models.DeliverySpeedNextDay
+				break
+			}
+		}
+	}
+	if !deliveryDatetimeValid && deliveryPlan.NextTwoDay {
+		for _, nextTwoDayHour := range deliveryPlan.NextTwoDayHours {
+			if deliveryDatetimeValid = deliveryDatetimeValid ||
+				request.DeliveryDatetime.Equal(nextTwoDayHour); deliveryDatetimeValid {
+				request.DeliverySpeed = models.DeliverySpeedNextTwoDay
+				break
+			}
+		}
+	}
+	if !deliveryDatetimeValid {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("delivery_datetime: not found").
+			WriteResponse(c)
+	}
 	setting, err := q.settingService.FindSetting(ctx)
 	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
