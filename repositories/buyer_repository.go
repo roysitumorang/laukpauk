@@ -410,7 +410,7 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		sb.Reset()
 		_, _ = sb.WriteString("LOWER(b.referral_code) IN (")
 		for i, referralCode := range request.ReferralCodes {
-			params = append(params, referralCode)
+			params = append(params, strings.ToLower(referralCode))
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

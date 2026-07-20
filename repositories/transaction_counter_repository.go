@@ -48,7 +48,7 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 			, updated_at
 		) VALUES ($1, 1, $2, $3)
 		ON CONFLICT (transaction_window) DO UPDATE SET
-			hits = hits + 1
+			hits = transaction_counters.hits + 1
 			, updated_at = $3
 		RETURNING id
 			, transaction_window

@@ -164,6 +164,8 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage("delivery_route_id: not found").
 			WriteResponse(c)
 	}
+	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
+	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
 	setting, err := q.settingService.FindSetting(ctx)
 	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
@@ -242,6 +244,11 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
+		if referrer == nil {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage("referral_code: is invalid").
+				WriteResponse(c)
+		}
 		_, pagination, err := q.transactionService.FindTransactions(
 			ctx,
 			models.NewTransactionFilter().
@@ -257,9 +264,8 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 				WriteResponse(c)
 		}
 		total := int(pagination.Info.Total)
-		if referrer == nil ||
-			(currentBuyer.ReferrerID != nil &&
-				currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
+		if (currentBuyer.ReferrerID != nil &&
+			currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
 			total >= len(setting.ReferralPointsSlots) {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage("referral_code: is invalid").
