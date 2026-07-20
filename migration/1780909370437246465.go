@@ -692,9 +692,10 @@ func init() {
 				, maintenance_mode BOOLEAN NOT NULL
 				, voucher_enabled BOOLEAN NOT NULL
 				, referral_points_enabled BOOLEAN NOT NULL
-				, referral_points_budget bigint NOT NULL
+				, referral_points_initial_budget bigint NOT NULL
 				, referral_points_per_referee bigint NOT NULL
 				, referral_points_slots bigint[] NOT NULL
+				, referral_points_remaining_budget bigint NOT NULL
 				, reward_points_accumulation_window_in_days smallint NOT NULL
 				, delivery_origin_longitude character varying NOT NULL
 				, delivery_origin_latitude character varying NOT NULL
@@ -729,9 +730,10 @@ func init() {
 		setting := models.Setting{
 			VoucherEnabled:                       true,
 			ReferralPointsEnabled:                true,
-			ReferralPointsBudget:                 3_000_000,
+			ReferralPointsInitialBudget:          3_000_000,
 			ReferralPointsPerReferee:             25_000,
 			ReferralPointsSlots:                  []int64{15_000, 10_000},
+			ReferralPointsRemainingBudget:        3_000_000,
 			RewardPointsAccumulationWindowInDays: 30,
 			DeliveryOriginLongitude:              longitude,
 			DeliveryOriginLatitude:               latitude,
@@ -746,9 +748,10 @@ func init() {
 				maintenance_mode
 				, voucher_enabled
 				, referral_points_enabled
-				, referral_points_budget
+				, referral_points_initial_budget
 				, referral_points_per_referee
 				, referral_points_slots
+				, referral_points_remaining_budget
 				, reward_points_accumulation_window_in_days
 				, delivery_origin_longitude
 				, delivery_origin_latitude
@@ -760,14 +763,15 @@ func init() {
 				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-				, $11, $12, $13, $14, $15
+				, $11, $12, $13, $14, $15, $16
 			)`,
 			setting.MaintenanceMode,
 			setting.VoucherEnabled,
 			setting.ReferralPointsEnabled,
-			setting.ReferralPointsBudget,
+			setting.ReferralPointsInitialBudget,
 			setting.ReferralPointsPerReferee,
 			setting.ReferralPointsSlots,
+			setting.ReferralPointsRemainingBudget,
 			setting.RewardPointsAccumulationWindowInDays,
 			setting.DeliveryOriginLongitude,
 			setting.DeliveryOriginLatitude,

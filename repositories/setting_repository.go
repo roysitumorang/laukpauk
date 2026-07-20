@@ -60,9 +60,10 @@ func (q *settingRepository) FindSetting(
 			, maintenance_mode
 			, voucher_enabled
 			, referral_points_enabled
-			, referral_points_budget
+			, referral_points_initial_budget
 			, referral_points_per_referee
 			, referral_points_slots
+			, referral_points_remaining_budget
 			, reward_points_accumulation_window_in_days
 			, delivery_origin_longitude
 			, delivery_origin_latitude
@@ -78,9 +79,10 @@ func (q *settingRepository) FindSetting(
 		&response.MaintenanceMode,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
-		&response.ReferralPointsBudget,
+		&response.ReferralPointsInitialBudget,
 		&response.ReferralPointsPerReferee,
 		&response.ReferralPointsSlots,
+		&response.ReferralPointsRemainingBudget,
 		&response.RewardPointsAccumulationWindowInDays,
 		&response.DeliveryOriginLongitude,
 		&response.DeliveryOriginLatitude,
@@ -122,25 +124,27 @@ func (q *settingRepository) UpdateSetting(
 			maintenance_mode = $1
 			, voucher_enabled = $2
 			, referral_points_enabled = $3
-			, referral_points_budget = $4
+			, referral_points_initial_budget = $4
 			, referral_points_per_referee = $5
 			, referral_points_slots = $6
-			, reward_points_accumulation_window_in_days = $7
-			, delivery_origin_longitude = $8
-			, delivery_origin_latitude = $9
-			, delivery_cost_per_km = $10
-			, delivery_max_distance_km = $11
-			, whatsapp_phone_number = $12
-			, updated_by = $13
-			, updated_at = $14
+			, referral_points_remaining_budget = $7
+			, reward_points_accumulation_window_in_days = $8
+			, delivery_origin_longitude = $9
+			, delivery_origin_latitude = $10
+			, delivery_cost_per_km = $11
+			, delivery_max_distance_km = $12
+			, whatsapp_phone_number = $13
+			, updated_by = $14
+			, updated_at = $15
 		WHERE id = 1
 		RETURNING id
 			, maintenance_mode
 			, voucher_enabled
 			, referral_points_enabled
-			, referral_points_budget
+			, referral_points_initial_budget
 			, referral_points_per_referee
 			, referral_points_slots
+			, referral_points_remaining_budget
 			, reward_points_accumulation_window_in_days
 			, delivery_origin_longitude
 			, delivery_origin_latitude
@@ -153,9 +157,10 @@ func (q *settingRepository) UpdateSetting(
 		request.MaintenanceMode,
 		request.VoucherEnabled,
 		request.ReferralPointsEnabled,
-		request.ReferralPointsBudget,
+		request.ReferralPointsInitialBudget,
 		request.ReferralPointsPerReferee,
 		request.ReferralPointsSlots,
+		request.ReferralPointsRemainingBudget,
 		request.RewardPointsAccumulationWindowInDays,
 		request.DeliveryOriginLongitude,
 		request.DeliveryOriginLatitude,
@@ -169,9 +174,10 @@ func (q *settingRepository) UpdateSetting(
 		&response.MaintenanceMode,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
-		&response.ReferralPointsBudget,
+		&response.ReferralPointsInitialBudget,
 		&response.ReferralPointsPerReferee,
 		&response.ReferralPointsSlots,
+		&response.ReferralPointsRemainingBudget,
 		&response.RewardPointsAccumulationWindowInDays,
 		&response.DeliveryOriginLongitude,
 		&response.DeliveryOriginLatitude,
@@ -208,7 +214,7 @@ func (q *settingRepository) DeductReferralPointsBudget(
 	if err = tx.QueryRow(
 		ctx,
 		`UPDATE setting SET
-			referral_points_budget = referral_points_budget - $1
+			referral_points_remaining_budget = referral_points_remaining_budget - $1
 			, updated_by = $2
 			, updated_at = $3
 		WHERE id = 1
@@ -216,9 +222,10 @@ func (q *settingRepository) DeductReferralPointsBudget(
 			, maintenance_mode
 			, voucher_enabled
 			, referral_points_enabled
-			, referral_points_budget
+			, referral_points_initial_budget
 			, referral_points_per_referee
 			, referral_points_slots
+			, referral_points_remaining_budget
 			, reward_points_accumulation_window_in_days
 			, delivery_origin_longitude
 			, delivery_origin_latitude
@@ -236,9 +243,10 @@ func (q *settingRepository) DeductReferralPointsBudget(
 		&response.MaintenanceMode,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
-		&response.ReferralPointsBudget,
+		&response.ReferralPointsInitialBudget,
 		&response.ReferralPointsPerReferee,
 		&response.ReferralPointsSlots,
+		&response.ReferralPointsRemainingBudget,
 		&response.RewardPointsAccumulationWindowInDays,
 		&response.DeliveryOriginLongitude,
 		&response.DeliveryOriginLatitude,

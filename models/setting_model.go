@@ -18,9 +18,10 @@ type (
 		MaintenanceMode                      bool            `json:"maintenance_mode" form:"maintenance_mode"`
 		VoucherEnabled                       bool            `json:"voucher_enabled" form:"voucher_enabled"`
 		ReferralPointsEnabled                bool            `json:"referral_points_enabled" form:"referral_points_enabled"`
-		ReferralPointsBudget                 int64           `json:"referral_points_budget" form:"referral_points_budget"`
+		ReferralPointsInitialBudget          int64           `json:"referral_points_initial_budget" form:"referral_points_initial_budget"`
 		ReferralPointsPerReferee             int64           `json:"referral_points_per_referee" form:"referral_points_per_referee"`
 		ReferralPointsSlots                  []int64         `json:"referral_points_slots" form:"referral_points_slots"`
+		ReferralPointsRemainingBudget        int64           `json:"referral_points_remaining_budget" form:"referral_points_remaining_budget"`
 		RewardPointsAccumulationWindowInDays int16           `json:"reward_points_accumulation_window_in_days" form:"reward_points_accumulation_window_in_days"`
 		DeliveryOriginLongitude              decimal.Decimal `json:"delivery_origin_longitude" form:"delivery_origin_longitude"`
 		DeliveryOriginLatitude               decimal.Decimal `json:"delivery_origin_latitude" form:"delivery_origin_latitude"`
