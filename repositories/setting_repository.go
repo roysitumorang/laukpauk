@@ -61,6 +61,7 @@ func (q *settingRepository) FindSetting(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_initial_budget
+			, refferal_points_minimum_shopping_cost
 			, referral_points_per_referee
 			, referral_points_slots
 			, referral_points_remaining_budget
@@ -80,6 +81,7 @@ func (q *settingRepository) FindSetting(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsInitialBudget,
+		&response.RefferalPointsMinimumShoppingCost,
 		&response.ReferralPointsPerReferee,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsRemainingBudget,
@@ -125,23 +127,25 @@ func (q *settingRepository) UpdateSetting(
 			, voucher_enabled = $2
 			, referral_points_enabled = $3
 			, referral_points_initial_budget = $4
-			, referral_points_per_referee = $5
-			, referral_points_slots = $6
-			, referral_points_remaining_budget = $7
-			, reward_points_accumulation_window_in_days = $8
-			, delivery_origin_longitude = $9
-			, delivery_origin_latitude = $10
-			, delivery_cost_per_km = $11
-			, delivery_max_distance_km = $12
-			, whatsapp_phone_number = $13
-			, updated_by = $14
-			, updated_at = $15
+			, refferal_points_minimum_shopping_cost = $5
+			, referral_points_per_referee = $6
+			, referral_points_slots = $7
+			, referral_points_remaining_budget = $8
+			, reward_points_accumulation_window_in_days = $9
+			, delivery_origin_longitude = $10
+			, delivery_origin_latitude = $11
+			, delivery_cost_per_km = $12
+			, delivery_max_distance_km = $13
+			, whatsapp_phone_number = $14
+			, updated_by = $15
+			, updated_at = $16
 		WHERE id = 1
 		RETURNING id
 			, maintenance_mode
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_initial_budget
+			, refferal_points_minimum_shopping_cost
 			, referral_points_per_referee
 			, referral_points_slots
 			, referral_points_remaining_budget
@@ -158,6 +162,7 @@ func (q *settingRepository) UpdateSetting(
 		request.VoucherEnabled,
 		request.ReferralPointsEnabled,
 		request.ReferralPointsInitialBudget,
+		request.RefferalPointsMinimumShoppingCost,
 		request.ReferralPointsPerReferee,
 		request.ReferralPointsSlots,
 		request.ReferralPointsRemainingBudget,
@@ -175,6 +180,7 @@ func (q *settingRepository) UpdateSetting(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsInitialBudget,
+		&response.RefferalPointsMinimumShoppingCost,
 		&response.ReferralPointsPerReferee,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsRemainingBudget,
@@ -223,6 +229,7 @@ func (q *settingRepository) DeductReferralPointsBudget(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_initial_budget
+			, refferal_points_minimum_shopping_cost
 			, referral_points_per_referee
 			, referral_points_slots
 			, referral_points_remaining_budget
@@ -244,6 +251,7 @@ func (q *settingRepository) DeductReferralPointsBudget(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsInitialBudget,
+		&response.RefferalPointsMinimumShoppingCost,
 		&response.ReferralPointsPerReferee,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsRemainingBudget,

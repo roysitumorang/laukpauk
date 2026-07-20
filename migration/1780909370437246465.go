@@ -693,6 +693,7 @@ func init() {
 				, voucher_enabled BOOLEAN NOT NULL
 				, referral_points_enabled BOOLEAN NOT NULL
 				, referral_points_initial_budget bigint NOT NULL
+				, refferal_points_minimum_shopping_cost bigint NOT NULL
 				, referral_points_per_referee bigint NOT NULL
 				, referral_points_slots bigint[] NOT NULL
 				, referral_points_remaining_budget bigint NOT NULL
@@ -731,6 +732,7 @@ func init() {
 			VoucherEnabled:                       true,
 			ReferralPointsEnabled:                true,
 			ReferralPointsInitialBudget:          3_000_000,
+			RefferalPointsMinimumShoppingCost:    60_000,
 			ReferralPointsPerReferee:             25_000,
 			ReferralPointsSlots:                  []int64{15_000, 10_000},
 			ReferralPointsRemainingBudget:        3_000_000,
@@ -749,6 +751,7 @@ func init() {
 				, voucher_enabled
 				, referral_points_enabled
 				, referral_points_initial_budget
+				, refferal_points_minimum_shopping_cost
 				, referral_points_per_referee
 				, referral_points_slots
 				, referral_points_remaining_budget
@@ -763,12 +766,13 @@ func init() {
 				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-				, $11, $12, $13, $14, $15, $16
+				, $11, $12, $13, $14, $15, $16, $17
 			)`,
 			setting.MaintenanceMode,
 			setting.VoucherEnabled,
 			setting.ReferralPointsEnabled,
 			setting.ReferralPointsInitialBudget,
+			setting.RefferalPointsMinimumShoppingCost,
 			setting.ReferralPointsPerReferee,
 			setting.ReferralPointsSlots,
 			setting.ReferralPointsRemainingBudget,

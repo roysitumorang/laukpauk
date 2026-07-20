@@ -19,6 +19,7 @@ type (
 		VoucherEnabled                       bool            `json:"voucher_enabled" form:"voucher_enabled"`
 		ReferralPointsEnabled                bool            `json:"referral_points_enabled" form:"referral_points_enabled"`
 		ReferralPointsInitialBudget          int64           `json:"referral_points_initial_budget" form:"referral_points_initial_budget"`
+		RefferalPointsMinimumShoppingCost    int64           `json:"refferal_points_minimum_shopping_cost" form:"refferal_points_minimum_shopping_cost"`
 		ReferralPointsPerReferee             int64           `json:"referral_points_per_referee" form:"referral_points_per_referee"`
 		ReferralPointsSlots                  []int64         `json:"referral_points_slots" form:"referral_points_slots"`
 		ReferralPointsRemainingBudget        int64           `json:"referral_points_remaining_budget" form:"referral_points_remaining_budget"`

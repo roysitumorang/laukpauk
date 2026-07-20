@@ -9,6 +9,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
@@ -179,45 +180,6 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	request.DeliveryCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
 	location := helper.LoadTimeZone()
 	now := time.Now().In(location)
-	if request.ReferralCode != nil {
-		referrer, err := q.buyerService.FindBuyer(
-			ctx,
-			models.NewBuyerFilter().
-				WithReferralCodes(*request.ReferralCode),
-		)
-		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		_, pagination, err := q.transactionService.FindTransactions(
-			ctx,
-			models.NewTransactionFilter().
-				WithBuyerIDs(currentBuyer.ID).
-				WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
-				WithReferrerIDs(referrer.ID).
-				WithReturnCountOnly(true),
-		)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		total := int(pagination.Info.Total)
-		if referrer == nil ||
-			(currentBuyer.ReferrerID != nil &&
-				currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
-			total >= len(setting.ReferralPointsSlots) {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage("referral_code: is invalid").
-				WriteResponse(c)
-		}
-		currentBuyer.ReferrerID = &referrer.ID
-		request.ReferrerID = &referrer.ID
-		request.ReferralPoints = setting.ReferralPointsSlots[total]
-	}
 	if n := len(request.Items); n > 0 {
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
 		for i, item := range request.Items {
@@ -260,6 +222,53 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.CalculateShoppingCost()
+	var sb strings.Builder
+	if request.ReferralCode != nil {
+		if request.ShoppingCost < setting.RefferalPointsMinimumShoppingCost {
+			sb.Reset()
+			_, _ = fmt.Fprintf(&sb, "referral_code: requires shopping cost minimum %s", humanize.Comma(setting.RefferalPointsMinimumShoppingCost))
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(sb.String()).
+				WriteResponse(c)
+		}
+		referrer, err := q.buyerService.FindBuyer(
+			ctx,
+			models.NewBuyerFilter().
+				WithReferralCodes(*request.ReferralCode),
+		)
+		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		_, pagination, err := q.transactionService.FindTransactions(
+			ctx,
+			models.NewTransactionFilter().
+				WithBuyerIDs(currentBuyer.ID).
+				WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
+				WithReferrerIDs(referrer.ID).
+				WithReturnCountOnly(true),
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		total := int(pagination.Info.Total)
+		if referrer == nil ||
+			(currentBuyer.ReferrerID != nil &&
+				currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
+			total >= len(setting.ReferralPointsSlots) {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage("referral_code: is invalid").
+				WriteResponse(c)
+		}
+		currentBuyer.ReferrerID = &referrer.ID
+		request.ReferrerID = &referrer.ID
+		request.ReferralPoints = setting.ReferralPointsSlots[total]
+	}
 	if setting.ReferralPointsEnabled {
 		if request.RewardPointsDiscounted {
 			pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
@@ -330,7 +339,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.CalculateDiscount()
-	var sb strings.Builder
+	sb.Reset()
 	_, _ = fmt.Fprintf(&sb, "%s%03d", now.Format("06"), now.YearDay())
 	counter, err := q.transactionCounterService.SaveTransactionCounter(
 		ctx,
