@@ -340,9 +340,11 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 						WriteResponse(c)
 				}
 			}
+			request.VoucherID = &voucher.ID
 			request.VoucherDiscount = voucher.Discount
 			request.VoucherType = &voucher.VoucherType
 		} else {
+			request.VoucherID = nil
 			request.VoucherDiscount = 0
 			request.VoucherType = nil
 		}
