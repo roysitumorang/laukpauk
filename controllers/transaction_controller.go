@@ -30,7 +30,7 @@ type (
 		cartService               services.CartService
 		cartItemService           services.CartItemService
 		deliveryRouteService      services.DeliveryRouteService
-		variableService           services.VariableService
+		settingService            services.SettingService
 		voucherService            services.VoucherService
 		pointSpendingCapService   services.PointSpendingCapService
 		pointService              services.PointService
@@ -47,7 +47,7 @@ func NewTransactionController(
 	cartService services.CartService,
 	cartItemService services.CartItemService,
 	deliveryRouteService services.DeliveryRouteService,
-	variableService services.VariableService,
+	settingService services.SettingService,
 	voucherService services.VoucherService,
 	pointSpendingCapService services.PointSpendingCapService,
 	pointService services.PointService,
@@ -62,7 +62,7 @@ func NewTransactionController(
 		cartService:               cartService,
 		cartItemService:           cartItemService,
 		deliveryRouteService:      deliveryRouteService,
-		variableService:           variableService,
+		settingService:            settingService,
 		voucherService:            voucherService,
 		pointSpendingCapService:   pointSpendingCapService,
 		pointService:              pointService,
@@ -164,9 +164,14 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
-	setting, err := q.variableService.FindVariableSetting(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVariableSetting")
+	setting, err := q.settingService.FindSetting(ctx)
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrSettingNotFound.Error()).
+			WriteResponse(c)
+	}
+	if setting == nil {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)

@@ -299,7 +299,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.CartService,
 		q.CartItemService,
 		q.DeliveryRouteService,
-		q.VariableService,
+		q.SettingService,
 		q.VoucherService,
 		q.PointSpendingCapService,
 		q.PointService,
@@ -322,7 +322,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.AdminService,
 		q.BuyerService,
 		q.DeliveryRouteService,
-		q.VariableService,
+		q.SettingService,
 		q.JsonWebTokenService,
 		q.RoutesApiConsumer,
 	).Mount(app.Group("/delivery_routes"))

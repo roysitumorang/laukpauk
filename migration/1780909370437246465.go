@@ -2,7 +2,6 @@ package migration
 
 import (
 	"context"
-	"encoding/json/v2"
 	"log/slog"
 	"time"
 
@@ -688,11 +687,20 @@ func init() {
 		// variables
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE variables (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, name character varying NOT NULL COLLATE "natural_sort"
-				, value JSONB NOT NULL
-				, created_by UUID REFERENCES users (id)
+			`CREATE TABLE setting (
+				id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY CHECK (id = 1)
+				, maintenance_mode BOOLEAN NOT NULL
+				, voucher_enabled BOOLEAN NOT NULL
+				, referral_points_enabled BOOLEAN NOT NULL
+				, referral_points_budget bigint NOT NULL
+				, referral_points_per_referee bigint NOT NULL
+				, referral_points_slots bigint[] NOT NULL
+				, reward_points_accumulation_window_in_days smallint NOT NULL
+				, delivery_origin_longitude character varying NOT NULL
+				, delivery_origin_latitude character varying NOT NULL
+				, delivery_cost_per_km bigint NOT NULL
+				, delivery_max_distance_km bigint NOT NULL
+				, whatsapp_phone_number character varying NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
@@ -703,21 +711,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX variables_unique_name_idx ON variables (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON variables (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON variables (updated_by);`,
+			`CREATE INDEX ON setting (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -732,7 +726,7 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
 			return
 		}
-		variable := models.VariableSetting{
+		setting := models.Setting{
 			VoucherEnabled:                       true,
 			ReferralPointsEnabled:                true,
 			ReferralPointsBudget:                 3_000_000,
@@ -745,30 +739,41 @@ func init() {
 			DeliveryMaxDistanceKM:                15,
 			WhatsappPhoneNumber:                  "628116099887",
 		}
-		variableByte, err := json.Marshal(variable)
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMarshal")
-			return
-		}
-		var variableValue map[string]any
-		if err = json.Unmarshal(variableByte, &variableValue); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUnmarshal")
-			return
-		}
 		now := time.Now()
 		if _, err = tx.Exec(
 			ctx,
-			`INSERT INTO variables (
-				name
-				, value
-				, created_by
+			`INSERT INTO setting (
+				maintenance_mode
+				, voucher_enabled
+				, referral_points_enabled
+				, referral_points_budget
+				, referral_points_per_referee
+				, referral_points_slots
+				, reward_points_accumulation_window_in_days
+				, delivery_origin_longitude
+				, delivery_origin_latitude
+				, delivery_cost_per_km
+				, delivery_max_distance_km
+				, whatsapp_phone_number
 				, created_at
 				, updated_by
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6)`,
-			"setting",
-			variableValue,
-			nil,
+			) VALUES (
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+				, $11, $12, $13, $14, $15
+			)`,
+			setting.MaintenanceMode,
+			setting.VoucherEnabled,
+			setting.ReferralPointsEnabled,
+			setting.ReferralPointsBudget,
+			setting.ReferralPointsPerReferee,
+			setting.ReferralPointsSlots,
+			setting.RewardPointsAccumulationWindowInDays,
+			setting.DeliveryOriginLongitude,
+			setting.DeliveryOriginLatitude,
+			setting.DeliveryCostPerKM,
+			setting.DeliveryMaxDistanceKM,
+			setting.WhatsappPhoneNumber,
 			now,
 			nil,
 			now,
