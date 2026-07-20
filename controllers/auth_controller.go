@@ -200,13 +200,11 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	if buyer == nil ||
-		buyer.EncryptedPassword == nil {
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
-			WriteResponse(c)
-	}
-	encryptedPassword := helper.String2ByteSlice(*buyer.EncryptedPassword)
-	if !helper.MatchedHashAndPassword(encryptedPassword, helper.String2ByteSlice(loginRequest.Password)) {
+		buyer.EncryptedPassword == nil ||
+		!helper.MatchedHashAndPassword(
+			helper.String2ByteSlice(*buyer.EncryptedPassword),
+			helper.String2ByteSlice(loginRequest.Password),
+		) {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
