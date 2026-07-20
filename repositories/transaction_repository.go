@@ -104,7 +104,7 @@ func (q *transactionRepository) FindTransactions(
 		, wallet_discount
 		, discounted_shopping_cost
 		, payment_amount
-		, payment_deadline
+		, payment_due_date
 		, delivery_cost
 		, discounted_delivery_cost
 		, delivery_route_id
@@ -234,7 +234,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.WalletDiscount,
 			&transaction.DiscountedShoppingCost,
 			&transaction.PaymentAmount,
-			&transaction.PaymentDeadline,
+			&transaction.PaymentDueDate,
 			&transaction.DeliveryCost,
 			&transaction.DiscountedDeliveryCost,
 			&transaction.DeliveryRouteID,
@@ -357,7 +357,7 @@ func (q *transactionRepository) FindTransaction(
 			, discounted_shopping_cost
 			, delivery_route_id
 			, payment_amount
-			, payment_deadline
+			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_longitude
@@ -420,7 +420,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.DiscountedShoppingCost,
 		&response.DeliveryRouteID,
 		&response.PaymentAmount,
-		&response.PaymentDeadline,
+		&response.PaymentDueDate,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryLongitude,
@@ -548,7 +548,7 @@ func (q *transactionRepository) CreateTransaction(
 			, wallet_discount
 			, discounted_shopping_cost
 			, payment_amount
-			, payment_deadline
+			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_route_id
@@ -595,7 +595,7 @@ func (q *transactionRepository) CreateTransaction(
 			, wallet_discount
 			, discounted_shopping_cost
 			, payment_amount
-			, payment_deadline
+			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_route_id
@@ -651,7 +651,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.WalletDiscount,
 		request.DiscountedShoppingCost,
 		request.PaymentAmount,
-		request.PaymentDeadline,
+		request.PaymentDueDate,
 		request.DeliveryCost,
 		request.DiscountedDeliveryCost,
 		request.DeliveryRouteID,
@@ -693,7 +693,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
 		&response.PaymentAmount,
-		&response.PaymentDeadline,
+		&response.PaymentDueDate,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryRouteID,
@@ -903,7 +903,7 @@ func (q *transactionRepository) UpdateTransaction(
 			, wallet_discount
 			, discounted_shopping_cost
 			, payment_amount
-			, payment_deadline
+			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_route_id
@@ -981,7 +981,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
 		&response.PaymentAmount,
-		&response.PaymentDeadline,
+		&response.PaymentDueDate,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryRouteID,

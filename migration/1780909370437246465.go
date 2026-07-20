@@ -1285,7 +1285,7 @@ func init() {
 				, wallet_discount bigint NOT NULL
 				, discounted_shopping_cost bigint NOT NULL
 				, payment_amount bigint NOT NULL
-				, payment_deadline timestamp with time zone NOT NULL
+				, payment_due_date timestamp with time zone NOT NULL
 				, delivery_cost bigint NOT NULL
 				, discounted_delivery_cost bigint NOT NULL
 				, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id)

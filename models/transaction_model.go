@@ -69,7 +69,7 @@ type (
 		WalletDiscount          int64              `json:"-" form:"-"`
 		DiscountedShoppingCost  int64              `json:"-" form:"-"`
 		PaymentAmount           int64              `json:"-" form:"-"`
-		PaymentDeadline         time.Time          `json:"-" form:"-"`
+		PaymentDueDate          time.Time          `json:"-" form:"-"`
 		DeliveryCost            int64              `json:"-" form:"-"`
 		DiscountedDeliveryCost  int64              `json:"-" form:"-"`
 		DeliveryRouteID         uuid.UUID          `json:"delivery_route_id" form:"-"`
