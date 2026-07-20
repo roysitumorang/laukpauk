@@ -170,9 +170,8 @@ func (q *deliveryRouteRepository) FindDeliveryRoute(
 		FROM delivery_routes %s`,
 		condition,
 	)
-	query := sb.String()
 	var response models.DeliveryRoute
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.OriginLongitude,
 		&response.OriginLatitude,
@@ -275,21 +274,25 @@ func (q *deliveryRouteRepository) buildCondition(request *models.DeliveryRouteFi
 		sb.Reset()
 		params = append(params, request.OriginLongitude)
 		_, _ = fmt.Fprintf(sb, "origin_longitude = $%d", len(params))
+		conds = append(conds, sb.String())
 	}
 	if request.OriginLatitude != nil {
 		sb.Reset()
 		params = append(params, request.OriginLatitude)
 		_, _ = fmt.Fprintf(sb, "origin_latitude = $%d", len(params))
+		conds = append(conds, sb.String())
 	}
 	if request.DestinationLongitude != nil {
 		sb.Reset()
 		params = append(params, request.DestinationLongitude)
 		_, _ = fmt.Fprintf(sb, "destination_longitude = $%d", len(params))
+		conds = append(conds, sb.String())
 	}
 	if request.DestinationLatitude != nil {
 		sb.Reset()
 		params = append(params, request.DestinationLatitude)
 		_, _ = fmt.Fprintf(sb, "destination_latitude = $%d", len(params))
+		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
 		sb.Reset()
