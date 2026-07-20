@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"maps"
 	"net/url"
 	"strconv"
@@ -28,11 +29,8 @@ type (
 
 func NewPagination(total, pages, limit, page int64, baseURL string, urlValues url.Values) (*Pagination, error) {
 	var (
-		response    Pagination
-		err         error
-		builder     strings.Builder
-		u           url.Values
-		queryString string
+		response Pagination
+		sb       strings.Builder
 	)
 	response.Info.Total = total
 	response.Info.Page = page
@@ -41,67 +39,58 @@ func NewPagination(total, pages, limit, page int64, baseURL string, urlValues ur
 	response.Links.First = baseURL
 	response.Links.Current = baseURL
 	if len(urlValues) > 0 {
-		u = maps.Clone(urlValues)
-		if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
+		u := maps.Clone(urlValues)
+		queryString, err := url.QueryUnescape(u.Encode())
+		if err != nil {
 			return nil, err
 		}
-		builder.Reset()
-		_, _ = builder.WriteString(baseURL)
-		_, _ = builder.WriteString("?")
-		_, _ = builder.WriteString(queryString)
-		response.Links.Current = builder.String()
+		sb.Reset()
+		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		response.Links.Current = sb.String()
 		u.Del("page")
 		if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
 			return nil, err
 		}
-		builder.Reset()
-		_, _ = builder.WriteString(baseURL)
-		_, _ = builder.WriteString("?")
-		_, _ = builder.WriteString(queryString)
-		response.Links.First = builder.String()
+		sb.Reset()
+		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		response.Links.First = sb.String()
 	}
 	if n := pages - 1; page < n {
-		u = maps.Clone(urlValues)
+		u := maps.Clone(urlValues)
 		u.Set("page", strconv.FormatInt(n, 10))
-		if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
+		queryString, err := url.QueryUnescape(u.Encode())
+		if err != nil {
 			return nil, err
 		}
-		builder.Reset()
-		_, _ = builder.WriteString(baseURL)
-		_, _ = builder.WriteString("?")
-		_, _ = builder.WriteString(queryString)
-		response.Links.Last = builder.String()
+		sb.Reset()
+		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		response.Links.Last = sb.String()
 		u.Set("page", strconv.FormatInt(page+1, 10))
 		if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
 			return nil, err
 		}
-		builder.Reset()
-		_, _ = builder.WriteString(baseURL)
-		_, _ = builder.WriteString("?")
-		_, _ = builder.WriteString(queryString)
-		response.Links.Next = builder.String()
+		sb.Reset()
+		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		response.Links.Next = sb.String()
 	}
 	if page > 0 {
-		u = maps.Clone(urlValues)
+		u := maps.Clone(urlValues)
 		u.Set("page", strconv.FormatInt(page, 10))
-		if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
+		queryString, err := url.QueryUnescape(u.Encode())
+		if err != nil {
 			return nil, err
 		}
-		builder.Reset()
-		_, _ = builder.WriteString(baseURL)
-		_, _ = builder.WriteString("?")
-		_, _ = builder.WriteString(queryString)
-		response.Links.Current = builder.String()
+		sb.Reset()
+		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		response.Links.Current = sb.String()
 		if page > 1 {
 			u.Set("page", strconv.FormatInt(page-1, 10))
 			if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
 				return nil, err
 			}
-			builder.Reset()
-			_, _ = builder.WriteString(baseURL)
-			_, _ = builder.WriteString("?")
-			_, _ = builder.WriteString(queryString)
-			response.Links.Previous = builder.String()
+			sb.Reset()
+			_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+			response.Links.Previous = sb.String()
 		}
 	}
 	return &response, nil
