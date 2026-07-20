@@ -701,7 +701,7 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
-			`(target_audience != $%d AND EXISTS(
+			`(target_audience = $%d OR EXISTS(
 				SELECT 1
 				FROM vouchers_buyers
 				WHERE vouchers_buyers.voucher_id = vouchers.id
