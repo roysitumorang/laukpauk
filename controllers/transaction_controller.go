@@ -225,75 +225,77 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	}
 	request.CalculateShoppingCost()
 	var sb strings.Builder
-	if request.ReferralCode != nil {
-		if request.ShoppingCost < setting.RefferalPointsMinimumShoppingCost {
-			sb.Reset()
-			_, _ = fmt.Fprintf(&sb, "referral_code: requires shopping cost minimum %s", humanize.Comma(setting.RefferalPointsMinimumShoppingCost))
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(sb.String()).
-				WriteResponse(c)
-		}
-		referrer, err := q.buyerService.FindBuyer(
-			ctx,
-			models.NewBuyerFilter().
-				WithReferralCodes(*request.ReferralCode),
-		)
-		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		if referrer == nil {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage("referral_code: is invalid").
-				WriteResponse(c)
-		}
-		_, pagination, err := q.transactionService.FindTransactions(
-			ctx,
-			models.NewTransactionFilter().
-				WithBuyerIDs(currentBuyer.ID).
-				WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
-				WithReferrerIDs(referrer.ID).
-				WithReturnCountOnly(true),
-		)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		total := int(pagination.Info.Total)
-		if (currentBuyer.ReferrerID != nil &&
-			currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
-			total >= len(setting.ReferralPointsSlots) {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage("referral_code: is invalid").
-				WriteResponse(c)
-		}
-		currentBuyer.ReferrerID = &referrer.ID
-		request.ReferrerID = &referrer.ID
-		request.ReferralPoints = setting.ReferralPointsSlots[total]
-	}
 	if setting.ReferralPointsEnabled {
-		if request.RewardPointsDiscounted {
-			pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
+		if request.ReferralCode != nil {
+			if request.ShoppingCost < setting.RefferalPointsMinimumShoppingCost {
+				sb.Reset()
+				_, _ = fmt.Fprintf(&sb, "referral_code: requires shopping cost minimum %s", humanize.Comma(setting.RefferalPointsMinimumShoppingCost))
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(sb.String()).
+					WriteResponse(c)
+			}
+			referrer, err := q.buyerService.FindBuyer(
 				ctx,
-				models.NewPointSpendingCapFilter().
-					WithRecordStatuses(models.RecordStatusActive).
-					WithShoppingCosts(request.ShoppingCost),
+				models.NewBuyerFilter().
+					WithReferralCodes(*request.ReferralCode),
 			)
-			if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
+			if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
 				return helper.NewResponse(fiber.StatusUnprocessableEntity).
 					SetMessage(err.Error()).
 					WriteResponse(c)
 			}
-			if pointSpendingCap != nil {
-				request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
+			if referrer == nil {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage("referral_code: is invalid").
+					WriteResponse(c)
 			}
+			_, pagination, err := q.transactionService.FindTransactions(
+				ctx,
+				models.NewTransactionFilter().
+					WithBuyerIDs(currentBuyer.ID).
+					WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
+					WithReferrerIDs(referrer.ID).
+					WithReturnCountOnly(true),
+			)
+			if err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(err.Error()).
+					WriteResponse(c)
+			}
+			total := int(pagination.Info.Total)
+			if (currentBuyer.ReferrerID != nil &&
+				currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
+				total >= len(setting.ReferralPointsSlots) {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage("referral_code: is invalid").
+					WriteResponse(c)
+			}
+			currentBuyer.ReferrerID = &referrer.ID
+			request.ReferrerID = &referrer.ID
+			request.ReferralPoints = setting.ReferralPointsSlots[total]
 		} else {
-			request.RewardPointsDiscount = 0
+			request.ReferrerID = nil
+			request.ReferralPoints = 0
+		}
+	}
+	request.RewardPointsDiscount = 0
+	if request.RewardPointsDiscounted {
+		pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
+			ctx,
+			models.NewPointSpendingCapFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithShoppingCosts(request.ShoppingCost),
+		)
+		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if pointSpendingCap != nil {
+			request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
 		}
 	} else if setting.VoucherEnabled {
 		if request.VoucherCode != nil {

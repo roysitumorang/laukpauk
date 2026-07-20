@@ -697,13 +697,16 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 		conds = append(conds, sb.String())
 	}
 	if len(request.BuyerIDs) > 0 {
+		params = append(params, models.VoucherTargetAudienceAllBuyers)
 		sb.Reset()
-		_, _ = sb.WriteString(
-			`EXISTS(
+		_, _ = fmt.Fprintf(
+			sb,
+			`(target_audience != $%d AND EXISTS(
 				SELECT 1
-				FROM vouchers_users
-				WHERE vouchers_users.voucher_id = vouchers.id
-					AND vouchers_users.buyer_id IN (`,
+				FROM vouchers_buyers
+				WHERE vouchers_buyers.voucher_id = vouchers.id
+					AND vouchers_buyers.buyer_id IN (`,
+			len(params),
 		)
 		for i, buyerID := range request.BuyerIDs {
 			params = append(params, buyerID)
@@ -712,7 +715,7 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 			}
 			_, _ = fmt.Fprintf(sb, "$%d", len(params))
 		}
-		_, _ = sb.WriteString("))")
+		_, _ = sb.WriteString(")))")
 		conds = append(conds, sb.String())
 	}
 	if !request.TransactionDatetime.IsZero() {

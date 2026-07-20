@@ -242,12 +242,32 @@ func (q *Voucher) Validate() (err error) {
 	if q.EffectiveStartTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveStartTime, location); err != nil {
 		return fmt.Errorf("effective_start_time: should use format '%s'", time.TimeOnly)
 	}
+	q.EffectiveStartTime = time.Date(
+		1,
+		1,
+		1,
+		q.EffectiveStartTime.Hour(),
+		q.EffectiveStartTime.Minute(),
+		q.EffectiveStartTime.Second(),
+		0,
+		q.EffectiveStartTime.Location(),
+	)
 	if q.RawEffectiveEndTime = strings.TrimSpace(q.RawEffectiveEndTime); q.RawEffectiveEndTime == "" {
 		return errors.New("effective_end_time: is required")
 	}
 	if q.EffectiveEndTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveEndTime, location); err != nil {
 		return fmt.Errorf("effective_end_time: should use format '%s'", time.TimeOnly)
 	}
+	q.EffectiveEndTime = time.Date(
+		1,
+		1,
+		1,
+		q.EffectiveEndTime.Hour(),
+		q.EffectiveEndTime.Minute(),
+		q.EffectiveEndTime.Second(),
+		999_999,
+		q.EffectiveEndTime.Location(),
+	)
 	if !q.EffectiveEndTime.After(q.EffectiveStartTime) {
 		return errors.New("effective_end_time: should exceed effective_start_time")
 	}
