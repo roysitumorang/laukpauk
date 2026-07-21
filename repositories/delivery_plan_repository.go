@@ -985,10 +985,10 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 			sb,
 			`(transaction_window @> $%d::timestamptz AND NOT EXISTS(
 				SELECT 1
-				FROM custom_delivery_days
-				WHERE custom_delivery_days.delivery_plan_id = delivery_plans.id
-					AND custom_delivery_days.date = $%d
-					AND custom_delivery_days.record_status = $%d
+				FROM skipped_delivery_plans
+				WHERE skipped_delivery_plans.delivery_plan_id = delivery_plans.id
+					AND skipped_delivery_plans.date = $%d
+					AND skipped_delivery_plans.record_status = $%d
 			))`,
 			n-2, n-1, n,
 		)

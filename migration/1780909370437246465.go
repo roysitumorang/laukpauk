@@ -973,10 +973,10 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// custom_delivery_days
+		// skipped_delivery_plans
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE custom_delivery_days (
+			`CREATE TABLE skipped_delivery_plans (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, date timestamp with time zone NOT NULL
@@ -994,28 +994,28 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON custom_delivery_days (date);`,
+			`CREATE INDEX ON skipped_delivery_plans (date);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON custom_delivery_days (delivery_plan_id);`,
+			`CREATE INDEX ON skipped_delivery_plans (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON custom_delivery_days (created_by);`,
+			`CREATE INDEX ON skipped_delivery_plans (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON custom_delivery_days (deleted_by);`,
+			`CREATE INDEX ON skipped_delivery_plans (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

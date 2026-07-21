@@ -15,9 +15,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindCustomDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.CustomDeliveryDayFilter, error) {
-	ctxt := "CustomDeliveryDaySanitizer-FindCustomDeliveryDays"
-	response := models.NewCustomDeliveryDayFilter()
+func FindSkippedDeliveryPlans(ctx context.Context, c fiber.Ctx) (*models.SkippedDeliveryPlanFilter, error) {
+	ctxt := "SkippedDeliveryPlanSanitizer-FindSkippedDeliveryPlans"
+	response := models.NewSkippedDeliveryPlanFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -36,7 +36,7 @@ func FindCustomDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.CustomDel
 		var sortings []models.Sorting
 		for _, sorting := range sortBy {
 			if !strings.Contains(sorting, ":") {
-				if _, ok := models.MapCustomDeliveryDaySortings[sorting]; ok {
+				if _, ok := models.MapSkippedDeliveryPlanSortings[sorting]; ok {
 					sortings = append(sortings, models.Sorting{
 						Field:     sorting,
 						Direction: models.SortingDirectionAsc,
@@ -44,7 +44,7 @@ func FindCustomDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.CustomDel
 				}
 			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
 				field, order := items[0], items[1]
-				if _, ok := models.MapCustomDeliveryDaySortings[field]; ok &&
+				if _, ok := models.MapSkippedDeliveryPlanSortings[field]; ok &&
 					(models.SortingDirectionAsc.Equal(order) ||
 						models.SortingDirectionDesc.Equal(order)) {
 					sortings = append(sortings, models.Sorting{
@@ -71,9 +71,9 @@ func FindCustomDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.CustomDel
 	return response, nil
 }
 
-func ValidateCustomDeliveryDay(ctx context.Context, c fiber.Ctx) (*models.CustomDeliveryDay, int, error) {
-	ctxt := "CustomDeliveryDaySanitizer-ValidateCustomDeliveryDay"
-	var response models.CustomDeliveryDay
+func ValidateSkippedDeliveryPlan(ctx context.Context, c fiber.Ctx) (*models.SkippedDeliveryPlan, int, error) {
+	ctxt := "SkippedDeliveryPlanSanitizer-ValidateSkippedDeliveryPlan"
+	var response models.SkippedDeliveryPlan
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

@@ -20,26 +20,26 @@ import (
 )
 
 type (
-	customDeliveryDayController struct {
-		adminService             services.AdminService
-		customDeliveryDayService services.CustomDeliveryDayService
-		deliveryPlanService      services.DeliveryPlanService
+	skippedDeliveryPlanController struct {
+		adminService               services.AdminService
+		skippedDeliveryPlanService services.SkippedDeliveryPlanService
+		deliveryPlanService        services.DeliveryPlanService
 	}
 )
 
-func NewCustomDeliveryDayController(
+func NewSkippedDeliveryPlanController(
 	adminService services.AdminService,
-	customDeliveryDayService services.CustomDeliveryDayService,
+	skippedDeliveryPlanService services.SkippedDeliveryPlanService,
 	deliveryPlanService services.DeliveryPlanService,
-) *customDeliveryDayController {
-	return new(customDeliveryDayController{
-		adminService:             adminService,
-		customDeliveryDayService: customDeliveryDayService,
-		deliveryPlanService:      deliveryPlanService,
-	})
+) *skippedDeliveryPlanController {
+	return &skippedDeliveryPlanController{
+		adminService:               adminService,
+		skippedDeliveryPlanService: skippedDeliveryPlanService,
+		deliveryPlanService:        deliveryPlanService,
+	}
 }
 
-func (q *customDeliveryDayController) Mount(r fiber.Router) {
+func (q *skippedDeliveryPlanController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
@@ -48,9 +48,9 @@ func (q *customDeliveryDayController) Mount(r fiber.Router) {
 		Post("/:id/delete", q.AdminDelete)
 }
 
-func (q *customDeliveryDayController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *skippedDeliveryPlanController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "CustomDeliveryDayController-AdminIndex"
+	ctxt := "SkippedDeliveryPlanController-AdminIndex"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -59,8 +59,8 @@ func (q *customDeliveryDayController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.CustomDeliveryDayFilter)
-	rows := []*models.CustomDeliveryDay{}
+	request := new(models.SkippedDeliveryPlanFilter)
+	rows := []*models.SkippedDeliveryPlan{}
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -85,45 +85,45 @@ func (q *customDeliveryDayController) AdminIndex(c fiber.Ctx) (err error) {
 				Label:     "Oldest-Newest",
 			},
 			{
-				Field:     models.CustomDeliveryDaySortingFieldDate,
+				Field:     models.SkippedDeliveryPlanSortingFieldDate,
 				Direction: models.SortingDirectionAsc,
 				Label:     "Date A-Z",
 			},
 			{
-				Field:     models.CustomDeliveryDaySortingFieldDate,
+				Field:     models.SkippedDeliveryPlanSortingFieldDate,
 				Direction: models.SortingDirectionDesc,
 				Label:     "Date Z-A",
 			},
 		},
 	)
-	request, err = sanitizers.FindCustomDeliveryDays(ctx, c)
+	request, err = sanitizers.FindSkippedDeliveryPlans(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDays")
-		return c.Render("admin/custom_delivery_day_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSkippedDeliveryPlans")
+		return c.Render("admin/skipped_delivery_plan_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	request.WithRecordStatuses(models.RecordStatusActive)
-	if rows, pagination, err = q.customDeliveryDayService.FindCustomDeliveryDays(
+	if rows, pagination, err = q.skippedDeliveryPlanService.FindSkippedDeliveryPlans(
 		c,
 		request,
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDays")
-		return c.Render("admin/custom_delivery_day_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSkippedDeliveryPlans")
+		return c.Render("admin/skipped_delivery_plan_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/custom_delivery_day_index", params.Push(
+	return c.Render("admin/skipped_delivery_plan_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
 }
 
-func (q *customDeliveryDayController) AdminNew(c fiber.Ctx) (err error) {
+func (q *skippedDeliveryPlanController) AdminNew(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "CustomDeliveryDayController-AdminNew"
+	ctxt := "SkippedDeliveryPlanController-AdminNew"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -132,7 +132,7 @@ func (q *customDeliveryDayController) AdminNew(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.CustomDeliveryDay{
+	request := new(models.SkippedDeliveryPlan{
 		Date: time.Now(),
 	})
 	var deliveryPlans []*models.DeliveryPlan
@@ -152,15 +152,15 @@ func (q *customDeliveryDayController) AdminNew(c fiber.Ctx) (err error) {
 			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
-		return c.Render("admin/custom_delivery_day_new", params, "admin/layouts/authenticated")
+		return c.Render("admin/skipped_delivery_plan_new", params, "admin/layouts/authenticated")
 	}
 	params.Push("deliveryPlans", deliveryPlans)
-	return c.Render("admin/custom_delivery_day_new", params, "admin/layouts/authenticated")
+	return c.Render("admin/skipped_delivery_plan_new", params, "admin/layouts/authenticated")
 }
 
-func (q *customDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *skippedDeliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "CustomDeliveryDayController-AdminCreate"
+	ctxt := "SkippedDeliveryPlanController-AdminCreate"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -168,7 +168,7 @@ func (q *customDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.CustomDeliveryDay{
+	request := new(models.SkippedDeliveryPlan{
 		Date: time.Now(),
 	})
 	var deliveryPlans []*models.DeliveryPlan
@@ -188,24 +188,24 @@ func (q *customDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
-		return c.Render("admin/custom_delivery_day_new", params, "admin/layouts/authenticated")
+		return c.Render("admin/skipped_delivery_plan_new", params, "admin/layouts/authenticated")
 	}
 	params.Push("deliveryPlans", deliveryPlans)
 	mapDeliveryPlanIDs := map[uuid.UUID]struct{}{}
 	for _, deliveryPlan := range deliveryPlans {
 		mapDeliveryPlanIDs[deliveryPlan.ID] = struct{}{}
 	}
-	request, statusCode, err := sanitizers.ValidateCustomDeliveryDay(ctx, c)
+	request, statusCode, err := sanitizers.ValidateSkippedDeliveryPlan(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateCustomDeliveryDay")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSkippedDeliveryPlan")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/custom_delivery_day_new", params.Push(
+		return c.Render("admin/skipped_delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if _, ok := mapDeliveryPlanIDs[request.DeliveryPlanID]; !ok {
-		return c.Render("admin/custom_delivery_day_new", params.Push(
+		return c.Render("admin/skipped_delivery_plan_new", params.Push(
 			"flash", flash.Danger("delivery_plan_id: not found"),
 		), "admin/layouts/authenticated")
 	}
@@ -213,25 +213,25 @@ func (q *customDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 	request.CreatedBy = currentAdmin.ID
 	request.CreatedAt = time.Now()
 	params.Push("request", request)
-	customDeliveryDay, err := q.customDeliveryDayService.FindCustomDeliveryDay(
+	skippedDeliveryPlan, err := q.skippedDeliveryPlanService.FindSkippedDeliveryPlan(
 		ctx,
-		models.NewCustomDeliveryDayFilter().
+		models.NewSkippedDeliveryPlanFilter().
 			WithDates(request.Date).
 			WithDeliveryPlanIDs(request.DeliveryPlanID),
 	)
-	if err != nil && !errors.Is(err, models.ErrCustomDeliveryDayNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDay")
-		return c.Render("admin/custom_delivery_day_new", params.Push(
+	if err != nil && !errors.Is(err, models.ErrSkippedDeliveryPlanNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSkippedDeliveryPlan")
+		return c.Render("admin/skipped_delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if customDeliveryDay != nil {
-		if customDeliveryDay.RecordStatus == models.RecordStatusActive {
-			return c.Render("admin/custom_delivery_day_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation.Error()),
+	if skippedDeliveryPlan != nil {
+		if skippedDeliveryPlan.RecordStatus == models.RecordStatusActive {
+			return c.Render("admin/skipped_delivery_plan_new", params.Push(
+				"flash", flash.Danger(models.ErrUniqueSkippedDeliveryPlanDateDeliveryPlanIdViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
-		request.ID = customDeliveryDay.ID
+		request.ID = skippedDeliveryPlan.ID
 		request.DeletedBy = nil
 		request.DeletedAt = nil
 		request.DeletionReason = nil
@@ -240,7 +240,7 @@ func (q *customDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/custom_delivery_day_new", params.Push(
+		return c.Render("admin/skipped_delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -252,60 +252,51 @@ func (q *customDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if request.ID.Compare(uuid.Nil()) == 0 {
-		if _, err = q.customDeliveryDayService.CreateCustomDeliveryDay(ctx, tx, request); err != nil {
-			if !errors.Is(err, models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateCustomDeliveryDay")
-			}
-			return c.Render("admin/custom_delivery_day_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+	if _, err = q.skippedDeliveryPlanService.SaveSkippedDeliveryPlan(ctx, tx, request); err != nil {
+		if !errors.Is(err, models.ErrUniqueSkippedDeliveryPlanDateDeliveryPlanIdViolation) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveSkippedDeliveryPlan")
 		}
-	} else if _, err = q.customDeliveryDayService.UpdateCustomDeliveryDay(ctx, tx, request); err != nil {
-		if !errors.Is(err, models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCustomDeliveryDay")
-		}
-		return c.Render("admin/custom_delivery_day_new", params.Push(
+		return c.Render("admin/skipped_delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/custom_delivery_day_new", params.Push(
+		return c.Render("admin/skipped_delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("custom delivery day created successfully").
-		Redirect(c, sess.Session, "/admin/custom_delivery_days")
+		Success("skipped delivery plan created successfully").
+		Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 }
 
-func (q *customDeliveryDayController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *skippedDeliveryPlanController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "CustomDeliveryDayController-AdminDelete"
+	ctxt := "SkippedDeliveryPlanController-AdminDelete"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	customDeliveryDayID, err := uuid.Parse(c.Params("id"))
+	skippedDeliveryPlanID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrCustomDeliveryDayNotFound.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
+		return flash.Danger(models.ErrSkippedDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 	}
-	request, err := q.customDeliveryDayService.FindCustomDeliveryDay(
+	request, err := q.skippedDeliveryPlanService.FindSkippedDeliveryPlan(
 		ctx,
-		models.NewCustomDeliveryDayFilter().
+		models.NewSkippedDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithCustomDeliveryDayIDs(customDeliveryDayID),
+			WithSkippedDeliveryPlanIDs(skippedDeliveryPlanID),
 	)
-	if err != nil && !errors.Is(err, models.ErrCustomDeliveryDayNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDay")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
+	if err != nil && !errors.Is(err, models.ErrSkippedDeliveryPlanNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSkippedDeliveryPlan")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 	}
 	if request == nil {
-		return flash.Danger(models.ErrCustomDeliveryDayNotFound.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
+		return flash.Danger(models.ErrSkippedDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 	}
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
@@ -314,7 +305,7 @@ func (q *customDeliveryDayController) AdminDelete(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -324,15 +315,15 @@ func (q *customDeliveryDayController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.customDeliveryDayService.UpdateCustomDeliveryDay(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCustomDeliveryDay")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
+	if _, err = q.skippedDeliveryPlanService.UpdateSkippedDeliveryPlan(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSkippedDeliveryPlan")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("custom delivery day deleted successfully").
-		Redirect(c, sess.Session, "/admin/custom_delivery_days")
+		Success("skipped delivery plan deleted successfully").
+		Redirect(c, sess.Session, "/admin/skipped_delivery_plans")
 }

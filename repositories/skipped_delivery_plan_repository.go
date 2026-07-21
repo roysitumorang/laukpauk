@@ -17,55 +17,55 @@ import (
 )
 
 type (
-	CustomDeliveryDayRepository interface {
-		FindCustomDeliveryDays(
+	SkippedDeliveryPlanRepository interface {
+		FindSkippedDeliveryPlans(
 			ctx context.Context,
-			request *models.CustomDeliveryDayFilter,
-		) ([]*models.CustomDeliveryDay, int64, int64, error)
-		FindCustomDeliveryDay(
+			request *models.SkippedDeliveryPlanFilter,
+		) ([]*models.SkippedDeliveryPlan, int64, int64, error)
+		FindSkippedDeliveryPlan(
 			ctx context.Context,
-			request *models.CustomDeliveryDayFilter,
-		) (*models.CustomDeliveryDay, error)
-		CreateCustomDeliveryDay(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.CustomDeliveryDay,
-		) (*models.CustomDeliveryDay, error)
-		UpdateCustomDeliveryDay(
+			request *models.SkippedDeliveryPlanFilter,
+		) (*models.SkippedDeliveryPlan, error)
+		CreateSkippedDeliveryPlan(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.CustomDeliveryDay,
-		) (*models.CustomDeliveryDay, error)
+			request *models.SkippedDeliveryPlan,
+		) (*models.SkippedDeliveryPlan, error)
+		UpdateSkippedDeliveryPlan(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.SkippedDeliveryPlan,
+		) (*models.SkippedDeliveryPlan, error)
 	}
 
-	customDeliveryDayRepository struct {
+	skippedDeliveryPlanRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewCustomDeliveryDayRepository(
+func NewSkippedDeliveryPlanRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) CustomDeliveryDayRepository {
-	return &customDeliveryDayRepository{
+) SkippedDeliveryPlanRepository {
+	return &skippedDeliveryPlanRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	}
 }
 
-func (q *customDeliveryDayRepository) FindCustomDeliveryDays(
+func (q *skippedDeliveryPlanRepository) FindSkippedDeliveryPlans(
 	ctx context.Context,
-	request *models.CustomDeliveryDayFilter,
-) ([]*models.CustomDeliveryDay, int64, int64, error) {
-	ctxt := "CustomDeliveryDayRepository-FindCustomDeliveryDays"
+	request *models.SkippedDeliveryPlanFilter,
+) ([]*models.SkippedDeliveryPlan, int64, int64, error) {
+	ctxt := "SkippedDeliveryPlanRepository-FindSkippedDeliveryPlans"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
 		&sb,
 		`SELECT COUNT(1)
-		FROM custom_delivery_days n
+		FROM skipped_delivery_plans n
 		JOIN delivery_plans d ON n.delivery_plan_id = d.id %s`,
 		condition,
 	)
@@ -137,36 +137,36 @@ func (q *customDeliveryDayRepository) FindCustomDeliveryDays(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.CustomDeliveryDay
+	var response []*models.SkippedDeliveryPlan
 	for rows.Next() {
-		var customDeliveryDay models.CustomDeliveryDay
+		var skippedDeliveryPlan models.SkippedDeliveryPlan
 		if err = rows.Scan(
-			&customDeliveryDay.ID,
-			&customDeliveryDay.RecordStatus,
-			&customDeliveryDay.Date,
-			&customDeliveryDay.DeliveryPlanID,
-			&customDeliveryDay.DeliveryPlanName,
-			&customDeliveryDay.CreatedBy,
-			&customDeliveryDay.CreatedAt,
-			&customDeliveryDay.DeletedBy,
-			&customDeliveryDay.DeletedAt,
-			&customDeliveryDay.DeletionReason,
+			&skippedDeliveryPlan.ID,
+			&skippedDeliveryPlan.RecordStatus,
+			&skippedDeliveryPlan.Date,
+			&skippedDeliveryPlan.DeliveryPlanID,
+			&skippedDeliveryPlan.DeliveryPlanName,
+			&skippedDeliveryPlan.CreatedBy,
+			&skippedDeliveryPlan.CreatedAt,
+			&skippedDeliveryPlan.DeletedBy,
+			&skippedDeliveryPlan.DeletedAt,
+			&skippedDeliveryPlan.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		offset++
-		customDeliveryDay.RowNo = offset
-		response = append(response, (&customDeliveryDay).Populate())
+		skippedDeliveryPlan.RowNo = offset
+		response = append(response, (&skippedDeliveryPlan).Populate())
 	}
 	return response, total, pages, nil
 }
 
-func (q *customDeliveryDayRepository) FindCustomDeliveryDay(
+func (q *skippedDeliveryPlanRepository) FindSkippedDeliveryPlan(
 	ctx context.Context,
-	request *models.CustomDeliveryDayFilter,
-) (*models.CustomDeliveryDay, error) {
-	ctxt := "CustomDeliveryDayRepository-FindCustomDeliveryDay"
+	request *models.SkippedDeliveryPlanFilter,
+) (*models.SkippedDeliveryPlan, error) {
+	ctxt := "SkippedDeliveryPlanRepository-FindSkippedDeliveryPlan"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
@@ -183,12 +183,12 @@ func (q *customDeliveryDayRepository) FindCustomDeliveryDay(
 			, n.deleted_by
 			, n.deleted_at
 			, n.deletion_reason
-		FROM custom_delivery_days n
+		FROM skipped_delivery_plans n
 		JOIN delivery_plans d ON n.delivery_plan_id = d.id %s`,
 		condition,
 	)
 	query := sb.String()
-	var response models.CustomDeliveryDay
+	var response models.SkippedDeliveryPlan
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -202,7 +202,7 @@ func (q *customDeliveryDayRepository) FindCustomDeliveryDay(
 		&response.DeletionReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrCustomDeliveryDayNotFound
+		return nil, models.ErrSkippedDeliveryPlanNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -211,17 +211,17 @@ func (q *customDeliveryDayRepository) FindCustomDeliveryDay(
 	return (&response).Populate(), nil
 }
 
-func (q *customDeliveryDayRepository) CreateCustomDeliveryDay(
+func (q *skippedDeliveryPlanRepository) CreateSkippedDeliveryPlan(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.CustomDeliveryDay,
-) (*models.CustomDeliveryDay, error) {
-	ctxt := "CustomDeliveryDayRepository-CreateCustomDeliveryDay"
-	var response models.CustomDeliveryDay
+	request *models.SkippedDeliveryPlan,
+) (*models.SkippedDeliveryPlan, error) {
+	ctxt := "SkippedDeliveryPlanRepository-CreateSkippedDeliveryPlan"
+	var response models.SkippedDeliveryPlan
 	err := tx.QueryRow(
 		ctx,
 		`WITH n AS (
-			INSERT INTO custom_delivery_days (
+			INSERT INTO skipped_delivery_plans (
 				record_status
 				, date
 				, delivery_plan_id
@@ -262,8 +262,8 @@ func (q *customDeliveryDayRepository) CreateCustomDeliveryDay(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "custom_delivery_days_date_delivery_plan_id_key" {
-			err = models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation
+			pgxErr.ConstraintName == "skipped_delivery_plans_date_delivery_plan_id_key" {
+			err = models.ErrUniqueSkippedDeliveryPlanDateDeliveryPlanIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -272,17 +272,17 @@ func (q *customDeliveryDayRepository) CreateCustomDeliveryDay(
 	return (&response).Populate(), nil
 }
 
-func (q *customDeliveryDayRepository) UpdateCustomDeliveryDay(
+func (q *skippedDeliveryPlanRepository) UpdateSkippedDeliveryPlan(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.CustomDeliveryDay,
-) (*models.CustomDeliveryDay, error) {
-	ctxt := "CustomDeliveryDayRepository-UpdateCustomDeliveryDay"
-	var response models.CustomDeliveryDay
+	request *models.SkippedDeliveryPlan,
+) (*models.SkippedDeliveryPlan, error) {
+	ctxt := "SkippedDeliveryPlanRepository-UpdateSkippedDeliveryPlan"
+	var response models.SkippedDeliveryPlan
 	err := tx.QueryRow(
 		ctx,
 		`WITH n AS (
-			UPDATE custom_delivery_days SET
+			UPDATE skipped_delivery_plans SET
 				record_status = $1
 				, date = $2
 				, delivery_plan_id = $3
@@ -326,8 +326,8 @@ func (q *customDeliveryDayRepository) UpdateCustomDeliveryDay(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "custom_delivery_days_date_delivery_plan_id_key" {
-			err = models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation
+			pgxErr.ConstraintName == "skipped_delivery_plans_date_delivery_plan_id_key" {
+			err = models.ErrUniqueSkippedDeliveryPlanDateDeliveryPlanIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -336,13 +336,13 @@ func (q *customDeliveryDayRepository) UpdateCustomDeliveryDay(
 	return (&response).Populate(), nil
 }
 
-func (q *customDeliveryDayRepository) buildCondition(request *models.CustomDeliveryDayFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *skippedDeliveryPlanRepository) buildCondition(request *models.SkippedDeliveryPlanFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.CustomDeliveryDayIDs) > 0 {
+	if len(request.SkippedDeliveryPlanIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("n.id IN (")
-		for i, customDeliveryDayID := range request.CustomDeliveryDayIDs {
-			params = append(params, customDeliveryDayID)
+		for i, skippedDeliveryPlanID := range request.SkippedDeliveryPlanIDs {
+			params = append(params, skippedDeliveryPlanID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -351,11 +351,11 @@ func (q *customDeliveryDayRepository) buildCondition(request *models.CustomDeliv
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ExcludedCustomDeliveryDayIDs) > 0 {
+	if len(request.ExcludedSkippedDeliveryPlanIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("n.id NOT IN (")
-		for i, excludedCustomDeliveryDayID := range request.ExcludedCustomDeliveryDayIDs {
-			params = append(params, excludedCustomDeliveryDayID)
+		for i, excludedSkippedDeliveryPlanID := range request.ExcludedSkippedDeliveryPlanIDs {
+			params = append(params, excludedSkippedDeliveryPlanID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
