@@ -152,6 +152,25 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage("cart_id: not found").
 			WriteResponse(c)
 	}
+	cartItems, _, err := q.cartItemService.FindCartItems(
+		ctx,
+		models.NewCartItemFilter().
+			WithCartIDs(cart.ID).
+			WithSortings(models.Sorting{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+			}),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCartItems")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	mapCartProductVariantIDs := map[uuid.UUID]int64{}
+	for _, item := range cartItems {
+		mapCartProductVariantIDs[item.ProductVariantID] = item.Quantity
+	}
 	deliveryRoute, err := q.deliveryRouteService.FindDeliveryRoute(
 		ctx,
 		models.NewDeliveryRouteFilter().
@@ -171,11 +190,12 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
 	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
+	now := time.Now().In(time.Local)
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithDeliveryPlanIDs(request.DeliveryPlanID),
+			WithTransactionDatetime(now),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
@@ -185,40 +205,46 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	}
 	if deliveryPlan == nil {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage("delivery_plan_id: not found").
+			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
 			WriteResponse(c)
 	}
-	var deliveryDatetimeValid bool
+	var deliveryDatetimeIdValid bool
 	if deliveryPlan.SameDay {
-		for _, sameDayHour := range deliveryPlan.SameDayHours {
-			if deliveryDatetimeValid = deliveryDatetimeValid ||
-				request.DeliveryDatetime.Equal(sameDayHour); deliveryDatetimeValid {
-				request.DeliverySpeed = models.DeliverySpeedSameDay
+		for _, deliveryDatetime := range deliveryPlan.SameDayDeliveryDatetimes {
+			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
+				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
+				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
+				request.DeliverySpeed = deliveryDatetime.DeliverySpeed
+				request.DeliveryTimestamp = deliveryDatetime.Timestamp
 				break
 			}
 		}
 	}
-	if !deliveryDatetimeValid && deliveryPlan.NextDay {
-		for _, nextDayHour := range deliveryPlan.NextDayHours {
-			if deliveryDatetimeValid = deliveryDatetimeValid ||
-				request.DeliveryDatetime.Equal(nextDayHour); deliveryDatetimeValid {
-				request.DeliverySpeed = models.DeliverySpeedNextDay
+	if !deliveryDatetimeIdValid && deliveryPlan.NextDay {
+		for _, deliveryDatetime := range deliveryPlan.NextDayDeliveryDatetimes {
+			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
+				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
+				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
+				request.DeliverySpeed = deliveryDatetime.DeliverySpeed
+				request.DeliveryTimestamp = deliveryDatetime.Timestamp
 				break
 			}
 		}
 	}
-	if !deliveryDatetimeValid && deliveryPlan.NextTwoDay {
-		for _, nextTwoDayHour := range deliveryPlan.NextTwoDayHours {
-			if deliveryDatetimeValid = deliveryDatetimeValid ||
-				request.DeliveryDatetime.Equal(nextTwoDayHour); deliveryDatetimeValid {
-				request.DeliverySpeed = models.DeliverySpeedNextTwoDay
+	if !deliveryDatetimeIdValid && deliveryPlan.NextTwoDay {
+		for _, deliveryDatetime := range deliveryPlan.NextTwoDayDeliveryDatetimes {
+			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
+				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
+				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
+				request.DeliverySpeed = deliveryDatetime.DeliverySpeed
+				request.DeliveryTimestamp = deliveryDatetime.Timestamp
 				break
 			}
 		}
 	}
-	if !deliveryDatetimeValid {
+	if !deliveryDatetimeIdValid {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage("delivery_datetime: not found").
+			SetMessage("delivery_datetime_id: not found").
 			WriteResponse(c)
 	}
 	setting, err := q.settingService.FindSetting(ctx)
@@ -234,11 +260,16 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	request.DeliveryCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
-	location := helper.LoadTimeZone()
-	now := time.Now().In(location)
 	if n := len(request.Items); n > 0 {
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
 		for i, item := range request.Items {
+			quantity, ok := mapCartProductVariantIDs[item.ProductVariantID]
+			if !ok {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(helper.Sprintf("items[%d].product_variant_id: not found in your cart", i)).
+					WriteResponse(c)
+			}
+			request.Items[i].Quantity = quantity
 			productVariantIDs[i] = item.ProductVariantID
 		}
 		productVariants, _, err := q.productVariantService.FindProductVariants(

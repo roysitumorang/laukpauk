@@ -124,11 +124,10 @@ func (q *NonDeliveryDayFilter) WithUrlValues(urlValues url.Values) *NonDeliveryD
 }
 
 func (q *NonDeliveryDay) Validate() (err error) {
-	location := helper.LoadTimeZone()
 	if q.RawDate = strings.TrimSpace(q.RawDate); q.RawDate == "" {
 		return errors.New("date: is required")
 	}
-	if q.Date, err = time.ParseInLocation(time.DateOnly, q.RawDate, location); err != nil {
+	if q.Date, err = time.ParseInLocation(time.DateOnly, q.RawDate, time.Local); err != nil {
 		return fmt.Errorf("date: should use format '%s'", time.DateOnly)
 	}
 	if q.Date.Before(time.Now()) {
@@ -138,8 +137,7 @@ func (q *NonDeliveryDay) Validate() (err error) {
 }
 
 func (q *NonDeliveryDay) Populate() *NonDeliveryDay {
-	location := helper.LoadTimeZone()
-	q.Date = q.Date.In(location)
+	q.Date = q.Date.In(time.Local)
 	if !q.Date.IsZero() {
 		q.RawDate = q.Date.Format(time.DateOnly)
 	}

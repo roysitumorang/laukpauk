@@ -95,14 +95,12 @@ func (q *deliveryPlanService) CreateDeliveryPlan(
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanService-CreateDeliveryPlan"
 	response, err := q.deliveryPlanRepository.CreateDeliveryPlan(ctx, tx, request)
-	if err != nil {
-		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
-			!errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
-		}
-		return nil, err
+	if err != nil &&
+		!errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
+		!errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
 	}
-	return response, nil
+	return response, err
 }
 
 func (q *deliveryPlanService) UpdateDeliveryPlan(
@@ -112,12 +110,10 @@ func (q *deliveryPlanService) UpdateDeliveryPlan(
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanService-UpdateDeliveryPlan"
 	response, err := q.deliveryPlanRepository.UpdateDeliveryPlan(ctx, tx, request)
-	if err != nil {
-		if !errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
-			!errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
-		}
-		return nil, err
+	if err != nil &&
+		!errors.Is(err, models.ErrUniqueDeliveryPlanNameViolation) &&
+		!errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
 	}
-	return response, nil
+	return response, err
 }

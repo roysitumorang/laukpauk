@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	timeZone *time.Location
+	timezone *time.Location
 	env,
 	jwtIssuer string
 	kafkaBrokers           []string
@@ -50,13 +50,14 @@ var (
 	privateKey    *rsa.PrivateKey
 	snowflakeNode *snowflake.Node
 	InitHelper    = sync.OnceValue(func() (err error) {
-		location, ok := os.LookupEnv("TIME_ZONE")
+		location, ok := os.LookupEnv("TZ")
 		if !ok || location == "" {
-			return errors.New("env TIME_ZONE is required")
+			return errors.New("env TZ is required")
 		}
-		if timeZone, err = time.LoadLocation(location); err != nil {
+		if timezone, err = time.LoadLocation(location); err != nil {
 			return
 		}
+		time.Local = timezone
 		if env, ok = os.LookupEnv("ENV"); !ok {
 			return errors.New("env ENV is required")
 		}
@@ -159,10 +160,6 @@ func DecodeSqids(id string) int64 {
 
 func GenerateUniqueID() string {
 	return uuid.New().String()
-}
-
-func LoadTimeZone() *time.Location {
-	return timeZone
 }
 
 func GetEnv() string {

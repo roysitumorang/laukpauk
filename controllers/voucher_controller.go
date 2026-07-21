@@ -129,8 +129,7 @@ func (q *voucherController) AdminNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	location := helper.LoadTimeZone()
-	now := time.Now().In(location)
+	now := time.Now().In(time.Local)
 	t := time.Date(
 		now.Year(),
 		now.Month(),
@@ -169,8 +168,7 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	location := helper.LoadTimeZone()
-	now := time.Now().In(location)
+	now := time.Now().In(time.Local)
 	t := time.Date(
 		now.Year(),
 		now.Month(),

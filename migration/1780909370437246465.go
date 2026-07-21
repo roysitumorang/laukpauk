@@ -911,6 +911,68 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// delivery_datetimes
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE delivery_datetimes (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
+				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
+				, delivery_speed integer NOT NULL
+				, "timestamp" timestamp with time zone NOT NULL
+				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_at timestamp with time zone NOT NULL
+				, deleted_by UUID REFERENCES users (id)
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
+				, UNIQUE (delivery_plan_id, delivery_speed, "timestamp")
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_datetimes (record_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_datetimes (delivery_plan_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_datetimes (delivery_speed);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_datetimes ("timestamp");`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_datetimes (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_datetimes (deleted_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// non_delivery_days
 		if _, err = tx.Exec(
 			ctx,
@@ -1294,9 +1356,10 @@ func init() {
 				, delivery_distance_km bigint NOT NULL
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
+				, delivery_datetime_id UUID NOT NULL REFERENCES delivery_datetimes (id)
 				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
 				, delivery_speed integer NOT NULL
-				, delivery_datetime timestamp with time zone NOT NULL
+				, delivery_timestamp timestamp with time zone NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, paid_at timestamp with time zone
@@ -1373,6 +1436,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (delivery_route_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transactions (delivery_datetime_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

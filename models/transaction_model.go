@@ -78,9 +78,10 @@ type (
 		DeliveryDistanceKM      int64              `json:"delivery_distance_km" form:"-"`
 		DeliveryAddress         string             `json:"delivery_address" form:"delivery_address"`
 		DeliveryInstruction     string             `json:"delivery_instruction" form:"delivery_instruction"`
-		DeliveryPlanID          uuid.UUID          `json:"delivery_plan_id" form:"delivery_plan_id"`
+		DeliveryDatetimeID      uuid.UUID          `json:"delivery_datetime_id" form:"delivery_datetime_id"`
+		DeliveryPlanID          uuid.UUID          `json:"-" form:"-"`
 		DeliverySpeed           DeliverySpeed      `json:"-" form:"-"`
-		DeliveryDatetime        time.Time          `json:"delivery_datetime" form:"delivery_datetime"`
+		DeliveryTimestamp       time.Time          `json:"delivery_timestamp" form:"-"`
 		CreatedAt               time.Time          `json:"-" form:"-"`
 		UpdatedAt               time.Time          `json:"-" form:"-"`
 		PaidAt                  *time.Time         `json:"-" form:"-"`
@@ -268,14 +269,8 @@ func (q *Transaction) Validate() error {
 		return errors.New("delivery_address: is required")
 	}
 	q.DeliveryInstruction = strings.TrimSpace(q.DeliveryInstruction)
-	if q.DeliveryPlanID.Compare(uuid.Nil()) == 0 {
-		return errors.New("delivery_plan_id: is required")
-	}
-	if q.DeliveryDatetime.IsZero() {
-		return errors.New("delivery_datetime: is required")
-	}
-	if !q.DeliveryDatetime.After(time.Now()) {
-		return errors.New("delivery_datetime: should exceed now")
+	if q.DeliveryDatetimeID.Compare(uuid.Nil()) == 0 {
+		return errors.New("delivery_datetime_id: is required")
 	}
 	if len(q.Items) == 0 {
 		return errors.New("items: is required")
@@ -283,9 +278,6 @@ func (q *Transaction) Validate() error {
 	for i, item := range q.Items {
 		if item.ProductVariantID.Compare(uuid.Nil()) == 0 {
 			return fmt.Errorf("items[%d].product_variant_id: is required", i)
-		}
-		if item.Quantity < 1 {
-			return fmt.Errorf("items[%d].quantity: requires a positive integer, minimum 1", i)
 		}
 		item.BuyerNote = strings.TrimSpace(item.BuyerNote)
 	}

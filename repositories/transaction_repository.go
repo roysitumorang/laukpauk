@@ -113,9 +113,10 @@ func (q *transactionRepository) FindTransactions(
 		, delivery_distance_km
 		, delivery_address
 		, delivery_instruction
+		, delivery_datetime_id
 		, delivery_plan_id
 		, delivery_speed
-		, delivery_datetime
+		, delivery_timestamp
 		, created_at
 		, updated_at
 		, paid_at
@@ -243,9 +244,10 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DeliveryDistanceKM,
 			&transaction.DeliveryAddress,
 			&transaction.DeliveryInstruction,
+			&transaction.DeliveryDatetimeID,
 			&transaction.DeliveryPlanID,
 			&transaction.DeliverySpeed,
-			&transaction.DeliveryDatetime,
+			&transaction.DeliveryTimestamp,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
 			&transaction.PaidAt,
@@ -365,9 +367,10 @@ func (q *transactionRepository) FindTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
+			, delivery_datetime_id
 			, delivery_plan_id
 			, delivery_speed
-			, delivery_datetime
+			, delivery_timestamp
 			, created_at
 			, updated_at
 			, paid_at
@@ -428,9 +431,10 @@ func (q *transactionRepository) FindTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
+		&response.DeliveryDatetimeID,
 		&response.DeliveryPlanID,
 		&response.DeliverySpeed,
-		&response.DeliveryDatetime,
+		&response.DeliveryTimestamp,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.PaidAt,
@@ -557,9 +561,10 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
+			, delivery_datetime_id
 			, delivery_plan_id
 			, delivery_speed
-			, delivery_datetime
+			, delivery_timestamp
 			, created_at
 			, updated_at
 			, revised_payment_amount
@@ -568,6 +573,7 @@ func (q *transactionRepository) CreateTransaction(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
+			, $41
 		)
 		RETURNING id
 			, parent_id
@@ -604,9 +610,10 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
+			, delivery_datetime_id
 			, delivery_plan_id
 			, delivery_speed
-			, delivery_datetime
+			, delivery_timestamp
 			, created_at
 			, updated_at
 			, paid_at
@@ -660,9 +667,10 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryDistanceKM,
 		request.DeliveryAddress,
 		request.DeliveryInstruction,
+		request.DeliveryDatetimeID,
 		request.DeliveryPlanID,
 		request.DeliverySpeed,
-		request.DeliveryDatetime,
+		request.DeliveryTimestamp,
 		request.CreatedAt,
 		request.UpdatedAt,
 		request.RevisedPaymentAmount,
@@ -702,9 +710,10 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
+		&response.DeliveryDatetimeID,
 		&response.DeliveryPlanID,
 		&response.DeliverySpeed,
-		&response.DeliveryDatetime,
+		&response.DeliveryTimestamp,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.PaidAt,
@@ -856,6 +865,15 @@ func (q *transactionRepository) UpdateTransaction(
 	}
 	err := tx.QueryRow(
 		ctx,
+		`SELECT id FROM transactions WHERE id = $1 FOR NO KEY UPDATE`,
+		request.ID,
+	).Scan(&response.ID)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	if err = tx.QueryRow(
+		ctx,
 		`UPDATE transactions SET
 			transaction_status = $1
 			, paid_at = $2
@@ -912,9 +930,10 @@ func (q *transactionRepository) UpdateTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
+			, delivery_datetime_id
 			, delivery_plan_id
 			, delivery_speed
-			, delivery_datetime
+			, delivery_timestamp
 			, created_at
 			, updated_at
 			, paid_at
@@ -990,9 +1009,10 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
+		&response.DeliveryDatetimeID,
 		&response.DeliveryPlanID,
 		&response.DeliverySpeed,
-		&response.DeliveryDatetime,
+		&response.DeliveryTimestamp,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.PaidAt,
@@ -1012,13 +1032,27 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.ShippedAt,
 		&response.CompletedBy,
 		&response.CompletedAt,
-	)
-	if err != nil {
+	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	for i, requestItem := range request.Items {
 		var responseItem models.TransactionItem
+		if err = tx.QueryRow(
+			ctx,
+			`SELECT id
+			FROM transaction_items
+			WHERE transaction_id = $1
+				AND id = $2
+			FOR NO KEY UPDATE`,
+			request.ID,
+		).Scan(
+			response.ID,
+			requestItem.ID,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
 		if err = tx.QueryRow(
 			ctx,
 			`UPDATE transaction_items SET

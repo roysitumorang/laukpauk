@@ -203,7 +203,6 @@ func (q *VoucherFilter) WithUrlValues(urlValues url.Values) *VoucherFilter {
 }
 
 func (q *Voucher) Validate() (err error) {
-	location := helper.LoadTimeZone()
 	if _, ok := MapVoucherTypes[q.VoucherType]; !ok {
 		return errors.New("voucher_type: not found")
 	}
@@ -239,7 +238,7 @@ func (q *Voucher) Validate() (err error) {
 	if q.RawEffectiveStartTime = strings.TrimSpace(q.RawEffectiveStartTime); q.RawEffectiveStartTime == "" {
 		return errors.New("effective_start_time: is required")
 	}
-	if q.EffectiveStartTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveStartTime, location); err != nil {
+	if q.EffectiveStartTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveStartTime, time.Local); err != nil {
 		return fmt.Errorf("effective_start_time: should use format '%s'", time.TimeOnly)
 	}
 	q.EffectiveStartTime = time.Date(
@@ -255,7 +254,7 @@ func (q *Voucher) Validate() (err error) {
 	if q.RawEffectiveEndTime = strings.TrimSpace(q.RawEffectiveEndTime); q.RawEffectiveEndTime == "" {
 		return errors.New("effective_end_time: is required")
 	}
-	if q.EffectiveEndTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveEndTime, location); err != nil {
+	if q.EffectiveEndTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveEndTime, time.Local); err != nil {
 		return fmt.Errorf("effective_end_time: should use format '%s'", time.TimeOnly)
 	}
 	q.EffectiveEndTime = time.Date(
@@ -274,7 +273,7 @@ func (q *Voucher) Validate() (err error) {
 	if q.RawEffectiveStartDate = strings.TrimSpace(q.RawEffectiveStartDate); q.RawEffectiveStartDate == "" {
 		return errors.New("effective_start_date: is required")
 	}
-	effectiveStartDate, err := time.ParseInLocation(time.DateOnly, q.RawEffectiveStartDate, location)
+	effectiveStartDate, err := time.ParseInLocation(time.DateOnly, q.RawEffectiveStartDate, time.Local)
 	if err != nil {
 		return fmt.Errorf("effective_start_date: should use format '%s'", time.DateOnly)
 	}
@@ -291,7 +290,7 @@ func (q *Voucher) Validate() (err error) {
 	if q.RawEffectiveEndDate = strings.TrimSpace(q.RawEffectiveEndDate); q.RawEffectiveEndDate == "" {
 		return errors.New("effective_end_date: is required")
 	}
-	effectiveEndDate, err := time.ParseInLocation(time.DateOnly, q.RawEffectiveEndDate, location)
+	effectiveEndDate, err := time.ParseInLocation(time.DateOnly, q.RawEffectiveEndDate, time.Local)
 	if err != nil {
 		return fmt.Errorf("effective_end_date: should use format '%s'", time.DateOnly)
 	}
@@ -318,16 +317,15 @@ func (q *Voucher) New() bool {
 }
 
 func (q *Voucher) Populate() *Voucher {
-	location := helper.LoadTimeZone()
 	q.VoucherTypeName = q.VoucherType.String()
 	q.TargetAudienceName = q.TargetAudience.String()
-	q.EffectiveStartTime = q.EffectiveStartTime.In(location)
+	q.EffectiveStartTime = q.EffectiveStartTime.In(time.Local)
 	q.RawEffectiveStartTime = q.EffectiveStartTime.Format(time.TimeOnly)
-	q.EffectiveEndTime = q.EffectiveEndTime.In(location)
+	q.EffectiveEndTime = q.EffectiveEndTime.In(time.Local)
 	q.RawEffectiveEndTime = q.EffectiveEndTime.Format(time.TimeOnly)
-	q.EffectiveStartDate = q.EffectiveStartDate.In(location)
+	q.EffectiveStartDate = q.EffectiveStartDate.In(time.Local)
 	q.RawEffectiveStartDate = q.EffectiveStartDate.Format(time.DateOnly)
-	q.EffectiveEndDate = q.EffectiveEndDate.In(location)
+	q.EffectiveEndDate = q.EffectiveEndDate.In(time.Local)
 	q.RawEffectiveEndDate = q.EffectiveEndDate.Format(time.DateOnly)
 	return q
 }

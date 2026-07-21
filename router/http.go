@@ -167,7 +167,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/cart/*":               "/cart/v1/buyer/$1",
 				"/v1/buyer/cart/*/*":             "/cart/v1/buyer/$1/$2",
 				"/v1/buyer/vouchers/*":           "/vouchers/v1/buyer/$1",
-				"/v1/buyer/delivery_plans":       "/delivery_plans/v1/buyer",
+				"/v1/buyer/delivery_plans/*":     "/delivery_plans/v1/buyer/$1",
 				"/v1/buyer/transactions":         "/transactions/v1/buyer",
 				"/v1/buyer/transactions/*":       "/transactions/v1/buyer/$1",
 				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",
