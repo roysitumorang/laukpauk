@@ -344,6 +344,7 @@ func (q *Transaction) CalculateDiscount() {
 		}
 	}
 	q.PaymentAmount = q.DiscountedShoppingCost + q.DiscountedDeliveryCost
+	q.RevisedPaymentAmount = q.PaymentAmount
 }
 
 func (q TransactionStatus) Int() int {
