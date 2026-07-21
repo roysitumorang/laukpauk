@@ -1495,6 +1495,7 @@ func init() {
 			`CREATE TABLE transaction_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, transaction_id UUID NOT NULL REFERENCES transactions (id)
+				, cart_item_id UUID NOT NULL REFERENCES cart_items (id)
 				, product_variant_id UUID NOT NULL REFERENCES product_variants (id)
 				, product_id UUID NOT NULL REFERENCES products (id)
 				, product_name character varying NOT NULL
@@ -1515,6 +1516,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transaction_items (transaction_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transaction_items (cart_item_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

@@ -108,7 +108,8 @@ type (
 		RowNo                   int64     `json:"-" form:"-"`
 		ID                      uuid.UUID `json:"id" form:"-"`
 		TransactionID           uuid.UUID `json:"-" form:"-"`
-		ProductVariantID        uuid.UUID `json:"product_variant_id" form:"product_variant_id"`
+		CartItemID              uuid.UUID `json:"cart_item_id" form:"cart_item_id"`
+		ProductVariantID        uuid.UUID `json:"-" form:"-"`
 		ProductID               uuid.UUID `json:"-" form:"-"`
 		ProductName             string    `json:"-" form:"-"`
 		StockUnit               string    `json:"-" form:"-"`

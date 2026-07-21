@@ -192,6 +192,7 @@ func (q *transactionRepository) FindTransactions(
 		`SELECT
 			id
 			, transaction_id
+			, cart_item_id
 			, product_variant_id
 			, product_id
 			, product_name
@@ -300,6 +301,7 @@ func (q *transactionRepository) FindTransactions(
 		if err = rows.Scan(
 			&transactionItem.ID,
 			&transactionItem.TransactionID,
+			&transactionItem.CartItemID,
 			&transactionItem.ProductVariantID,
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
@@ -467,6 +469,7 @@ func (q *transactionRepository) FindTransaction(
 		`SELECT
 			id
 			, transaction_id
+			, cart_item_id
 			, product_variant_id
 			, product_id
 			, product_name
@@ -496,6 +499,7 @@ func (q *transactionRepository) FindTransaction(
 		if err = rows.Scan(
 			&transactionItem.ID,
 			&transactionItem.TransactionID,
+			&transactionItem.CartItemID,
 			&transactionItem.ProductVariantID,
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
@@ -756,6 +760,7 @@ func (q *transactionRepository) CreateTransaction(
 	_, _ = sb.WriteString(
 		`INSERT INTO transaction_items (
 			transaction_id
+			, cart_item_id
 			, product_variant_id
 			, product_id
 			, product_name
@@ -774,6 +779,7 @@ func (q *transactionRepository) CreateTransaction(
 		params = append(
 			params,
 			response.ID,
+			&requestItem.CartItemID,
 			&requestItem.ProductVariantID,
 			&requestItem.ProductID,
 			&requestItem.ProductName,
@@ -791,13 +797,14 @@ func (q *transactionRepository) CreateTransaction(
 		}
 		_, _ = fmt.Fprintf(
 			sb,
-			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
-			n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
+			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
 		)
 	}
 	_, _ = sb.WriteString(
 		` RETURNING id
 			, transaction_id
+			, cart_item_id
 			, product_variant_id
 			, product_id
 			, product_name
@@ -824,6 +831,7 @@ func (q *transactionRepository) CreateTransaction(
 		if err = rows.Scan(
 			&transactionItem.ID,
 			&transactionItem.TransactionID,
+			&transactionItem.CartItemID,
 			&transactionItem.ProductVariantID,
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
@@ -1061,6 +1069,7 @@ func (q *transactionRepository) UpdateTransaction(
 				AND id = $3
 			RETURNING id
 				, transaction_id
+				, cart_item_id
 				, product_variant_id
 				, product_id
 				, product_name
@@ -1078,6 +1087,7 @@ func (q *transactionRepository) UpdateTransaction(
 		).Scan(
 			&responseItem.ID,
 			&responseItem.TransactionID,
+			&responseItem.CartItemID,
 			&responseItem.ProductVariantID,
 			&responseItem.ProductID,
 			&responseItem.ProductName,

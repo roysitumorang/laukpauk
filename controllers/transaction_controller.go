@@ -167,9 +167,9 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	mapCartProductVariantIDs := map[uuid.UUID]int64{}
+	mapCartItems := map[uuid.UUID]*models.CartItem{}
 	for _, item := range cartItems {
-		mapCartProductVariantIDs[item.ProductVariantID] = item.Quantity
+		mapCartItems[item.ID] = item
 	}
 	deliveryRoute, err := q.deliveryRouteService.FindDeliveryRoute(
 		ctx,
@@ -260,16 +260,25 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	request.DeliveryCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
+	mapCartItemIDs := map[uuid.UUID]struct{}{}
 	if n := len(request.Items); n > 0 {
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
 		for i, item := range request.Items {
-			quantity, ok := mapCartProductVariantIDs[item.ProductVariantID]
+			cartItem, ok := mapCartItems[item.CartItemID]
 			if !ok {
 				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(helper.Sprintf("items[%d].product_variant_id: not found in your cart", i)).
+					SetMessage(helper.Sprintf("items[%d].cart_item_id: not found in your cart", i)).
 					WriteResponse(c)
 			}
-			request.Items[i].Quantity = quantity
+			if _, ok = mapCartItemIDs[item.CartItemID]; ok {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(helper.Sprintf("items[%d].cart_item_id: duplicated", i)).
+					WriteResponse(c)
+			}
+			mapCartItemIDs[item.CartItemID] = struct{}{}
+			item.ProductVariantID = cartItem.ProductVariantID
+			item.Quantity = cartItem.Quantity
+			request.Items[i] = item
 			productVariantIDs[i] = item.ProductVariantID
 		}
 		productVariants, _, err := q.productVariantService.FindProductVariants(
@@ -497,17 +506,6 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	cart.UpdatedAt = now
 	if _, err = q.cartService.UpdateCart(ctx, tx, cart); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCart")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if _, err = q.cartItemService.DeleteCartItem(
-		ctx,
-		tx,
-		models.NewCartItemFilter().
-			WithCartIDs(cart.ID),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteCartItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
