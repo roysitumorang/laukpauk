@@ -130,8 +130,19 @@ func (q *CustomDeliveryDay) Validate() (err error) {
 	if q.Date, err = time.ParseInLocation(time.DateOnly, q.RawDate, time.Local); err != nil {
 		return fmt.Errorf("date: should use format '%s'", time.DateOnly)
 	}
-	if q.Date.Before(time.Now()) {
-		return errors.New("date: should exceed current date")
+	now := time.Now().In(time.Local)
+	t := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		0,
+		0,
+		0,
+		0,
+		now.Location(),
+	)
+	if q.Date.Before(t) {
+		return errors.New("date: should equal or exceed current date")
 	}
 	return nil
 }

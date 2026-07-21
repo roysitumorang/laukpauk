@@ -968,9 +968,30 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 			request.TransactionDatetime.Nanosecond(),
 			request.TransactionDatetime.Location(),
 		)
-		params = append(params, t)
+		u := time.Date(
+			request.TransactionDatetime.Year(),
+			request.TransactionDatetime.Month(),
+			request.TransactionDatetime.Day(),
+			0,
+			0,
+			0,
+			0,
+			request.TransactionDatetime.Location(),
+		)
+		params = append(params, t, u, models.RecordStatusActive)
+		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "transaction_window @> $%d::timestamptz", len(params))
+		_, _ = fmt.Fprintf(
+			sb,
+			`(transaction_window @> $%d::timestamptz AND NOT EXISTS(
+				SELECT 1
+				FROM custom_delivery_days
+				WHERE custom_delivery_days.delivery_plan_id = delivery_plans.id
+					AND custom_delivery_days.date = $%d
+					AND custom_delivery_days.record_status = $%d
+			))`,
+			n-2, n-1, n,
+		)
 		conds = append(conds, sb.String())
 	}
 	if request.TransactionWindow != nil {
