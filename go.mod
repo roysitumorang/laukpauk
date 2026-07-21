@@ -39,11 +39,11 @@ require (
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coregx/ahocorasick v0.2.1 // indirect
-	github.com/ebitengine/purego v0.10.1 // indirect
+	github.com/ebitengine/purego v0.10.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
-	github.com/go-openapi/spec v0.22.7 // indirect
+	github.com/go-openapi/spec v0.22.9 // indirect
 	github.com/go-openapi/swag/conv v0.27.3 // indirect
 	github.com/go-openapi/swag/jsonutils v0.27.3 // indirect
 	github.com/go-openapi/swag/loading v0.27.3 // indirect
