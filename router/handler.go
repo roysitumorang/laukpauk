@@ -43,7 +43,7 @@ type (
 		SmsMessageService         services.SmsMessageService
 		SettingService            services.SettingService
 		DeliveryPlanService       services.DeliveryPlanService
-		NonDeliveryDayService     services.NonDeliveryDayService
+		CustomDeliveryDayService  services.CustomDeliveryDayService
 		PointService              services.PointService
 		VoucherService            services.VoucherService
 		PointEarningCapService    services.PointEarningCapService
@@ -137,7 +137,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	smsMessageRepository := repositories.NewSmsMessageRepository(dbRead, dbWrite)
 	settingRepository := repositories.NewSettingRepository(dbRead, dbWrite)
 	deliveryPlanRepository := repositories.NewDeliveryPlanRepository(dbRead, dbWrite)
-	nonDeliveryDayRepository := repositories.NewNonDeliveryDayRepository(dbRead, dbWrite)
+	customDeliveryDayRepository := repositories.NewCustomDeliveryDayRepository(dbRead, dbWrite)
 	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
 	voucherRepository := repositories.NewVoucherRepository(dbRead, dbWrite)
 	pointEarningCapRepository := repositories.NewPointEarningCapRepository(dbRead, dbWrite)
@@ -161,7 +161,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaConsumer, zenzivaConsumer)
 	settingService := services.NewSettingService(settingRepository)
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
-	nonDeliveryDayService := services.NewNonDeliveryDayService(nonDeliveryDayRepository)
+	customDeliveryDayService := services.NewCustomDeliveryDayService(customDeliveryDayRepository)
 	pointService := services.NewPointService(pointRepository)
 	voucherService := services.NewVoucherService(voucherRepository)
 	pointEarningCapService := services.NewPointEarningCapService(pointEarningCapRepository)
@@ -193,7 +193,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		SmsMessageService:         smsMessageService,
 		SettingService:            settingService,
 		DeliveryPlanService:       deliveryPlanService,
-		NonDeliveryDayService:     nonDeliveryDayService,
+		CustomDeliveryDayService:  customDeliveryDayService,
 		PointService:              pointService,
 		VoucherService:            voucherService,
 		PointEarningCapService:    pointEarningCapService,

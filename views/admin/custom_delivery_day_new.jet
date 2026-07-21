@@ -49,7 +49,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/non_delivery_days">
+							<form method="POST" action="{{ baseURL }}/admin/custom_delivery_days">
 								<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 								<div class="row">
 									<div class="col-lg-6">
@@ -83,7 +83,7 @@
 								<button type="submit" id="btnSubmit" class="btn btn-success">
 									Simpan Data Jadwal Tutup
 								</button>
-								<a href="{{ baseURL }}/admin/non_delivery_days" class="btn btn-default ml-2">
+								<a href="{{ baseURL }}/admin/custom_delivery_days" class="btn btn-default ml-2">
 									Back to Histori Jadwal Tutup
 								</a>
 							</form>

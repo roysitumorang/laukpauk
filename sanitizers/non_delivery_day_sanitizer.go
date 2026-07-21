@@ -15,9 +15,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindNonDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.NonDeliveryDayFilter, error) {
-	ctxt := "NonDeliveryDaySanitizer-FindNonDeliveryDays"
-	response := models.NewNonDeliveryDayFilter()
+func FindCustomDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.CustomDeliveryDayFilter, error) {
+	ctxt := "CustomDeliveryDaySanitizer-FindCustomDeliveryDays"
+	response := models.NewCustomDeliveryDayFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -36,7 +36,7 @@ func FindNonDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.NonDeliveryD
 		var sortings []models.Sorting
 		for _, sorting := range sortBy {
 			if !strings.Contains(sorting, ":") {
-				if _, ok := models.MapNonDeliveryDaySortings[sorting]; ok {
+				if _, ok := models.MapCustomDeliveryDaySortings[sorting]; ok {
 					sortings = append(sortings, models.Sorting{
 						Field:     sorting,
 						Direction: models.SortingDirectionAsc,
@@ -44,7 +44,7 @@ func FindNonDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.NonDeliveryD
 				}
 			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
 				field, order := items[0], items[1]
-				if _, ok := models.MapNonDeliveryDaySortings[field]; ok &&
+				if _, ok := models.MapCustomDeliveryDaySortings[field]; ok &&
 					(models.SortingDirectionAsc.Equal(order) ||
 						models.SortingDirectionDesc.Equal(order)) {
 					sortings = append(sortings, models.Sorting{
@@ -71,9 +71,9 @@ func FindNonDeliveryDays(ctx context.Context, c fiber.Ctx) (*models.NonDeliveryD
 	return response, nil
 }
 
-func ValidateNonDeliveryDay(ctx context.Context, c fiber.Ctx) (*models.NonDeliveryDay, int, error) {
-	ctxt := "NonDeliveryDaySanitizer-ValidateNonDeliveryDay"
-	var response models.NonDeliveryDay
+func ValidateCustomDeliveryDay(ctx context.Context, c fiber.Ctx) (*models.CustomDeliveryDay, int, error) {
+	ctxt := "CustomDeliveryDaySanitizer-ValidateCustomDeliveryDay"
+	var response models.CustomDeliveryDay
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

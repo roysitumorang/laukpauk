@@ -20,26 +20,26 @@ import (
 )
 
 type (
-	nonDeliveryDayController struct {
-		adminService          services.AdminService
-		nonDeliveryDayService services.NonDeliveryDayService
-		deliveryPlanService   services.DeliveryPlanService
+	customDeliveryDayController struct {
+		adminService             services.AdminService
+		customDeliveryDayService services.CustomDeliveryDayService
+		deliveryPlanService      services.DeliveryPlanService
 	}
 )
 
-func NewNonDeliveryDayController(
+func NewCustomDeliveryDayController(
 	adminService services.AdminService,
-	nonDeliveryDayService services.NonDeliveryDayService,
+	customDeliveryDayService services.CustomDeliveryDayService,
 	deliveryPlanService services.DeliveryPlanService,
-) *nonDeliveryDayController {
-	return new(nonDeliveryDayController{
-		adminService:          adminService,
-		nonDeliveryDayService: nonDeliveryDayService,
-		deliveryPlanService:   deliveryPlanService,
+) *customDeliveryDayController {
+	return new(customDeliveryDayController{
+		adminService:             adminService,
+		customDeliveryDayService: customDeliveryDayService,
+		deliveryPlanService:      deliveryPlanService,
 	})
 }
 
-func (q *nonDeliveryDayController) Mount(r fiber.Router) {
+func (q *customDeliveryDayController) Mount(r fiber.Router) {
 	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
@@ -48,9 +48,9 @@ func (q *nonDeliveryDayController) Mount(r fiber.Router) {
 		Post("/:id/delete", q.AdminDelete)
 }
 
-func (q *nonDeliveryDayController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *customDeliveryDayController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "NonDeliveryDayController-AdminIndex"
+	ctxt := "CustomDeliveryDayController-AdminIndex"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -59,8 +59,8 @@ func (q *nonDeliveryDayController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.NonDeliveryDayFilter)
-	rows := []*models.NonDeliveryDay{}
+	request := new(models.CustomDeliveryDayFilter)
+	rows := []*models.CustomDeliveryDay{}
 	pagination := new(models.Pagination)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -85,45 +85,45 @@ func (q *nonDeliveryDayController) AdminIndex(c fiber.Ctx) (err error) {
 				Label:     "Oldest-Newest",
 			},
 			{
-				Field:     models.NonDeliveryDaySortingFieldDate,
+				Field:     models.CustomDeliveryDaySortingFieldDate,
 				Direction: models.SortingDirectionAsc,
 				Label:     "Date A-Z",
 			},
 			{
-				Field:     models.NonDeliveryDaySortingFieldDate,
+				Field:     models.CustomDeliveryDaySortingFieldDate,
 				Direction: models.SortingDirectionDesc,
 				Label:     "Date Z-A",
 			},
 		},
 	)
-	request, err = sanitizers.FindNonDeliveryDays(ctx, c)
+	request, err = sanitizers.FindCustomDeliveryDays(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNonDeliveryDays")
-		return c.Render("admin/non_delivery_day_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDays")
+		return c.Render("admin/custom_delivery_day_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	request.WithRecordStatuses(models.RecordStatusActive)
-	if rows, pagination, err = q.nonDeliveryDayService.FindNonDeliveryDays(
+	if rows, pagination, err = q.customDeliveryDayService.FindCustomDeliveryDays(
 		c,
 		request,
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNonDeliveryDays")
-		return c.Render("admin/non_delivery_day_index", params.Push(
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDays")
+		return c.Render("admin/custom_delivery_day_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/non_delivery_day_index", params.Push(
+	return c.Render("admin/custom_delivery_day_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
 }
 
-func (q *nonDeliveryDayController) AdminNew(c fiber.Ctx) (err error) {
+func (q *customDeliveryDayController) AdminNew(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "NonDeliveryDayController-AdminNew"
+	ctxt := "CustomDeliveryDayController-AdminNew"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -132,7 +132,7 @@ func (q *nonDeliveryDayController) AdminNew(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.NonDeliveryDay{
+	request := new(models.CustomDeliveryDay{
 		Date: time.Now(),
 	})
 	var deliveryPlans []*models.DeliveryPlan
@@ -152,15 +152,15 @@ func (q *nonDeliveryDayController) AdminNew(c fiber.Ctx) (err error) {
 			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
-		return c.Render("admin/non_delivery_day_new", params, "admin/layouts/authenticated")
+		return c.Render("admin/custom_delivery_day_new", params, "admin/layouts/authenticated")
 	}
 	params.Push("deliveryPlans", deliveryPlans)
-	return c.Render("admin/non_delivery_day_new", params, "admin/layouts/authenticated")
+	return c.Render("admin/custom_delivery_day_new", params, "admin/layouts/authenticated")
 }
 
-func (q *nonDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *customDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "NonDeliveryDayController-AdminCreate"
+	ctxt := "CustomDeliveryDayController-AdminCreate"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -168,7 +168,7 @@ func (q *nonDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.NonDeliveryDay{
+	request := new(models.CustomDeliveryDay{
 		Date: time.Now(),
 	})
 	var deliveryPlans []*models.DeliveryPlan
@@ -188,50 +188,50 @@ func (q *nonDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
-		return c.Render("admin/non_delivery_day_new", params, "admin/layouts/authenticated")
+		return c.Render("admin/custom_delivery_day_new", params, "admin/layouts/authenticated")
 	}
 	params.Push("deliveryPlans", deliveryPlans)
 	mapDeliveryPlanIDs := map[uuid.UUID]struct{}{}
 	for _, deliveryPlan := range deliveryPlans {
 		mapDeliveryPlanIDs[deliveryPlan.ID] = struct{}{}
 	}
-	request, statusCode, err := sanitizers.ValidateNonDeliveryDay(ctx, c)
+	request, statusCode, err := sanitizers.ValidateCustomDeliveryDay(ctx, c)
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNonDeliveryDay")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateCustomDeliveryDay")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/non_delivery_day_new", params.Push(
+		return c.Render("admin/custom_delivery_day_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if _, ok := mapDeliveryPlanIDs[request.DeliveryPlanID]; !ok {
-		return c.Render("admin/non_delivery_day_new", params.Push(
-			"flash", flash.Danger("non_delivery_day_id: not found"),
+		return c.Render("admin/custom_delivery_day_new", params.Push(
+			"flash", flash.Danger("delivery_plan_id: not found"),
 		), "admin/layouts/authenticated")
 	}
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = currentAdmin.ID
 	request.CreatedAt = time.Now()
 	params.Push("request", request)
-	nonDeliveryDay, err := q.nonDeliveryDayService.FindNonDeliveryDay(
+	customDeliveryDay, err := q.customDeliveryDayService.FindCustomDeliveryDay(
 		ctx,
-		models.NewNonDeliveryDayFilter().
+		models.NewCustomDeliveryDayFilter().
 			WithDates(request.Date).
 			WithDeliveryPlanIDs(request.DeliveryPlanID),
 	)
-	if err != nil && !errors.Is(err, models.ErrNonDeliveryDayNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNonDeliveryDay")
-		return c.Render("admin/non_delivery_day_new", params.Push(
+	if err != nil && !errors.Is(err, models.ErrCustomDeliveryDayNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDay")
+		return c.Render("admin/custom_delivery_day_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if nonDeliveryDay != nil {
-		if nonDeliveryDay.RecordStatus == models.RecordStatusActive {
-			return c.Render("admin/non_delivery_day_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueNonDeliveryDayDateDeliveryPlanIdViolation.Error()),
+	if customDeliveryDay != nil {
+		if customDeliveryDay.RecordStatus == models.RecordStatusActive {
+			return c.Render("admin/custom_delivery_day_new", params.Push(
+				"flash", flash.Danger(models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
-		request.ID = nonDeliveryDay.ID
+		request.ID = customDeliveryDay.ID
 		request.DeletedBy = nil
 		request.DeletedAt = nil
 		request.DeletionReason = nil
@@ -240,7 +240,7 @@ func (q *nonDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/non_delivery_day_new", params.Push(
+		return c.Render("admin/custom_delivery_day_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -253,63 +253,60 @@ func (q *nonDeliveryDayController) AdminCreate(c fiber.Ctx) (err error) {
 		}
 	}(ctx)
 	if request.ID.Compare(uuid.Nil()) == 0 {
-		if _, err = q.nonDeliveryDayService.CreateNonDeliveryDay(ctx, tx, request); err != nil {
-			if !errors.Is(err, models.ErrUniqueNonDeliveryDayDateDeliveryPlanIdViolation) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateNonDeliveryDay")
+		if _, err = q.customDeliveryDayService.CreateCustomDeliveryDay(ctx, tx, request); err != nil {
+			if !errors.Is(err, models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation) {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateCustomDeliveryDay")
 			}
-			return c.Render("admin/non_delivery_day_new", params.Push(
+			return c.Render("admin/custom_delivery_day_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
-	} else if _, err = q.nonDeliveryDayService.UpdateNonDeliveryDay(ctx, tx, request); err != nil {
-		if !errors.Is(err, models.ErrUniqueNonDeliveryDayDateDeliveryPlanIdViolation) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateNonDeliveryDay")
+	} else if _, err = q.customDeliveryDayService.UpdateCustomDeliveryDay(ctx, tx, request); err != nil {
+		if !errors.Is(err, models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCustomDeliveryDay")
 		}
-		return c.Render("admin/non_delivery_day_new", params.Push(
+		return c.Render("admin/custom_delivery_day_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/non_delivery_day_new", params.Push(
+		return c.Render("admin/custom_delivery_day_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("non delivery day created successfully").
-		Redirect(c, sess.Session, "/admin/non_delivery_days")
+		Success("custom delivery day created successfully").
+		Redirect(c, sess.Session, "/admin/custom_delivery_days")
 }
 
-func (q *nonDeliveryDayController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *customDeliveryDayController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "NonDeliveryDayController-AdminDelete"
+	ctxt := "CustomDeliveryDayController-AdminDelete"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	nonDeliveryDayID, err := uuid.Parse(c.Params("id"))
+	customDeliveryDayID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrNonDeliveryDayNotFound.Error()).Redirect(c, sess.Session, "/admin/non_delivery_days")
+		return flash.Danger(models.ErrCustomDeliveryDayNotFound.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
 	}
-	nonDeliveryDay, err := q.nonDeliveryDayService.FindNonDeliveryDay(
+	request, err := q.customDeliveryDayService.FindCustomDeliveryDay(
 		ctx,
-		models.NewNonDeliveryDayFilter().
+		models.NewCustomDeliveryDayFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithNonDeliveryDayIDs(nonDeliveryDayID),
+			WithCustomDeliveryDayIDs(customDeliveryDayID),
 	)
-	if err != nil {
-		if !errors.Is(err, models.ErrNonDeliveryDayNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNonDeliveryDay")
-		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/non_delivery_days")
+	if err != nil && !errors.Is(err, models.ErrCustomDeliveryDayNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCustomDeliveryDay")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
 	}
-	if nonDeliveryDay == nil {
-		return flash.Danger(models.ErrNonDeliveryDayNotFound.Error()).Redirect(c, sess.Session, "/admin/non_delivery_days")
+	if request == nil {
+		return flash.Danger(models.ErrCustomDeliveryDayNotFound.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
 	}
-	request := nonDeliveryDay
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
@@ -317,7 +314,7 @@ func (q *nonDeliveryDayController) AdminDelete(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/non_delivery_days")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -327,15 +324,15 @@ func (q *nonDeliveryDayController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.nonDeliveryDayService.UpdateNonDeliveryDay(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateNonDeliveryDay")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/non_delivery_days")
+	if _, err = q.customDeliveryDayService.UpdateCustomDeliveryDay(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCustomDeliveryDay")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/non_delivery_days")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/custom_delivery_days")
 	}
 	return flash.Clear(c, sess.Session).
-		Success("non delivery day deleted successfully").
-		Redirect(c, sess.Session, "/admin/non_delivery_days")
+		Success("custom delivery day deleted successfully").
+		Redirect(c, sess.Session, "/admin/custom_delivery_days")
 }

@@ -12,21 +12,21 @@ import (
 )
 
 var (
-	ErrNonDeliveryDayNotFound                          = errors.New("non delivery day not found")
-	ErrUniqueNonDeliveryDayDateDeliveryPlanIdViolation = errors.New("date and delivery plan already exists")
+	ErrCustomDeliveryDayNotFound                          = errors.New("custom delivery day not found")
+	ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation = errors.New("date and delivery plan already exists")
 
-	MapNonDeliveryDaySortings = map[string]struct{}{
-		SortingFieldID:                 {},
-		NonDeliveryDaySortingFieldDate: {},
+	MapCustomDeliveryDaySortings = map[string]struct{}{
+		SortingFieldID:                    {},
+		CustomDeliveryDaySortingFieldDate: {},
 	}
 )
 
 const (
-	NonDeliveryDaySortingFieldDate = "date"
+	CustomDeliveryDaySortingFieldDate = "date"
 )
 
 type (
-	NonDeliveryDay struct {
+	CustomDeliveryDay struct {
 		RowNo            int64        `json:"-" form:"-"`
 		ID               uuid.UUID    `json:"-" form:"-"`
 		RecordStatus     RecordStatus `json:"-" form:"-"`
@@ -41,9 +41,9 @@ type (
 		DeletionReason   *string      `json:"-" form:"-"`
 	}
 
-	NonDeliveryDayFilter struct {
-		NonDeliveryDayIDs,
-		ExcludedNonDeliveryDayIDs,
+	CustomDeliveryDayFilter struct {
+		CustomDeliveryDayIDs,
+		ExcludedCustomDeliveryDayIDs,
 		DeliveryPlanIDs []uuid.UUID
 		RecordStatuses []RecordStatus
 		Dates          []time.Time
@@ -57,49 +57,49 @@ type (
 	}
 )
 
-func NewNonDeliveryDayFilter() *NonDeliveryDayFilter {
-	return new(NonDeliveryDayFilter{
+func NewCustomDeliveryDayFilter() *CustomDeliveryDayFilter {
+	return &CustomDeliveryDayFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
-func (q *NonDeliveryDayFilter) WithNonDeliveryDayIDs(nonDeliveryDayIDs ...uuid.UUID) *NonDeliveryDayFilter {
-	q.NonDeliveryDayIDs = nonDeliveryDayIDs
+func (q *CustomDeliveryDayFilter) WithCustomDeliveryDayIDs(customDeliveryDayIDs ...uuid.UUID) *CustomDeliveryDayFilter {
+	q.CustomDeliveryDayIDs = customDeliveryDayIDs
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithExcludedNonDeliveryDayIDs(excludedNonDeliveryDayIDs ...uuid.UUID) *NonDeliveryDayFilter {
-	q.ExcludedNonDeliveryDayIDs = excludedNonDeliveryDayIDs
+func (q *CustomDeliveryDayFilter) WithExcludedCustomDeliveryDayIDs(excludedCustomDeliveryDayIDs ...uuid.UUID) *CustomDeliveryDayFilter {
+	q.ExcludedCustomDeliveryDayIDs = excludedCustomDeliveryDayIDs
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *CustomDeliveryDayFilter {
 	q.RecordStatuses = recordStatuses
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithDeliveryPlanIDs(deliveryPlanIDs ...uuid.UUID) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithDeliveryPlanIDs(deliveryPlanIDs ...uuid.UUID) *CustomDeliveryDayFilter {
 	q.DeliveryPlanIDs = deliveryPlanIDs
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithDates(dates ...time.Time) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithDates(dates ...time.Time) *CustomDeliveryDayFilter {
 	q.Dates = dates
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithKeyword(keyword string) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithKeyword(keyword string) *CustomDeliveryDayFilter {
 	q.Keyword = keyword
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithPaginationURL(paginationURL string) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithPaginationURL(paginationURL string) *CustomDeliveryDayFilter {
 	q.PaginationURL = paginationURL
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithSortings(sortings ...Sorting) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithSortings(sortings ...Sorting) *CustomDeliveryDayFilter {
 	q.Sortings = sortings
 	q.MapSortings.Clear()
 	for _, sorting := range sortings {
@@ -108,22 +108,22 @@ func (q *NonDeliveryDayFilter) WithSortings(sortings ...Sorting) *NonDeliveryDay
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithLimit(limit int64) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithLimit(limit int64) *CustomDeliveryDayFilter {
 	q.Limit = limit
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithPage(page int64) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithPage(page int64) *CustomDeliveryDayFilter {
 	q.Page = page
 	return q
 }
 
-func (q *NonDeliveryDayFilter) WithUrlValues(urlValues url.Values) *NonDeliveryDayFilter {
+func (q *CustomDeliveryDayFilter) WithUrlValues(urlValues url.Values) *CustomDeliveryDayFilter {
 	q.UrlValues = urlValues
 	return q
 }
 
-func (q *NonDeliveryDay) Validate() (err error) {
+func (q *CustomDeliveryDay) Validate() (err error) {
 	if q.RawDate = strings.TrimSpace(q.RawDate); q.RawDate == "" {
 		return errors.New("date: is required")
 	}
@@ -136,7 +136,7 @@ func (q *NonDeliveryDay) Validate() (err error) {
 	return nil
 }
 
-func (q *NonDeliveryDay) Populate() *NonDeliveryDay {
+func (q *CustomDeliveryDay) Populate() *CustomDeliveryDay {
 	q.Date = q.Date.In(time.Local)
 	if !q.Date.IsZero() {
 		q.RawDate = q.Date.Format(time.DateOnly)

@@ -17,55 +17,55 @@ import (
 )
 
 type (
-	NonDeliveryDayRepository interface {
-		FindNonDeliveryDays(
+	CustomDeliveryDayRepository interface {
+		FindCustomDeliveryDays(
 			ctx context.Context,
-			request *models.NonDeliveryDayFilter,
-		) ([]*models.NonDeliveryDay, int64, int64, error)
-		FindNonDeliveryDay(
+			request *models.CustomDeliveryDayFilter,
+		) ([]*models.CustomDeliveryDay, int64, int64, error)
+		FindCustomDeliveryDay(
 			ctx context.Context,
-			request *models.NonDeliveryDayFilter,
-		) (*models.NonDeliveryDay, error)
-		CreateNonDeliveryDay(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.NonDeliveryDay,
-		) (*models.NonDeliveryDay, error)
-		UpdateNonDeliveryDay(
+			request *models.CustomDeliveryDayFilter,
+		) (*models.CustomDeliveryDay, error)
+		CreateCustomDeliveryDay(
 			ctx context.Context,
 			tx pgx.Tx,
-			request *models.NonDeliveryDay,
-		) (*models.NonDeliveryDay, error)
+			request *models.CustomDeliveryDay,
+		) (*models.CustomDeliveryDay, error)
+		UpdateCustomDeliveryDay(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.CustomDeliveryDay,
+		) (*models.CustomDeliveryDay, error)
 	}
 
-	nonDeliveryDayRepository struct {
+	customDeliveryDayRepository struct {
 		dbRead,
 		dbWrite *pgxpool.Pool
 	}
 )
 
-func NewNonDeliveryDayRepository(
+func NewCustomDeliveryDayRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) NonDeliveryDayRepository {
-	return new(nonDeliveryDayRepository{
+) CustomDeliveryDayRepository {
+	return &customDeliveryDayRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
-func (q *nonDeliveryDayRepository) FindNonDeliveryDays(
+func (q *customDeliveryDayRepository) FindCustomDeliveryDays(
 	ctx context.Context,
-	request *models.NonDeliveryDayFilter,
-) ([]*models.NonDeliveryDay, int64, int64, error) {
-	ctxt := "NonDeliveryDayRepository-FindNonDeliveryDays"
+	request *models.CustomDeliveryDayFilter,
+) ([]*models.CustomDeliveryDay, int64, int64, error) {
+	ctxt := "CustomDeliveryDayRepository-FindCustomDeliveryDays"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
 		&sb,
 		`SELECT COUNT(1)
-		FROM non_delivery_days n
+		FROM custom_delivery_days n
 		JOIN delivery_plans d ON n.delivery_plan_id = d.id %s`,
 		condition,
 	)
@@ -137,36 +137,36 @@ func (q *nonDeliveryDayRepository) FindNonDeliveryDays(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.NonDeliveryDay
+	var response []*models.CustomDeliveryDay
 	for rows.Next() {
-		var nonDeliveryDay models.NonDeliveryDay
+		var customDeliveryDay models.CustomDeliveryDay
 		if err = rows.Scan(
-			&nonDeliveryDay.ID,
-			&nonDeliveryDay.RecordStatus,
-			&nonDeliveryDay.Date,
-			&nonDeliveryDay.DeliveryPlanID,
-			&nonDeliveryDay.DeliveryPlanName,
-			&nonDeliveryDay.CreatedBy,
-			&nonDeliveryDay.CreatedAt,
-			&nonDeliveryDay.DeletedBy,
-			&nonDeliveryDay.DeletedAt,
-			&nonDeliveryDay.DeletionReason,
+			&customDeliveryDay.ID,
+			&customDeliveryDay.RecordStatus,
+			&customDeliveryDay.Date,
+			&customDeliveryDay.DeliveryPlanID,
+			&customDeliveryDay.DeliveryPlanName,
+			&customDeliveryDay.CreatedBy,
+			&customDeliveryDay.CreatedAt,
+			&customDeliveryDay.DeletedBy,
+			&customDeliveryDay.DeletedAt,
+			&customDeliveryDay.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		offset++
-		nonDeliveryDay.RowNo = offset
-		response = append(response, (&nonDeliveryDay).Populate())
+		customDeliveryDay.RowNo = offset
+		response = append(response, (&customDeliveryDay).Populate())
 	}
 	return response, total, pages, nil
 }
 
-func (q *nonDeliveryDayRepository) FindNonDeliveryDay(
+func (q *customDeliveryDayRepository) FindCustomDeliveryDay(
 	ctx context.Context,
-	request *models.NonDeliveryDayFilter,
-) (*models.NonDeliveryDay, error) {
-	ctxt := "NonDeliveryDayRepository-FindNonDeliveryDay"
+	request *models.CustomDeliveryDayFilter,
+) (*models.CustomDeliveryDay, error) {
+	ctxt := "CustomDeliveryDayRepository-FindCustomDeliveryDay"
 	var sb strings.Builder
 	condition, params := q.buildCondition(request, &sb)
 	sb.Reset()
@@ -183,12 +183,12 @@ func (q *nonDeliveryDayRepository) FindNonDeliveryDay(
 			, n.deleted_by
 			, n.deleted_at
 			, n.deletion_reason
-		FROM non_delivery_days n
+		FROM custom_delivery_days n
 		JOIN delivery_plans d ON n.delivery_plan_id = d.id %s`,
 		condition,
 	)
 	query := sb.String()
-	var response models.NonDeliveryDay
+	var response models.CustomDeliveryDay
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -202,7 +202,7 @@ func (q *nonDeliveryDayRepository) FindNonDeliveryDay(
 		&response.DeletionReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrNonDeliveryDayNotFound
+		return nil, models.ErrCustomDeliveryDayNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -211,17 +211,17 @@ func (q *nonDeliveryDayRepository) FindNonDeliveryDay(
 	return (&response).Populate(), nil
 }
 
-func (q *nonDeliveryDayRepository) CreateNonDeliveryDay(
+func (q *customDeliveryDayRepository) CreateCustomDeliveryDay(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.NonDeliveryDay,
-) (*models.NonDeliveryDay, error) {
-	ctxt := "NonDeliveryDayRepository-CreateNonDeliveryDay"
-	var response models.NonDeliveryDay
+	request *models.CustomDeliveryDay,
+) (*models.CustomDeliveryDay, error) {
+	ctxt := "CustomDeliveryDayRepository-CreateCustomDeliveryDay"
+	var response models.CustomDeliveryDay
 	err := tx.QueryRow(
 		ctx,
 		`WITH n AS (
-			INSERT INTO non_delivery_days (
+			INSERT INTO custom_delivery_days (
 				record_status
 				, date
 				, delivery_plan_id
@@ -262,8 +262,8 @@ func (q *nonDeliveryDayRepository) CreateNonDeliveryDay(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "non_delivery_days_date_delivery_plan_id_key" {
-			err = models.ErrUniqueNonDeliveryDayDateDeliveryPlanIdViolation
+			pgxErr.ConstraintName == "custom_delivery_days_date_delivery_plan_id_key" {
+			err = models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -272,17 +272,17 @@ func (q *nonDeliveryDayRepository) CreateNonDeliveryDay(
 	return (&response).Populate(), nil
 }
 
-func (q *nonDeliveryDayRepository) UpdateNonDeliveryDay(
+func (q *customDeliveryDayRepository) UpdateCustomDeliveryDay(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.NonDeliveryDay,
-) (*models.NonDeliveryDay, error) {
-	ctxt := "NonDeliveryDayRepository-UpdateNonDeliveryDay"
-	var response models.NonDeliveryDay
+	request *models.CustomDeliveryDay,
+) (*models.CustomDeliveryDay, error) {
+	ctxt := "CustomDeliveryDayRepository-UpdateCustomDeliveryDay"
+	var response models.CustomDeliveryDay
 	err := tx.QueryRow(
 		ctx,
 		`WITH n AS (
-			UPDATE non_delivery_days SET
+			UPDATE custom_delivery_days SET
 				record_status = $1
 				, date = $2
 				, delivery_plan_id = $3
@@ -326,8 +326,8 @@ func (q *nonDeliveryDayRepository) UpdateNonDeliveryDay(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "non_delivery_days_date_delivery_plan_id_key" {
-			err = models.ErrUniqueNonDeliveryDayDateDeliveryPlanIdViolation
+			pgxErr.ConstraintName == "custom_delivery_days_date_delivery_plan_id_key" {
+			err = models.ErrUniqueCustomDeliveryDayDateDeliveryPlanIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -336,13 +336,13 @@ func (q *nonDeliveryDayRepository) UpdateNonDeliveryDay(
 	return (&response).Populate(), nil
 }
 
-func (q *nonDeliveryDayRepository) buildCondition(request *models.NonDeliveryDayFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *customDeliveryDayRepository) buildCondition(request *models.CustomDeliveryDayFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.NonDeliveryDayIDs) > 0 {
+	if len(request.CustomDeliveryDayIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("n.id IN (")
-		for i, nonDeliveryDayID := range request.NonDeliveryDayIDs {
-			params = append(params, nonDeliveryDayID)
+		for i, customDeliveryDayID := range request.CustomDeliveryDayIDs {
+			params = append(params, customDeliveryDayID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -351,11 +351,11 @@ func (q *nonDeliveryDayRepository) buildCondition(request *models.NonDeliveryDay
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ExcludedNonDeliveryDayIDs) > 0 {
+	if len(request.ExcludedCustomDeliveryDayIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("n.id NOT IN (")
-		for i, excludedNonDeliveryDayID := range request.ExcludedNonDeliveryDayIDs {
-			params = append(params, excludedNonDeliveryDayID)
+		for i, excludedCustomDeliveryDayID := range request.ExcludedCustomDeliveryDayIDs {
+			params = append(params, excludedCustomDeliveryDayID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
