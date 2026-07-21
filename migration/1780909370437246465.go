@@ -684,7 +684,7 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// variables
+		// setting
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE setting (
@@ -703,6 +703,37 @@ func init() {
 				, delivery_cost_per_km bigint NOT NULL
 				, delivery_max_distance_km bigint NOT NULL
 				, whatsapp_phone_number character varying NOT NULL
+				, weekday_transaction_cut_off_time timestamp with time zone NOT NULL
+				, weekday_same_day boolean NOT NULL
+				, weekday_same_day_transaction_window_max timestamp with time zone NOT NULL
+				, weekday_next_day boolean NOT NULL
+				, weekday_until_cut_off_next_day_delivery_start_time timestamp with time zone NOT NULL
+				, weekday_after_cut_off_next_day_delivery_start_time timestamp with time zone NOT NULL
+				, weekday_next_two_day boolean NOT NULL
+				, weekday_next_two_day_delivery_start_time timestamp with time zone NOT NULL
+				, weekday_delivery_end_time timestamp with time zone NOT NULL
+				, weekday_delivery_interval character varying NOT NULL
+				, saturday_transaction_cut_off_time timestamp with time zone NOT NULL
+				, saturday_same_day boolean NOT NULL
+				, saturday_same_day_transaction_window_max timestamp with time zone NOT NULL
+				, saturday_next_day boolean NOT NULL
+				, saturday_until_cut_off_next_day_delivery_start_time timestamp with time zone NOT NULL
+				, saturday_after_cut_off_next_day_delivery_start_time timestamp with time zone NOT NULL
+				, saturday_next_two_day boolean NOT NULL
+				, saturday_next_two_day_delivery_start_time timestamp with time zone NOT NULL
+				, saturday_delivery_end_time timestamp with time zone NOT NULL
+				, saturday_delivery_interval character varying NOT NULL
+				, sunday_transaction_cut_off_time timestamp with time zone NOT NULL
+				, sunday_same_day boolean NOT NULL
+				, sunday_same_day_transaction_window_max timestamp with time zone NOT NULL
+				, sunday_next_day boolean NOT NULL
+				, sunday_until_cut_off_next_day_delivery_start_time timestamp with time zone NOT NULL
+				, sunday_after_cut_off_next_day_delivery_start_time timestamp with time zone NOT NULL
+				, sunday_next_two_day boolean NOT NULL
+				, sunday_next_two_day_delivery_start_time timestamp with time zone NOT NULL
+				, sunday_delivery_end_time timestamp with time zone NOT NULL
+				, sunday_delivery_interval character varying NOT NULL
+				, skip_sunday_delivery boolean NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
@@ -729,21 +760,52 @@ func init() {
 			return
 		}
 		setting := models.Setting{
-			VoucherEnabled:                       true,
-			ReferralPointsEnabled:                true,
-			ReferralPointsInitialBudget:          3_000_000,
-			RefferalPointsMinimumShoppingCost:    60_000,
-			ReferralPointsPerReferee:             25_000,
-			ReferralPointsSlots:                  []int64{15_000, 10_000},
-			ReferralPointsRemainingBudget:        3_000_000,
-			RewardPointsAccumulationWindowInDays: 30,
-			DeliveryOriginLongitude:              longitude,
-			DeliveryOriginLatitude:               latitude,
-			DeliveryCostPerKM:                    3_000,
-			DeliveryMaxDistanceKM:                15,
-			WhatsappPhoneNumber:                  "628116099887",
+			VoucherEnabled:                              true,
+			ReferralPointsEnabled:                       true,
+			ReferralPointsInitialBudget:                 3_000_000,
+			RefferalPointsMinimumShoppingCost:           60_000,
+			ReferralPointsPerReferee:                    25_000,
+			ReferralPointsSlots:                         []int64{15_000, 10_000},
+			ReferralPointsRemainingBudget:               3_000_000,
+			RewardPointsAccumulationWindowInDays:        30,
+			DeliveryOriginLongitude:                     longitude,
+			DeliveryOriginLatitude:                      latitude,
+			DeliveryCostPerKM:                           3_000,
+			DeliveryMaxDistanceKM:                       15,
+			WhatsappPhoneNumber:                         "628116099887",
+			WeekdayTransactionCutOffTime:                time.Date(2000, 1, 1, 21, 59, 59, 999_999_999, time.Local),
+			WeekdaySameDay:                              true,
+			WeekdaySameDayTransactionWindowMax:          time.Date(2000, 1, 1, 9, 59, 59, 999_999_999, time.Local),
+			WeekdayNextDay:                              true,
+			WeekdayUntilCutOffNextDayDeliveryStartTime:  time.Date(2000, 1, 1, 8, 0, 0, 0, time.Local),
+			WeekdayAfterCutOffNextDayDeliveryStartTime:  time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local),
+			WeekdayNextTwoDay:                           true,
+			WeekdayNextTwoDayDeliveryStartTime:          time.Date(2000, 1, 1, 8, 0, 0, 0, time.Local),
+			WeekdayDeliveryEndTime:                      time.Date(2000, 1, 1, 11, 59, 59, 999_999_999, time.Local),
+			WeekdayDeliveryInterval:                     "2h",
+			SaturdayTransactionCutOffTime:               time.Date(2000, 1, 1, 21, 59, 59, 999_999_999, time.Local),
+			SaturdaySameDay:                             true,
+			SaturdaySameDayTransactionWindowMax:         time.Date(2000, 1, 1, 9, 59, 59, 999_999_999, time.Local),
+			SaturdayNextDay:                             false,
+			SaturdayUntilCutOffNextDayDeliveryStartTime: time.Time{},
+			SaturdayAfterCutOffNextDayDeliveryStartTime: time.Time{},
+			SaturdayNextTwoDay:                          true,
+			SaturdayNextTwoDayDeliveryStartTime:         time.Date(2000, 1, 1, 8, 0, 0, 0, time.Local),
+			SaturdayDeliveryEndTime:                     time.Date(2000, 1, 1, 11, 59, 59, 999_999_999, time.Local),
+			SaturdayDeliveryInterval:                    "2h",
+			SundayTransactionCutOffTime:                 time.Date(2000, 1, 1, 21, 59, 59, 999_999_999, time.Local),
+			SundaySameDay:                               false,
+			SundaySameDayTransactionWindowMax:           time.Date(2000, 1, 1, 21, 59, 59, 999_999_999, time.Local),
+			SundayNextDay:                               true,
+			SundayUntilCutOffNextDayDeliveryStartTime:   time.Date(2000, 1, 1, 8, 0, 0, 0, time.Local),
+			SundayAfterCutOffNextDayDeliveryStartTime:   time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local),
+			SundayNextTwoDay:                            true,
+			SundayNextTwoDayDeliveryStartTime:           time.Date(2000, 1, 1, 8, 0, 0, 0, time.Local),
+			SundayDeliveryEndTime:                       time.Date(2000, 1, 1, 11, 59, 59, 999_999_999, time.Local),
+			SundayDeliveryInterval:                      "2h",
+			SkipSundayDelivery:                          true,
 		}
-		now := time.Now()
+		now := time.Now().In(time.Local)
 		if _, err = tx.Exec(
 			ctx,
 			`INSERT INTO setting (
@@ -761,12 +823,46 @@ func init() {
 				, delivery_cost_per_km
 				, delivery_max_distance_km
 				, whatsapp_phone_number
+				, weekday_transaction_cut_off_time
+				, weekday_same_day
+				, weekday_same_day_transaction_window_max
+				, weekday_next_day
+				, weekday_until_cut_off_next_day_delivery_start_time
+				, weekday_after_cut_off_next_day_delivery_start_time
+				, weekday_next_two_day
+				, weekday_next_two_day_delivery_start_time
+				, weekday_delivery_end_time
+				, weekday_delivery_interval
+				, saturday_transaction_cut_off_time
+				, saturday_same_day
+				, saturday_same_day_transaction_window_max
+				, saturday_next_day
+				, saturday_until_cut_off_next_day_delivery_start_time
+				, saturday_after_cut_off_next_day_delivery_start_time
+				, saturday_next_two_day
+				, saturday_next_two_day_delivery_start_time
+				, saturday_delivery_end_time
+				, saturday_delivery_interval
+				, sunday_transaction_cut_off_time
+				, sunday_same_day
+				, sunday_same_day_transaction_window_max
+				, sunday_next_day
+				, sunday_until_cut_off_next_day_delivery_start_time
+				, sunday_after_cut_off_next_day_delivery_start_time
+				, sunday_next_two_day
+				, sunday_next_two_day_delivery_start_time
+				, sunday_delivery_end_time
+				, sunday_delivery_interval
+				, skip_sunday_delivery
 				, created_at
 				, updated_by
 				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-				, $11, $12, $13, $14, $15, $16, $17
+				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+				, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+				, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
+				, $41, $42, $43, $44, $45, $46, $47, $48
 			)`,
 			setting.MaintenanceMode,
 			setting.VoucherEnabled,
@@ -782,6 +878,37 @@ func init() {
 			setting.DeliveryCostPerKM,
 			setting.DeliveryMaxDistanceKM,
 			setting.WhatsappPhoneNumber,
+			setting.WeekdayTransactionCutOffTime,
+			setting.WeekdaySameDay,
+			setting.WeekdaySameDayTransactionWindowMax,
+			setting.WeekdayNextDay,
+			setting.WeekdayUntilCutOffNextDayDeliveryStartTime,
+			setting.WeekdayAfterCutOffNextDayDeliveryStartTime,
+			setting.WeekdayNextTwoDay,
+			setting.WeekdayNextTwoDayDeliveryStartTime,
+			setting.WeekdayDeliveryEndTime,
+			setting.WeekdayDeliveryInterval,
+			setting.SaturdayTransactionCutOffTime,
+			setting.SaturdaySameDay,
+			setting.SaturdaySameDayTransactionWindowMax,
+			setting.SaturdayNextDay,
+			setting.SaturdayUntilCutOffNextDayDeliveryStartTime,
+			setting.SaturdayAfterCutOffNextDayDeliveryStartTime,
+			setting.SaturdayNextTwoDay,
+			setting.SaturdayNextTwoDayDeliveryStartTime,
+			setting.SaturdayDeliveryEndTime,
+			setting.SaturdayDeliveryInterval,
+			setting.SundayTransactionCutOffTime,
+			setting.SundaySameDay,
+			setting.SundaySameDayTransactionWindowMax,
+			setting.SundayNextDay,
+			setting.SundayUntilCutOffNextDayDeliveryStartTime,
+			setting.SundayAfterCutOffNextDayDeliveryStartTime,
+			setting.SundayNextTwoDay,
+			setting.SundayNextTwoDayDeliveryStartTime,
+			setting.SundayDeliveryEndTime,
+			setting.SundayDeliveryInterval,
+			setting.SkipSundayDelivery,
 			now,
 			nil,
 			now,
@@ -1016,6 +1143,50 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON skipped_delivery_plans (deleted_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// transaction_days
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE transaction_days (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, date timestamp with time zone NOT NULL UNIQUE
+				, cut_off_time timestamp with time zone NOT NULL
+				, same_day boolean NOT NULL
+				, next_day boolean NOT NULL
+				, next_two_day boolean NOT NULL
+				, created_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// delivery_schedules
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE delivery_schedules (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, transaction_day_id UUID NOT NULL REFERENCES transaction_days (id)
+				, delivery_hour timestamp with time zone NOT NULL
+				, created_at timestamp with time zone NOT NULL
+				, UNIQUE(transaction_day_id, delivery_hour)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_schedules (transaction_day_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_schedules (delivery_hour);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
