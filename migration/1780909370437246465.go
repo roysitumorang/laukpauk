@@ -16,6 +16,13 @@ func init() {
 		ctxt := "Migration-1780909370437246465"
 		if _, err = tx.Exec(
 			ctx,
+			"CREATE EXTENSION IF NOT EXISTS btree_gist;",
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE COLLATION IF NOT EXISTS natural_sort (
 				PROVIDER = 'icu'
 				, LOCALE = 'en-US-u-kn-true'
@@ -855,6 +862,7 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, name character varying COLLATE "natural_sort"
+				, weekday bigint NOT NULL
 				, transaction_window TSTZRANGE NOT NULL
 				, same_day BOOLEAN NOT NULL
 				, same_day_window TSTZRANGE NOT NULL
@@ -865,14 +873,15 @@ func init() {
 				, next_two_day BOOLEAN NOT NULL
 				, next_two_day_window TSTZRANGE NOT NULL
 				, next_two_day_interval character varying
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT no_overlapping_transaction_windows EXCLUDE USING gist (
+					weekday WITH =,
 					transaction_window WITH &&
 				)
 			);`,
@@ -890,6 +899,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE UNIQUE INDEX delivery_plans_unique_name_idx ON delivery_plans (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_plans (weekday);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -914,6 +930,278 @@ func init() {
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
+		}
+		deliveryPlans := [][]any{
+			// weekdays
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 10:00 hari biasa",
+				models.DeliveryWeekdayWeekdays,
+				"2000-01-01 00:00:00+07:07:12",
+				"2000-01-01 09:59:59+07:07:12",
+				true,
+				"2000-01-01 10:00:00+07:07:12",
+				"2000-01-01 12:00:00+07:07:12",
+				"2h",
+				true,
+				"2000-01-02 08:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				true,
+				"2000-01-03 08:00:00+07:07:12",
+				"2000-01-03 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59 hari biasa",
+				models.DeliveryWeekdayWeekdays,
+				"2000-01-01 10:00:00+07:07:12",
+				"2000-01-01 21:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 08:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				true,
+				"2000-01-03 08:00:00+07:07:12",
+				"2000-01-03 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00 hari biasa",
+				models.DeliveryWeekdayWeekdays,
+				"2000-01-01 22:00:00+07:07:12",
+				"2000-01-01 23:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 10:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				true,
+				"2000-01-03 08:00:00+07:07:12",
+				"2000-01-03 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			},
+			// friday
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 10:00 hari Jumat",
+				models.DeliveryWeekdayFriday,
+				"2000-01-01 00:00:00+07:07:12",
+				"2000-01-01 09:59:59+07:07:12",
+				true,
+				"2000-01-01 10:00:00+07:07:12",
+				"2000-01-01 12:00:00+07:07:12",
+				"2h",
+				true,
+				"2000-01-02 08:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				false,
+				nil,
+				nil,
+				nil,
+				now,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59 hari Jumat",
+				models.DeliveryWeekdayFriday,
+				"2000-01-01 10:00:00+07:07:12",
+				"2000-01-01 21:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 08:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				false,
+				nil,
+				nil,
+				nil,
+				now,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00 hari Jumat",
+				models.DeliveryWeekdayFriday,
+				"2000-01-01 22:00:00+07:07:12",
+				"2000-01-01 23:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 10:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				false,
+				nil,
+				nil,
+				nil,
+				now,
+				now,
+			},
+			// saturday
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 10:00 hari Sabtu",
+				models.DeliveryWeekdaySaturday,
+				"2000-01-01 00:00:00+07:07:12",
+				"2000-01-01 09:59:59+07:07:12",
+				true,
+				"2000-01-01 10:00:00+07:07:12",
+				"2000-01-01 12:00:00+07:07:12",
+				"2h",
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 08:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59 hari Sabtu",
+				models.DeliveryWeekdaySaturday,
+				"2000-01-01 10:00:00+07:07:12",
+				"2000-01-01 21:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 08:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00 hari Sabtu",
+				models.DeliveryWeekdaySaturday,
+				"2000-01-01 22:00:00+07:07:12",
+				"2000-01-01 23:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-03 08:00:00+07:07:12",
+				"2000-01-03 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			},
+			// sunday
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 22:00 hari Minggu",
+				models.DeliveryWeekdaySunday,
+				"2000-01-01 00:00:00+07:07:12",
+				"2000-01-01 21:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 08:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				true,
+				"2000-01-03 08:00:00+07:07:12",
+				"2000-01-03 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00 hari Minggu",
+				models.DeliveryWeekdaySunday,
+				"2000-01-01 22:00:00+07:07:12",
+				"2000-01-01 23:59:59+07:07:12",
+				false,
+				nil,
+				nil,
+				nil,
+				true,
+				"2000-01-02 10:00:00+07:07:12",
+				"2000-01-02 12:00:00+07:07:12",
+				"2h",
+				true,
+				"2000-01-03 08:00:00+07:07:12",
+				"2000-01-03 12:00:00+07:07:12",
+				"2h",
+				now,
+				now,
+			},
+		}
+		for i := range deliveryPlans {
+			if _, err = tx.Exec(
+				ctx,
+				`INSERT INTO delivery_plans (
+					record_status
+					, name
+					, weekday
+					, transaction_window
+					, same_day
+					, same_day_window
+					, same_day_interval
+					, next_day
+					, next_day_window
+					, next_day_interval
+					, next_two_day
+					, next_two_day_window
+					, next_two_day_interval
+					, created_at
+					, updated_at
+				) VALUES (
+					$1
+					, $2
+					, $3
+					, tstzrange($4, $5, '[]')
+					, $6
+					, tstzrange($7, $8)
+					, $9
+					, $10
+					, tstzrange($11, $12, '[]')
+					, $13
+					, $14
+					, tstzrange($15, $16, '[]')
+					, $17
+					, $18
+					, $19
+				)`,
+				deliveryPlans[i]...,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
 		}
 		// delivery_datetimes
 		if _, err = tx.Exec(

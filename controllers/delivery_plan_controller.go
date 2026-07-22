@@ -151,6 +151,7 @@ func (q *deliveryPlanController) AdminNew(c fiber.Ctx) (err error) {
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
 		"deliveryPlan", request,
+		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
 	return c.Render("admin/delivery_plan_new", params, "admin/layouts/authenticated")
 }
@@ -175,6 +176,7 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
 		"deliveryPlan", request,
+		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
@@ -219,9 +221,9 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	now := time.Now()
 	createdBy := currentAdmin.ID
 	request.RecordStatus = models.RecordStatusActive
-	request.CreatedBy = createdBy
+	request.CreatedBy = &createdBy
 	request.CreatedAt = now
-	request.UpdatedBy = createdBy
+	request.UpdatedBy = &createdBy
 	request.UpdatedAt = now
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
@@ -297,6 +299,7 @@ func (q *deliveryPlanController) AdminEdit(c fiber.Ctx) (err error) {
 		"pageTitle", "Edit Data Jadwal Delivery",
 		"request", deliveryPlan,
 		"deliveryPlan", deliveryPlan,
+		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
 	return c.Render("admin/delivery_plan_edit", params, "admin/layouts/authenticated")
 }
@@ -339,6 +342,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		"pageTitle", "Edit Data Jadwal Delivery",
 		"request", request,
 		"deliveryPlan", deliveryPlan,
+		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
@@ -390,7 +394,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 	}
 	request.ID = deliveryPlan.ID
 	request.RecordStatus = deliveryPlan.RecordStatus
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = &currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil

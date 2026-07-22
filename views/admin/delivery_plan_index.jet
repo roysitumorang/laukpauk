@@ -108,7 +108,7 @@
 							<thead>
 								<tr>
 									<th class="border-top-0 text-center">No.</th>
-									<th class="border-top-0 text-left">Nama / Tanggal</th>
+									<th class="border-top-0 text-left">Hari / Nama</th>
 									<th class="border-top-0 text-left">Jam Transaksi</th>
 									<th class="border-top-0 text-left">Jadwal Delivery</th>
 									<th class="border-top-0 text-center">Opsi</th>
@@ -118,7 +118,7 @@
 								{{ range _, row := rows }}
 								<tr class="text-sm tr-parent">
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
-									<td class="text-left vam">{{ row.Name }}</td>
+									<td class="text-left vam">{{ row.Weekday.String() }} / {{ row.Name }}</td>
 									<td class="text-left">
 										<h6 class="text-bold mb-0 text-secondary">{{ row.TransactionWindowMin.Format("15:04:05") }} s/d {{ row.TransactionWindowMax.Format("15:04:05") }}</h6>
 									</td>

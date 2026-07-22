@@ -81,6 +81,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		`id
 		, record_status
 		, name
+		, weekday
 		, lower(transaction_window)
 		, upper(transaction_window)
 		, same_day
@@ -176,6 +177,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 			&deliveryPlan.ID,
 			&deliveryPlan.RecordStatus,
 			&deliveryPlan.Name,
+			&deliveryPlan.Weekday,
 			&deliveryPlan.TransactionWindowMin,
 			&deliveryPlan.TransactionWindowMax,
 			&deliveryPlan.SameDay,
@@ -275,6 +277,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 			id
 			, record_status
 			, name
+			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
 			, same_day
@@ -304,6 +307,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
+		&response.Weekday,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
 		&response.SameDay,
@@ -418,6 +422,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		`INSERT INTO delivery_plans (
 			record_status
 			, name
+			, weekday
 			, transaction_window
 			, same_day
 			, same_day_window
@@ -435,24 +440,26 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		) VALUES (
 			$1
 			, $2
-			, tstzrange($3, $4, '[]')
-			, $5
-			, tstzrange($6, $7%s)
-			, $8
+			, $3
+			, tstzrange($4, $5, '[]')
+			, $6
+			, tstzrange($7, $8%s)
 			, $9
-			, tstzrange($10, $11%s)
-			, $12
+			, $10
+			, tstzrange($11, $12%s)
 			, $13
-			, tstzrange($14, $15%s)
-			, $16
+			, $14
+			, tstzrange($15, $16%s)
 			, $17
 			, $18
 			, $19
 			, $20
+			, $21
 		)
 		RETURNING id
 			, record_status
 			, name
+			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
 			, same_day
@@ -483,6 +490,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		sb.String(),
 		request.RecordStatus,
 		request.Name,
+		request.Weekday,
 		request.TransactionWindowMin,
 		request.TransactionWindowMax,
 		request.SameDay,
@@ -505,6 +513,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
+		&response.Weekday,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
 		&response.SameDay,
@@ -678,25 +687,27 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		`UPDATE delivery_plans SET
 			record_status = $1
 			, name = $2
-			, transaction_window = tstzrange($3, $4, '[]')
-			, same_day = $5
-			, same_day_window = tstzrange($6, $7%s)
-			, same_day_interval = $8
-			, next_day = $9
-			, next_day_window = tstzrange($10, $11%s)
-			, next_day_interval = $12
-			, next_two_day = $13
-			, next_two_day_window = tstzrange($14, $15%s)
-			, next_two_day_interval = $16
-			, updated_by = $17
-			, updated_at = $18
-			, deleted_by = $19
-			, deleted_at = $20
-			, deletion_reason = $21
-		WHERE id = $22
+			, weekday = $3
+			, transaction_window = tstzrange($4, $5, '[]')
+			, same_day = $6
+			, same_day_window = tstzrange($7, $8%s)
+			, same_day_interval = $9
+			, next_day = $10
+			, next_day_window = tstzrange($11, $12%s)
+			, next_day_interval = $13
+			, next_two_day = $14
+			, next_two_day_window = tstzrange($15, $16%s)
+			, next_two_day_interval = $17
+			, updated_by = $18
+			, updated_at = $19
+			, deleted_by = $20
+			, deleted_at = $21
+			, deletion_reason = $22
+		WHERE id = $23
 		RETURNING id
 			, record_status
 			, name
+			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
 			, same_day
@@ -727,6 +738,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		sb.String(),
 		request.RecordStatus,
 		request.Name,
+		request.Weekday,
 		request.TransactionWindowMin,
 		request.TransactionWindowMax,
 		request.SameDay,
@@ -751,6 +763,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
+		&response.Weekday,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
 		&response.SameDay,
@@ -955,6 +968,19 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		params = append(params, strings.ToLower(request.Name))
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "LOWER(name) = $%d", len(params))
+		conds = append(conds, sb.String())
+	}
+	if len(request.DeliveryWeekdays) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("weekday IN (")
+		for i, deliveryWeekday := range request.DeliveryWeekdays {
+			params = append(params, deliveryWeekday)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if !request.TransactionDatetime.IsZero() {

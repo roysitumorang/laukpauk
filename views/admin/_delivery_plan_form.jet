@@ -11,6 +11,19 @@
 		</div>
 	</div>
 	<div class="row">
+		<div class="col-12">
+			<div class="form-group">
+				<label for="weekday" class="label-title">Hari</label>
+				<select name="weekday" id="weekday" class="form-control" required>
+					<option disabled>Silahkan Pilih</option>
+					{{ range _, deliveryWeekday := deliveryWeekdays }}
+					<option value="{{ deliveryWeekday.Int() }}"{{ if request.Weekday.Equal(deliveryWeekday) }} selected{{ end }}>{{ deliveryWeekday.String() }}</option>
+					{{ end }}
+				</select>
+			</div>
+		</div>
+	</div>
+	<div class="row">
 		<div class="col-6">
 			<div class="form-group">
 				<label for="transaction_window_min" class="label-title">Batas Awal Jam Transaksi</label>

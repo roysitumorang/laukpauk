@@ -16,6 +16,19 @@ var (
 	ErrUniqueDeliveryPlanNameViolation              = errors.New("name: already exists")
 	ErrUniqueDeliveryPlanTransactionWindowViolation = errors.New("transaction time frame already exists")
 
+	DeliveryWeekdays = []DeliveryWeekday{
+		DeliveryWeekdaySunday,
+		DeliveryWeekdayWeekdays,
+		DeliveryWeekdayFriday,
+		DeliveryWeekdaySaturday,
+	}
+	MapDeliveryWeekdays = map[DeliveryWeekday]struct{}{
+		DeliveryWeekdaySunday:   {},
+		DeliveryWeekdayWeekdays: {},
+		DeliveryWeekdayFriday:   {},
+		DeliveryWeekdaySaturday: {},
+	}
+
 	MapDeliveryPlanSortings = map[string]struct{}{
 		SortingFieldID:   {},
 		SortingFieldName: {},
@@ -28,14 +41,23 @@ const (
 	DeliverySpeedNextTwoDay
 )
 
+const (
+	DeliveryWeekdaySunday   DeliveryWeekday = DeliveryWeekday(time.Sunday)
+	DeliveryWeekdayWeekdays DeliveryWeekday = DeliveryWeekday(time.Sunday + 1)
+	DeliveryWeekdayFriday   DeliveryWeekday = DeliveryWeekday(time.Friday)
+	DeliveryWeekdaySaturday DeliveryWeekday = DeliveryWeekday(time.Saturday)
+)
+
 type (
-	DeliverySpeed int
+	DeliverySpeed   int
+	DeliveryWeekday int
 
 	DeliveryPlan struct {
 		RowNo                       int64               `json:"-" form:"-"`
 		ID                          uuid.UUID           `json:"id" form:"-"`
 		RecordStatus                RecordStatus        `json:"-" form:"-"`
 		Name                        string              `json:"name" form:"name"`
+		Weekday                     DeliveryWeekday     `json:"weekday" form:"weekday"`
 		TransactionWindowMin        time.Time           `json:"transaction_window_min" form:"-"`
 		RawTransactionWindowMin     string              `json:"-" form:"transaction_window_min"`
 		TransactionWindowMax        time.Time           `json:"transaction_window_max" form:"-"`
@@ -64,9 +86,9 @@ type (
 		NextTwoDayInterval          *time.Duration      `json:"-" form:"-"`
 		RawNextTwoDayInterval       *string             `json:"-" form:"next_two_day_interval"`
 		NextTwoDayDeliveryDatetimes []*DeliveryDatetime `json:"next_two_day_delivery_datetimes" form:"-"`
-		CreatedBy                   uuid.UUID           `json:"-" form:"-"`
+		CreatedBy                   *uuid.UUID          `json:"-" form:"-"`
 		CreatedAt                   time.Time           `json:"-" form:"-"`
-		UpdatedBy                   uuid.UUID           `json:"-" form:"-"`
+		UpdatedBy                   *uuid.UUID          `json:"-" form:"-"`
 		UpdatedAt                   time.Time           `json:"-" form:"-"`
 		DeletedBy                   *uuid.UUID          `json:"-" form:"-"`
 		DeletedAt                   *time.Time          `json:"-" form:"-"`
@@ -91,6 +113,7 @@ type (
 		ExcludedDeliveryPlanIDs []uuid.UUID
 		RecordStatuses      []RecordStatus
 		Name                string
+		DeliveryWeekdays    []DeliveryWeekday
 		TransactionDatetime time.Time
 		TransactionWindow   *TransactionWindow
 		Keyword,
@@ -132,6 +155,11 @@ func (q *DeliveryPlanFilter) WithRecordStatuses(recordStatuses ...RecordStatus) 
 
 func (q *DeliveryPlanFilter) WithName(name string) *DeliveryPlanFilter {
 	q.Name = name
+	return q
+}
+
+func (q *DeliveryPlanFilter) WithDeliveryWeekdays(deliveryWeekdays ...DeliveryWeekday) *DeliveryPlanFilter {
+	q.DeliveryWeekdays = deliveryWeekdays
 	return q
 }
 
@@ -185,6 +213,9 @@ func (q *DeliveryPlanFilter) WithUrlValues(urlValues url.Values) *DeliveryPlanFi
 func (q *DeliveryPlan) Validate() (err error) {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
+	}
+	if _, ok := MapDeliveryWeekdays[q.Weekday]; !ok {
+		return errors.New("weekday: not found")
 	}
 	if q.RawTransactionWindowMin = strings.TrimSpace(q.RawTransactionWindowMin); q.RawTransactionWindowMin == "" {
 		return errors.New("transaction_window_min: is required")
@@ -495,4 +526,25 @@ func (q *DeliveryPlan) UpdateDate(timestamp time.Time) {
 			)
 		}
 	}
+}
+
+func (q DeliveryWeekday) Int() int {
+	return int(q)
+}
+
+func (q DeliveryWeekday) Equal(v DeliveryWeekday) bool {
+	return q.Int() == v.Int()
+}
+
+func (q DeliveryWeekday) String() string {
+	if q == DeliveryWeekdayWeekdays {
+		return "Weekday"
+	}
+	if q == DeliveryWeekdayFriday {
+		return "Jumat"
+	}
+	if q == DeliveryWeekdaySaturday {
+		return "Sabtu"
+	}
+	return "Minggu"
 }
