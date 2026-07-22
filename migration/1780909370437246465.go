@@ -2132,6 +2132,108 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		pointSpendingCaps := [][]any{
+			{
+				models.RecordStatusActive,
+				100_000,
+				149_999,
+				1_500,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				150_000,
+				199_999,
+				2_500,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				200_000,
+				299_999,
+				3_500,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				300_000,
+				399_999,
+				5_000,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				400_000,
+				499_999,
+				7_000,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				500_000,
+				649_999,
+				10_000,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				650_000,
+				799_999,
+				13_000,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				800_000,
+				999_999,
+				17_000,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				1_000_000,
+				10_000_000,
+				22_000,
+				adminID,
+				now,
+				adminID,
+				now,
+			},
+		}
+		for i := range pointSpendingCaps {
+			if _, err = tx.Exec(
+				ctx,
+				`INSERT INTO point_spending_caps (
+					record_status
+					, shopping_cost
+					, disposable_points
+					, created_by
+					, created_at
+					, updated_by
+					, updated_at
+				) VALUES ($1, int8range($2, $3, '[]'), $4, $5, $6, $7, $8);`,
+				pointSpendingCaps[i]...,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+		}
 		// points
 		if _, err = tx.Exec(
 			ctx,
