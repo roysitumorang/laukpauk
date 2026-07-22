@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 	"time"
 	"uuid"
@@ -443,7 +442,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.CalculateDiscount()
-	paymentSettlementDuration, err := time.ParseDuration(os.Getenv("PAYMENT_SETTLEMENT_DURATION"))
+	paymentTerms, err := time.ParseDuration(setting.PaymentTerms)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
@@ -476,7 +475,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	)
 	request.BuyerID = currentBuyer.ID
 	request.ReferenceNumber = sb.String()
-	request.PaymentDueDate = now.Add(paymentSettlementDuration)
+	request.PaymentDueDate = now.Add(paymentTerms)
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)

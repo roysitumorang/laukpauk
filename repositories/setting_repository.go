@@ -71,37 +71,7 @@ func (q *settingRepository) FindSetting(
 			, delivery_cost_per_km
 			, delivery_max_distance_km
 			, whatsapp_phone_number
-			, weekday_transaction_cut_off_time
-			, weekday_same_day
-			, weekday_same_day_transaction_window_max
-			, weekday_next_day
-			, weekday_until_cut_off_next_day_delivery_start_time
-			, weekday_after_cut_off_next_day_delivery_start_time
-			, weekday_next_two_day
-			, weekday_next_two_day_delivery_start_time
-			, weekday_delivery_end_time
-			, weekday_delivery_interval
-			, saturday_transaction_cut_off_time
-			, saturday_same_day
-			, saturday_same_day_transaction_window_max
-			, saturday_next_day
-			, saturday_until_cut_off_next_day_delivery_start_time
-			, saturday_after_cut_off_next_day_delivery_start_time
-			, saturday_next_two_day
-			, saturday_next_two_day_delivery_start_time
-			, saturday_delivery_end_time
-			, saturday_delivery_interval
-			, sunday_transaction_cut_off_time
-			, sunday_same_day
-			, sunday_same_day_transaction_window_max
-			, sunday_next_day
-			, sunday_until_cut_off_next_day_delivery_start_time
-			, sunday_after_cut_off_next_day_delivery_start_time
-			, sunday_next_two_day
-			, sunday_next_two_day_delivery_start_time
-			, sunday_delivery_end_time
-			, sunday_delivery_interval
-			, skip_sunday_delivery
+			, payment_terms
 			, created_at
 			, updated_by
 			, updated_at
@@ -122,37 +92,7 @@ func (q *settingRepository) FindSetting(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.WeekdayTransactionCutOffTime,
-		&response.WeekdaySameDay,
-		&response.WeekdaySameDayTransactionWindowMax,
-		&response.WeekdayNextDay,
-		&response.WeekdayUntilCutOffNextDayDeliveryStartTime,
-		&response.WeekdayAfterCutOffNextDayDeliveryStartTime,
-		&response.WeekdayNextTwoDay,
-		&response.WeekdayNextTwoDayDeliveryStartTime,
-		&response.WeekdayDeliveryEndTime,
-		&response.WeekdayDeliveryInterval,
-		&response.SaturdayTransactionCutOffTime,
-		&response.SaturdaySameDay,
-		&response.SaturdaySameDayTransactionWindowMax,
-		&response.SaturdayNextDay,
-		&response.SaturdayUntilCutOffNextDayDeliveryStartTime,
-		&response.SaturdayAfterCutOffNextDayDeliveryStartTime,
-		&response.SaturdayNextTwoDay,
-		&response.SaturdayNextTwoDayDeliveryStartTime,
-		&response.SaturdayDeliveryEndTime,
-		&response.SaturdayDeliveryInterval,
-		&response.SundayTransactionCutOffTime,
-		&response.SundaySameDay,
-		&response.SundaySameDayTransactionWindowMax,
-		&response.SundayNextDay,
-		&response.SundayUntilCutOffNextDayDeliveryStartTime,
-		&response.SundayAfterCutOffNextDayDeliveryStartTime,
-		&response.SundayNextTwoDay,
-		&response.SundayNextTwoDayDeliveryStartTime,
-		&response.SundayDeliveryEndTime,
-		&response.SundayDeliveryInterval,
-		&response.SkipSundayDelivery,
+		&response.PaymentTerms,
 		&response.CreatedAt,
 		&response.UpdatedBy,
 		&response.UpdatedAt,
@@ -199,39 +139,9 @@ func (q *settingRepository) UpdateSetting(
 			, delivery_cost_per_km = $12
 			, delivery_max_distance_km = $13
 			, whatsapp_phone_number = $14
-			, weekday_transaction_cut_off_time = $15
-			, weekday_same_day = $16
-			, weekday_same_day_transaction_window_max = $17
-			, weekday_next_day = $18
-			, weekday_until_cut_off_next_day_delivery_start_time = $19
-			, weekday_after_cut_off_next_day_delivery_start_time = $20
-			, weekday_next_two_day = $21
-			, weekday_next_two_day_delivery_start_time = $22
-			, weekday_delivery_end_time = $23
-			, weekday_delivery_interval = $24
-			, saturday_transaction_cut_off_time = $25
-			, saturday_same_day = $26
-			, saturday_same_day_transaction_window_max = $27
-			, saturday_next_day = $28
-			, saturday_until_cut_off_next_day_delivery_start_time = $29
-			, saturday_after_cut_off_next_day_delivery_start_time = $30
-			, saturday_next_two_day = $31
-			, saturday_next_two_day_delivery_start_time = $32
-			, saturday_delivery_end_time = $33
-			, saturday_delivery_interval = $34
-			, sunday_transaction_cut_off_time = $35
-			, sunday_same_day = $36
-			, sunday_same_day_transaction_window_max = $37
-			, sunday_next_day = $38
-			, sunday_until_cut_off_next_day_delivery_start_time = $39
-			, sunday_after_cut_off_next_day_delivery_start_time = $40
-			, sunday_next_two_day = $41
-			, sunday_next_two_day_delivery_start_time = $42
-			, sunday_delivery_end_time = $43
-			, sunday_delivery_interval = $44
-			, skip_sunday_delivery = $45
-			, updated_by = $46
-			, updated_at = $47
+			, payment_terms = $15
+			, updated_by = $16
+			, updated_at = $17
 		WHERE id = 1
 		RETURNING id
 			, maintenance_mode
@@ -248,37 +158,7 @@ func (q *settingRepository) UpdateSetting(
 			, delivery_cost_per_km
 			, delivery_max_distance_km
 			, whatsapp_phone_number
-			, weekday_transaction_cut_off_time
-			, weekday_same_day
-			, weekday_same_day_transaction_window_max
-			, weekday_next_day
-			, weekday_until_cut_off_next_day_delivery_start_time
-			, weekday_after_cut_off_next_day_delivery_start_time
-			, weekday_next_two_day
-			, weekday_next_two_day_delivery_start_time
-			, weekday_delivery_end_time
-			, weekday_delivery_interval
-			, saturday_transaction_cut_off_time
-			, saturday_same_day
-			, saturday_same_day_transaction_window_max
-			, saturday_next_day
-			, saturday_until_cut_off_next_day_delivery_start_time
-			, saturday_after_cut_off_next_day_delivery_start_time
-			, saturday_next_two_day
-			, saturday_next_two_day_delivery_start_time
-			, saturday_delivery_end_time
-			, saturday_delivery_interval
-			, sunday_transaction_cut_off_time
-			, sunday_same_day
-			, sunday_same_day_transaction_window_max
-			, sunday_next_day
-			, sunday_until_cut_off_next_day_delivery_start_time
-			, sunday_after_cut_off_next_day_delivery_start_time
-			, sunday_next_two_day
-			, sunday_next_two_day_delivery_start_time
-			, sunday_delivery_end_time
-			, sunday_delivery_interval
-			, skip_sunday_delivery
+			, payment_terms
 			, created_at
 			, updated_by
 			, updated_at`,
@@ -296,37 +176,7 @@ func (q *settingRepository) UpdateSetting(
 		request.DeliveryCostPerKM,
 		request.DeliveryMaxDistanceKM,
 		request.WhatsappPhoneNumber,
-		request.WeekdayTransactionCutOffTime,
-		request.WeekdaySameDay,
-		request.WeekdaySameDayTransactionWindowMax,
-		request.WeekdayNextDay,
-		request.WeekdayUntilCutOffNextDayDeliveryStartTime,
-		request.WeekdayAfterCutOffNextDayDeliveryStartTime,
-		request.WeekdayNextTwoDay,
-		request.WeekdayNextTwoDayDeliveryStartTime,
-		request.WeekdayDeliveryEndTime,
-		request.WeekdayDeliveryInterval,
-		request.SaturdayTransactionCutOffTime,
-		request.SaturdaySameDay,
-		request.SaturdaySameDayTransactionWindowMax,
-		request.SaturdayNextDay,
-		request.SaturdayUntilCutOffNextDayDeliveryStartTime,
-		request.SaturdayAfterCutOffNextDayDeliveryStartTime,
-		request.SaturdayNextTwoDay,
-		request.SaturdayNextTwoDayDeliveryStartTime,
-		request.SaturdayDeliveryEndTime,
-		request.SaturdayDeliveryInterval,
-		request.SundayTransactionCutOffTime,
-		request.SundaySameDay,
-		request.SundaySameDayTransactionWindowMax,
-		request.SundayNextDay,
-		request.SundayUntilCutOffNextDayDeliveryStartTime,
-		request.SundayAfterCutOffNextDayDeliveryStartTime,
-		request.SundayNextTwoDay,
-		request.SundayNextTwoDayDeliveryStartTime,
-		request.SundayDeliveryEndTime,
-		request.SundayDeliveryInterval,
-		request.SkipSundayDelivery,
+		request.PaymentTerms,
 		request.UpdatedBy,
 		request.UpdatedAt,
 	).Scan(
@@ -345,37 +195,7 @@ func (q *settingRepository) UpdateSetting(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.WeekdayTransactionCutOffTime,
-		&response.WeekdaySameDay,
-		&response.WeekdaySameDayTransactionWindowMax,
-		&response.WeekdayNextDay,
-		&response.WeekdayUntilCutOffNextDayDeliveryStartTime,
-		&response.WeekdayAfterCutOffNextDayDeliveryStartTime,
-		&response.WeekdayNextTwoDay,
-		&response.WeekdayNextTwoDayDeliveryStartTime,
-		&response.WeekdayDeliveryEndTime,
-		&response.WeekdayDeliveryInterval,
-		&response.SaturdayTransactionCutOffTime,
-		&response.SaturdaySameDay,
-		&response.SaturdaySameDayTransactionWindowMax,
-		&response.SaturdayNextDay,
-		&response.SaturdayUntilCutOffNextDayDeliveryStartTime,
-		&response.SaturdayAfterCutOffNextDayDeliveryStartTime,
-		&response.SaturdayNextTwoDay,
-		&response.SaturdayNextTwoDayDeliveryStartTime,
-		&response.SaturdayDeliveryEndTime,
-		&response.SaturdayDeliveryInterval,
-		&response.SundayTransactionCutOffTime,
-		&response.SundaySameDay,
-		&response.SundaySameDayTransactionWindowMax,
-		&response.SundayNextDay,
-		&response.SundayUntilCutOffNextDayDeliveryStartTime,
-		&response.SundayAfterCutOffNextDayDeliveryStartTime,
-		&response.SundayNextTwoDay,
-		&response.SundayNextTwoDayDeliveryStartTime,
-		&response.SundayDeliveryEndTime,
-		&response.SundayDeliveryInterval,
-		&response.SkipSundayDelivery,
+		&response.PaymentTerms,
 		&response.CreatedAt,
 		&response.UpdatedBy,
 		&response.UpdatedAt,
@@ -425,37 +245,7 @@ func (q *settingRepository) DeductReferralPointsBudget(
 			, delivery_cost_per_km
 			, delivery_max_distance_km
 			, whatsapp_phone_number
-			, weekday_transaction_cut_off_time
-			, weekday_same_day
-			, weekday_same_day_transaction_window_max
-			, weekday_next_day
-			, weekday_until_cut_off_next_day_delivery_start_time
-			, weekday_after_cut_off_next_day_delivery_start_time
-			, weekday_next_two_day
-			, weekday_next_two_day_delivery_start_time
-			, weekday_delivery_end_time
-			, weekday_delivery_interval
-			, saturday_transaction_cut_off_time
-			, saturday_same_day
-			, saturday_same_day_transaction_window_max
-			, saturday_next_day
-			, saturday_until_cut_off_next_day_delivery_start_time
-			, saturday_after_cut_off_next_day_delivery_start_time
-			, saturday_next_two_day
-			, saturday_next_two_day_delivery_start_time
-			, saturday_delivery_end_time
-			, saturday_delivery_interval
-			, sunday_transaction_cut_off_time
-			, sunday_same_day
-			, sunday_same_day_transaction_window_max
-			, sunday_next_day
-			, sunday_until_cut_off_next_day_delivery_start_time
-			, sunday_after_cut_off_next_day_delivery_start_time
-			, sunday_next_two_day
-			, sunday_next_two_day_delivery_start_time
-			, sunday_delivery_end_time
-			, sunday_delivery_interval
-			, skip_sunday_delivery
+			, payment_terms
 			, created_at
 			, updated_by
 			, updated_at`,
@@ -478,37 +268,7 @@ func (q *settingRepository) DeductReferralPointsBudget(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.WeekdayTransactionCutOffTime,
-		&response.WeekdaySameDay,
-		&response.WeekdaySameDayTransactionWindowMax,
-		&response.WeekdayNextDay,
-		&response.WeekdayUntilCutOffNextDayDeliveryStartTime,
-		&response.WeekdayAfterCutOffNextDayDeliveryStartTime,
-		&response.WeekdayNextTwoDay,
-		&response.WeekdayNextTwoDayDeliveryStartTime,
-		&response.WeekdayDeliveryEndTime,
-		&response.WeekdayDeliveryInterval,
-		&response.SaturdayTransactionCutOffTime,
-		&response.SaturdaySameDay,
-		&response.SaturdaySameDayTransactionWindowMax,
-		&response.SaturdayNextDay,
-		&response.SaturdayUntilCutOffNextDayDeliveryStartTime,
-		&response.SaturdayAfterCutOffNextDayDeliveryStartTime,
-		&response.SaturdayNextTwoDay,
-		&response.SaturdayNextTwoDayDeliveryStartTime,
-		&response.SaturdayDeliveryEndTime,
-		&response.SaturdayDeliveryInterval,
-		&response.SundayTransactionCutOffTime,
-		&response.SundaySameDay,
-		&response.SundaySameDayTransactionWindowMax,
-		&response.SundayNextDay,
-		&response.SundayUntilCutOffNextDayDeliveryStartTime,
-		&response.SundayAfterCutOffNextDayDeliveryStartTime,
-		&response.SundayNextTwoDay,
-		&response.SundayNextTwoDayDeliveryStartTime,
-		&response.SundayDeliveryEndTime,
-		&response.SundayDeliveryInterval,
-		&response.SkipSundayDelivery,
+		&response.PaymentTerms,
 		&response.CreatedAt,
 		&response.UpdatedBy,
 		&response.UpdatedAt,
