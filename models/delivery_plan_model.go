@@ -86,9 +86,9 @@ type (
 		NextTwoDayInterval          *time.Duration      `json:"-" form:"-"`
 		RawNextTwoDayInterval       *string             `json:"-" form:"next_two_day_interval"`
 		NextTwoDayDeliveryDatetimes []*DeliveryDatetime `json:"next_two_day_delivery_datetimes" form:"-"`
-		CreatedBy                   *uuid.UUID          `json:"-" form:"-"`
+		CreatedBy                   uuid.UUID           `json:"-" form:"-"`
 		CreatedAt                   time.Time           `json:"-" form:"-"`
-		UpdatedBy                   *uuid.UUID          `json:"-" form:"-"`
+		UpdatedBy                   uuid.UUID           `json:"-" form:"-"`
 		UpdatedAt                   time.Time           `json:"-" form:"-"`
 		DeletedBy                   *uuid.UUID          `json:"-" form:"-"`
 		DeletedAt                   *time.Time          `json:"-" form:"-"`

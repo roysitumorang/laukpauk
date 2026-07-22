@@ -248,8 +248,7 @@ func HashPassword(password string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	hashString := ByteSlice2String(hashByte)
-	return &hashString, nil
+	return new(ByteSlice2String(hashByte)), nil
 }
 
 func MatchedHashAndPassword(encryptedPassword, password []byte) bool {

@@ -221,9 +221,9 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	now := time.Now()
 	createdBy := currentAdmin.ID
 	request.RecordStatus = models.RecordStatusActive
-	request.CreatedBy = &createdBy
+	request.CreatedBy = createdBy
 	request.CreatedAt = now
-	request.UpdatedBy = &createdBy
+	request.UpdatedBy = createdBy
 	request.UpdatedAt = now
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
@@ -394,7 +394,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 	}
 	request.ID = deliveryPlan.ID
 	request.RecordStatus = deliveryPlan.RecordStatus
-	request.UpdatedBy = &currentAdmin.ID
+	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil

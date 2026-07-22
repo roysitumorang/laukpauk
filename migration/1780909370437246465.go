@@ -3,7 +3,9 @@ package migration
 import (
 	"context"
 	"log/slog"
+	"os"
 	"time"
+	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
@@ -124,6 +126,66 @@ func init() {
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		password, err := helper.Base64Decode(os.Getenv("DEFAULT_PASSWORD"))
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBase64Decode")
+			return
+		}
+		encryptedPassword, err := helper.HashPassword(password)
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrHashPassword")
+			return
+		}
+		var adminID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`INSERT INTO users (
+				user_type
+				, user_status
+				, name
+				, mobile_phone_confirmed_at
+				, mobile_phone
+				, username
+				, email_confirmed_at
+				, email
+				, encrypted_password
+				, photo
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			RETURNING id`,
+			models.UserTypeAdmin,
+			models.UserStatusActive,
+			"Ben",
+			"2024-12-11 07:41:55.000 +0700",
+			"+6281265688889",
+			"bigben",
+			"2024-12-11 07:41:55.000 +0700",
+			"benni.surbakti@gmail.com",
+			encryptedPassword,
+			"admin-default.png",
+			nil,
+			"2021-12-16 17:26:51.000 +0700",
+			nil,
+			"2024-12-11 07:41:55.000 +0700",
+		).Scan(&adminID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO admins (
+				user_id
+				, admin_type
+			) VALUES ($1, $2)`,
+			adminID,
+			models.AdminTypeSuperAdmin,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
 		// buyers
@@ -873,9 +935,9 @@ func init() {
 				, next_two_day BOOLEAN NOT NULL
 				, next_two_day_window TSTZRANGE NOT NULL
 				, next_two_day_interval character varying
-				, created_by UUID REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
@@ -951,7 +1013,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -971,7 +1035,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -991,7 +1057,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			},
 			// friday
@@ -1013,7 +1081,9 @@ func init() {
 				nil,
 				nil,
 				nil,
+				adminID,
 				now,
+				adminID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1033,7 +1103,9 @@ func init() {
 				nil,
 				nil,
 				nil,
+				adminID,
 				now,
+				adminID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1053,7 +1125,9 @@ func init() {
 				nil,
 				nil,
 				nil,
+				adminID,
 				now,
+				adminID,
 				now,
 			},
 			// saturday
@@ -1075,7 +1149,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1095,7 +1171,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1115,7 +1193,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			},
 			// sunday
@@ -1137,7 +1217,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1157,7 +1239,9 @@ func init() {
 				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
 				"2h",
+				adminID,
 				now,
+				adminID,
 				now,
 			},
 		}
@@ -1178,7 +1262,9 @@ func init() {
 					, next_two_day
 					, next_two_day_window
 					, next_two_day_interval
+					, created_by
 					, created_at
+					, updated_by
 					, updated_at
 				) VALUES (
 					$1
@@ -1196,6 +1282,8 @@ func init() {
 					, $17
 					, $18
 					, $19
+					, $20
+					, $21
 				)`,
 				deliveryPlans[i]...,
 			); err != nil {
