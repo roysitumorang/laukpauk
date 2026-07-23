@@ -952,7 +952,7 @@ func init() {
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
-				, CONSTRAINT no_overlapping_transaction_windows EXCLUDE USING gist (
+				, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
 					weekday WITH =,
 					transaction_window WITH &&
 				)
@@ -1470,13 +1470,15 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// days
+		// transaction_days
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE days (
+			`CREATE TABLE transaction_days (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, date timestamp with time zone NOT NULL UNIQUE
-				, vacation_mode boolean NOT NULL
+				, today boolean UNIQUE
+				, public_holiday boolean NOT NULL
+				, created_by UUID REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
@@ -1487,7 +1489,53 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON days (updated_by);`,
+			`CREATE INDEX ON transaction_days (public_holiday);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transaction_days (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transaction_days (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// transaction_windows
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE transaction_windows (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, transaction_day_id UUID NOT NULL REFERENCES transaction_days (id)
+				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
+				, transaction_window TSTZRANGE NOT NULL
+				, created_at timestamp with time zone NOT NULL
+				, CONSTRAINT no_overlapping_transaction_windows_transaction_window EXCLUDE USING gist (
+					transaction_day_id WITH =,
+					transaction_window WITH &&
+				)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transaction_windows (transaction_day_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transaction_windows (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1497,22 +1545,11 @@ func init() {
 			ctx,
 			`CREATE TABLE delivery_schedules (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, delivery_time timestamp with time zone NOT NULL UNIQUE
+				, transaction_window_id UUID NOT NULL REFERENCES transaction_windows (id)
+				, delivery_speed integer NOT NULL
+				, delivery_time timestamp with time zone NOT NULL
 				, created_at timestamp with time zone NOT NULL
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		// days_delivery_schedules
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE days_delivery_schedules (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, day_id UUID NOT NULL REFERENCES days (id)
-				, delivery_schedule_id UUID NOT NULL REFERENCES delivery_schedules (id)
-				, created_at timestamp with time zone NOT NULL
-				, UNIQUE (day_id, delivery_schedule_id)
+				, UNIQUE (transaction_window_id, delivery_time)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1520,7 +1557,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON days_delivery_schedules (day_id);`,
+			`CREATE INDEX ON delivery_schedules (transaction_window_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON delivery_schedules (delivery_time);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -2162,8 +2206,7 @@ func init() {
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
-				, CONSTRAINT no_overlapping_shopping_cost
-				EXCLUDE USING gist (
+				, CONSTRAINT no_overlapping_shopping_cost EXCLUDE USING gist (
 					shopping_cost WITH &&
 				)
 			);`,

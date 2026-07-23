@@ -209,7 +209,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	}
 	var deliveryDatetimeIdValid bool
 	if deliveryPlan.SameDay {
-		for _, deliveryDatetime := range deliveryPlan.SameDayDeliveryDatetimes {
+		for _, deliveryDatetime := range deliveryPlan.SameDayDeliveryTimes {
 			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
 				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
 				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
@@ -220,7 +220,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	if !deliveryDatetimeIdValid && deliveryPlan.NextDay {
-		for _, deliveryDatetime := range deliveryPlan.NextDayDeliveryDatetimes {
+		for _, deliveryDatetime := range deliveryPlan.NextDayDeliveryTimes {
 			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
 				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
 				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
@@ -231,7 +231,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	if !deliveryDatetimeIdValid && deliveryPlan.NextTwoDay {
-		for _, deliveryDatetime := range deliveryPlan.NextTwoDayDeliveryDatetimes {
+		for _, deliveryDatetime := range deliveryPlan.NextTwoDayDeliveryTimes {
 			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
 				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
 				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID

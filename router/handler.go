@@ -55,6 +55,7 @@ type (
 		CartItemService            services.CartItemService
 		TransactionCounterService  services.TransactionCounterService
 		DeliveryRouteService       services.DeliveryRouteService
+		TransactionDayService      services.TransactionDayService
 	}
 )
 
@@ -149,6 +150,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	cartItemRepository := repositories.NewCartItemRepository(dbRead, dbWrite)
 	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
 	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
+	transactionDayRepository := repositories.NewTransactionDayRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -173,6 +175,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	cartItemService := services.NewCartItemService(cartItemRepository)
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
+	transactionDayService := services.NewTransactionDayService(transactionDayRepository, deliveryPlanRepository)
 	return &Service{
 		DbWrite:                    dbWrite,
 		Migration:                  migration,
@@ -205,6 +208,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		CartItemService:            cartItemService,
 		TransactionCounterService:  transactionCounterService,
 		DeliveryRouteService:       deliveryRouteService,
+		TransactionDayService:      transactionDayService,
 	}, nil
 }
 

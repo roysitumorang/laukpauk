@@ -53,8 +53,7 @@ func main() {
 					_, _ = os.Stdout.WriteString(helper.Sprintf("Version: %s\nCommit: %s\nBuild: %s\n", config.Version, config.Commit, config.Build))
 					return nil
 				},
-			},
-			{
+			}, {
 				Name:  "run",
 				Usage: "run app",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -136,10 +135,9 @@ func main() {
 					}
 					return err
 				},
-			},
-			{
+			}, {
 				Name:  "migration",
-				Usage: "new/run migration",
+				Usage: "migration new|run",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					if cmd.Args().Len() == 0 ||
 						(cmd.Args().First() != "new" &&
@@ -179,6 +177,34 @@ func main() {
 					}
 					duration := time.Since(now)
 					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
+					return nil
+				},
+			}, {
+				Name:  "today",
+				Usage: "generate today delivery plans",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					now := time.Now().In(time.Local)
+					err := godotenv.Load(".env")
+					if err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrLoad")
+						return err
+					}
+					if err = helper.InitHelper(); err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrInitHelper")
+						return err
+					}
+					service, err := router.MakeHandler(ctx)
+					if err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
+						return err
+					}
+					helper.InitDbWrite(service.DbWrite)
+					if _, err = service.TransactionDayService.FindOrCreateTransactionDay(ctx, now); err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFindOrCreateTransactionDay")
+						return err
+					}
+					duration := time.Since(now)
+					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("generate today delivery plans successfully in %s", duration.String()), ctxt, "")
 					return nil
 				},
 			},

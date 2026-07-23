@@ -221,7 +221,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var deliveryDatetime models.DeliveryDatetime
+		var deliveryDatetime models.DeliveryTime
 		if err = rows.Scan(
 			&deliveryDatetime.ID,
 			&deliveryDatetime.RecordStatus,
@@ -241,11 +241,11 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		deliveryPlan := response[i]
 		switch deliveryDatetime.DeliverySpeed {
 		case models.DeliverySpeedSameDay:
-			deliveryPlan.SameDayDeliveryDatetimes = append(deliveryPlan.SameDayDeliveryDatetimes, &deliveryDatetime)
+			deliveryPlan.SameDayDeliveryTimes = append(deliveryPlan.SameDayDeliveryTimes, &deliveryDatetime)
 		case models.DeliverySpeedNextDay:
-			deliveryPlan.NextDayDeliveryDatetimes = append(deliveryPlan.NextDayDeliveryDatetimes, &deliveryDatetime)
+			deliveryPlan.NextDayDeliveryTimes = append(deliveryPlan.NextDayDeliveryTimes, &deliveryDatetime)
 		case models.DeliverySpeedNextTwoDay:
-			deliveryPlan.NextTwoDayDeliveryDatetimes = append(deliveryPlan.NextTwoDayDeliveryDatetimes, &deliveryDatetime)
+			deliveryPlan.NextTwoDayDeliveryTimes = append(deliveryPlan.NextTwoDayDeliveryTimes, &deliveryDatetime)
 		}
 		response[i] = deliveryPlan
 	}
@@ -354,7 +354,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var deliveryDatetime models.DeliveryDatetime
+		var deliveryDatetime models.DeliveryTime
 		if err = rows.Scan(
 			&deliveryDatetime.ID,
 			&deliveryDatetime.RecordStatus,
@@ -372,11 +372,11 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		}
 		switch deliveryDatetime.DeliverySpeed {
 		case models.DeliverySpeedSameDay:
-			response.SameDayDeliveryDatetimes = append(response.SameDayDeliveryDatetimes, &deliveryDatetime)
+			response.SameDayDeliveryTimes = append(response.SameDayDeliveryTimes, &deliveryDatetime)
 		case models.DeliverySpeedNextDay:
-			response.NextDayDeliveryDatetimes = append(response.NextDayDeliveryDatetimes, &deliveryDatetime)
+			response.NextDayDeliveryTimes = append(response.NextDayDeliveryTimes, &deliveryDatetime)
 		case models.DeliverySpeedNextTwoDay:
-			response.NextTwoDayDeliveryDatetimes = append(response.NextTwoDayDeliveryDatetimes, &deliveryDatetime)
+			response.NextTwoDayDeliveryTimes = append(response.NextTwoDayDeliveryTimes, &deliveryDatetime)
 		}
 	}
 	if !request.TransactionDatetime.IsZero() {
@@ -512,7 +512,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.ExclusionViolation &&
-			pgxErr.ConstraintName == "no_overlapping_transaction_windows" {
+			pgxErr.ConstraintName == "no_overlapping_delivery_plans_transaction_window" {
 			err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -520,22 +520,22 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		return nil, err
 	}
 	deliveryDatetimes := make(
-		[]*models.DeliveryDatetime,
-		len(request.SameDayDeliveryDatetimes)+
-			len(request.NextDayDeliveryDatetimes)+
-			len(request.NextTwoDayDeliveryDatetimes),
+		[]*models.DeliveryTime,
+		len(request.SameDayDeliveryTimes)+
+			len(request.NextDayDeliveryTimes)+
+			len(request.NextTwoDayDeliveryTimes),
 	)
 	var j int
-	for i := range request.SameDayDeliveryDatetimes {
-		deliveryDatetimes[j] = request.SameDayDeliveryDatetimes[i]
+	for i := range request.SameDayDeliveryTimes {
+		deliveryDatetimes[j] = request.SameDayDeliveryTimes[i]
 		j++
 	}
-	for i := range request.NextDayDeliveryDatetimes {
-		deliveryDatetimes[j] = request.NextDayDeliveryDatetimes[i]
+	for i := range request.NextDayDeliveryTimes {
+		deliveryDatetimes[j] = request.NextDayDeliveryTimes[i]
 		j++
 	}
-	for i := range request.NextTwoDayDeliveryDatetimes {
-		deliveryDatetimes[j] = request.NextTwoDayDeliveryDatetimes[i]
+	for i := range request.NextTwoDayDeliveryTimes {
+		deliveryDatetimes[j] = request.NextTwoDayDeliveryTimes[i]
 		j++
 	}
 	sb.Reset()
@@ -589,7 +589,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		return nil, err
 	}
 	for rows.Next() {
-		var deliveryDatetime models.DeliveryDatetime
+		var deliveryDatetime models.DeliveryTime
 		if rows.Scan(
 			&deliveryDatetime.ID,
 			&deliveryDatetime.RecordStatus,
@@ -607,11 +607,11 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		}
 		switch deliveryDatetime.DeliverySpeed {
 		case models.DeliverySpeedSameDay:
-			response.SameDayDeliveryDatetimes = append(response.SameDayDeliveryDatetimes, &deliveryDatetime)
+			response.SameDayDeliveryTimes = append(response.SameDayDeliveryTimes, &deliveryDatetime)
 		case models.DeliverySpeedNextDay:
-			response.NextDayDeliveryDatetimes = append(response.NextDayDeliveryDatetimes, &deliveryDatetime)
+			response.NextDayDeliveryTimes = append(response.NextDayDeliveryTimes, &deliveryDatetime)
 		case models.DeliverySpeedNextTwoDay:
-			response.NextTwoDayDeliveryDatetimes = append(response.NextTwoDayDeliveryDatetimes, &deliveryDatetime)
+			response.NextTwoDayDeliveryTimes = append(response.NextTwoDayDeliveryTimes, &deliveryDatetime)
 		}
 	}
 	if err = rows.Err(); err != nil {
@@ -744,34 +744,34 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.ExclusionViolation &&
-			pgxErr.ConstraintName == "no_overlapping_transaction_windows" {
+			pgxErr.ConstraintName == "no_overlapping_delivery_plans_transaction_window" {
 			err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
 		return nil, err
 	}
-	sameDaySize := len(request.SameDayDeliveryDatetimes)
-	nextDaySize := len(request.NextDayDeliveryDatetimes)
-	nextTwoDaySize := len(request.NextTwoDayDeliveryDatetimes)
-	response.SameDayDeliveryDatetimes = make([]*models.DeliveryDatetime, sameDaySize)
-	response.NextDayDeliveryDatetimes = make([]*models.DeliveryDatetime, nextDaySize)
-	response.NextTwoDayDeliveryDatetimes = make([]*models.DeliveryDatetime, nextTwoDaySize)
+	sameDaySize := len(request.SameDayDeliveryTimes)
+	nextDaySize := len(request.NextDayDeliveryTimes)
+	nextTwoDaySize := len(request.NextTwoDayDeliveryTimes)
+	response.SameDayDeliveryTimes = make([]*models.DeliveryTime, sameDaySize)
+	response.NextDayDeliveryTimes = make([]*models.DeliveryTime, nextDaySize)
+	response.NextTwoDayDeliveryTimes = make([]*models.DeliveryTime, nextTwoDaySize)
 	deliveryDatetimes := make(
-		[]*models.DeliveryDatetime,
+		[]*models.DeliveryTime,
 		sameDaySize+nextDaySize+nextTwoDaySize,
 	)
 	var j int
-	for i := range request.SameDayDeliveryDatetimes {
-		deliveryDatetimes[j] = request.SameDayDeliveryDatetimes[i]
+	for i := range request.SameDayDeliveryTimes {
+		deliveryDatetimes[j] = request.SameDayDeliveryTimes[i]
 		j++
 	}
-	for i := range request.NextDayDeliveryDatetimes {
-		deliveryDatetimes[j] = request.NextDayDeliveryDatetimes[i]
+	for i := range request.NextDayDeliveryTimes {
+		deliveryDatetimes[j] = request.NextDayDeliveryTimes[i]
 		j++
 	}
-	for i := range request.NextTwoDayDeliveryDatetimes {
-		deliveryDatetimes[j] = request.NextTwoDayDeliveryDatetimes[i]
+	for i := range request.NextTwoDayDeliveryTimes {
+		deliveryDatetimes[j] = request.NextTwoDayDeliveryTimes[i]
 		j++
 	}
 	params := make([]any, 5+len(deliveryDatetimes))
@@ -794,7 +794,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		nextDayCounter,
 		nextTwoDayCounter int
 	for i, deliveryDatetimeRequest := range deliveryDatetimes {
-		var deliveryDatetimeResponse models.DeliveryDatetime
+		var deliveryDatetimeResponse models.DeliveryTime
 		if err = tx.QueryRow(
 			ctx,
 			`INSERT INTO delivery_times (
@@ -847,13 +847,13 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		}
 		switch deliveryDatetimeResponse.DeliverySpeed {
 		case models.DeliverySpeedSameDay:
-			response.SameDayDeliveryDatetimes[sameDayCounter] = &deliveryDatetimeResponse
+			response.SameDayDeliveryTimes[sameDayCounter] = &deliveryDatetimeResponse
 			sameDayCounter++
 		case models.DeliverySpeedNextDay:
-			response.NextDayDeliveryDatetimes[nextDayCounter] = &deliveryDatetimeResponse
+			response.NextDayDeliveryTimes[nextDayCounter] = &deliveryDatetimeResponse
 			nextDayCounter++
 		case models.DeliverySpeedNextTwoDay:
-			response.NextTwoDayDeliveryDatetimes[nextTwoDayCounter] = &deliveryDatetimeResponse
+			response.NextTwoDayDeliveryTimes[nextTwoDayCounter] = &deliveryDatetimeResponse
 			nextTwoDayCounter++
 		}
 		j := i + 5
