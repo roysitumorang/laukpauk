@@ -28,14 +28,14 @@
 			<div class="form-group">
 				<label for="transaction_window_min" class="label-title">Batas Awal Jam Transaksi</label>
 				<input type="time" name="transaction_window_min" value="{{ request.TransactionWindowMin.Format("15:04:05") }}" id="transaction_window_min"
-					class="form-control" step="1" required />
+					class="form-control time-picker" step="1" required />
 			</div>
 		</div>
 		<div class="col-6">
 			<div class="form-group">
 				<label for="transaction_window_max" class="label-title">Batas Akhir Jam Transaksi</label>
 				<input type="time" name="transaction_window_max" value="{{ request.TransactionWindowMax.Format("15:04:05") }}" id="transaction_window_max"
-					class="form-control" step="1" required />
+					class="form-control time-picker" step="1" required />
 			</div>
 		</div>
 	</div>
@@ -50,14 +50,14 @@
 			<div class="form-group">
 				<label for="same_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
 				<input type="time" name="same_day_window_min" value="{{ if request.SameDayWindowMin }}{{ request.SameDayWindowMin.Format("15:04:05") }}{{ end }}" id="same_day_window_min"
-					class="form-control" step="1" required{{ if !request.SameDay }} disabled{{ end }} />
+					class="form-control time-picker" step="1" required{{ if !request.SameDay }} disabled{{ end }} />
 			</div>
 		</div>
 		<div class="col-3">
 			<div class="form-group">
 				<label for="same_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
 				<input type="time" name="same_day_window_max" value="{{ if request.SameDayWindowMax }}{{ request.SameDayWindowMax.Format("15:04:05") }}{{ end }}" id="same_day_window_max"
-					class="form-control" step="1" required{{ if !request.SameDay }} disabled{{ end }} />
+					class="form-control time-picker" step="1" required{{ if !request.SameDay }} disabled{{ end }} />
 			</div>
 		</div>
 		<div class="col-3">
@@ -79,14 +79,14 @@
 			<div class="form-group">
 				<label for="next_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
 				<input type="time" name="next_day_window_min" value="{{ if request.NextDayWindowMin }}{{ request.NextDayWindowMin.Format("15:04:05") }}{{ end }}" id="next_day_window_min"
-					class="form-control" step="1" required{{ if !request.NextDay }} disabled{{ end }} />
+					class="form-control time-picker" step="1" required{{ if !request.NextDay }} disabled{{ end }} />
 			</div>
 		</div>
 		<div class="col-3">
 			<div class="form-group">
 				<label for="next_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
 				<input type="time" name="next_day_window_max" value="{{ if request.NextDayWindowMax }}{{ request.NextDayWindowMax.Format("15:04:05") }}{{ end }}" id="next_day_window_max"
-					class="form-control" step="1" required{{ if !request.NextDay }} disabled{{ end }} />
+					class="form-control time-picker" step="1" required{{ if !request.NextDay }} disabled{{ end }} />
 			</div>
 		</div>
 		<div class="col-3">
@@ -108,14 +108,14 @@
 			<div class="form-group">
 				<label for="next_two_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
 				<input type="time" name="next_two_day_window_min" value="{{ if request.NextTwoDayWindowMin }}{{ request.NextTwoDayWindowMin.Format("15:04:05") }}{{ end }}" id="next_two_day_window_min"
-					class="form-control" step="1" required{{ if !request.NextTwoDay }} disabled{{ end }} />
+					class="form-control time-picker" step="1" required{{ if !request.NextTwoDay }} disabled{{ end }} />
 			</div>
 		</div>
 		<div class="col-3">
 			<div class="form-group">
 				<label for="next_two_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
 				<input type="time" name="next_two_day_window_max" value="{{ if request.NextTwoDayWindowMax }}{{ request.NextTwoDayWindowMax.Format("15:04:05") }}{{ end }}" id="next_two_day_window_max"
-					class="form-control" step="1" required{{ if !request.NextTwoDay }} disabled{{ end }} />
+					class="form-control time-picker" step="1" required{{ if !request.NextTwoDay }} disabled{{ end }} />
 			</div>
 		</div>
 		<div class="col-3">
@@ -136,6 +136,14 @@
 </form>
 <script>
 	document.addEventListener("DOMContentLoaded", () => {
+		flatpickr(".time-picker", {
+			noCalendar: true,
+			enableTime: true,
+			enableSeconds: true,
+			time_24hr: true,
+			dateFormat: "H:i:S",
+			minuteIncrement: 1,
+		});
 		document.getElementById("same_day").addEventListener("change", (event) => {
 			if (event.target.checked) {
 				document.getElementById("same_day_window_min").removeAttribute("disabled");
