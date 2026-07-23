@@ -3,6 +3,7 @@ package migration
 import (
 	"context"
 	"log/slog"
+	"math"
 	"os"
 	"time"
 	"uuid"
@@ -2136,7 +2137,7 @@ func init() {
 			{
 				models.RecordStatusActive,
 				100_000,
-				149_999,
+				150_000,
 				1_500,
 				adminID,
 				now,
@@ -2145,7 +2146,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				150_000,
-				199_999,
+				200_000,
 				2_500,
 				adminID,
 				now,
@@ -2154,7 +2155,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				200_000,
-				299_999,
+				300_000,
 				3_500,
 				adminID,
 				now,
@@ -2163,7 +2164,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				300_000,
-				399_999,
+				400_000,
 				5_000,
 				adminID,
 				now,
@@ -2172,7 +2173,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				400_000,
-				499_999,
+				500_000,
 				7_000,
 				adminID,
 				now,
@@ -2181,7 +2182,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				500_000,
-				649_999,
+				650_000,
 				10_000,
 				adminID,
 				now,
@@ -2190,7 +2191,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				650_000,
-				799_999,
+				800_000,
 				13_000,
 				adminID,
 				now,
@@ -2199,7 +2200,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				800_000,
-				999_999,
+				1_000_000,
 				17_000,
 				adminID,
 				now,
@@ -2208,7 +2209,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				1_000_000,
-				10_000_000,
+				math.MaxInt64,
 				22_000,
 				adminID,
 				now,
@@ -2227,7 +2228,7 @@ func init() {
 					, created_at
 					, updated_by
 					, updated_at
-				) VALUES ($1, int8range($2, $3, '[]'), $4, $5, $6, $7, $8);`,
+				) VALUES ($1, int8range($2, $3, '[)'), $4, $5, $6, $7, $8);`,
 				pointSpendingCaps[i]...,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
