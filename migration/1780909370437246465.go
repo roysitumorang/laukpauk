@@ -774,7 +774,7 @@ func init() {
 				, delivery_origin_latitude character varying NOT NULL
 				, delivery_cost_per_km bigint NOT NULL
 				, delivery_max_distance_km bigint NOT NULL
-				, delivery_hour_interval real NOT NULL
+				, delivery_time_interval character varying NOT NULL
 				, whatsapp_phone_number character varying NOT NULL
 				, payment_terms character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
@@ -814,7 +814,7 @@ func init() {
 			DeliveryOriginLatitude:               latitude,
 			DeliveryCostPerKM:                    3_000,
 			DeliveryMaxDistanceKM:                15,
-			DeliveryHourInterval:                 1,
+			DeliveryTimeInterval:                 "2h",
 			WhatsappPhoneNumber:                  "628116099887",
 			PaymentTerms:                         "24h",
 		}
@@ -837,7 +837,7 @@ func init() {
 				, delivery_origin_latitude
 				, delivery_cost_per_km
 				, delivery_max_distance_km
-				, delivery_hour_interval
+				, delivery_time_interval
 				, whatsapp_phone_number
 				, payment_terms
 				, created_by
@@ -864,7 +864,7 @@ func init() {
 			setting.DeliveryOriginLatitude,
 			setting.DeliveryCostPerKM,
 			setting.DeliveryMaxDistanceKM,
-			setting.DeliveryHourInterval,
+			setting.DeliveryTimeInterval,
 			setting.WhatsappPhoneNumber,
 			setting.PaymentTerms,
 			adminID,
@@ -941,13 +941,10 @@ func init() {
 				, transaction_window TSTZRANGE NOT NULL
 				, same_day BOOLEAN NOT NULL
 				, same_day_window TSTZRANGE NOT NULL
-				, same_day_interval character varying
 				, next_day BOOLEAN NOT NULL
 				, next_day_window TSTZRANGE NOT NULL
-				, next_day_interval character varying
 				, next_two_day BOOLEAN NOT NULL
 				, next_two_day_window TSTZRANGE NOT NULL
-				, next_two_day_interval character varying
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -1006,308 +1003,10 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		deliveryPlans := [][]any{
-			// weekdays
-			{
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
-				models.DeliveryWeekdayWeekdays,
-				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				true,
-				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				true,
-				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			}, {
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
-				models.DeliveryWeekdayWeekdays,
-				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			}, {
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
-				models.DeliveryWeekdayWeekdays,
-				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 2, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			},
-			// friday
-			{
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
-				models.DeliveryWeekdayFriday,
-				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				true,
-				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				true,
-				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				false,
-				nil,
-				nil,
-				nil,
-				adminID,
-				now,
-				adminID,
-				now,
-			}, {
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
-				models.DeliveryWeekdayFriday,
-				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				false,
-				nil,
-				nil,
-				nil,
-				adminID,
-				now,
-				adminID,
-				now,
-			}, {
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
-				models.DeliveryWeekdayFriday,
-				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				false,
-				nil,
-				nil,
-				nil,
-				adminID,
-				now,
-				adminID,
-				now,
-			},
-			// saturday
-			{
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
-				models.DeliveryWeekdaySaturday,
-				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				true,
-				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			}, {
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
-				models.DeliveryWeekdaySaturday,
-				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			}, {
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
-				models.DeliveryWeekdaySaturday,
-				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			},
-			// sunday
-			{
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi sebelum jam 22:00",
-				models.DeliveryWeekdaySunday,
-				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			}, {
-				models.RecordStatusActive,
-				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
-				models.DeliveryWeekdaySunday,
-				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
-				false,
-				nil,
-				nil,
-				nil,
-				true,
-				time.Date(2000, 1, 2, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				true,
-				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
-				"2h",
-				adminID,
-				now,
-				adminID,
-				now,
-			},
-		}
-		for i := range deliveryPlans {
-			if _, err = tx.Exec(
-				ctx,
-				`INSERT INTO delivery_plans (
-					record_status
-					, name
-					, weekday
-					, transaction_window
-					, same_day
-					, same_day_window
-					, same_day_interval
-					, next_day
-					, next_day_window
-					, next_day_interval
-					, next_two_day
-					, next_two_day_window
-					, next_two_day_interval
-					, created_by
-					, created_at
-					, updated_by
-					, updated_at
-				) VALUES (
-					$1
-					, $2
-					, $3
-					, tstzrange($4, $5, '[]')
-					, $6
-					, tstzrange($7, $8)
-					, $9
-					, $10
-					, tstzrange($11, $12, '[]')
-					, $13
-					, $14
-					, tstzrange($15, $16, '[]')
-					, $17
-					, $18
-					, $19
-					, $20
-					, $21
-				)`,
-				deliveryPlans[i]...,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-		}
-		// delivery_datetimes
+		// delivery_times
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE delivery_datetimes (
+			`CREATE TABLE delivery_times (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
@@ -1326,45 +1025,403 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_datetimes (record_status);`,
+			`CREATE INDEX ON delivery_times (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_datetimes (delivery_plan_id);`,
+			`CREATE INDEX ON delivery_times (delivery_plan_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_datetimes (delivery_speed);`,
+			`CREATE INDEX ON delivery_times (delivery_speed);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_datetimes ("timestamp");`,
+			`CREATE INDEX ON delivery_times ("timestamp");`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_datetimes (created_by);`,
+			`CREATE INDEX ON delivery_times (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_datetimes (deleted_by);`,
+			`CREATE INDEX ON delivery_times (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
+		}
+		deliveryPlans := [][]any{
+			// weekdays
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
+				models.DeliveryWeekdayWeekdays,
+				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
+				models.DeliveryWeekdayWeekdays,
+				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
+				models.DeliveryWeekdayWeekdays,
+				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 2, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			},
+			// friday
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
+				models.DeliveryWeekdayFriday,
+				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
+				models.DeliveryWeekdayFriday,
+				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
+				models.DeliveryWeekdayFriday,
+				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				adminID,
+				now,
+				adminID,
+				now,
+			},
+			// saturday
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
+				models.DeliveryWeekdaySaturday,
+				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
+				models.DeliveryWeekdaySaturday,
+				time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
+				models.DeliveryWeekdaySaturday,
+				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			},
+			// sunday
+			{
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi sebelum jam 22:00",
+				models.DeliveryWeekdaySunday,
+				time.Date(2000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			}, {
+				models.RecordStatusActive,
+				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
+				models.DeliveryWeekdaySunday,
+				time.Date(2000, 1, 1, 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 1, 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano),
+				false,
+				nil,
+				nil,
+				true,
+				time.Date(2000, 1, 2, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				true,
+				time.Date(2000, 1, 3, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				time.Date(2000, 1, 3, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano),
+				adminID,
+				now,
+				adminID,
+				now,
+			},
+		}
+		interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParseDuration")
+			return
+		}
+		var (
+			deliveryPlanID               uuid.UUID
+			sameDay, nextDay, nextTwoDay bool
+			sameDayWindowMin, sameDayWindowMax,
+			nextDayWindowMin, nextDayWindowMax,
+			nextTwoDayWindowMin, nextTwoDayWindowMax *time.Time
+		)
+		var deliveryTimes [][]any
+		for i := range deliveryPlans {
+			if err = tx.QueryRow(
+				ctx,
+				`INSERT INTO delivery_plans (
+					record_status
+					, name
+					, weekday
+					, transaction_window
+					, same_day
+					, same_day_window
+					, next_day
+					, next_day_window
+					, next_two_day
+					, next_two_day_window
+					, created_by
+					, created_at
+					, updated_by
+					, updated_at
+				) VALUES (
+					$1
+					, $2
+					, $3
+					, tstzrange($4, $5, '[]')
+					, $6
+					, tstzrange($7, $8)
+					, $9
+					, tstzrange($10, $11, '[]')
+					, $12
+					, tstzrange($13, $14, '[]')
+					, $15
+					, $16
+					, $17
+					, $18
+				)
+				RETURNING id
+					, same_day
+					, lower(same_day_window)
+					, upper(same_day_window)
+					, next_day
+					, lower(next_day_window)
+					, upper(next_day_window)
+					, next_two_day
+					, lower(next_two_day_window)
+					, upper(next_two_day_window)`,
+				deliveryPlans[i]...,
+			).Scan(
+				&deliveryPlanID,
+				&sameDay,
+				&sameDayWindowMin,
+				&sameDayWindowMax,
+				&nextDay,
+				&nextDayWindowMin,
+				&nextDayWindowMax,
+				&nextTwoDay,
+				&nextTwoDayWindowMin,
+				&nextTwoDayWindowMax,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+				return
+			}
+			if sameDay && sameDayWindowMin != nil && sameDayWindowMax != nil {
+				for {
+					deliveryTimes = append(deliveryTimes, []any{
+						models.RecordStatusActive,
+						deliveryPlanID,
+						models.DeliverySpeedSameDay,
+						sameDayWindowMin.In(time.Local),
+						adminID,
+						now,
+					})
+					if sameDayWindowMin.Equal(*sameDayWindowMax) {
+						break
+					}
+					*sameDayWindowMin = sameDayWindowMin.Add(interval)
+				}
+			}
+			if nextDay && nextDayWindowMin != nil && nextDayWindowMax != nil {
+				for {
+					deliveryTimes = append(deliveryTimes, []any{
+						models.RecordStatusActive,
+						deliveryPlanID,
+						models.DeliverySpeedNextDay,
+						nextDayWindowMin.In(time.Local),
+						adminID,
+						now,
+					})
+					if nextDayWindowMin.Equal(*nextDayWindowMax) {
+						break
+					}
+					*nextDayWindowMin = nextDayWindowMin.Add(interval)
+				}
+			}
+			if nextTwoDay && nextTwoDayWindowMin != nil && nextTwoDayWindowMax != nil {
+				for {
+					deliveryTimes = append(deliveryTimes, []any{
+						models.RecordStatusActive,
+						deliveryPlanID,
+						models.DeliverySpeedNextTwoDay,
+						nextTwoDayWindowMin.In(time.Local),
+						adminID,
+						now,
+					})
+					if nextTwoDayWindowMin.Equal(*nextTwoDayWindowMax) {
+						break
+					}
+					*nextTwoDayWindowMin = nextTwoDayWindowMin.Add(interval)
+				}
+			}
+		}
+		for i := range deliveryTimes {
+			if _, err = tx.Exec(
+				ctx,
+				`INSERT INTO delivery_times (
+					record_status
+					, delivery_plan_id
+					, delivery_speed
+					, "timestamp"
+					, created_by
+					, created_at
+				) VALUES ($1, $2, $3, $4, $5, $6)`,
+				deliveryTimes[i]...,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
 		}
 		// skipped_delivery_plans
 		if _, err = tx.Exec(
@@ -1793,7 +1850,7 @@ func init() {
 				, delivery_distance_km bigint NOT NULL
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
-				, delivery_datetime_id UUID NOT NULL REFERENCES delivery_datetimes (id)
+				, delivery_datetime_id UUID NOT NULL REFERENCES delivery_times (id)
 				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
 				, delivery_speed integer NOT NULL
 				, delivery_timestamp timestamp with time zone NOT NULL

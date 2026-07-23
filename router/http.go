@@ -265,6 +265,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewDeliveryPlanController(
 		q.AdminService,
 		q.DeliveryPlanService,
+		q.SettingService,
 		q.SkippedDeliveryPlanService,
 		q.BuyerService,
 		q.JsonWebTokenService,

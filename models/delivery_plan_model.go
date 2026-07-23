@@ -13,7 +13,6 @@ import (
 
 var (
 	ErrDeliveryPlanNotFound                         = errors.New("delivery plan not found")
-	ErrUniqueDeliveryPlanNameViolation              = errors.New("name: already exists")
 	ErrUniqueDeliveryPlanTransactionWindowViolation = errors.New("transaction time frame already exists")
 
 	DeliveryWeekdays = []DeliveryWeekday{
@@ -67,24 +66,18 @@ type (
 		RawSameDayWindowMin         string              `json:"-" form:"same_day_window_min"`
 		SameDayWindowMax            *time.Time          `json:"-" form:"-"`
 		RawSameDayWindowMax         string              `json:"-" form:"same_day_window_max"`
-		SameDayInterval             *time.Duration      `json:"-" form:"-"`
-		RawSameDayInterval          *string             `json:"-" form:"same_day_interval"`
 		SameDayDeliveryDatetimes    []*DeliveryDatetime `json:"same_day_delivery_datetimes" form:"-"`
 		NextDay                     bool                `json:"next_day" form:"next_day"`
 		NextDayWindowMin            *time.Time          `json:"-" form:"-"`
 		RawNextDayWindowMin         string              `json:"-" form:"next_day_window_min"`
 		NextDayWindowMax            *time.Time          `json:"-" form:"-"`
 		RawNextDayWindowMax         string              `json:"-" form:"next_day_window_max"`
-		NextDayInterval             *time.Duration      `json:"-" form:"-"`
-		RawNextDayInterval          *string             `json:"-" form:"next_day_interval"`
 		NextDayDeliveryDatetimes    []*DeliveryDatetime `json:"next_day_delivery_datetimes" form:"-"`
 		NextTwoDay                  bool                `json:"next_two_day" form:"next_two_day"`
 		NextTwoDayWindowMin         *time.Time          `json:"-" form:"-"`
 		RawNextTwoDayWindowMin      string              `json:"-" form:"next_two_day_window_min"`
 		NextTwoDayWindowMax         *time.Time          `json:"-" form:"-"`
 		RawNextTwoDayWindowMax      string              `json:"-" form:"next_two_day_window_max"`
-		NextTwoDayInterval          *time.Duration      `json:"-" form:"-"`
-		RawNextTwoDayInterval       *string             `json:"-" form:"next_two_day_interval"`
 		NextTwoDayDeliveryDatetimes []*DeliveryDatetime `json:"next_two_day_delivery_datetimes" form:"-"`
 		CreatedBy                   uuid.UUID           `json:"-" form:"-"`
 		CreatedAt                   time.Time           `json:"-" form:"-"`
@@ -210,7 +203,7 @@ func (q *DeliveryPlanFilter) WithUrlValues(urlValues url.Values) *DeliveryPlanFi
 	return q
 }
 
-func (q *DeliveryPlan) Validate() (err error) {
+func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
@@ -289,16 +282,8 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if !sameDayWindowMax.After(sameDayWindowMin) {
 			return errors.New("same_day_window_max: should exceed same_day_window_min")
 		}
-		if q.RawSameDayInterval == nil || strings.TrimSpace(*q.RawSameDayInterval) == "" {
-			return errors.New("same_day_interval: is required")
-		}
-		interval, err := time.ParseDuration(*q.RawSameDayInterval)
-		if err != nil {
-			return errors.New("same_day_interval: is not valid")
-		}
 		q.SameDayWindowMin = new(sameDayWindowMin)
 		q.SameDayWindowMax = new(sameDayWindowMax)
-		q.SameDayInterval = &interval
 		for {
 			q.SameDayDeliveryDatetimes = append(q.SameDayDeliveryDatetimes, &DeliveryDatetime{
 				DeliverySpeed: DeliverySpeedSameDay,
@@ -314,8 +299,6 @@ func (q *DeliveryPlan) Validate() (err error) {
 		q.SameDayWindowMin = nil
 		q.RawSameDayWindowMax = ""
 		q.SameDayWindowMax = nil
-		q.RawSameDayInterval = nil
-		q.SameDayInterval = nil
 		q.SameDayDeliveryDatetimes = nil
 	}
 	if q.NextDay {
@@ -354,13 +337,6 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if !nextDayWindowMax.After(nextDayWindowMin) {
 			return errors.New("next_day_window_max: should exceed next_day_window_min")
 		}
-		if q.RawNextDayInterval == nil || strings.TrimSpace(*q.RawNextDayInterval) == "" {
-			return errors.New("next_day_interval: is required")
-		}
-		interval, err := time.ParseDuration(*q.RawNextDayInterval)
-		if err != nil {
-			return errors.New("next_day_interval: is not valid")
-		}
 		nextDayWindowMin = nextDayWindowMin.AddDate(0, 0, 1)
 		nextDayWindowMax = nextDayWindowMax.AddDate(0, 0, 1)
 		q.NextDayWindowMin = new(nextDayWindowMin)
@@ -380,8 +356,6 @@ func (q *DeliveryPlan) Validate() (err error) {
 		q.NextDayWindowMin = nil
 		q.RawNextDayWindowMax = ""
 		q.NextDayWindowMax = nil
-		q.RawNextDayInterval = nil
-		q.NextDayInterval = nil
 		q.NextDayDeliveryDatetimes = nil
 	}
 	if q.NextTwoDay {
@@ -420,18 +394,10 @@ func (q *DeliveryPlan) Validate() (err error) {
 		if !nextTwoDayWindowMax.After(nextTwoDayWindowMin) {
 			return errors.New("next_two_day_window_max: should exceed next_two_day_window_min")
 		}
-		if q.RawNextTwoDayInterval == nil || strings.TrimSpace(*q.RawNextTwoDayInterval) == "" {
-			return errors.New("next_two_day_interval: is required")
-		}
-		interval, err := time.ParseDuration(*q.RawNextTwoDayInterval)
-		if err != nil {
-			return errors.New("next_two_day_interval: is not valid")
-		}
 		nextTwoDayWindowMin = nextTwoDayWindowMin.AddDate(0, 0, 2)
 		nextTwoDayWindowMax = nextTwoDayWindowMax.AddDate(0, 0, 2)
 		q.NextTwoDayWindowMin = new(nextTwoDayWindowMin)
 		q.NextTwoDayWindowMax = new(nextTwoDayWindowMax)
-		q.NextTwoDayInterval = &interval
 		for {
 			q.NextTwoDayDeliveryDatetimes = append(q.NextTwoDayDeliveryDatetimes, &DeliveryDatetime{
 				DeliverySpeed: DeliverySpeedNextTwoDay,
@@ -440,15 +406,13 @@ func (q *DeliveryPlan) Validate() (err error) {
 			if nextTwoDayWindowMin.Equal(nextTwoDayWindowMax) {
 				break
 			}
-			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(*q.NextTwoDayInterval)
+			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(interval)
 		}
 	} else {
 		q.RawNextTwoDayWindowMin = ""
 		q.NextTwoDayWindowMin = nil
 		q.RawNextTwoDayWindowMax = ""
 		q.NextTwoDayWindowMax = nil
-		q.RawNextTwoDayInterval = nil
-		q.NextTwoDayInterval = nil
 		q.NextTwoDayDeliveryDatetimes = nil
 	}
 	return nil

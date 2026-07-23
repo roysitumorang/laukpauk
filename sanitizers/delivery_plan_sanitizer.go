@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/utils/v2"
@@ -71,7 +72,7 @@ func FindDeliveryPlans(ctx context.Context, c fiber.Ctx) (*models.DeliveryPlanFi
 	return response, nil
 }
 
-func ValidateDeliveryPlan(ctx context.Context, c fiber.Ctx) (*models.DeliveryPlan, int, error) {
+func ValidateDeliveryPlan(ctx context.Context, c fiber.Ctx, interval time.Duration) (*models.DeliveryPlan, int, error) {
 	ctxt := "DeliveryPlanSanitizer-ValidateDeliveryPlan"
 	var response models.DeliveryPlan
 	err := c.Bind().Body(&response)
@@ -79,7 +80,7 @@ func ValidateDeliveryPlan(ctx context.Context, c fiber.Ctx) (*models.DeliveryPla
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, fiberErr.Code, err
 	}
-	if err = (&response).Validate(); err != nil {
+	if err = (&response).Validate(interval); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, fiber.StatusBadRequest, err
 	}
