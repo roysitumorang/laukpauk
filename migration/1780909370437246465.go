@@ -1470,18 +1470,24 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// transaction_days
+		// days
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE transaction_days (
+			`CREATE TABLE days (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, date timestamp with time zone NOT NULL UNIQUE
-				, cut_off_time timestamp with time zone NOT NULL
-				, same_day boolean NOT NULL
-				, next_day boolean NOT NULL
-				, next_two_day boolean NOT NULL
+				, vacation_mode boolean NOT NULL
 				, created_at timestamp with time zone NOT NULL
+				, updated_by UUID REFERENCES users (id)
+				, updated_at timestamp with time zone NOT NULL
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON days (updated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1491,10 +1497,22 @@ func init() {
 			ctx,
 			`CREATE TABLE delivery_schedules (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, transaction_day_id UUID NOT NULL REFERENCES transaction_days (id)
-				, delivery_hour timestamp with time zone NOT NULL
+				, delivery_time timestamp with time zone NOT NULL UNIQUE
 				, created_at timestamp with time zone NOT NULL
-				, UNIQUE(transaction_day_id, delivery_hour)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// days_delivery_schedules
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE days_delivery_schedules (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, day_id UUID NOT NULL REFERENCES days (id)
+				, delivery_schedule_id UUID NOT NULL REFERENCES delivery_schedules (id)
+				, created_at timestamp with time zone NOT NULL
+				, UNIQUE (day_id, delivery_schedule_id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1502,14 +1520,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_schedules (transaction_day_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_schedules (delivery_hour);`,
+			`CREATE INDEX ON days_delivery_schedules (day_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
