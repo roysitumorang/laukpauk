@@ -6,7 +6,7 @@ require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/coregx/coregex v0.12.22
 	github.com/dustin/go-humanize v1.0.1
-	github.com/gabriel-vasile/mimetype v1.4.14
+	github.com/gabriel-vasile/mimetype v1.4.15
 	github.com/getsentry/sentry-go v0.48.0
 	github.com/gofiber/contrib/v3/monitor v1.1.1
 	github.com/gofiber/contrib/v3/sentry v1.1.8
@@ -14,7 +14,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/storage/valkey v0.3.1
 	github.com/gofiber/template/jet/v3 v3.0.6
-	github.com/gofiber/utils/v2 v2.3.0
+	github.com/gofiber/utils/v2 v2.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
@@ -60,7 +60,7 @@ require (
 	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260627054121-477a66015f15 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.23 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
