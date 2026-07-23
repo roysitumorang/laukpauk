@@ -6,7 +6,7 @@ require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/coregx/coregex v0.12.22
 	github.com/dustin/go-humanize v1.0.1
-	github.com/gabriel-vasile/mimetype v1.4.13
+	github.com/gabriel-vasile/mimetype v1.4.14
 	github.com/getsentry/sentry-go v0.48.0
 	github.com/gofiber/contrib/v3/monitor v1.1.1
 	github.com/gofiber/contrib/v3/sentry v1.1.8
@@ -14,7 +14,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/storage/valkey v0.3.1
 	github.com/gofiber/template/jet/v3 v3.0.6
-	github.com/gofiber/utils/v2 v2.2.0
+	github.com/gofiber/utils/v2 v2.3.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
