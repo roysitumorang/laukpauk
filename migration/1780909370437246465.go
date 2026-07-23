@@ -2414,9 +2414,9 @@ func init() {
 				, name character varying NOT NULL
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 				, deactivated_by UUID REFERENCES users (id)
 				, deactivated_at timestamp with time zone
