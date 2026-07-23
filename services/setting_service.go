@@ -23,10 +23,10 @@ type (
 			tx pgx.Tx,
 			request *models.Setting,
 		) (*models.Setting, error)
-		DeductReferralPointsBudget(
+		AddReferralPointsExpense(
 			ctx context.Context,
 			tx pgx.Tx,
-			deduction int64,
+			addition int64,
 			updatedBy uuid.UUID,
 			updatedAt time.Time,
 		) (*models.Setting, error)
@@ -61,7 +61,7 @@ func (q *settingService) UpdateSetting(
 	tx pgx.Tx,
 	request *models.Setting,
 ) (*models.Setting, error) {
-	ctxt := "SettingService-SaveSetting"
+	ctxt := "SettingService-UpdateSetting"
 	response, err := q.settingRepository.UpdateSetting(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSetting")
@@ -69,23 +69,23 @@ func (q *settingService) UpdateSetting(
 	return response, err
 }
 
-func (q *settingService) DeductReferralPointsBudget(
+func (q *settingService) AddReferralPointsExpense(
 	ctx context.Context,
 	tx pgx.Tx,
-	deduction int64,
+	addition int64,
 	updatedBy uuid.UUID,
 	updatedAt time.Time,
 ) (*models.Setting, error) {
-	ctxt := "SettingService-DeductReferralPointsBudget"
-	response, err := q.settingRepository.DeductReferralPointsBudget(
+	ctxt := "SettingService-AddReferralPointsExpense"
+	response, err := q.settingRepository.AddReferralPointsExpense(
 		ctx,
 		tx,
-		deduction,
+		addition,
 		updatedBy,
 		updatedAt,
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeductReferralPointsBudget")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddReferralPointsExpense")
 	}
 	return response, err
 }

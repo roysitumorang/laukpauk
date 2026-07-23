@@ -760,13 +760,15 @@ func init() {
 			`CREATE TABLE setting (
 				id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY CHECK (id = 1)
 				, maintenance_mode BOOLEAN NOT NULL
+				, vacation_mode BOOLEAN NOT NULL
+				, vacation_start_date timestamp with time zone
+				, vacation_end_date timestamp with time zone
 				, voucher_enabled BOOLEAN NOT NULL
 				, referral_points_enabled BOOLEAN NOT NULL
-				, referral_points_initial_budget bigint NOT NULL
-				, refferal_points_minimum_shopping_cost bigint NOT NULL
+				, referral_points_minimum_shopping_cost bigint NOT NULL
 				, referral_points_per_referee bigint NOT NULL
 				, referral_points_slots bigint[] NOT NULL
-				, referral_points_remaining_budget bigint NOT NULL
+				, referral_points_expense bigint NOT NULL
 				, reward_points_accumulation_window_in_days smallint NOT NULL
 				, delivery_origin_longitude character varying NOT NULL
 				, delivery_origin_latitude character varying NOT NULL
@@ -774,8 +776,9 @@ func init() {
 				, delivery_max_distance_km bigint NOT NULL
 				, whatsapp_phone_number character varying NOT NULL
 				, payment_terms character varying NOT NULL
+				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id)
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -802,11 +805,9 @@ func init() {
 		setting := models.Setting{
 			VoucherEnabled:                       true,
 			ReferralPointsEnabled:                true,
-			ReferralPointsInitialBudget:          3_000_000,
-			RefferalPointsMinimumShoppingCost:    60_000,
+			ReferralPointsMinimumShoppingCost:    60_000,
 			ReferralPointsPerReferee:             25_000,
 			ReferralPointsSlots:                  []int64{10_000, 15_000},
-			ReferralPointsRemainingBudget:        3_000_000,
 			RewardPointsAccumulationWindowInDays: 30,
 			DeliveryOriginLongitude:              longitude,
 			DeliveryOriginLatitude:               latitude,
@@ -820,13 +821,15 @@ func init() {
 			ctx,
 			`INSERT INTO setting (
 				maintenance_mode
+				, vacation_mode
+				, vacation_start_date
+				, vacation_end_date
 				, voucher_enabled
 				, referral_points_enabled
-				, referral_points_initial_budget
-				, refferal_points_minimum_shopping_cost
+				, referral_points_minimum_shopping_cost
 				, referral_points_per_referee
 				, referral_points_slots
-				, referral_points_remaining_budget
+				, referral_points_expense
 				, reward_points_accumulation_window_in_days
 				, delivery_origin_longitude
 				, delivery_origin_latitude
@@ -834,21 +837,25 @@ func init() {
 				, delivery_max_distance_km
 				, whatsapp_phone_number
 				, payment_terms
+				, created_by
 				, created_at
 				, updated_by
 				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-				, $11, $12, $13, $14, $15, $16, $17, $18
+				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+				, $21
 			)`,
 			setting.MaintenanceMode,
+			setting.VacationMode,
+			setting.VacationStartDate,
+			setting.VacationEndDate,
 			setting.VoucherEnabled,
 			setting.ReferralPointsEnabled,
-			setting.ReferralPointsInitialBudget,
-			setting.RefferalPointsMinimumShoppingCost,
+			setting.ReferralPointsMinimumShoppingCost,
 			setting.ReferralPointsPerReferee,
 			setting.ReferralPointsSlots,
-			setting.ReferralPointsRemainingBudget,
+			setting.ReferralPointsExpense,
 			setting.RewardPointsAccumulationWindowInDays,
 			setting.DeliveryOriginLongitude,
 			setting.DeliveryOriginLatitude,
@@ -856,8 +863,9 @@ func init() {
 			setting.DeliveryMaxDistanceKM,
 			setting.WhatsappPhoneNumber,
 			setting.PaymentTerms,
+			adminID,
 			now,
-			nil,
+			adminID,
 			now,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

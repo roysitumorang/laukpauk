@@ -320,9 +320,9 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	var sb strings.Builder
 	if setting.ReferralPointsEnabled {
 		if request.ReferralCode != nil {
-			if request.ShoppingCost < setting.RefferalPointsMinimumShoppingCost {
+			if request.ShoppingCost < setting.ReferralPointsMinimumShoppingCost {
 				sb.Reset()
-				_, _ = fmt.Fprintf(&sb, "referral_code: requires shopping cost minimum %s", humanize.Comma(setting.RefferalPointsMinimumShoppingCost))
+				_, _ = fmt.Fprintf(&sb, "referral_code: requires shopping cost minimum %s", humanize.Comma(setting.ReferralPointsMinimumShoppingCost))
 				return helper.NewResponse(fiber.StatusUnprocessableEntity).
 					SetMessage(sb.String()).
 					WriteResponse(c)
