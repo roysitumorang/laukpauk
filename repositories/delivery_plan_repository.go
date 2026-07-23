@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"strings"
 	"time"
-	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgerrcode"
@@ -145,29 +144,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	params = []any{models.RecordStatusActive}
-	sb.Reset()
-	_, _ = sb.WriteString(
-		`SELECT
-			id
-			, record_status
-			, delivery_plan_id
-			, delivery_speed
-			, "timestamp"
-			, created_by
-			, created_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason
-		FROM delivery_times
-		WHERE record_status = $1
-			AND delivery_plan_id IN (`,
-	)
-	var (
-		response []*models.DeliveryPlan
-		n        int
-	)
-	mapDeliveryPlanIDs := map[uuid.UUID]int{}
+	var response []*models.DeliveryPlan
 	for rows.Next() {
 		var deliveryPlan models.DeliveryPlan
 		if err = rows.Scan(
@@ -199,60 +176,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		}
 		offset++
 		deliveryPlan.RowNo = offset
-		response = append(response, &deliveryPlan)
-		mapDeliveryPlanIDs[deliveryPlan.ID] = len(response) - 1
-		params = append(params, deliveryPlan.ID)
-		if n = len(params); n > 2 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, "$%d", n)
-	}
-	_, _ = sb.WriteString(`) ORDER BY delivery_speed, "timestamp"`)
-	if len(params) == 1 {
-		return response, total, pages, nil
-	}
-	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
-		err = nil
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
-		return nil, 0, 0, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var deliveryDatetime models.DeliveryTime
-		if err = rows.Scan(
-			&deliveryDatetime.ID,
-			&deliveryDatetime.RecordStatus,
-			&deliveryDatetime.DeliveryPlanID,
-			&deliveryDatetime.DeliverySpeed,
-			&deliveryDatetime.Timestamp,
-			&deliveryDatetime.CreatedBy,
-			&deliveryDatetime.CreatedAt,
-			&deliveryDatetime.DeletedBy,
-			&deliveryDatetime.DeletedAt,
-			&deliveryDatetime.DeletionReason,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, 0, 0, err
-		}
-		i := mapDeliveryPlanIDs[deliveryDatetime.DeliveryPlanID]
-		deliveryPlan := response[i]
-		switch deliveryDatetime.DeliverySpeed {
-		case models.DeliverySpeedSameDay:
-			deliveryPlan.SameDayDeliveryTimes = append(deliveryPlan.SameDayDeliveryTimes, &deliveryDatetime)
-		case models.DeliverySpeedNextDay:
-			deliveryPlan.NextDayDeliveryTimes = append(deliveryPlan.NextDayDeliveryTimes, &deliveryDatetime)
-		case models.DeliverySpeedNextTwoDay:
-			deliveryPlan.NextTwoDayDeliveryTimes = append(deliveryPlan.NextTwoDayDeliveryTimes, &deliveryDatetime)
-		}
-		response[i] = deliveryPlan
-	}
-	if !request.TransactionDatetime.IsZero() {
-		for i := range response {
-			response[i].UpdateDate(request.TransactionDatetime)
-		}
+		response = append(response, (&deliveryPlan).UpdateDate(request.DeliveryTimeInterval))
 	}
 	return response, total, pages, nil
 }
@@ -325,64 +249,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	rows, err := q.dbRead.Query(
-		ctx,
-		`SELECT
-			id
-			, record_status
-			, delivery_plan_id
-			, delivery_speed
-			, "timestamp"
-			, created_by
-			, created_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason
-		FROM delivery_times
-		WHERE record_status = $1
-			AND delivery_plan_id = $2
-		ORDER BY delivery_speed, "timestamp"`,
-		models.RecordStatusActive,
-		response.ID,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		err = nil
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var deliveryDatetime models.DeliveryTime
-		if err = rows.Scan(
-			&deliveryDatetime.ID,
-			&deliveryDatetime.RecordStatus,
-			&deliveryDatetime.DeliveryPlanID,
-			&deliveryDatetime.DeliverySpeed,
-			&deliveryDatetime.Timestamp,
-			&deliveryDatetime.CreatedBy,
-			&deliveryDatetime.CreatedAt,
-			&deliveryDatetime.DeletedBy,
-			&deliveryDatetime.DeletedAt,
-			&deliveryDatetime.DeletionReason,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-		switch deliveryDatetime.DeliverySpeed {
-		case models.DeliverySpeedSameDay:
-			response.SameDayDeliveryTimes = append(response.SameDayDeliveryTimes, &deliveryDatetime)
-		case models.DeliverySpeedNextDay:
-			response.NextDayDeliveryTimes = append(response.NextDayDeliveryTimes, &deliveryDatetime)
-		case models.DeliverySpeedNextTwoDay:
-			response.NextTwoDayDeliveryTimes = append(response.NextTwoDayDeliveryTimes, &deliveryDatetime)
-		}
-	}
-	if !request.TransactionDatetime.IsZero() {
-		(&response).UpdateDate(request.TransactionDatetime)
-	}
-	return &response, nil
+	return (&response).UpdateDate(request.DeliveryTimeInterval), nil
 }
 
 func (q *deliveryPlanRepository) CreateDeliveryPlan(
@@ -519,105 +386,6 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		}
 		return nil, err
 	}
-	deliveryDatetimes := make(
-		[]*models.DeliveryTime,
-		len(request.SameDayDeliveryTimes)+
-			len(request.NextDayDeliveryTimes)+
-			len(request.NextTwoDayDeliveryTimes),
-	)
-	var j int
-	for i := range request.SameDayDeliveryTimes {
-		deliveryDatetimes[j] = request.SameDayDeliveryTimes[i]
-		j++
-	}
-	for i := range request.NextDayDeliveryTimes {
-		deliveryDatetimes[j] = request.NextDayDeliveryTimes[i]
-		j++
-	}
-	for i := range request.NextTwoDayDeliveryTimes {
-		deliveryDatetimes[j] = request.NextTwoDayDeliveryTimes[i]
-		j++
-	}
-	sb.Reset()
-	_, _ = sb.WriteString(
-		`INSERT INTO delivery_times (
-			record_status
-			, delivery_plan_id
-			, delivery_speed
-			, "timestamp"
-			, created_by
-			, created_at
-		) VALUES`,
-	)
-	var (
-		params []any
-		n      int
-	)
-	for _, deliveryDatetime := range deliveryDatetimes {
-		params = append(
-			params,
-			models.RecordStatusActive,
-			response.ID,
-			deliveryDatetime.DeliverySpeed,
-			deliveryDatetime.Timestamp,
-			response.CreatedBy,
-			response.CreatedAt,
-		)
-		if n = len(params); n > 6 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d, $%d)", n-5, n-4, n-3, n-2, n-1, n)
-	}
-	_, _ = sb.WriteString(
-		` RETURNING id
-			, record_status
-			, delivery_plan_id
-			, delivery_speed
-			, "timestamp"
-			, created_by
-			, created_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
-	)
-	if len(params) == 0 {
-		return &response, nil
-	}
-	rows, err := tx.Query(ctx, sb.String(), params...)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
-		return nil, err
-	}
-	for rows.Next() {
-		var deliveryDatetime models.DeliveryTime
-		if rows.Scan(
-			&deliveryDatetime.ID,
-			&deliveryDatetime.RecordStatus,
-			&deliveryDatetime.DeliveryPlanID,
-			&deliveryDatetime.DeliverySpeed,
-			&deliveryDatetime.Timestamp,
-			&deliveryDatetime.CreatedBy,
-			&deliveryDatetime.CreatedAt,
-			&deliveryDatetime.DeletedBy,
-			&deliveryDatetime.DeletedAt,
-			&deliveryDatetime.DeletionReason,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-		switch deliveryDatetime.DeliverySpeed {
-		case models.DeliverySpeedSameDay:
-			response.SameDayDeliveryTimes = append(response.SameDayDeliveryTimes, &deliveryDatetime)
-		case models.DeliverySpeedNextDay:
-			response.NextDayDeliveryTimes = append(response.NextDayDeliveryTimes, &deliveryDatetime)
-		case models.DeliverySpeedNextTwoDay:
-			response.NextTwoDayDeliveryTimes = append(response.NextTwoDayDeliveryTimes, &deliveryDatetime)
-		}
-	}
-	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
-		return nil, err
-	}
 	return &response, nil
 }
 
@@ -749,126 +517,6 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
-		return nil, err
-	}
-	sameDaySize := len(request.SameDayDeliveryTimes)
-	nextDaySize := len(request.NextDayDeliveryTimes)
-	nextTwoDaySize := len(request.NextTwoDayDeliveryTimes)
-	response.SameDayDeliveryTimes = make([]*models.DeliveryTime, sameDaySize)
-	response.NextDayDeliveryTimes = make([]*models.DeliveryTime, nextDaySize)
-	response.NextTwoDayDeliveryTimes = make([]*models.DeliveryTime, nextTwoDaySize)
-	deliveryDatetimes := make(
-		[]*models.DeliveryTime,
-		sameDaySize+nextDaySize+nextTwoDaySize,
-	)
-	var j int
-	for i := range request.SameDayDeliveryTimes {
-		deliveryDatetimes[j] = request.SameDayDeliveryTimes[i]
-		j++
-	}
-	for i := range request.NextDayDeliveryTimes {
-		deliveryDatetimes[j] = request.NextDayDeliveryTimes[i]
-		j++
-	}
-	for i := range request.NextTwoDayDeliveryTimes {
-		deliveryDatetimes[j] = request.NextTwoDayDeliveryTimes[i]
-		j++
-	}
-	params := make([]any, 5+len(deliveryDatetimes))
-	sb.Reset()
-	_, _ = sb.WriteString(
-		`UPDATE delivery_times SET
-			record_status = $1
-			, deleted_by = $2
-			, deleted_at = $3
-		WHERE delivery_plan_id = $4
-			AND record_status = $5
-			AND id NOT IN (`,
-	)
-	params[0] = models.RecordStatusDeleted
-	params[1] = response.UpdatedBy
-	params[2] = response.UpdatedAt
-	params[3] = response.ID
-	params[4] = models.RecordStatusActive
-	var sameDayCounter,
-		nextDayCounter,
-		nextTwoDayCounter int
-	for i, deliveryDatetimeRequest := range deliveryDatetimes {
-		var deliveryDatetimeResponse models.DeliveryTime
-		if err = tx.QueryRow(
-			ctx,
-			`INSERT INTO delivery_times (
-				record_status
-				, delivery_plan_id
-				, delivery_speed
-				, "timestamp"
-				, created_by
-				, created_at
-			) VALUES ($1, $2, $3, $4, $5, $6)
-			ON CONFLICT (
-				delivery_plan_id
-				, delivery_speed
-				, "timestamp"
-			) DO UPDATE SET
-				record_status = $1
-				, deleted_by = NULL
-				, deleted_at = NULL
-				, deletion_reason = NULL
-			RETURNING id
-				, record_status
-				, delivery_plan_id
-				, delivery_speed
-				, "timestamp"
-				, created_by
-				, created_at
-				, deleted_by
-				, deleted_at
-				, deletion_reason`,
-			models.RecordStatusActive,
-			response.ID,
-			deliveryDatetimeRequest.DeliverySpeed,
-			deliveryDatetimeRequest.Timestamp,
-			response.UpdatedBy,
-			response.UpdatedAt,
-		).Scan(
-			&deliveryDatetimeResponse.ID,
-			&deliveryDatetimeResponse.RecordStatus,
-			&deliveryDatetimeResponse.DeliveryPlanID,
-			&deliveryDatetimeResponse.DeliverySpeed,
-			&deliveryDatetimeResponse.Timestamp,
-			&deliveryDatetimeResponse.CreatedBy,
-			&deliveryDatetimeResponse.CreatedAt,
-			&deliveryDatetimeResponse.DeletedBy,
-			&deliveryDatetimeResponse.DeletedAt,
-			&deliveryDatetimeResponse.DeletionReason,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-		switch deliveryDatetimeResponse.DeliverySpeed {
-		case models.DeliverySpeedSameDay:
-			response.SameDayDeliveryTimes[sameDayCounter] = &deliveryDatetimeResponse
-			sameDayCounter++
-		case models.DeliverySpeedNextDay:
-			response.NextDayDeliveryTimes[nextDayCounter] = &deliveryDatetimeResponse
-			nextDayCounter++
-		case models.DeliverySpeedNextTwoDay:
-			response.NextTwoDayDeliveryTimes[nextTwoDayCounter] = &deliveryDatetimeResponse
-			nextTwoDayCounter++
-		}
-		j := i + 5
-		params[j] = deliveryDatetimeResponse.ID
-		if i > 0 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, "$%d", j+1)
-	}
-	_, _ = sb.WriteString(")")
-	if len(params) == 5 {
-		return &response, nil
-	}
-	if _, err = tx.Exec(ctx, sb.String(), params...); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, err
 	}
 	return &response, nil

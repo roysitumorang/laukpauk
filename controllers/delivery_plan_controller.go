@@ -501,12 +501,32 @@ func (q *deliveryPlanController) AdminDelete(c fiber.Ctx) (err error) {
 func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryPlanController-V1BuyerShow"
+	setting, err := q.settingService.FindSetting(ctx)
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if setting == nil {
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(models.ErrSettingNotFound.Error()).
+			WriteResponse(c)
+	}
+	interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	now := time.Now().In(time.Local)
 	response, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithTransactionDatetime(now),
+			WithTransactionDatetime(now).
+			WithDeliveryTimeInterval(interval),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")

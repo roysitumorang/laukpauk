@@ -78,10 +78,10 @@ type (
 		DeliveryDistanceKM      int64              `json:"delivery_distance_km" form:"-"`
 		DeliveryAddress         string             `json:"delivery_address" form:"delivery_address"`
 		DeliveryInstruction     string             `json:"delivery_instruction" form:"delivery_instruction"`
-		DeliveryDatetimeID      uuid.UUID          `json:"delivery_datetime_id" form:"delivery_datetime_id"`
+		DeliveryTimeID          uuid.UUID          `json:"delivery_time_id" form:"delivery_time_id"`
 		DeliveryPlanID          uuid.UUID          `json:"-" form:"-"`
 		DeliverySpeed           DeliverySpeed      `json:"-" form:"-"`
-		DeliveryTimestamp       time.Time          `json:"delivery_timestamp" form:"-"`
+		DeliveryDatetime        time.Time          `json:"delivery_datetime" form:"-"`
 		CreatedAt               time.Time          `json:"-" form:"-"`
 		UpdatedAt               time.Time          `json:"-" form:"-"`
 		PaidAt                  *time.Time         `json:"-" form:"-"`
@@ -270,7 +270,7 @@ func (q *Transaction) Validate() error {
 		return errors.New("delivery_address: is required")
 	}
 	q.DeliveryInstruction = strings.TrimSpace(q.DeliveryInstruction)
-	if q.DeliveryDatetimeID.Compare(uuid.Nil()) == 0 {
+	if q.DeliveryTimeID.Compare(uuid.Nil()) == 0 {
 		return errors.New("delivery_datetime_id: is required")
 	}
 	if len(q.Items) == 0 {

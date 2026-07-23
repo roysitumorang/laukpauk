@@ -157,45 +157,50 @@ func (q *dayService) FindOrCreateTransactionDay(
 	var t time.Time
 	request.TransactionWindows = make([]*models.TransactionWindow, len(deliveryPlans))
 	for i, deliveryPlan := range deliveryPlans {
-		var deliverySchedules []*models.DeliverySchedule
-		if deliveryPlan.SameDay {
-			for _, deliveryTime := range deliveryPlan.SameDayDeliveryTimes {
-				t = deliveryTime.Timestamp
-				deliverySchedules = append(deliverySchedules, &models.DeliverySchedule{
-					DeliverySpeed: deliveryTime.DeliverySpeed,
-					DeliveryTime:  time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), 0, t.Location()),
-					CreatedAt:     now,
-				})
-			}
-		}
-		if deliveryPlan.NextDay {
-			for _, deliveryTime := range deliveryPlan.NextDayDeliveryTimes {
-				t = deliveryTime.Timestamp
-				deliverySchedules = append(deliverySchedules, &models.DeliverySchedule{
-					DeliverySpeed: deliveryTime.DeliverySpeed,
-					DeliveryTime:  time.Date(now.Year(), now.Month(), now.Day()+1, t.Hour(), t.Minute(), t.Second(), 0, t.Location()),
-					CreatedAt:     now,
-				})
-			}
-		}
-		if deliveryPlan.NextTwoDay {
-			for _, deliveryTime := range deliveryPlan.NextTwoDayDeliveryTimes {
-				t = deliveryTime.Timestamp
-				deliverySchedules = append(deliverySchedules, &models.DeliverySchedule{
-					DeliverySpeed: deliveryTime.DeliverySpeed,
-					DeliveryTime:  time.Date(now.Year(), now.Month(), now.Day()+2, t.Hour(), t.Minute(), t.Second(), 0, t.Location()),
-					CreatedAt:     now,
-				})
+		deliveryTimes := make([]*models.DeliveryTime, len(deliveryPlan.DeliveryTimes))
+		for i, deliveryTime := range deliveryPlan.DeliveryTimes {
+			t = deliveryTime.Datetime
+			deliveryTimes[i] = &models.DeliveryTime{
+				DeliverySpeed: deliveryTime.DeliverySpeed,
+				Datetime: time.Date(
+					now.Year(),
+					now.Month(),
+					now.Day(),
+					t.Hour(),
+					t.Minute(),
+					t.Second(),
+					t.Nanosecond(),
+					t.Location(),
+				),
+				CreatedAt: now,
 			}
 		}
 		min := deliveryPlan.TransactionWindowMin
 		max := deliveryPlan.TransactionWindowMax
 		request.TransactionWindows[i] = &models.TransactionWindow{
-			DeliveryPlanID:       deliveryPlan.ID,
-			TransactionWindowMin: time.Date(now.Year(), now.Month(), now.Day(), min.Hour(), min.Minute(), min.Second(), 0, t.Location()),
-			TransactionWindowMax: time.Date(now.Year(), now.Month(), now.Day(), max.Hour(), max.Minute(), max.Second(), 0, t.Location()),
-			CreatedAt:            now,
-			DeliverySchedules:    deliverySchedules,
+			DeliveryPlanID: deliveryPlan.ID,
+			TransactionWindowMin: time.Date(
+				now.Year(),
+				now.Month(),
+				now.Day(),
+				min.Hour(),
+				min.Minute(),
+				min.Second(),
+				min.Nanosecond(),
+				t.Location(),
+			),
+			TransactionWindowMax: time.Date(
+				now.Year(),
+				now.Month(),
+				now.Day(),
+				max.Hour(),
+				max.Minute(),
+				max.Second(),
+				max.Nanosecond(),
+				t.Location(),
+			),
+			CreatedAt:     now,
+			DeliveryTimes: deliveryTimes,
 		}
 	}
 	tx, err := helper.BeginTx(ctx)

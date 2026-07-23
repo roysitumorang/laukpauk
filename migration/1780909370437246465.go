@@ -1003,68 +1003,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// delivery_times
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE delivery_times (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, record_status integer NOT NULL
-				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
-				, delivery_speed integer NOT NULL
-				, "timestamp" timestamp with time zone NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
-				, created_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
-				, deleted_at timestamp with time zone
-				, deletion_reason character varying
-				, UNIQUE (delivery_plan_id, delivery_speed, "timestamp")
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_times (record_status);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_times (delivery_plan_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_times (delivery_speed);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_times ("timestamp");`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_times (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_times (deleted_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		deliveryPlans := [][]any{
 			// weekdays
 			{
@@ -1284,21 +1222,8 @@ func init() {
 				now,
 			},
 		}
-		interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParseDuration")
-			return
-		}
-		var (
-			deliveryPlanID               uuid.UUID
-			sameDay, nextDay, nextTwoDay bool
-			sameDayWindowMin, sameDayWindowMax,
-			nextDayWindowMin, nextDayWindowMax,
-			nextTwoDayWindowMin, nextTwoDayWindowMax *time.Time
-		)
-		var deliveryTimes [][]any
 		for i := range deliveryPlans {
-			if err = tx.QueryRow(
+			if _, err = tx.Exec(
 				ctx,
 				`INSERT INTO delivery_plans (
 					record_status
@@ -1330,94 +1255,8 @@ func init() {
 					, $16
 					, $17
 					, $18
-				)
-				RETURNING id
-					, same_day
-					, lower(same_day_window)
-					, upper(same_day_window)
-					, next_day
-					, lower(next_day_window)
-					, upper(next_day_window)
-					, next_two_day
-					, lower(next_two_day_window)
-					, upper(next_two_day_window)`,
+				)`,
 				deliveryPlans[i]...,
-			).Scan(
-				&deliveryPlanID,
-				&sameDay,
-				&sameDayWindowMin,
-				&sameDayWindowMax,
-				&nextDay,
-				&nextDayWindowMin,
-				&nextDayWindowMax,
-				&nextTwoDay,
-				&nextTwoDayWindowMin,
-				&nextTwoDayWindowMax,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-				return
-			}
-			if sameDay && sameDayWindowMin != nil && sameDayWindowMax != nil {
-				for {
-					deliveryTimes = append(deliveryTimes, []any{
-						models.RecordStatusActive,
-						deliveryPlanID,
-						models.DeliverySpeedSameDay,
-						sameDayWindowMin.In(time.Local),
-						adminID,
-						now,
-					})
-					if sameDayWindowMin.Equal(*sameDayWindowMax) {
-						break
-					}
-					*sameDayWindowMin = sameDayWindowMin.Add(interval)
-				}
-			}
-			if nextDay && nextDayWindowMin != nil && nextDayWindowMax != nil {
-				for {
-					deliveryTimes = append(deliveryTimes, []any{
-						models.RecordStatusActive,
-						deliveryPlanID,
-						models.DeliverySpeedNextDay,
-						nextDayWindowMin.In(time.Local),
-						adminID,
-						now,
-					})
-					if nextDayWindowMin.Equal(*nextDayWindowMax) {
-						break
-					}
-					*nextDayWindowMin = nextDayWindowMin.Add(interval)
-				}
-			}
-			if nextTwoDay && nextTwoDayWindowMin != nil && nextTwoDayWindowMax != nil {
-				for {
-					deliveryTimes = append(deliveryTimes, []any{
-						models.RecordStatusActive,
-						deliveryPlanID,
-						models.DeliverySpeedNextTwoDay,
-						nextTwoDayWindowMin.In(time.Local),
-						adminID,
-						now,
-					})
-					if nextTwoDayWindowMin.Equal(*nextTwoDayWindowMax) {
-						break
-					}
-					*nextTwoDayWindowMin = nextTwoDayWindowMin.Add(interval)
-				}
-			}
-		}
-		for i := range deliveryTimes {
-			if _, err = tx.Exec(
-				ctx,
-				`INSERT INTO delivery_times (
-					record_status
-					, delivery_plan_id
-					, delivery_speed
-					, "timestamp"
-					, created_by
-					, created_at
-				) VALUES ($1, $2, $3, $4, $5, $6)`,
-				deliveryTimes[i]...,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -1540,16 +1379,16 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// delivery_schedules
+		// delivery_times
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE delivery_schedules (
+			`CREATE TABLE delivery_times (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, transaction_window_id UUID NOT NULL REFERENCES transaction_windows (id)
 				, delivery_speed integer NOT NULL
-				, delivery_time timestamp with time zone NOT NULL
+				, datetime timestamp with time zone NOT NULL
 				, created_at timestamp with time zone NOT NULL
-				, UNIQUE (transaction_window_id, delivery_time)
+				, UNIQUE (transaction_window_id, datetime)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -1557,14 +1396,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_schedules (transaction_window_id);`,
+			`CREATE INDEX ON delivery_times (transaction_window_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON delivery_schedules (delivery_time);`,
+			`CREATE INDEX ON delivery_times (datetime);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1905,10 +1744,10 @@ func init() {
 				, delivery_distance_km bigint NOT NULL
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
-				, delivery_datetime_id UUID NOT NULL REFERENCES delivery_times (id)
+				, delivery_time_id UUID NOT NULL REFERENCES delivery_times (id)
 				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
 				, delivery_speed integer NOT NULL
-				, delivery_timestamp timestamp with time zone NOT NULL
+				, delivery_datetime timestamp with time zone NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, paid_at timestamp with time zone
@@ -1991,7 +1830,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions (delivery_datetime_id);`,
+			`CREATE INDEX ON transactions (delivery_time_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

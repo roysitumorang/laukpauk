@@ -189,12 +189,32 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
 	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
+	setting, err := q.settingService.FindSetting(ctx)
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if setting == nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrSettingNotFound.Error()).
+			WriteResponse(c)
+	}
+	interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	now := time.Now().In(time.Local)
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithTransactionDatetime(now),
+			WithTransactionDatetime(now).
+			WithDeliveryTimeInterval(interval),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
@@ -207,55 +227,18 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
 			WriteResponse(c)
 	}
-	var deliveryDatetimeIdValid bool
-	if deliveryPlan.SameDay {
-		for _, deliveryDatetime := range deliveryPlan.SameDayDeliveryTimes {
-			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
-				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
-				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
-				request.DeliverySpeed = deliveryDatetime.DeliverySpeed
-				request.DeliveryTimestamp = deliveryDatetime.Timestamp
-				break
-			}
+	var deliveryTimeIdValid bool
+	for _, deliveryTime := range deliveryPlan.DeliveryTimes {
+		if deliveryTimeIdValid = request.DeliveryDatetime.Equal(deliveryTime.Datetime); deliveryTimeIdValid {
+			request.DeliveryPlanID = deliveryPlan.ID
+			request.DeliverySpeed = deliveryTime.DeliverySpeed
+			request.DeliveryDatetime = deliveryTime.Datetime
+			break
 		}
 	}
-	if !deliveryDatetimeIdValid && deliveryPlan.NextDay {
-		for _, deliveryDatetime := range deliveryPlan.NextDayDeliveryTimes {
-			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
-				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
-				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
-				request.DeliverySpeed = deliveryDatetime.DeliverySpeed
-				request.DeliveryTimestamp = deliveryDatetime.Timestamp
-				break
-			}
-		}
-	}
-	if !deliveryDatetimeIdValid && deliveryPlan.NextTwoDay {
-		for _, deliveryDatetime := range deliveryPlan.NextTwoDayDeliveryTimes {
-			if deliveryDatetimeIdValid = deliveryDatetimeIdValid ||
-				request.DeliveryDatetimeID.Compare(deliveryDatetime.ID) == 0; deliveryDatetimeIdValid {
-				request.DeliveryPlanID = deliveryDatetime.DeliveryPlanID
-				request.DeliverySpeed = deliveryDatetime.DeliverySpeed
-				request.DeliveryTimestamp = deliveryDatetime.Timestamp
-				break
-			}
-		}
-	}
-	if !deliveryDatetimeIdValid {
+	if !deliveryTimeIdValid {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage("delivery_datetime_id: not found").
-			WriteResponse(c)
-	}
-	setting, err := q.settingService.FindSetting(ctx)
-	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrSettingNotFound.Error()).
-			WriteResponse(c)
-	}
-	if setting == nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
+			SetMessage("delivery_time_id: not found").
 			WriteResponse(c)
 	}
 	request.DeliveryCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM

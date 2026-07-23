@@ -319,7 +319,7 @@ func (q *transactionDayRepository) CreateTransactionDay(
 	params = []any{}
 	sb.Reset()
 	_, _ = sb.WriteString(
-		`INSERT INTO delivery_schedules (
+		`INSERT INTO delivery_times (
 			transaction_window_id
 			, delivery_speed
 			, delivery_time
@@ -327,12 +327,12 @@ func (q *transactionDayRepository) CreateTransactionDay(
 		) VALUES`,
 	)
 	for i, transactionWindow := range request.TransactionWindows {
-		for _, deliverySchedule := range transactionWindow.DeliverySchedules {
+		for _, deliverySchedule := range transactionWindow.DeliveryTimes {
 			params = append(
 				params,
 				response.TransactionWindows[i].ID,
 				deliverySchedule.DeliverySpeed,
-				deliverySchedule.DeliveryTime,
+				deliverySchedule.Datetime,
 				deliverySchedule.CreatedAt,
 			)
 			if n = len(params); n > 4 {
@@ -357,21 +357,21 @@ func (q *transactionDayRepository) CreateTransactionDay(
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var deliverySchedule models.DeliverySchedule
+		var deliveryTime models.DeliveryTime
 		if err = rows.Scan(
-			&deliverySchedule.ID,
-			&deliverySchedule.TransactionWindowID,
-			&deliverySchedule.DeliverySpeed,
-			&deliverySchedule.DeliveryTime,
-			&deliverySchedule.CreatedAt,
+			&deliveryTime.ID,
+			&deliveryTime.TransactionWindowID,
+			&deliveryTime.DeliverySpeed,
+			&deliveryTime.Datetime,
+			&deliveryTime.CreatedAt,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
-		i := mapTransactionWindowIDs[deliverySchedule.TransactionWindowID]
-		response.TransactionWindows[i].DeliverySchedules = append(
-			response.TransactionWindows[i].DeliverySchedules,
-			&deliverySchedule,
+		i := mapTransactionWindowIDs[deliveryTime.TransactionWindowID]
+		response.TransactionWindows[i].DeliveryTimes = append(
+			response.TransactionWindows[i].DeliveryTimes,
+			&deliveryTime,
 		)
 	}
 	if err = rows.Err(); err != nil {

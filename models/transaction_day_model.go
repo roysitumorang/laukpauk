@@ -30,20 +30,20 @@ type (
 	}
 
 	TransactionWindow struct {
-		ID                   uuid.UUID           `json:"id" form:"-"`
-		TransactionDayID     uuid.UUID           `json:"-" form:"-"`
-		DeliveryPlanID       uuid.UUID           `json:"-" form:"-"`
-		TransactionWindowMin time.Time           `json:"min" form:"-"`
-		TransactionWindowMax time.Time           `json:"max" form:"-"`
-		CreatedAt            time.Time           `json:"-" form:"-"`
-		DeliverySchedules    []*DeliverySchedule `json:"delivery_schedules" form:"-"`
+		ID                   uuid.UUID       `json:"id" form:"-"`
+		TransactionDayID     uuid.UUID       `json:"-" form:"-"`
+		DeliveryPlanID       uuid.UUID       `json:"-" form:"-"`
+		TransactionWindowMin time.Time       `json:"min" form:"-"`
+		TransactionWindowMax time.Time       `json:"max" form:"-"`
+		CreatedAt            time.Time       `json:"-" form:"-"`
+		DeliveryTimes        []*DeliveryTime `json:"delivery_times" form:"-"`
 	}
 
-	DeliverySchedule struct {
+	DeliveryTime struct {
 		ID                  uuid.UUID     `json:"id" form:"-"`
 		TransactionWindowID uuid.UUID     `json:"-" form:"-"`
 		DeliverySpeed       DeliverySpeed `json:"-" form:"-"`
-		DeliveryTime        time.Time     `json:"delivery_time" form:"-"`
+		Datetime            time.Time     `json:"datetime" form:"-"`
 		CreatedAt           time.Time     `json:"-" form:"-"`
 	}
 
