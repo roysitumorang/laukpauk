@@ -10,9 +10,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func ValidateCartItem(ctx context.Context, c fiber.Ctx) (*models.CartItem, int, error) {
-	ctxt := "CartItemSanitizer-ValidateCartItem"
-	var response models.CartItem
+func ValidateCart(ctx context.Context, c fiber.Ctx) (*models.Cart, int, error) {
+	ctxt := "CartSanitizer-ValidateCart"
+	var response models.Cart
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

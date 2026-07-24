@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -24,6 +25,16 @@ type (
 		CreatedAt      time.Time   `json:"-" form:"-"`
 		UpdatedAt      time.Time   `json:"-" form:"-"`
 		Items          []*CartItem `json:"items" form:"-"`
+	}
+
+	CartItem struct {
+		RowNo            int64     `json:"-" form:"-"`
+		ID               uuid.UUID `json:"id" form:"-"`
+		CartID           uuid.UUID `json:"-" form:"-"`
+		ProductVariantID uuid.UUID `json:"product_variant_id" form:"-"`
+		Quantity         int64     `json:"quantity" form:"-"`
+		CreatedAt        time.Time `json:"-" form:"-"`
+		UpdatedAt        time.Time `json:"-" form:"-"`
 	}
 
 	CartFilter struct {
@@ -79,8 +90,12 @@ func (q *CartFilter) WithUrlValues(urlValues url.Values) *CartFilter {
 }
 
 func (q *Cart) Validate() error {
-	if q.BuyerID.Compare(uuid.Nil()) == 0 {
-		return errors.New("buyer_id: is required")
+	for i, cartItem := range q.Items {
+		if cartItem.ProductVariantID.Compare(uuid.Nil()) == 0 {
+			return fmt.Errorf("items[%d].product_variant_id: is required", i)
+		}
+		cartItem.Quantity = max(cartItem.Quantity, 0)
+		q.Items[i] = cartItem
 	}
 	return nil
 }

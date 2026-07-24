@@ -51,7 +51,6 @@ type (
 		JsonWebTokenService       services.JsonWebTokenService
 		FcmRegistrationService    services.FcmRegistrationService
 		CartService               services.CartService
-		CartItemService           services.CartItemService
 		TransactionCounterService services.TransactionCounterService
 		DeliveryRouteService      services.DeliveryRouteService
 	}
@@ -144,7 +143,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	jsonWebTokenRepository := repositories.NewJsonWebTokenRepository(dbRead, dbWrite)
 	fcmRegistrationRepository := repositories.NewFcmRegistrationRepository(dbRead, dbWrite)
 	cartRepository := repositories.NewCartRepository(dbRead, dbWrite)
-	cartItemRepository := repositories.NewCartItemRepository(dbRead, dbWrite)
 	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
 	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
@@ -167,7 +165,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
 	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
 	cartService := services.NewCartService(cartRepository)
-	cartItemService := services.NewCartItemService(cartItemRepository)
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
 	return &Service{
@@ -198,7 +195,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		JsonWebTokenService:       jsonWebTokenService,
 		FcmRegistrationService:    fcmRegistrationService,
 		CartService:               cartService,
-		CartItemService:           cartItemService,
 		TransactionCounterService: transactionCounterService,
 		DeliveryRouteService:      deliveryRouteService,
 	}, nil

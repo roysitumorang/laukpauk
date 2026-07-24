@@ -29,7 +29,6 @@ type (
 		transactionService        services.TransactionService
 		transactionCounterService services.TransactionCounterService
 		cartService               services.CartService
-		cartItemService           services.CartItemService
 		deliveryPlanService       services.DeliveryPlanService
 		deliveryRouteService      services.DeliveryRouteService
 		settingService            services.SettingService
@@ -47,7 +46,6 @@ func NewTransactionController(
 	transactionService services.TransactionService,
 	transactionCounterService services.TransactionCounterService,
 	cartService services.CartService,
-	cartItemService services.CartItemService,
 	deliveryPlanService services.DeliveryPlanService,
 	deliveryRouteService services.DeliveryRouteService,
 	settingService services.SettingService,
@@ -63,7 +61,6 @@ func NewTransactionController(
 		transactionService:        transactionService,
 		transactionCounterService: transactionCounterService,
 		cartService:               cartService,
-		cartItemService:           cartItemService,
 		deliveryPlanService:       deliveryPlanService,
 		deliveryRouteService:      deliveryRouteService,
 		settingService:            settingService,
@@ -151,24 +148,9 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage("cart_id: not found").
 			WriteResponse(c)
 	}
-	cartItems, _, err := q.cartItemService.FindCartItems(
-		ctx,
-		models.NewCartItemFilter().
-			WithCartIDs(cart.ID).
-			WithSortings(models.Sorting{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionAsc,
-			}),
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCartItems")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
 	mapCartItems := map[uuid.UUID]*models.CartItem{}
-	for _, item := range cartItems {
-		mapCartItems[item.ID] = item
+	for _, cartItem := range cart.Items {
+		mapCartItems[cartItem.ID] = cartItem
 	}
 	deliveryRoute, err := q.deliveryRouteService.FindDeliveryRoute(
 		ctx,

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
@@ -124,7 +125,24 @@ func (q *cartRepository) FindCarts(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.Cart
+	var (
+		response []*models.Cart
+		n        int
+	)
+	params = []any{}
+	sb.Reset()
+	_, _ = sb.WriteString(
+		`SELECT
+			id
+			, cart_id
+			, product_variant_id
+			, quantity
+			, created_at
+			, updated_at
+		FROM cart_items
+		WHERE cart_id IN (`,
+	)
+	mapCartIDs := map[uuid.UUID]int{}
 	for rows.Next() {
 		var cart models.Cart
 		if err = rows.Scan(
@@ -140,6 +158,44 @@ func (q *cartRepository) FindCarts(
 		offset++
 		cart.RowNo = offset
 		response = append(response, &cart)
+		mapCartIDs[cart.ID] = len(response) - 1
+		params = append(params, cart.ID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, "$%d", n)
+	}
+	if len(params) == 0 {
+		return response, total, pages, nil
+	}
+	_, _ = sb.WriteString(") ORDER BY id")
+	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, 0, 0, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cartItem models.CartItem
+		if err = rows.Scan(
+			&cartItem.ID,
+			&cartItem.CartID,
+			&cartItem.ProductVariantID,
+			&cartItem.Quantity,
+			&cartItem.CreatedAt,
+			&cartItem.UpdatedAt,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, 0, 0, err
+		}
+		i := mapCartIDs[cartItem.CartID]
+		cart := response[i]
+		cart.Quantity += cartItem.Quantity
+		cart.Items = append(cart.Items, &cartItem)
+		response[i] = cart
 	}
 	return response, total, pages, nil
 }
@@ -163,9 +219,8 @@ func (q *cartRepository) FindCart(
 		FROM carts %s`,
 		condition,
 	)
-	query := sb.String()
 	var response models.Cart
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.BuyerID,
 		&response.DeletedBuyerID,
@@ -179,6 +234,44 @@ func (q *cartRepository) FindCart(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
+	rows, err := q.dbRead.Query(
+		ctx,
+		`SELECT
+			id
+			, cart_id
+			, product_variant_id
+			, quantity
+			, created_at
+			, updated_at
+		FROM cart_items
+		WHERE cart_id = $1
+		ORDER BY id`,
+		response.ID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cartItem models.CartItem
+		if err = rows.Scan(
+			&cartItem.ID,
+			&cartItem.CartID,
+			&cartItem.ProductVariantID,
+			&cartItem.Quantity,
+			&cartItem.CreatedAt,
+			&cartItem.UpdatedAt,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
+		response.Items = append(response.Items, &cartItem)
+		response.Quantity += cartItem.Quantity
+	}
 	return &response, nil
 }
 
@@ -189,7 +282,7 @@ func (q *cartRepository) SaveCart(
 ) (*models.Cart, error) {
 	ctxt := "CartRepository-SaveCart"
 	var response models.Cart
-	if err := tx.QueryRow(
+	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO carts (
 			buyer_id
@@ -212,9 +305,94 @@ func (q *cartRepository) SaveCart(
 		&response.DeletedBuyerID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-	); err != nil {
+	)
+	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
+	}
+	var (
+		sbInsert,
+		sbDelete strings.Builder
+		n int
+	)
+	var paramsInsert []any
+	_, _ = sbInsert.WriteString(
+		`INSERT INTO cart_items (
+			cart_id
+			, product_variant_id
+			, quantity
+			, created_at
+			, updated_at
+		) VALUES`,
+	)
+	paramsDelete := []any{response.ID}
+	_, _ = sbDelete.WriteString("DELETE FROM cart_items WHERE cart_id = $1 AND product_variant_id NOT IN (")
+	for _, cartItem := range request.Items {
+		if cartItem.Quantity > 0 {
+			paramsInsert = append(
+				paramsInsert,
+				response.ID,
+				cartItem.ProductVariantID,
+				cartItem.Quantity,
+				cartItem.CreatedAt,
+				cartItem.UpdatedAt,
+			)
+			if n = len(paramsInsert); n > 5 {
+				_, _ = sbInsert.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sbInsert, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
+		} else {
+			paramsDelete = append(paramsDelete, cartItem.ProductVariantID)
+			if n = len(paramsDelete); n > 2 {
+				_, _ = sbDelete.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sbDelete, "$%d", n)
+		}
+	}
+	if len(paramsDelete) > 1 {
+		_, _ = sbDelete.WriteString(")")
+		if _, err = tx.Exec(ctx, sbDelete.String(), paramsDelete...); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
+	}
+	if len(paramsInsert) > 0 {
+		_, _ = sbInsert.WriteString(
+			` ON CONFLICT (cart_id, product_variant_id) DO UPDATE SET
+				quantity = EXCLUDED.quantity
+				, updated_at = EXCLUDED.updated_at
+			RETURNING id
+				, cart_id
+				, product_variant_id
+				, quantity
+				, created_at
+				, updated_at`,
+		)
+		rows, err := tx.Query(ctx, sbInsert.String(), paramsInsert...)
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = nil
+		}
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var cartItem models.CartItem
+			if err = rows.Scan(
+				&cartItem.ID,
+				&cartItem.CartID,
+				&cartItem.ProductVariantID,
+				&cartItem.Quantity,
+				&cartItem.CreatedAt,
+				&cartItem.UpdatedAt,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+				return nil, err
+			}
+			response.Items = append(response.Items, &cartItem)
+			response.Quantity += cartItem.Quantity
+		}
 	}
 	return &response, nil
 }
