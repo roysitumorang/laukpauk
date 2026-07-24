@@ -35,12 +35,6 @@ var (
 )
 
 const (
-	DeliverySpeedSameDay DeliverySpeed = iota
-	DeliverySpeedNextDay
-	DeliverySpeedNextTwoDay
-)
-
-const (
 	DeliveryWeekdaySunday   DeliveryWeekday = DeliveryWeekday(time.Sunday)
 	DeliveryWeekdayWeekdays DeliveryWeekday = DeliveryWeekday(time.Sunday + 1)
 	DeliveryWeekdayFriday   DeliveryWeekday = DeliveryWeekday(time.Friday)
@@ -48,7 +42,6 @@ const (
 )
 
 type (
-	DeliverySpeed   int
 	DeliveryWeekday int
 
 	DeliveryPlan struct {
