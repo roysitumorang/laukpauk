@@ -155,17 +155,12 @@ func (q *dayService) FindOrCreateTransactionDay(
 	default:
 		weekday = models.DeliveryWeekdayWeekdays
 	}
-	interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return nil, err
-	}
 	deliveryPlans, _, _, err := q.deliveryPlanRepository.FindDeliveryPlans(
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
 			WithDeliveryWeekdays(weekday).
-			WithDeliveryTimeInterval(interval),
+			WithDeliveryTimeInterval(setting.DeliveryTimeInterval),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")

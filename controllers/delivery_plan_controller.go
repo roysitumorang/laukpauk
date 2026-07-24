@@ -193,14 +193,7 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(models.ErrSettingNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
-	interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return c.Render("admin/delivery_plan_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c, interval)
+	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c, setting.DeliveryTimeInterval)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
@@ -362,14 +355,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(models.ErrSettingNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
-	interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return c.Render("admin/delivery_plan_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c, interval)
+	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c, setting.DeliveryTimeInterval)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
@@ -513,20 +499,13 @@ func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrSettingNotFound.Error()).
 			WriteResponse(c)
 	}
-	interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
 	now := time.Now().In(time.Local)
 	response, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now).
-			WithDeliveryTimeInterval(interval),
+			WithDeliveryTimeInterval(setting.DeliveryTimeInterval),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")

@@ -201,20 +201,13 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrSettingNotFound.Error()).
 			WriteResponse(c)
 	}
-	interval, err := time.ParseDuration(setting.DeliveryTimeInterval)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
 	now := time.Now().In(time.Local)
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now).
-			WithDeliveryTimeInterval(interval),
+			WithDeliveryTimeInterval(setting.DeliveryTimeInterval),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
