@@ -49,7 +49,12 @@ var (
 	dbWrite       *pgxpool.Pool
 	privateKey    *rsa.PrivateKey
 	snowflakeNode *snowflake.Node
-	InitHelper    = sync.OnceValue(func() (err error) {
+	bufferPool    = sync.Pool{
+		New: func() any {
+			return &bytes.Buffer{}
+		},
+	}
+	InitHelper = sync.OnceValue(func() (err error) {
 		location, ok := os.LookupEnv("TZ")
 		if !ok || location == "" {
 			return errors.New("env TZ is required")
@@ -280,9 +285,13 @@ func GetAccessTokenAge() time.Duration {
 }
 
 func Sprintf(format string, a ...any) string {
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, format, a...)
-	return sb.String()
+	buffer := bufferPool.Get().(*bytes.Buffer)
+	defer func() {
+		buffer.Reset()
+		bufferPool.Put(buffer)
+	}()
+	_, _ = fmt.Fprintf(buffer, format, a...)
+	return buffer.String()
 }
 
 func TruncateString(s string, maxLength int) string {
