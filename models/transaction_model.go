@@ -277,8 +277,8 @@ func (q *Transaction) Validate() error {
 		return errors.New("items: is required")
 	}
 	for i, item := range q.Items {
-		if item.ProductVariantID.Compare(uuid.Nil()) == 0 {
-			return fmt.Errorf("items[%d].product_variant_id: is required", i)
+		if item.CartItemID.Compare(uuid.Nil()) == 0 {
+			return fmt.Errorf("items[%d].cart_item_id: is required", i)
 		}
 		item.BuyerNote = strings.TrimSpace(item.BuyerNote)
 	}
