@@ -405,75 +405,76 @@ func (q *DeliveryPlan) UpdateDate(interval time.Duration) *DeliveryPlan {
 		t.Nanosecond(),
 		t.Location(),
 	)
-	if interval > 0 {
-		if q.SameDay && q.SameDayWindowMin != nil && q.SameDayWindowMax != nil {
-			sameDayWindowMin := *q.SameDayWindowMin
-			sameDayWindowMax := *q.SameDayWindowMax
-			for {
-				q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
-					DeliverySpeed: DeliverySpeedSameDay,
-					Datetime: time.Date(
-						now.Year(),
-						now.Month(),
-						now.Day(),
-						sameDayWindowMin.Hour(),
-						sameDayWindowMin.Minute(),
-						sameDayWindowMin.Second(),
-						sameDayWindowMin.Nanosecond(),
-						sameDayWindowMin.Location(),
-					),
-				})
-				if sameDayWindowMin.Equal(sameDayWindowMax) {
-					break
-				}
-				sameDayWindowMin = sameDayWindowMin.Add(interval)
+	if interval == 0 {
+		return q
+	}
+	if q.SameDay && q.SameDayWindowMin != nil && q.SameDayWindowMax != nil {
+		sameDayWindowMin := *q.SameDayWindowMin
+		sameDayWindowMax := *q.SameDayWindowMax
+		for {
+			q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
+				DeliverySpeed: DeliverySpeedSameDay,
+				Datetime: time.Date(
+					now.Year(),
+					now.Month(),
+					now.Day(),
+					sameDayWindowMin.Hour(),
+					sameDayWindowMin.Minute(),
+					sameDayWindowMin.Second(),
+					sameDayWindowMin.Nanosecond(),
+					sameDayWindowMin.Location(),
+				),
+			})
+			if sameDayWindowMin.Equal(sameDayWindowMax) {
+				break
 			}
+			sameDayWindowMin = sameDayWindowMin.Add(interval)
 		}
-		if q.NextDay && q.NextDayWindowMin != nil && q.NextDayWindowMax != nil {
-			nextDayWindowMin := *q.NextDayWindowMin
-			nextDayWindowMax := *q.NextDayWindowMax
-			for {
-				q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
-					DeliverySpeed: DeliverySpeedNextDay,
-					Datetime: time.Date(
-						now.Year(),
-						now.Month(),
-						now.Day(),
-						nextDayWindowMin.Hour(),
-						nextDayWindowMin.Minute(),
-						nextDayWindowMin.Second(),
-						nextDayWindowMin.Nanosecond(),
-						nextDayWindowMin.Location(),
-					),
-				})
-				if nextDayWindowMin.Equal(nextDayWindowMax) {
-					break
-				}
-				nextDayWindowMin = nextDayWindowMin.Add(interval)
+	}
+	if q.NextDay && q.NextDayWindowMin != nil && q.NextDayWindowMax != nil {
+		nextDayWindowMin := *q.NextDayWindowMin
+		nextDayWindowMax := *q.NextDayWindowMax
+		for {
+			q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
+				DeliverySpeed: DeliverySpeedNextDay,
+				Datetime: time.Date(
+					now.Year(),
+					now.Month(),
+					now.Day(),
+					nextDayWindowMin.Hour(),
+					nextDayWindowMin.Minute(),
+					nextDayWindowMin.Second(),
+					nextDayWindowMin.Nanosecond(),
+					nextDayWindowMin.Location(),
+				),
+			})
+			if nextDayWindowMin.Equal(nextDayWindowMax) {
+				break
 			}
+			nextDayWindowMin = nextDayWindowMin.Add(interval)
 		}
-		if q.NextTwoDay && q.NextTwoDayWindowMin != nil && q.NextTwoDayWindowMax != nil {
-			nextTwoDayWindowMin := *q.NextTwoDayWindowMin
-			nextTwoDayWindowMax := *q.NextTwoDayWindowMax
-			for {
-				q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
-					DeliverySpeed: DeliverySpeedNextTwoDay,
-					Datetime: time.Date(
-						now.Year(),
-						now.Month(),
-						now.Day(),
-						nextTwoDayWindowMin.Hour(),
-						nextTwoDayWindowMin.Minute(),
-						nextTwoDayWindowMin.Second(),
-						nextTwoDayWindowMin.Nanosecond(),
-						nextTwoDayWindowMin.Location(),
-					),
-				})
-				if nextTwoDayWindowMin.Equal(nextTwoDayWindowMax) {
-					break
-				}
-				nextTwoDayWindowMin = nextTwoDayWindowMin.Add(interval)
+	}
+	if q.NextTwoDay && q.NextTwoDayWindowMin != nil && q.NextTwoDayWindowMax != nil {
+		nextTwoDayWindowMin := *q.NextTwoDayWindowMin
+		nextTwoDayWindowMax := *q.NextTwoDayWindowMax
+		for {
+			q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
+				DeliverySpeed: DeliverySpeedNextTwoDay,
+				Datetime: time.Date(
+					now.Year(),
+					now.Month(),
+					now.Day(),
+					nextTwoDayWindowMin.Hour(),
+					nextTwoDayWindowMin.Minute(),
+					nextTwoDayWindowMin.Second(),
+					nextTwoDayWindowMin.Nanosecond(),
+					nextTwoDayWindowMin.Location(),
+				),
+			})
+			if nextTwoDayWindowMin.Equal(nextTwoDayWindowMax) {
+				break
 			}
+			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(interval)
 		}
 	}
 	return q
