@@ -113,7 +113,7 @@ func (q *settingRepository) FindSetting(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *settingRepository) UpdateSetting(
@@ -370,7 +370,7 @@ func (q *settingRepository) UpdateSetting(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *settingRepository) AddReferralPointsExpense(
@@ -449,5 +449,5 @@ func (q *settingRepository) AddReferralPointsExpense(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }

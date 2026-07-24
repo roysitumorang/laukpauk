@@ -398,7 +398,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *deliveryPlanRepository) UpdateDeliveryPlan(
@@ -535,7 +535,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilter, sb *strings.Builder) (condition string, params []any) {

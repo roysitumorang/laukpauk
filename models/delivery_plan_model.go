@@ -55,6 +55,7 @@ type (
 		TransactionWindowMax    time.Time          `json:"transaction_window_max" form:"-"`
 		RawTransactionWindowMax string             `json:"-" form:"transaction_window_max"`
 		DeliveryTimeInterval    time.Duration      `json:"-" form:"delivery_time_interval"`
+		RawDeliveryTimeInterval string             `json:"delivery_time_interval" form:"-"`
 		SameDay                 bool               `json:"same_day" form:"same_day"`
 		SameDayWindowMin        *time.Time         `json:"-" form:"-"`
 		RawSameDayWindowMin     string             `json:"-" form:"same_day_window_min"`
@@ -370,6 +371,7 @@ func (q *DeliveryPlan) New() bool {
 }
 
 func (q *DeliveryPlan) Populate() *DeliveryPlan {
+	q.RawDeliveryTimeInterval = q.DeliveryTimeInterval.String()
 	if q.SameDay && q.SameDayWindowMin != nil && q.SameDayWindowMax != nil {
 		sameDayWindowMin := *q.SameDayWindowMin
 		sameDayWindowMax := *q.SameDayWindowMax
