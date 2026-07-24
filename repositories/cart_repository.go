@@ -197,8 +197,7 @@ func (q *cartRepository) SaveCart(
 			, created_at
 			, updated_at
 		) VALUES ($1, $2, $3)
-		ON CONFLICT (buyer_id) DO UPDATE SET
-			buyer_id = $1
+		ON CONFLICT (buyer_id) DO SELECT
 		RETURNING id
 			, buyer_id
 			, deleted_buyer_id
@@ -235,21 +234,17 @@ func (q *cartRepository) UpdateCart(
 	} else if request.DeletedBuyerID != nil {
 		buyerID = *request.DeletedBuyerID
 	}
-	if err := tx.QueryRow(
+	err := tx.QueryRow(
 		ctx,
-		`UPDATE carts SET
-			buyer_id = $1
-			, deleted_buyer_id = $2
-			, updated_at = $3
-		WHERE id = $4 AND buyer_id = $5
-		RETURNING id
+		`SELECT
+			id
 			, buyer_id
 			, deleted_buyer_id
 			, created_at
-			, updated_at`,
-		request.BuyerID,
-		request.DeletedBuyerID,
-		request.UpdatedAt,
+			, updated_at
+		FROM carts
+		WHERE id = $1 AND buyer_id = $2
+		FOR UPDATE`,
 		request.ID,
 		buyerID,
 	).Scan(
@@ -258,12 +253,58 @@ func (q *cartRepository) UpdateCart(
 		&response.DeletedBuyerID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			err = models.ErrCartNotFound
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrCartNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	var (
+		params []any
+		sb     strings.Builder
+		n      int
+	)
+	_, _ = sb.WriteString("UPDATE carts SET")
+	if response.BuyerID != nil && request.BuyerID == nil {
+		params = append(params, request.BuyerID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
 		}
+		_, _ = fmt.Fprintf(&sb, " buyer_id = $%d", n)
+	}
+	if response.DeletedBuyerID == nil && request.DeletedBuyerID != nil {
+		params = append(params, request.DeletedBuyerID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " deleted_buyer_id = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	params = append(params, request.UpdatedAt, request.ID)
+	n = len(params)
+	_, _ = fmt.Fprintf(
+		&sb,
+		`, updated_at = $%d
+		WHERE id = $%d
+		RETURNING id
+			, buyer_id
+			, deleted_buyer_id
+			, created_at
+			, updated_at`,
+		n-1, n,
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.BuyerID,
+		&response.DeletedBuyerID,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return &response, nil
