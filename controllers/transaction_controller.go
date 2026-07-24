@@ -246,14 +246,9 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 		for i, item := range request.Items {
 			productVariant, ok := mapProductVariants[item.ProductVariantID]
-			if !ok {
+			if !ok || !productVariant.ProductReadyStock {
 				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(helper.Sprintf("items[%d].product_variant_id: not found", i)).
-					WriteResponse(c)
-			}
-			if !productVariant.ProductReadyStock {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(helper.Sprintf("items[%d].product_variant_id: out of stock", i)).
+					SetMessage(helper.Sprintf("items[%d].product_variant_id: not found or out of stock", i)).
 					WriteResponse(c)
 			}
 			item.ProductID = productVariant.ProductID
