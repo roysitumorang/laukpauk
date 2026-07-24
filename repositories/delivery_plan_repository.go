@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgerrcode"
@@ -204,7 +203,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
-			, delivery_day_interval
+			, delivery_time_interval
 			, same_day
 			, lower(same_day_window)
 			, upper(same_day_window)
@@ -287,7 +286,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, name
 			, weekday
 			, transaction_window
-			, delivery_day_interval
+			, delivery_time_interval
 			, same_day
 			, same_day_window
 			, next_day
@@ -321,7 +320,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
-			, delivery_day_interval
+			, delivery_time_interval
 			, same_day
 			, lower(same_day_window)
 			, upper(same_day_window)
@@ -438,7 +437,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, name = $2
 			, weekday = $3
 			, transaction_window = tstzrange($4, $5, '[]')
-			, delivery_day_interval = $6
+			, delivery_time_interval = $6
 			, same_day = $7
 			, same_day_window = tstzrange($8, $9%s)
 			, next_day = $10
@@ -457,7 +456,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
-			, delivery_day_interval
+			, delivery_time_interval
 			, same_day
 			, lower(same_day_window)
 			, upper(same_day_window)
@@ -600,40 +599,9 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		conds = append(conds, sb.String())
 	}
 	if !request.TransactionDatetime.IsZero() {
-		t := time.Date(
-			2000,
-			1,
-			1,
-			request.TransactionDatetime.Hour(),
-			request.TransactionDatetime.Minute(),
-			request.TransactionDatetime.Second(),
-			request.TransactionDatetime.Nanosecond(),
-			request.TransactionDatetime.Location(),
-		)
-		u := time.Date(
-			request.TransactionDatetime.Year(),
-			request.TransactionDatetime.Month(),
-			request.TransactionDatetime.Day(),
-			0,
-			0,
-			0,
-			0,
-			request.TransactionDatetime.Location(),
-		)
-		params = append(params, t, u, models.RecordStatusActive)
-		n := len(params)
+		params = append(params, request.TransactionDatetime)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`(transaction_window @> $%d::timestamptz AND NOT EXISTS(
-				SELECT 1
-				FROM skipped_delivery_plans
-				WHERE skipped_delivery_plans.delivery_plan_id = delivery_plans.id
-					AND skipped_delivery_plans.date = $%d
-					AND skipped_delivery_plans.record_status = $%d
-			))`,
-			n-2, n-1, n,
-		)
+		_, _ = fmt.Fprintf(sb, "transaction_window @> $%d::timestamptz", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.TransactionWindow != nil {
