@@ -1582,6 +1582,123 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// payment_channels
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE payment_channels (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, name character varying NOT NULL
+				, channel_code character varying NOT NULL UNIQUE
+				, country character varying NOT NULL
+				, currency character varying NOT NULL
+				, minimum_amount bigint NOT NULL
+				, maximum_amount bigint NOT NULL
+				, payment_request_expiry real NOT NULL
+				, refund boolean NOT NULL
+				, "type" character varying NOT NULL
+				, created_at timestamp with time zone NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			"CREATE INDEX ON payment_channels (LOWER(name));",
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		params := [][]any{
+			{
+				"BCA Virtual Account",
+				"BCA_VIRTUAL_ACCOUNT",
+				"ID",
+				"IDR",
+				10_000,
+				50_000_000_000,
+				48,
+				false,
+				"BANK TRANSFER",
+				now,
+			}, {
+				"BNI Virtual Account",
+				"BNI_VIRTUAL_ACCOUNT",
+				"ID",
+				"IDR",
+				1,
+				50_000_000_000,
+				48,
+				false,
+				"BANK TRANSFER",
+				now,
+			}, {
+				"BRI Virtual Account",
+				"BRI_VIRTUAL_ACCOUNT",
+				"ID",
+				"IDR",
+				1,
+				50_000_000_000,
+				48,
+				false,
+				"BANK TRANSFER",
+				now,
+			}, {
+				"Cards",
+				"CARDS",
+				"ID",
+				"IDR",
+				5_000,
+				200_000_000,
+				0.166,
+				true,
+				"CARDS",
+				now,
+			}, {
+				"Mandiri Virtual Account",
+				"MANDIRI_VIRTUAL_ACCOUNT",
+				"ID",
+				"IDR",
+				1,
+				50_000_000_000,
+				48,
+				false,
+				"BANK TRANSFER",
+				now,
+			}, {
+				"QRIS",
+				"QRIS",
+				"ID",
+				"IDR",
+				1,
+				10_000_000,
+				48,
+				false,
+				"QR CODE",
+				now,
+			},
+		}
+		for i := range params {
+			if _, err = tx.Exec(
+				ctx,
+				`INSERT INTO payment_channels (
+					name
+					, channel_code
+					, country
+					, currency
+					, minimum_amount
+					, maximum_amount
+					, payment_request_expiry
+					, refund
+					, "type"
+					, created_at
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
+				params[i]...,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+		}
 		// transactions
 		if _, err = tx.Exec(
 			ctx,
