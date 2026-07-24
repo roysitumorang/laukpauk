@@ -27,7 +27,7 @@ type (
 	}
 
 	CartFilter struct {
-		CartIDs       []uuid.UUID
+		BuyerIDs      []uuid.UUID
 		PaginationURL string
 		Sortings      []Sorting
 		MapSortings   Map
@@ -44,8 +44,8 @@ func NewCartFilter() *CartFilter {
 	}
 }
 
-func (q *CartFilter) WithCartIDs(cartIDs ...uuid.UUID) *CartFilter {
-	q.CartIDs = cartIDs
+func (q *CartFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *CartFilter {
+	q.BuyerIDs = buyerIDs
 	return q
 }
 

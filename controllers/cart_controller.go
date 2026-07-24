@@ -58,7 +58,7 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	response, err := q.cartService.FindCart(
 		ctx,
 		models.NewCartFilter().
-			WithCartIDs(currentBuyer.ID),
+			WithBuyerIDs(currentBuyer.ID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
@@ -130,7 +130,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 	response, err := q.cartService.FindCart(
 		ctx,
 		models.NewCartFilter().
-			WithCartIDs(currentBuyer.ID),
+			WithBuyerIDs(currentBuyer.ID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
@@ -153,7 +153,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	now := time.Now()
+	now := time.Now().In(time.Local)
 	if response == nil {
 		if response, err = q.cartService.SaveCart(
 			ctx,
@@ -224,7 +224,7 @@ func (q *cartController) V1BuyerDelete(c fiber.Ctx) (err error) {
 	cart, err := q.cartService.FindCart(
 		ctx,
 		models.NewCartFilter().
-			WithCartIDs(currentBuyer.ID),
+			WithBuyerIDs(currentBuyer.ID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")

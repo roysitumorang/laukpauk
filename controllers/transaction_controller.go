@@ -138,7 +138,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	cart, err := q.cartService.FindCart(
 		ctx,
 		models.NewCartFilter().
-			WithCartIDs(currentBuyer.ID),
+			WithBuyerIDs(currentBuyer.ID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")

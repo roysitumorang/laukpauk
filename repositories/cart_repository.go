@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
@@ -226,15 +225,7 @@ func (q *cartRepository) UpdateCart(
 	request *models.Cart,
 ) (*models.Cart, error) {
 	ctxt := "CartRepository-UpdateCart"
-	var (
-		response models.Cart
-		buyerID  uuid.UUID
-	)
-	if request.BuyerID != nil {
-		buyerID = *request.BuyerID
-	} else if request.DeletedBuyerID != nil {
-		buyerID = *request.DeletedBuyerID
-	}
+	var response models.Cart
 	err := tx.QueryRow(
 		ctx,
 		`SELECT
@@ -244,10 +235,9 @@ func (q *cartRepository) UpdateCart(
 			, created_at
 			, updated_at
 		FROM carts
-		WHERE id = $1 AND buyer_id = $2
+		WHERE id = $1
 		FOR UPDATE`,
 		request.ID,
-		buyerID,
 	).Scan(
 		&response.ID,
 		&response.BuyerID,
@@ -313,25 +303,17 @@ func (q *cartRepository) UpdateCart(
 
 func (q *cartRepository) buildCondition(request *models.CartFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.CartIDs) > 0 {
+	if len(request.BuyerIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("(id IN (")
-		j := len(params)
-		for i, cartID := range request.CartIDs {
-			params = append(params, cartID)
+		_, _ = sb.WriteString("buyer_id IN (")
+		for i, buyerID := range request.BuyerIDs {
+			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
 			_, _ = fmt.Fprintf(sb, "$%d", len(params))
 		}
-		_, _ = sb.WriteString(") OR buyer_id IN (")
-		for i := range request.CartIDs {
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", j+1)
-		}
-		_, _ = sb.WriteString("))")
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
