@@ -113,9 +113,6 @@ func (q *transactionRepository) FindTransactions(
 		, delivery_distance_km
 		, delivery_address
 		, delivery_instruction
-		, delivery_time_id
-		, delivery_plan_id
-		, delivery_speed
 		, delivery_datetime
 		, created_at
 		, updated_at
@@ -245,9 +242,6 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DeliveryDistanceKM,
 			&transaction.DeliveryAddress,
 			&transaction.DeliveryInstruction,
-			&transaction.DeliveryTimeID,
-			&transaction.DeliveryPlanID,
-			&transaction.DeliverySpeed,
 			&transaction.DeliveryDatetime,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
@@ -369,9 +363,6 @@ func (q *transactionRepository) FindTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
-			, delivery_time_id
-			, delivery_plan_id
-			, delivery_speed
 			, delivery_datetime
 			, created_at
 			, updated_at
@@ -433,9 +424,6 @@ func (q *transactionRepository) FindTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
-		&response.DeliveryTimeID,
-		&response.DeliveryPlanID,
-		&response.DeliverySpeed,
 		&response.DeliveryDatetime,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -565,9 +553,6 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
-			, delivery_time_id
-			, delivery_plan_id
-			, delivery_speed
 			, delivery_datetime
 			, created_at
 			, updated_at
@@ -576,8 +561,7 @@ func (q *transactionRepository) CreateTransaction(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41
+			, $31, $32, $33, $34, $35, $36, $37, $38
 		)
 		RETURNING id
 			, parent_id
@@ -614,9 +598,6 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
-			, delivery_time_id
-			, delivery_plan_id
-			, delivery_speed
 			, delivery_datetime
 			, created_at
 			, updated_at
@@ -671,9 +652,6 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryDistanceKM,
 		request.DeliveryAddress,
 		request.DeliveryInstruction,
-		request.DeliveryTimeID,
-		request.DeliveryPlanID,
-		request.DeliverySpeed,
 		request.DeliveryDatetime,
 		request.CreatedAt,
 		request.UpdatedAt,
@@ -714,9 +692,6 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
-		&response.DeliveryTimeID,
-		&response.DeliveryPlanID,
-		&response.DeliverySpeed,
 		&response.DeliveryDatetime,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -938,9 +913,6 @@ func (q *transactionRepository) UpdateTransaction(
 			, delivery_distance_km
 			, delivery_address
 			, delivery_instruction
-			, delivery_time_id
-			, delivery_plan_id
-			, delivery_speed
 			, delivery_datetime
 			, created_at
 			, updated_at
@@ -1017,9 +989,6 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
-		&response.DeliveryTimeID,
-		&response.DeliveryPlanID,
-		&response.DeliverySpeed,
 		&response.DeliveryDatetime,
 		&response.CreatedAt,
 		&response.UpdatedAt,

@@ -1598,9 +1598,6 @@ func init() {
 				, delivery_distance_km bigint NOT NULL
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
-				, delivery_time_id UUID NOT NULL REFERENCES delivery_times (id)
-				, delivery_plan_id UUID NOT NULL REFERENCES delivery_plans (id)
-				, delivery_speed integer NOT NULL
 				, delivery_datetime timestamp with time zone NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
@@ -1684,14 +1681,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions (delivery_time_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transactions (delivery_plan_id);`,
+			`CREATE INDEX ON transactions (created_at);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
