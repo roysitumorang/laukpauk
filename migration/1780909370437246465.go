@@ -939,6 +939,7 @@ func init() {
 				, name character varying COLLATE "natural_sort"
 				, weekday bigint NOT NULL
 				, transaction_window TSTZRANGE NOT NULL
+				, delivery_time_interval interval NOT NULL
 				, same_day BOOLEAN NOT NULL
 				, same_day_window TSTZRANGE NOT NULL
 				, next_day BOOLEAN NOT NULL

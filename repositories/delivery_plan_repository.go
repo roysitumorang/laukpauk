@@ -83,6 +83,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		, weekday
 		, lower(transaction_window)
 		, upper(transaction_window)
+		, delivery_time_interval
 		, same_day
 		, lower(same_day_window)
 		, upper(same_day_window)
@@ -154,6 +155,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 			&deliveryPlan.Weekday,
 			&deliveryPlan.TransactionWindowMin,
 			&deliveryPlan.TransactionWindowMax,
+			&deliveryPlan.DeliveryTimeInterval,
 			&deliveryPlan.SameDay,
 			&deliveryPlan.SameDayWindowMin,
 			&deliveryPlan.SameDayWindowMax,
@@ -176,7 +178,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		}
 		offset++
 		deliveryPlan.RowNo = offset
-		response = append(response, (&deliveryPlan).UpdateDate(request.DeliveryTimeInterval))
+		response = append(response, (&deliveryPlan).Populate())
 	}
 	if err = rows.Err(); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
@@ -202,6 +204,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
+			, delivery_day_interval
 			, same_day
 			, lower(same_day_window)
 			, upper(same_day_window)
@@ -229,6 +232,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		&response.Weekday,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
+		&response.DeliveryTimeInterval,
 		&response.SameDay,
 		&response.SameDayWindowMin,
 		&response.SameDayWindowMax,
@@ -253,7 +257,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return (&response).UpdateDate(request.DeliveryTimeInterval), nil
+	return (&response).Populate(), nil
 }
 
 func (q *deliveryPlanRepository) CreateDeliveryPlan(
@@ -283,6 +287,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, name
 			, weekday
 			, transaction_window
+			, delivery_day_interval
 			, same_day
 			, same_day_window
 			, next_day
@@ -299,15 +304,16 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, $3
 			, tstzrange($4, $5, '[]')
 			, $6
-			, tstzrange($7, $8%s)
-			, $9
-			, tstzrange($10, $11%s)
-			, $12
-			, tstzrange($13, $14%s)
-			, $15
+			, $7
+			, tstzrange($8, $9%s)
+			, $10
+			, tstzrange($11, $12%s)
+			, $13
+			, tstzrange($14, $15%s)
 			, $16
 			, $17
 			, $18
+			, $19
 		)
 		RETURNING id
 			, record_status
@@ -315,6 +321,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
+			, delivery_day_interval
 			, same_day
 			, lower(same_day_window)
 			, upper(same_day_window)
@@ -343,6 +350,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		request.Weekday,
 		request.TransactionWindowMin,
 		request.TransactionWindowMax,
+		request.DeliveryTimeInterval,
 		request.SameDay,
 		request.SameDayWindowMin,
 		request.SameDayWindowMax,
@@ -363,6 +371,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		&response.Weekday,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
+		&response.DeliveryTimeInterval,
 		&response.SameDay,
 		&response.SameDayWindowMin,
 		&response.SameDayWindowMax,
@@ -429,24 +438,26 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, name = $2
 			, weekday = $3
 			, transaction_window = tstzrange($4, $5, '[]')
-			, same_day = $6
-			, same_day_window = tstzrange($7, $8%s)
-			, next_day = $9
-			, next_day_window = tstzrange($10, $11%s)
-			, next_two_day = $12
-			, next_two_day_window = tstzrange($13, $14%s)
-			, updated_by = $15
-			, updated_at = $16
-			, deleted_by = $17
-			, deleted_at = $18
-			, deletion_reason = $19
-		WHERE id = $20
+			, delivery_day_interval = $6
+			, same_day = $7
+			, same_day_window = tstzrange($8, $9%s)
+			, next_day = $10
+			, next_day_window = tstzrange($11, $12%s)
+			, next_two_day = $13
+			, next_two_day_window = tstzrange($14, $15%s)
+			, updated_by = $16
+			, updated_at = $17
+			, deleted_by = $18
+			, deleted_at = $19
+			, deletion_reason = $20
+		WHERE id = $21
 		RETURNING id
 			, record_status
 			, name
 			, weekday
 			, lower(transaction_window)
 			, upper(transaction_window)
+			, delivery_day_interval
 			, same_day
 			, lower(same_day_window)
 			, upper(same_day_window)
@@ -475,6 +486,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		request.Weekday,
 		request.TransactionWindowMin,
 		request.TransactionWindowMax,
+		request.DeliveryTimeInterval,
 		request.SameDay,
 		request.SameDayWindowMin,
 		request.SameDayWindowMax,
@@ -497,6 +509,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		&response.Weekday,
 		&response.TransactionWindowMin,
 		&response.TransactionWindowMax,
+		&response.DeliveryTimeInterval,
 		&response.SameDay,
 		&response.SameDayWindowMin,
 		&response.SameDayWindowMax,

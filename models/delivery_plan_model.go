@@ -52,43 +52,40 @@ type (
 	DeliveryWeekday int
 
 	DeliveryPlan struct {
-		RowNo                   int64               `json:"-" form:"-"`
-		ID                      uuid.UUID           `json:"id" form:"-"`
-		RecordStatus            RecordStatus        `json:"-" form:"-"`
-		Name                    string              `json:"name" form:"name"`
-		Weekday                 DeliveryWeekday     `json:"weekday" form:"weekday"`
-		TransactionWindowMin    time.Time           `json:"transaction_window_min" form:"-"`
-		RawTransactionWindowMin string              `json:"-" form:"transaction_window_min"`
-		TransactionWindowMax    time.Time           `json:"transaction_window_max" form:"-"`
-		RawTransactionWindowMax string              `json:"-" form:"transaction_window_max"`
-		SameDay                 bool                `json:"same_day" form:"same_day"`
-		SameDayWindowMin        *time.Time          `json:"-" form:"-"`
-		RawSameDayWindowMin     string              `json:"-" form:"same_day_window_min"`
-		SameDayWindowMax        *time.Time          `json:"-" form:"-"`
-		RawSameDayWindowMax     string              `json:"-" form:"same_day_window_max"`
-		NextDay                 bool                `json:"next_day" form:"next_day"`
-		NextDayWindowMin        *time.Time          `json:"-" form:"-"`
-		RawNextDayWindowMin     string              `json:"-" form:"next_day_window_min"`
-		NextDayWindowMax        *time.Time          `json:"-" form:"-"`
-		RawNextDayWindowMax     string              `json:"-" form:"next_day_window_max"`
-		NextTwoDay              bool                `json:"next_two_day" form:"next_two_day"`
-		NextTwoDayWindowMin     *time.Time          `json:"-" form:"-"`
-		RawNextTwoDayWindowMin  string              `json:"-" form:"next_two_day_window_min"`
-		NextTwoDayWindowMax     *time.Time          `json:"-" form:"-"`
-		RawNextTwoDayWindowMax  string              `json:"-" form:"next_two_day_window_max"`
-		DeliveryTimes           []*DeliveryPlanTime `json:"delivery_times" form:"-"`
-		CreatedBy               uuid.UUID           `json:"-" form:"-"`
-		CreatedAt               time.Time           `json:"-" form:"-"`
-		UpdatedBy               uuid.UUID           `json:"-" form:"-"`
-		UpdatedAt               time.Time           `json:"-" form:"-"`
-		DeletedBy               *uuid.UUID          `json:"-" form:"-"`
-		DeletedAt               *time.Time          `json:"-" form:"-"`
-		DeletionReason          *string             `json:"-" form:"-"`
-	}
-
-	DeliveryPlanTime struct {
-		DeliverySpeed DeliverySpeed `json:"-" form:"-"`
-		Datetime      time.Time     `json:"datetime" form:"-"`
+		RowNo                   int64              `json:"-" form:"-"`
+		ID                      uuid.UUID          `json:"id" form:"-"`
+		RecordStatus            RecordStatus       `json:"-" form:"-"`
+		Name                    string             `json:"name" form:"name"`
+		Weekday                 DeliveryWeekday    `json:"weekday" form:"weekday"`
+		TransactionWindowMin    time.Time          `json:"transaction_window_min" form:"-"`
+		RawTransactionWindowMin string             `json:"-" form:"transaction_window_min"`
+		TransactionWindowMax    time.Time          `json:"transaction_window_max" form:"-"`
+		RawTransactionWindowMax string             `json:"-" form:"transaction_window_max"`
+		DeliveryTimeInterval    time.Duration      `json:"-" form:"delivery_time_interval"`
+		SameDay                 bool               `json:"same_day" form:"same_day"`
+		SameDayWindowMin        *time.Time         `json:"-" form:"-"`
+		RawSameDayWindowMin     string             `json:"-" form:"same_day_window_min"`
+		SameDayWindowMax        *time.Time         `json:"-" form:"-"`
+		RawSameDayWindowMax     string             `json:"-" form:"same_day_window_max"`
+		NextDay                 bool               `json:"next_day" form:"next_day"`
+		NextDayWindowMin        *time.Time         `json:"-" form:"-"`
+		RawNextDayWindowMin     string             `json:"-" form:"next_day_window_min"`
+		NextDayWindowMax        *time.Time         `json:"-" form:"-"`
+		RawNextDayWindowMax     string             `json:"-" form:"next_day_window_max"`
+		NextTwoDay              bool               `json:"next_two_day" form:"next_two_day"`
+		NextTwoDayWindowMin     *time.Time         `json:"-" form:"-"`
+		RawNextTwoDayWindowMin  string             `json:"-" form:"next_two_day_window_min"`
+		NextTwoDayWindowMax     *time.Time         `json:"-" form:"-"`
+		RawNextTwoDayWindowMax  string             `json:"-" form:"next_two_day_window_max"`
+		DeliveryTimes           []time.Time        `json:"delivery_times" form:"-"`
+		MapDeliveryTimes        map[int64]struct{} `json:"-" form:"-"`
+		CreatedBy               uuid.UUID          `json:"-" form:"-"`
+		CreatedAt               time.Time          `json:"-" form:"-"`
+		UpdatedBy               uuid.UUID          `json:"-" form:"-"`
+		UpdatedAt               time.Time          `json:"-" form:"-"`
+		DeletedBy               *uuid.UUID         `json:"-" form:"-"`
+		DeletedAt               *time.Time         `json:"-" form:"-"`
+		DeletionReason          *string            `json:"-" form:"-"`
 	}
 
 	DeliveryPlanFilter struct {
@@ -381,101 +378,43 @@ func (q *DeliveryPlan) New() bool {
 	return q.ID.Compare(uuid.Nil()) == 0
 }
 
-func (q *DeliveryPlan) UpdateDate(interval time.Duration) *DeliveryPlan {
-	now := time.Now().In(time.Local)
-	t := q.TransactionWindowMin.In(now.Location())
-	q.TransactionWindowMin = time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(),
-		t.Nanosecond(),
-		t.Location(),
-	)
-	t = q.TransactionWindowMax.In(now.Location())
-	q.TransactionWindowMax = time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(),
-		t.Nanosecond(),
-		t.Location(),
-	)
-	if interval == 0 {
-		return q
-	}
+func (q *DeliveryPlan) Populate() *DeliveryPlan {
 	if q.SameDay && q.SameDayWindowMin != nil && q.SameDayWindowMax != nil {
 		sameDayWindowMin := *q.SameDayWindowMin
 		sameDayWindowMax := *q.SameDayWindowMax
 		for {
-			q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
-				DeliverySpeed: DeliverySpeedSameDay,
-				Datetime: time.Date(
-					now.Year(),
-					now.Month(),
-					now.Day(),
-					sameDayWindowMin.Hour(),
-					sameDayWindowMin.Minute(),
-					sameDayWindowMin.Second(),
-					sameDayWindowMin.Nanosecond(),
-					sameDayWindowMin.Location(),
-				),
-			})
-			if sameDayWindowMin.Equal(sameDayWindowMax) {
+			if sameDayWindowMin.After(sameDayWindowMax) {
 				break
 			}
-			sameDayWindowMin = sameDayWindowMin.Add(interval)
+			q.DeliveryTimes = append(q.DeliveryTimes, sameDayWindowMin)
+			sameDayWindowMin = sameDayWindowMin.Add(q.DeliveryTimeInterval)
 		}
 	}
 	if q.NextDay && q.NextDayWindowMin != nil && q.NextDayWindowMax != nil {
 		nextDayWindowMin := *q.NextDayWindowMin
 		nextDayWindowMax := *q.NextDayWindowMax
 		for {
-			q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
-				DeliverySpeed: DeliverySpeedNextDay,
-				Datetime: time.Date(
-					now.Year(),
-					now.Month(),
-					now.Day(),
-					nextDayWindowMin.Hour(),
-					nextDayWindowMin.Minute(),
-					nextDayWindowMin.Second(),
-					nextDayWindowMin.Nanosecond(),
-					nextDayWindowMin.Location(),
-				),
-			})
-			if nextDayWindowMin.Equal(nextDayWindowMax) {
+			if nextDayWindowMin.After(nextDayWindowMax) {
 				break
 			}
-			nextDayWindowMin = nextDayWindowMin.Add(interval)
+			q.DeliveryTimes = append(q.DeliveryTimes, nextDayWindowMin)
+			nextDayWindowMin = nextDayWindowMin.Add(q.DeliveryTimeInterval)
 		}
 	}
 	if q.NextTwoDay && q.NextTwoDayWindowMin != nil && q.NextTwoDayWindowMax != nil {
 		nextTwoDayWindowMin := *q.NextTwoDayWindowMin
 		nextTwoDayWindowMax := *q.NextTwoDayWindowMax
 		for {
-			q.DeliveryTimes = append(q.DeliveryTimes, &DeliveryPlanTime{
-				DeliverySpeed: DeliverySpeedNextTwoDay,
-				Datetime: time.Date(
-					now.Year(),
-					now.Month(),
-					now.Day(),
-					nextTwoDayWindowMin.Hour(),
-					nextTwoDayWindowMin.Minute(),
-					nextTwoDayWindowMin.Second(),
-					nextTwoDayWindowMin.Nanosecond(),
-					nextTwoDayWindowMin.Location(),
-				),
-			})
-			if nextTwoDayWindowMin.Equal(nextTwoDayWindowMax) {
+			if nextTwoDayWindowMin.After(nextTwoDayWindowMax) {
 				break
 			}
-			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(interval)
+			q.DeliveryTimes = append(q.DeliveryTimes, nextTwoDayWindowMin)
+			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(q.DeliveryTimeInterval)
 		}
+	}
+	q.MapDeliveryTimes = make(map[int64]struct{}, len(q.DeliveryTimes))
+	for i := range q.DeliveryTimes {
+		q.MapDeliveryTimes[q.DeliveryTimes[i].UnixNano()] = struct{}{}
 	}
 	return q
 }

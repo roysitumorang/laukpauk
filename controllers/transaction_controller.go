@@ -220,13 +220,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
 			WriteResponse(c)
 	}
-	var validDeliveryTime bool
-	for _, deliveryTime := range deliveryPlan.DeliveryTimes {
-		if validDeliveryTime = request.DeliveryDatetime.Equal(deliveryTime.Datetime); validDeliveryTime {
-			break
-		}
-	}
-	if !validDeliveryTime {
+	if _, ok := deliveryPlan.MapDeliveryTimes[request.DeliveryDatetime.UnixNano()]; !ok {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("delivery_time: not found").
 			WriteResponse(c)
