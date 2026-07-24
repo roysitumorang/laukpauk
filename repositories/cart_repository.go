@@ -197,7 +197,8 @@ func (q *cartRepository) SaveCart(
 			, created_at
 			, updated_at
 		) VALUES ($1, $2, $3)
-		ON CONFLICT (buyer_id) DO SELECT
+		ON CONFLICT (buyer_id) DO UPDATE SET
+			buyer_id = EXCLUDED.buyer_id
 		RETURNING id
 			, buyer_id
 			, deleted_buyer_id
