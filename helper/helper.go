@@ -38,7 +38,6 @@ const (
 )
 
 var (
-	timezone *time.Location
 	env,
 	jwtIssuer string
 	kafkaBrokers           []string
@@ -59,7 +58,8 @@ var (
 		if !ok || location == "" {
 			return errors.New("env TZ is required")
 		}
-		if timezone, err = time.LoadLocation(location); err != nil {
+		timezone, err := time.LoadLocation(location)
+		if err != nil {
 			return
 		}
 		time.Local = timezone
