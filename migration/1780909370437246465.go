@@ -775,7 +775,7 @@ func init() {
 				, delivery_cost_per_km bigint NOT NULL
 				, delivery_max_distance_km bigint NOT NULL
 				, whatsapp_phone_number character varying NOT NULL
-				, payment_terms character varying NOT NULL
+				, payment_terms interval NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -814,7 +814,7 @@ func init() {
 			DeliveryCostPerKM:                    3_000,
 			DeliveryMaxDistanceKM:                15,
 			WhatsappPhoneNumber:                  "628116099887",
-			PaymentTerms:                         "24h",
+			PaymentTerms:                         24 * time.Hour,
 		}
 		now := time.Now().In(time.Local)
 		if _, err = tx.Exec(

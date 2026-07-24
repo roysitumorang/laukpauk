@@ -31,7 +31,7 @@ type (
 		DeliveryCostPerKM                    int64           `json:"delivery_cost_per_km" form:"delivery_cost_per_km"`
 		DeliveryMaxDistanceKM                int64           `json:"delivery_max_distance_km" form:"delivery_max_distance_km"`
 		WhatsappPhoneNumber                  string          `json:"whatsapp_phone_number" form:"whatsapp_phone_number"`
-		PaymentTerms                         string          `json:"payment_terms" form:"payment_terms"`
+		PaymentTerms                         time.Duration   `json:"payment_terms" form:"payment_terms"`
 		CreatedBy                            uuid.UUID       `json:"-" form:"-"`
 		CreatedAt                            time.Time       `json:"-" form:"-"`
 		UpdatedBy                            uuid.UUID       `json:"-" form:"-"`
@@ -56,6 +56,9 @@ func (q *Setting) Validate() error {
 	} else {
 		q.VacationStartDate = nil
 		q.VacationEndDate = nil
+	}
+	if q.PaymentTerms == 0 {
+		return errors.New("payment_terms: is required")
 	}
 	return nil
 }

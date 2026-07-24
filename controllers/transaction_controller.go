@@ -408,13 +408,6 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.CalculateDiscount()
-	paymentTerms, err := time.ParseDuration(setting.PaymentTerms)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
 	sb.Reset()
 	_, _ = fmt.Fprintf(&sb, "%s%03d", now.Format("06"), now.YearDay())
 	counter, err := q.transactionCounterService.SaveTransactionCounter(
@@ -441,7 +434,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	)
 	request.BuyerID = currentBuyer.ID
 	request.ReferenceNumber = sb.String()
-	request.PaymentDueDate = now.Add(paymentTerms)
+	request.PaymentDueDate = now.Add(setting.PaymentTerms)
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
