@@ -328,7 +328,6 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 	if deliveryPlan == nil {
 		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
 	}
-	request := deliveryPlan
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -336,7 +335,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Edit Data Jadwal Delivery",
-		"request", request,
+		"request", deliveryPlan,
 		"deliveryPlan", deliveryPlan,
 		"deliveryWeekdays", models.DeliveryWeekdays,
 	)

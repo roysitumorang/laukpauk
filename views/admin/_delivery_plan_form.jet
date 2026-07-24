@@ -24,105 +24,91 @@
 		</div>
 	</div>
 	<div class="row">
-		<div class="col-6">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="transaction_window_min" class="label-title">Batas Awal Jam Transaksi</label>
-				<input type="time" name="transaction_window_min" value="{{ request.TransactionWindowMin.Format("15:04:05") }}" id="transaction_window_min"
+				<input type="time" name="transaction_window_min" value="{{ request.RawTransactionWindowMin }}" id="transaction_window_min"
 					class="form-control time-picker" step="1" required />
 			</div>
 		</div>
-		<div class="col-6">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="transaction_window_max" class="label-title">Batas Akhir Jam Transaksi</label>
-				<input type="time" name="transaction_window_max" value="{{ request.TransactionWindowMax.Format("15:04:05") }}" id="transaction_window_max"
+				<input type="time" name="transaction_window_max" value="{{ request.RawTransactionWindowMax }}" id="transaction_window_max"
 					class="form-control time-picker" step="1" required />
+			</div>
+		</div>
+		<div class="col-4">
+			<div class="form-group">
+				<label for="delivery_time_interval" class="label-title">Interval Jam Pengantaran</label>
+				<input type="text" name="delivery_time_interval" value="{{ request.RawDeliveryTimeInterval }}" id="delivery_time_interval"
+					class="form-control" placeholder="1h" required />
 			</div>
 		</div>
 	</div>
 	<div class="row">
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="same_day" class="label-title">Same Day</label>
 				<input type="checkbox" name="same_day" value="1" id="same_day"{{ if request.SameDay}} checked{{ end }} />
 			</div>
 		</div>
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="same_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
-				<input type="time" name="same_day_window_min" value="{{ if request.SameDayWindowMin }}{{ request.SameDayWindowMin.Format("15:04:05") }}{{ end }}" id="same_day_window_min"
+				<input type="time" name="same_day_window_min" value="{{ request.RawSameDayWindowMin }}" id="same_day_window_min"
 					class="form-control time-picker" step="1" required{{ if !request.SameDay }} disabled{{ end }} />
 			</div>
 		</div>
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="same_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
-				<input type="time" name="same_day_window_max" value="{{ if request.SameDayWindowMax }}{{ request.SameDayWindowMax.Format("15:04:05") }}{{ end }}" id="same_day_window_max"
+				<input type="time" name="same_day_window_max" value="{{ request.RawSameDayWindowMax }}" id="same_day_window_max"
 					class="form-control time-picker" step="1" required{{ if !request.SameDay }} disabled{{ end }} />
-			</div>
-		</div>
-		<div class="col-3">
-			<div class="form-group">
-				<label for="same_day_interval" class="label-title">Interval Jam Pengantaran</label>
-				<input type="text" name="same_day_interval" value="{{ if request.RawSameDayInterval }}{{ request.RawSameDayInterval }}{{ end }}" id="same_day_interval"
-					class="form-control" placeholder="1h" required{{ if !request.SameDay }} disabled{{ end }} />
 			</div>
 		</div>
 	</div>
 	<div class="row">
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="next_day" class="label-title">Next Day</label>
 				<input type="checkbox" name="next_day" value="1" id="next_day"{{ if request.NextDay}} checked{{ end }} />
 			</div>
 		</div>
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="next_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
-				<input type="time" name="next_day_window_min" value="{{ if request.NextDayWindowMin }}{{ request.NextDayWindowMin.Format("15:04:05") }}{{ end }}" id="next_day_window_min"
+				<input type="time" name="next_day_window_min" value="{{ request.RawNextDayWindowMin }}" id="next_day_window_min"
 					class="form-control time-picker" step="1" required{{ if !request.NextDay }} disabled{{ end }} />
 			</div>
 		</div>
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="next_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
-				<input type="time" name="next_day_window_max" value="{{ if request.NextDayWindowMax }}{{ request.NextDayWindowMax.Format("15:04:05") }}{{ end }}" id="next_day_window_max"
+				<input type="time" name="next_day_window_max" value="{{ request.RawNextDayWindowMax }}" id="next_day_window_max"
 					class="form-control time-picker" step="1" required{{ if !request.NextDay }} disabled{{ end }} />
-			</div>
-		</div>
-		<div class="col-3">
-			<div class="form-group">
-				<label for="next_day_interval" class="label-title">Interval Jam Pengantaran</label>
-				<input type="text" name="next_day_interval" value="{{ if request.RawNextDayInterval }}{{ request.RawNextDayInterval }}{{ end }}" id="next_day_interval"
-					class="form-control" placeholder="1h" required{{ if !request.NextDay }} disabled{{ end }} />
 			</div>
 		</div>
 	</div>
 	<div class="row">
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="next_two_day" class="label-title">Next Two Day</label>
 				<input type="checkbox" name="next_two_day" value="1" id="next_two_day"{{ if request.NextTwoDay}} checked{{ end }} />
 			</div>
 		</div>
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="next_two_day_window_min" class="label-title">Batas Awal Jam Pengantaran</label>
-				<input type="time" name="next_two_day_window_min" value="{{ if request.NextTwoDayWindowMin }}{{ request.NextTwoDayWindowMin.Format("15:04:05") }}{{ end }}" id="next_two_day_window_min"
+				<input type="time" name="next_two_day_window_min" value="{{ request.RawNextTwoDayWindowMin }}" id="next_two_day_window_min"
 					class="form-control time-picker" step="1" required{{ if !request.NextTwoDay }} disabled{{ end }} />
 			</div>
 		</div>
-		<div class="col-3">
+		<div class="col-4">
 			<div class="form-group">
 				<label for="next_two_day_window_max" class="label-title">Batas Akhir Jam Pengantaran</label>
-				<input type="time" name="next_two_day_window_max" value="{{ if request.NextTwoDayWindowMax }}{{ request.NextTwoDayWindowMax.Format("15:04:05") }}{{ end }}" id="next_two_day_window_max"
+				<input type="time" name="next_two_day_window_max" value="{{ request.RawNextTwoDayWindowMax }}" id="next_two_day_window_max"
 					class="form-control time-picker" step="1" required{{ if !request.NextTwoDay }} disabled{{ end }} />
-			</div>
-		</div>
-		<div class="col-3">
-			<div class="form-group">
-				<label for="next_two_day_interval" class="label-title">Interval Jam Pengantaran</label>
-				<input type="text" name="next_two_day_interval" value="{{ if request.RawNextTwoDayInterval }}{{ request.RawNextTwoDayInterval }}{{ end }}" id="next_two_day_interval"
-					class="form-control" placeholder="1h" required{{ if !request.NextTwoDay }} disabled{{ end }} />
 			</div>
 		</div>
 	</div>
@@ -148,34 +134,28 @@
 			if (event.target.checked) {
 				document.getElementById("same_day_window_min").removeAttribute("disabled");
 				document.getElementById("same_day_window_max").removeAttribute("disabled");
-				document.getElementById("same_day_interval").removeAttribute("disabled");
 				return;
 			}
 			document.getElementById("same_day_window_min").setAttribute("disabled", "disabled");
 			document.getElementById("same_day_window_max").setAttribute("disabled", "disabled");
-			document.getElementById("same_day_interval").setAttribute("disabled", "disabled");
 		});
 		document.getElementById("next_day").addEventListener("change", (event) => {
 			if (event.target.checked) {
 				document.getElementById("next_day_window_min").removeAttribute("disabled");
 				document.getElementById("next_day_window_max").removeAttribute("disabled");
-				document.getElementById("next_day_interval").removeAttribute("disabled");
 				return;
 			}
 			document.getElementById("next_day_window_min").setAttribute("disabled", "disabled");
 			document.getElementById("next_day_window_max").setAttribute("disabled", "disabled");
-			document.getElementById("next_day_interval").setAttribute("disabled", "disabled");
 		});
 		document.getElementById("next_two_day").addEventListener("change", (event) => {
 			if (event.target.checked) {
 				document.getElementById("next_two_day_window_min").removeAttribute("disabled");
 				document.getElementById("next_two_day_window_max").removeAttribute("disabled");
-				document.getElementById("next_two_day_interval").removeAttribute("disabled");
 				return;
 			}
 			document.getElementById("next_two_day_window_min").setAttribute("disabled", "disabled");
 			document.getElementById("next_two_day_window_max").setAttribute("disabled", "disabled");
-			document.getElementById("next_two_day_interval").setAttribute("disabled", "disabled");
 		});
 	});
 </script>

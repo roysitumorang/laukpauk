@@ -54,8 +54,8 @@ type (
 		RawTransactionWindowMin string             `json:"-" form:"transaction_window_min"`
 		TransactionWindowMax    time.Time          `json:"transaction_window_max" form:"-"`
 		RawTransactionWindowMax string             `json:"-" form:"transaction_window_max"`
-		DeliveryTimeInterval    time.Duration      `json:"-" form:"delivery_time_interval"`
-		RawDeliveryTimeInterval string             `json:"delivery_time_interval" form:"-"`
+		DeliveryTimeInterval    time.Duration      `json:"-" form:"-"`
+		RawDeliveryTimeInterval string             `json:"delivery_time_interval" form:"delivery_time_interval"`
 		SameDay                 bool               `json:"same_day" form:"same_day"`
 		SameDayWindowMin        *time.Time         `json:"-" form:"-"`
 		RawSameDayWindowMin     string             `json:"-" form:"same_day_window_min"`
@@ -228,8 +228,11 @@ func (q *DeliveryPlan) Validate() (err error) {
 	if !q.TransactionWindowMax.After(q.TransactionWindowMin) {
 		return errors.New("transaction_window_max: should exceed transaction_window_min")
 	}
-	if q.DeliveryTimeInterval == 0 {
+	if q.RawDeliveryTimeInterval = strings.TrimSpace(q.RawDeliveryTimeInterval); q.RawDeliveryTimeInterval == "" {
 		return errors.New("delivery_time_interval: is required")
+	}
+	if q.DeliveryTimeInterval, err = time.ParseDuration(q.RawDeliveryTimeInterval); err != nil {
+		return errors.New("delivery_time_interval: is invalid")
 	}
 	if q.SameDay {
 		if q.RawSameDayWindowMin = strings.TrimSpace(q.RawSameDayWindowMin); q.RawSameDayWindowMin == "" {
@@ -371,8 +374,12 @@ func (q *DeliveryPlan) New() bool {
 }
 
 func (q *DeliveryPlan) Populate() *DeliveryPlan {
+	q.RawTransactionWindowMin = q.TransactionWindowMin.In(time.Local).Format(time.TimeOnly)
+	q.RawTransactionWindowMax = q.TransactionWindowMax.In(time.Local).Format(time.TimeOnly)
 	q.RawDeliveryTimeInterval = q.DeliveryTimeInterval.String()
 	if q.SameDay && q.SameDayWindowMin != nil && q.SameDayWindowMax != nil {
+		q.RawSameDayWindowMin = q.SameDayWindowMin.In(time.Local).Format(time.TimeOnly)
+		q.RawSameDayWindowMax = q.SameDayWindowMax.In(time.Local).Format(time.TimeOnly)
 		sameDayWindowMin := *q.SameDayWindowMin
 		sameDayWindowMax := *q.SameDayWindowMax
 		for {
@@ -384,6 +391,8 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 		}
 	}
 	if q.NextDay && q.NextDayWindowMin != nil && q.NextDayWindowMax != nil {
+		q.RawNextDayWindowMin = q.NextDayWindowMin.In(time.Local).Format(time.TimeOnly)
+		q.RawNextDayWindowMax = q.NextDayWindowMax.In(time.Local).Format(time.TimeOnly)
 		nextDayWindowMin := *q.NextDayWindowMin
 		nextDayWindowMax := *q.NextDayWindowMax
 		for {
@@ -395,6 +404,8 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 		}
 	}
 	if q.NextTwoDay && q.NextTwoDayWindowMin != nil && q.NextTwoDayWindowMax != nil {
+		q.RawNextTwoDayWindowMin = q.NextTwoDayWindowMin.In(time.Local).Format(time.TimeOnly)
+		q.RawNextTwoDayWindowMax = q.NextTwoDayWindowMax.In(time.Local).Format(time.TimeOnly)
 		nextTwoDayWindowMin := *q.NextTwoDayWindowMin
 		nextTwoDayWindowMax := *q.NextTwoDayWindowMax
 		for {
