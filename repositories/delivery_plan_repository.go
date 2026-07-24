@@ -408,48 +408,205 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-UpdateDeliveryPlan"
 	var response models.DeliveryPlan
-	var sameDayInterval,
-		nextDayInterval,
-		nextTwoDayInterval string
-	if request.SameDay {
-		sameDayInterval = ", '[]'"
-	}
-	if request.NextDay {
-		nextDayInterval = ", '[]'"
-	}
-	if request.NextTwoDay {
-		nextTwoDayInterval = ", '[]'"
-	}
 	err := tx.QueryRow(
 		ctx,
-		"SELECT id FROM delivery_plans WHERE id = $1 FOR UPDATE",
+		`SELECT
+			id
+			, record_status
+			, name
+			, weekday
+			, lower(transaction_window)
+			, upper(transaction_window)
+			, delivery_time_interval
+			, same_day
+			, lower(same_day_window)
+			, upper(same_day_window)
+			, next_day
+			, lower(next_day_window)
+			, upper(next_day_window)
+			, next_two_day
+			, lower(next_two_day_window)
+			, upper(next_two_day_window)
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM delivery_plans
+		WHERE id = $1
+		FOR UPDATE`,
 		request.ID,
-	).Scan(&response.ID)
+	).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Name,
+		&response.Weekday,
+		&response.TransactionWindowMin,
+		&response.TransactionWindowMax,
+		&response.DeliveryTimeInterval,
+		&response.SameDay,
+		&response.SameDayWindowMin,
+		&response.SameDayWindowMax,
+		&response.NextDay,
+		&response.NextDayWindowMin,
+		&response.NextDayWindowMax,
+		&response.NextTwoDay,
+		&response.NextTwoDayWindowMin,
+		&response.NextTwoDayWindowMax,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	var sb strings.Builder
+	var (
+		params []any
+		sb     strings.Builder
+		n      int
+	)
+	_, _ = sb.WriteString("UPDATE delivery_plans SET")
+	if response.RecordStatus != request.RecordStatus {
+		params = append(params, request.RecordStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " record_status = $%d", n)
+	}
+	if response.Name != request.Name {
+		params = append(params, request.Name)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " name = $%d", n)
+	}
+	if response.Weekday != request.Weekday {
+		params = append(params, request.Weekday)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " weekday = $%d", n)
+	}
+	if response.Weekday != request.Weekday {
+		params = append(params, request.Weekday)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " weekday = $%d", n)
+	}
+	if !response.TransactionWindowMin.Equal(request.TransactionWindowMin) ||
+		!response.TransactionWindowMax.Equal(request.TransactionWindowMax) {
+		params = append(params, request.TransactionWindowMin, request.TransactionWindowMax)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " transaction_window = tstzrange($%d, $%d, '[]')", n-1, n)
+	}
+	if response.DeliveryTimeInterval != request.DeliveryTimeInterval {
+		params = append(params, request.DeliveryTimeInterval)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " delivery_time_interval = $%d", n)
+	}
+	if response.SameDay != request.SameDay {
+		params = append(params, request.SameDay)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " same_day = $%d", n)
+	}
+	if (response.SameDayWindowMin != nil && request.SameDayWindowMin == nil) ||
+		(response.SameDayWindowMin == nil && request.SameDayWindowMin != nil) ||
+		(response.SameDayWindowMin != nil && request.SameDayWindowMin != nil &&
+			!response.SameDayWindowMin.Equal(*request.SameDayWindowMin)) ||
+		(response.SameDayWindowMax != nil && request.SameDayWindowMax == nil) ||
+		(response.SameDayWindowMax == nil && request.SameDayWindowMax != nil) ||
+		(response.SameDayWindowMax != nil && request.SameDayWindowMax != nil &&
+			!response.SameDayWindowMax.Equal(*request.SameDayWindowMax)) {
+		params = append(params, request.SameDayWindowMin, request.SameDayWindowMax)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " same_day_window = tstzrange($%d, $%d", n-1, n)
+		if request.SameDay {
+			_, _ = sb.WriteString(", '[]'")
+		}
+		_, _ = sb.WriteString(")")
+	}
+	if response.NextDay != request.NextDay {
+		params = append(params, request.NextDay)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " next_day = $%d", n)
+	}
+	if (response.NextDayWindowMin != nil && request.NextDayWindowMin == nil) ||
+		(response.NextDayWindowMin == nil && request.NextDayWindowMin != nil) ||
+		(response.NextDayWindowMin != nil && request.NextDayWindowMin != nil &&
+			!response.NextDayWindowMin.Equal(*request.NextDayWindowMin)) ||
+		(response.NextDayWindowMax != nil && request.NextDayWindowMax == nil) ||
+		(response.NextDayWindowMax == nil && request.NextDayWindowMax != nil) ||
+		(response.NextDayWindowMax != nil && request.NextDayWindowMax != nil &&
+			!response.NextDayWindowMax.Equal(*request.NextDayWindowMax)) {
+		params = append(params, request.NextDayWindowMin, request.NextDayWindowMax)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " next_day_window = tstzrange($%d, $%d", n-1, n)
+		if request.NextDay {
+			_, _ = sb.WriteString(", '[]'")
+		}
+		_, _ = sb.WriteString(")")
+	}
+	if response.NextTwoDay != request.NextTwoDay {
+		params = append(params, request.NextTwoDay)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " next_two_day = $%d", n)
+	}
+	if (response.NextTwoDayWindowMin != nil && request.NextTwoDayWindowMin == nil) ||
+		(response.NextTwoDayWindowMin == nil && request.NextTwoDayWindowMin != nil) ||
+		(response.NextTwoDayWindowMin != nil && request.NextTwoDayWindowMin != nil &&
+			!response.NextTwoDayWindowMin.Equal(*request.NextTwoDayWindowMin)) ||
+		(response.NextTwoDayWindowMax != nil && request.NextTwoDayWindowMax == nil) ||
+		(response.NextTwoDayWindowMax == nil && request.NextTwoDayWindowMax != nil) ||
+		(response.NextTwoDayWindowMax != nil && request.NextTwoDayWindowMax != nil &&
+			!response.NextTwoDayWindowMax.Equal(*request.NextTwoDayWindowMax)) {
+		params = append(params, request.NextTwoDayWindowMin, request.NextTwoDayWindowMax)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " next_two_day_window = tstzrange($%d, $%d", n-1, n)
+		if request.NextTwoDay {
+			_, _ = sb.WriteString(", '[]'")
+		}
+		_, _ = sb.WriteString(")")
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	if request.RecordStatus == models.RecordStatusDeleted {
+		params = append(params, request.DeletedBy, request.DeletedAt, request.DeletionReason)
+		n := len(params)
+		_, _ = fmt.Fprintf(&sb, ", deleted_by = $%d, deleted_at = $%d, deletion_reason = $%d", n-2, n-1, n)
+	} else {
+		params = append(params, request.UpdatedBy, request.UpdatedAt)
+		n := len(params)
+		_, _ = fmt.Fprintf(&sb, ", updated_by = $%d, updated_at = $%d", n-1, n)
+	}
+	params = append(params, request.ID)
 	_, _ = fmt.Fprintf(
 		&sb,
-		`UPDATE delivery_plans SET
-			record_status = $1
-			, name = $2
-			, weekday = $3
-			, transaction_window = tstzrange($4, $5, '[]')
-			, delivery_time_interval = $6
-			, same_day = $7
-			, same_day_window = tstzrange($8, $9%s)
-			, next_day = $10
-			, next_day_window = tstzrange($11, $12%s)
-			, next_two_day = $13
-			, next_two_day_window = tstzrange($14, $15%s)
-			, updated_by = $16
-			, updated_at = $17
-			, deleted_by = $18
-			, deleted_at = $19
-			, deletion_reason = $20
-		WHERE id = $21
+		` WHERE id = $%d
 		RETURNING id
 			, record_status
 			, name
@@ -473,35 +630,9 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		sameDayInterval,
-		nextDayInterval,
-		nextTwoDayInterval,
+		len(params),
 	)
-	if err = tx.QueryRow(
-		ctx,
-		sb.String(),
-		request.RecordStatus,
-		request.Name,
-		request.Weekday,
-		request.TransactionWindowMin,
-		request.TransactionWindowMax,
-		request.DeliveryTimeInterval,
-		request.SameDay,
-		request.SameDayWindowMin,
-		request.SameDayWindowMax,
-		request.NextDay,
-		request.NextDayWindowMin,
-		request.NextDayWindowMax,
-		request.NextTwoDay,
-		request.NextTwoDayWindowMin,
-		request.NextTwoDayWindowMax,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.DeletedBy,
-		request.DeletedAt,
-		request.DeletionReason,
-		request.ID,
-	).Scan(
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
