@@ -774,7 +774,6 @@ func init() {
 				, delivery_origin_latitude character varying NOT NULL
 				, delivery_cost_per_km bigint NOT NULL
 				, delivery_max_distance_km bigint NOT NULL
-				, delivery_time_interval interval NOT NULL
 				, whatsapp_phone_number character varying NOT NULL
 				, payment_terms character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
@@ -814,7 +813,6 @@ func init() {
 			DeliveryOriginLatitude:               latitude,
 			DeliveryCostPerKM:                    3_000,
 			DeliveryMaxDistanceKM:                15,
-			DeliveryTimeInterval:                 2 * time.Hour,
 			WhatsappPhoneNumber:                  "628116099887",
 			PaymentTerms:                         "24h",
 		}
@@ -837,7 +835,6 @@ func init() {
 				, delivery_origin_latitude
 				, delivery_cost_per_km
 				, delivery_max_distance_km
-				, delivery_time_interval
 				, whatsapp_phone_number
 				, payment_terms
 				, created_by
@@ -847,7 +844,7 @@ func init() {
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-				, $21, $22
+				, $21
 			)`,
 			setting.MaintenanceMode,
 			setting.VacationMode,
@@ -864,7 +861,6 @@ func init() {
 			setting.DeliveryOriginLatitude,
 			setting.DeliveryCostPerKM,
 			setting.DeliveryMaxDistanceKM,
-			setting.DeliveryTimeInterval,
 			setting.WhatsappPhoneNumber,
 			setting.PaymentTerms,
 			adminID,

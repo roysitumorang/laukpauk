@@ -190,7 +190,7 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(models.ErrSettingNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c, setting.DeliveryTimeInterval)
+	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
@@ -352,7 +352,7 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(models.ErrSettingNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c, setting.DeliveryTimeInterval)
+	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
@@ -501,8 +501,7 @@ func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithTransactionDatetime(now).
-			WithDeliveryTimeInterval(setting.DeliveryTimeInterval),
+			WithTransactionDatetime(now),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")

@@ -84,12 +84,11 @@ type (
 	DeliveryPlanFilter struct {
 		DeliveryPlanIDs,
 		ExcludedDeliveryPlanIDs []uuid.UUID
-		RecordStatuses       []RecordStatus
-		Name                 string
-		DeliveryWeekdays     []DeliveryWeekday
-		TransactionDatetime  time.Time
-		DeliveryTimeInterval time.Duration
-		TransactionWindow    *DeliveryPlanTransactionWindow
+		RecordStatuses      []RecordStatus
+		Name                string
+		DeliveryWeekdays    []DeliveryWeekday
+		TransactionDatetime time.Time
+		TransactionWindow   *DeliveryPlanTransactionWindow
 		Keyword,
 		PaginationURL string
 		Sortings    []Sorting
@@ -142,11 +141,6 @@ func (q *DeliveryPlanFilter) WithTransactionDatetime(transactionDatetime time.Ti
 	return q
 }
 
-func (q *DeliveryPlanFilter) WithDeliveryTimeInterval(deliveryTimeInterval time.Duration) *DeliveryPlanFilter {
-	q.DeliveryTimeInterval = deliveryTimeInterval
-	return q
-}
-
 func (q *DeliveryPlanFilter) WithTransactionWindow(min, max time.Time) *DeliveryPlanFilter {
 	q.TransactionWindow = &DeliveryPlanTransactionWindow{
 		Min: min,
@@ -189,7 +183,8 @@ func (q *DeliveryPlanFilter) WithUrlValues(urlValues url.Values) *DeliveryPlanFi
 	return q
 }
 
-func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
+func (q *DeliveryPlan) Validate() (err error) {
+	now := time.Now().In(time.Local)
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
@@ -204,9 +199,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 		return fmt.Errorf("transaction_window_min: should use format '%s'", time.TimeOnly)
 	}
 	q.TransactionWindowMin = time.Date(
-		2000,
-		1,
-		1,
+		now.Year(),
+		now.Month(),
+		now.Day(),
 		t.Hour(),
 		t.Minute(),
 		t.Second(),
@@ -220,9 +215,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 		return fmt.Errorf("transaction_window_max: should use format '%s'", time.TimeOnly)
 	}
 	q.TransactionWindowMax = time.Date(
-		2000,
-		1,
-		1,
+		now.Year(),
+		now.Month(),
+		now.Day(),
 		t.Hour(),
 		t.Minute(),
 		t.Second(),
@@ -232,6 +227,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 	if !q.TransactionWindowMax.After(q.TransactionWindowMin) {
 		return errors.New("transaction_window_max: should exceed transaction_window_min")
 	}
+	if q.DeliveryTimeInterval == 0 {
+		return errors.New("delivery_time_interval: is required")
+	}
 	if q.SameDay {
 		if q.RawSameDayWindowMin = strings.TrimSpace(q.RawSameDayWindowMin); q.RawSameDayWindowMin == "" {
 			return errors.New("same_day_window_min: is required")
@@ -240,9 +238,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 			return fmt.Errorf("same_day_window_min: should use format '%s'", time.TimeOnly)
 		}
 		sameDayWindowMin := time.Date(
-			2000,
-			1,
-			1,
+			now.Year(),
+			now.Month(),
+			now.Day(),
 			t.Hour(),
 			t.Minute(),
 			t.Second(),
@@ -256,9 +254,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 			return fmt.Errorf("same_day_window_max: should use format '%s'", time.TimeOnly)
 		}
 		sameDayWindowMax := time.Date(
-			2000,
-			1,
-			1,
+			now.Year(),
+			now.Month(),
+			now.Day(),
 			t.Hour(),
 			t.Minute(),
 			t.Second(),
@@ -284,9 +282,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 			return fmt.Errorf("next_day_window_min: should use format '%s'", time.TimeOnly)
 		}
 		nextDayWindowMin := time.Date(
-			2000,
-			1,
-			1,
+			now.Year(),
+			now.Month(),
+			now.Day()+1,
 			t.Hour(),
 			t.Minute(),
 			t.Second(),
@@ -300,9 +298,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 			return fmt.Errorf("next_day_window_max: should use format '%s'", time.TimeOnly)
 		}
 		nextDayWindowMax := time.Date(
-			2000,
-			1,
-			1,
+			now.Year(),
+			now.Month(),
+			now.Day()+1,
 			t.Hour(),
 			t.Minute(),
 			t.Second(),
@@ -312,8 +310,8 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 		if !nextDayWindowMax.After(nextDayWindowMin) {
 			return errors.New("next_day_window_max: should exceed next_day_window_min")
 		}
-		q.NextDayWindowMin = new(nextDayWindowMin.AddDate(0, 0, 1))
-		q.NextDayWindowMax = new(nextDayWindowMax.AddDate(0, 0, 1))
+		q.NextDayWindowMin = &nextDayWindowMin
+		q.NextDayWindowMax = &nextDayWindowMax
 	} else {
 		q.RawNextDayWindowMin = ""
 		q.NextDayWindowMin = nil
@@ -328,9 +326,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 			return fmt.Errorf("next_two_day_window_min: should use format '%s'", time.TimeOnly)
 		}
 		nextTwoDayWindowMin := time.Date(
-			2000,
-			1,
-			1,
+			now.Year(),
+			now.Month(),
+			now.Day()+2,
 			t.Hour(),
 			t.Minute(),
 			t.Second(),
@@ -344,9 +342,9 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 			return fmt.Errorf("next_two_day_window_max: should use format '%s'", time.TimeOnly)
 		}
 		nextTwoDayWindowMax := time.Date(
-			2000,
-			1,
-			1,
+			now.Year(),
+			now.Month(),
+			now.Day()+2,
 			t.Hour(),
 			t.Minute(),
 			t.Second(),
@@ -356,8 +354,8 @@ func (q *DeliveryPlan) Validate(interval time.Duration) (err error) {
 		if !nextTwoDayWindowMax.After(nextTwoDayWindowMin) {
 			return errors.New("next_two_day_window_max: should exceed next_two_day_window_min")
 		}
-		q.NextTwoDayWindowMin = new(nextTwoDayWindowMin.AddDate(0, 0, 2))
-		q.NextTwoDayWindowMax = new(nextTwoDayWindowMax.AddDate(0, 0, 2))
+		q.NextTwoDayWindowMin = &nextTwoDayWindowMin
+		q.NextTwoDayWindowMax = &nextTwoDayWindowMax
 	} else {
 		q.RawNextTwoDayWindowMin = ""
 		q.NextTwoDayWindowMin = nil

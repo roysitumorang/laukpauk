@@ -206,8 +206,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		ctx,
 		models.NewDeliveryPlanFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithTransactionDatetime(now).
-			WithDeliveryTimeInterval(setting.DeliveryTimeInterval),
+			WithTransactionDatetime(now),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")

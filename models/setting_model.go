@@ -30,7 +30,6 @@ type (
 		DeliveryOriginLatitude               decimal.Decimal `json:"delivery_origin_latitude" form:"delivery_origin_latitude"`
 		DeliveryCostPerKM                    int64           `json:"delivery_cost_per_km" form:"delivery_cost_per_km"`
 		DeliveryMaxDistanceKM                int64           `json:"delivery_max_distance_km" form:"delivery_max_distance_km"`
-		DeliveryTimeInterval                 time.Duration   `json:"delivery_time_interval" form:"delivery_time_interval"`
 		WhatsappPhoneNumber                  string          `json:"whatsapp_phone_number" form:"whatsapp_phone_number"`
 		PaymentTerms                         string          `json:"payment_terms" form:"payment_terms"`
 		CreatedBy                            uuid.UUID       `json:"-" form:"-"`

@@ -75,7 +75,6 @@ func (q *settingRepository) FindSetting(
 			, delivery_origin_latitude
 			, delivery_cost_per_km
 			, delivery_max_distance_km
-			, delivery_time_interval
 			, whatsapp_phone_number
 			, payment_terms
 			, created_by
@@ -100,7 +99,6 @@ func (q *settingRepository) FindSetting(
 		&response.DeliveryOriginLatitude,
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
-		&response.DeliveryTimeInterval,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
 		&response.CreatedBy,
@@ -144,7 +142,6 @@ func (q *settingRepository) UpdateSetting(
 			, delivery_origin_latitude
 			, delivery_cost_per_km
 			, delivery_max_distance_km
-			, delivery_time_interval
 			, whatsapp_phone_number
 			, payment_terms
 			, created_by
@@ -171,7 +168,6 @@ func (q *settingRepository) UpdateSetting(
 		&response.DeliveryOriginLatitude,
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
-		&response.DeliveryTimeInterval,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
 		&response.CreatedBy,
@@ -299,13 +295,6 @@ func (q *settingRepository) UpdateSetting(
 		}
 		_, _ = fmt.Fprintf(&sb, " delivery_max_distance_km = $%d", n)
 	}
-	if response.DeliveryTimeInterval != request.DeliveryTimeInterval {
-		params = append(params, request.DeliveryTimeInterval)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, " delivery_time_interval = $%d", n)
-	}
 	if response.WhatsappPhoneNumber != request.WhatsappPhoneNumber {
 		params = append(params, request.WhatsappPhoneNumber)
 		if n = len(params); n > 1 {
@@ -346,7 +335,6 @@ func (q *settingRepository) UpdateSetting(
 			, delivery_origin_latitude
 			, delivery_cost_per_km
 			, delivery_max_distance_km
-			, delivery_time_interval
 			, whatsapp_phone_number
 			, payment_terms
 			, created_by
@@ -372,7 +360,6 @@ func (q *settingRepository) UpdateSetting(
 		&response.DeliveryOriginLatitude,
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
-		&response.DeliveryTimeInterval,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
 		&response.CreatedBy,
@@ -426,7 +413,6 @@ func (q *settingRepository) AddReferralPointsExpense(
 			, delivery_origin_latitude
 			, delivery_cost_per_km
 			, delivery_max_distance_km
-			, delivery_time_interval
 			, whatsapp_phone_number
 			, payment_terms
 			, created_by
@@ -453,7 +439,6 @@ func (q *settingRepository) AddReferralPointsExpense(
 		&response.DeliveryOriginLatitude,
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
-		&response.DeliveryTimeInterval,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
 		&response.CreatedBy,
