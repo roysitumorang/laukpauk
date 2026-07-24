@@ -30,11 +30,6 @@ type (
 			tx pgx.Tx,
 			request *models.Cart,
 		) (*models.Cart, error)
-		UpdateCart(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Cart,
-		) (*models.Cart, error)
 	}
 
 	cartRepository struct {
@@ -281,24 +276,28 @@ func (q *cartRepository) SaveCart(
 	request *models.Cart,
 ) (*models.Cart, error) {
 	ctxt := "CartRepository-SaveCart"
-	var response models.Cart
+	var (
+		response models.Cart
+		buyerID  uuid.UUID
+	)
+	if request.BuyerID != nil {
+		buyerID = *request.BuyerID
+	} else if request.DeletedBuyerID != nil {
+		buyerID = *request.DeletedBuyerID
+	}
 	err := tx.QueryRow(
 		ctx,
-		`INSERT INTO carts (
-			buyer_id
-			, created_at
-			, updated_at
-		) VALUES ($1, $2, $3)
-		ON CONFLICT (buyer_id) DO UPDATE SET
-			buyer_id = EXCLUDED.buyer_id
-		RETURNING id
+		`SELECT
+			id
 			, buyer_id
 			, deleted_buyer_id
 			, created_at
-			, updated_at`,
-		request.BuyerID,
-		request.CreatedAt,
-		request.UpdatedAt,
+			, updated_at
+		FROM carts
+		WHERE id = $1 AND buyer_id = $2
+		FOR UPDATE`,
+		request.ID,
+		buyerID,
 	).Scan(
 		&response.ID,
 		&response.BuyerID,
@@ -306,17 +305,68 @@ func (q *cartRepository) SaveCart(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
+	var row pgx.Row
+	if response.ID.Compare(uuid.Nil()) == 0 {
+		row = tx.QueryRow(
+			ctx,
+			`INSERT INTO carts (
+				buyer_id
+				, created_at
+				, updated_at
+			) VALUES ($1, $2, $3)
+			ON CONFLICT (buyer_id) DO UPDATE SET
+				buyer_id = EXCLUDED.buyer_id
+			RETURNING id
+				, buyer_id
+				, deleted_buyer_id
+				, created_at
+				, updated_at`,
+			request.BuyerID,
+			request.CreatedAt,
+			request.UpdatedAt,
+		)
+	} else {
+		row = tx.QueryRow(
+			ctx,
+			`UPDATE carts SET
+				buyer_id = $1
+				, deleted_buyer_id = $2
+				, updated_at = $3
+			WHERE id = $4
+			RETURNING id
+				, buyer_id
+				, deleted_buyer_id
+				, created_at
+				, updated_at`,
+			request.BuyerID,
+			request.DeletedBuyerID,
+			request.UpdatedAt,
+			request.ID,
+		)
+	}
+	if err = row.Scan(
+		&response.ID,
+		&response.BuyerID,
+		&response.DeletedBuyerID,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
 	var (
-		sbInsert,
-		sbDelete strings.Builder
-		n int
+		sb strings.Builder
+		n  int
 	)
-	var paramsInsert []any
-	_, _ = sbInsert.WriteString(
+	var params []any
+	_, _ = sb.WriteString(
 		`INSERT INTO cart_items (
 			cart_id
 			, product_variant_id
@@ -325,39 +375,24 @@ func (q *cartRepository) SaveCart(
 			, updated_at
 		) VALUES`,
 	)
-	paramsDelete := []any{response.ID}
-	_, _ = sbDelete.WriteString("DELETE FROM cart_items WHERE cart_id = $1 AND product_variant_id NOT IN (")
 	for _, cartItem := range request.Items {
 		if cartItem.Quantity > 0 {
-			paramsInsert = append(
-				paramsInsert,
+			params = append(
+				params,
 				response.ID,
 				cartItem.ProductVariantID,
 				cartItem.Quantity,
 				cartItem.CreatedAt,
 				cartItem.UpdatedAt,
 			)
-			if n = len(paramsInsert); n > 5 {
-				_, _ = sbInsert.WriteString(",")
+			if n = len(params); n > 5 {
+				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sbInsert, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
-		} else {
-			paramsDelete = append(paramsDelete, cartItem.ProductVariantID)
-			if n = len(paramsDelete); n > 2 {
-				_, _ = sbDelete.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(&sbDelete, "$%d", n)
+			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
 		}
 	}
-	if len(paramsDelete) > 1 {
-		_, _ = sbDelete.WriteString(")")
-		if _, err = tx.Exec(ctx, sbDelete.String(), paramsDelete...); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-	}
-	if len(paramsInsert) > 0 {
-		_, _ = sbInsert.WriteString(
+	if len(params) > 0 {
+		_, _ = sb.WriteString(
 			` ON CONFLICT (cart_id, product_variant_id) DO UPDATE SET
 				quantity = EXCLUDED.quantity
 				, updated_at = EXCLUDED.updated_at
@@ -368,7 +403,7 @@ func (q *cartRepository) SaveCart(
 				, created_at
 				, updated_at`,
 		)
-		rows, err := tx.Query(ctx, sbInsert.String(), paramsInsert...)
+		rows, err := tx.Query(ctx, sb.String(), params...)
 		if errors.Is(err, pgx.ErrNoRows) {
 			err = nil
 		}
@@ -377,6 +412,7 @@ func (q *cartRepository) SaveCart(
 			return nil, err
 		}
 		defer rows.Close()
+		params = params[:0]
 		for rows.Next() {
 			var cartItem models.CartItem
 			if err = rows.Scan(
@@ -392,88 +428,24 @@ func (q *cartRepository) SaveCart(
 			}
 			response.Items = append(response.Items, &cartItem)
 			response.Quantity += cartItem.Quantity
+			params = append(params, cartItem.ID)
 		}
 	}
-	return &response, nil
-}
-
-func (q *cartRepository) UpdateCart(
-	ctx context.Context,
-	tx pgx.Tx,
-	request *models.Cart,
-) (*models.Cart, error) {
-	ctxt := "CartRepository-UpdateCart"
-	var response models.Cart
-	err := tx.QueryRow(
-		ctx,
-		`SELECT
-			id
-			, buyer_id
-			, deleted_buyer_id
-			, created_at
-			, updated_at
-		FROM carts
-		WHERE id = $1
-		FOR UPDATE`,
-		request.ID,
-	).Scan(
-		&response.ID,
-		&response.BuyerID,
-		&response.DeletedBuyerID,
-		&response.CreatedAt,
-		&response.UpdatedAt,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrCartNotFound
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	var (
-		params []any
-		sb     strings.Builder
-		n      int
-	)
-	_, _ = sb.WriteString("UPDATE carts SET")
-	if response.BuyerID != nil && request.BuyerID == nil {
-		params = append(params, request.BuyerID)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
+	params = append([]any{response.ID}, params...)
+	sb.Reset()
+	_, _ = sb.WriteString("DELETE FROM cart_items WHERE cart_id = $1")
+	if n = len(params) - 1; n > 0 {
+		_, _ = sb.WriteString(" AND id NOT IN (")
+		for i := range n {
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sb, "$%d", i+2)
 		}
-		_, _ = fmt.Fprintf(&sb, " buyer_id = $%d", n)
+		_, _ = sb.WriteString(")")
 	}
-	if response.DeletedBuyerID == nil && request.DeletedBuyerID != nil {
-		params = append(params, request.DeletedBuyerID)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, " deleted_buyer_id = $%d", n)
-	}
-	if len(params) == 0 {
-		return &response, nil
-	}
-	params = append(params, request.UpdatedAt, request.ID)
-	n = len(params)
-	_, _ = fmt.Fprintf(
-		&sb,
-		`, updated_at = $%d
-		WHERE id = $%d
-		RETURNING id
-			, buyer_id
-			, deleted_buyer_id
-			, created_at
-			, updated_at`,
-		n-1, n,
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.BuyerID,
-		&response.DeletedBuyerID,
-		&response.CreatedAt,
-		&response.UpdatedAt,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+	if _, err = tx.Exec(ctx, sb.String(), params...); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, err
 	}
 	return &response, nil

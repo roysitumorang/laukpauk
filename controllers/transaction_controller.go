@@ -211,18 +211,23 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	if n := len(request.Items); n > 0 {
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
 		for i, item := range request.Items {
-			cartItem, ok := mapCartItems[item.CartItemID]
+			if item.CartItemID == nil {
+				return helper.NewResponse(fiber.StatusUnprocessableEntity).
+					SetMessage(helper.Sprintf("items[%d].cart_item_id: is required", i)).
+					WriteResponse(c)
+			}
+			cartItem, ok := mapCartItems[*item.CartItemID]
 			if !ok {
 				return helper.NewResponse(fiber.StatusUnprocessableEntity).
 					SetMessage(helper.Sprintf("items[%d].cart_item_id: not found in your cart", i)).
 					WriteResponse(c)
 			}
-			if _, ok = mapCartItemIDs[item.CartItemID]; ok {
+			if _, ok = mapCartItemIDs[*item.CartItemID]; ok {
 				return helper.NewResponse(fiber.StatusUnprocessableEntity).
 					SetMessage(helper.Sprintf("items[%d].cart_item_id: duplicated", i)).
 					WriteResponse(c)
 			}
-			mapCartItemIDs[item.CartItemID] = struct{}{}
+			mapCartItemIDs[*item.CartItemID] = struct{}{}
 			item.ProductVariantID = cartItem.ProductVariantID
 			item.Quantity = cartItem.Quantity
 			request.Items[i] = item
@@ -439,8 +444,9 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	cart.BuyerID = nil
 	cart.DeletedBuyerID = &currentBuyer.ID
 	cart.UpdatedAt = now
-	if _, err = q.cartService.UpdateCart(ctx, tx, cart); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCart")
+	cart.Items = nil
+	if _, err = q.cartService.SaveCart(ctx, tx, cart); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)

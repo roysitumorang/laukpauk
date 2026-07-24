@@ -26,11 +26,6 @@ type (
 			tx pgx.Tx,
 			request *models.Cart,
 		) (*models.Cart, error)
-		UpdateCart(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Cart,
-		) (*models.Cart, error)
 	}
 
 	cartService struct {
@@ -99,17 +94,4 @@ func (q *cartService) SaveCart(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateCart")
 	}
 	return response, err
-}
-
-func (q *cartService) UpdateCart(
-	ctx context.Context,
-	tx pgx.Tx,
-	request *models.Cart,
-) (*models.Cart, error) {
-	ctxt := "CartService-UpdateCart"
-	response, err := q.cartRepository.UpdateCart(ctx, tx, request)
-	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCart")
-	}
-	return response, nil
 }

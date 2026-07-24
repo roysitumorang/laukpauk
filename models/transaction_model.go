@@ -102,21 +102,21 @@ type (
 	}
 
 	TransactionItem struct {
-		RowNo                   int64     `json:"-" form:"-"`
-		ID                      uuid.UUID `json:"id" form:"-"`
-		TransactionID           uuid.UUID `json:"-" form:"-"`
-		CartItemID              uuid.UUID `json:"cart_item_id" form:"cart_item_id"`
-		ProductVariantID        uuid.UUID `json:"-" form:"-"`
-		ProductID               uuid.UUID `json:"-" form:"-"`
-		ProductName             string    `json:"-" form:"-"`
-		StockUnit               string    `json:"-" form:"-"`
-		Price                   int64     `json:"-" form:"-"`
-		DiscountMinimumQuantity int64     `json:"-" form:"-"`
-		DiscountAmount          int64     `json:"-" form:"-"`
-		Quantity                int64     `json:"quantity" form:"quantity"`
-		Subtotal                int64     `json:"-" form:"-"`
-		BuyerNote               string    `json:"buyer_note" form:"buyer_note"`
-		OutOfStock              bool      `json:"out_of_stock" form:"out_of_stock"`
+		RowNo                   int64      `json:"-" form:"-"`
+		ID                      uuid.UUID  `json:"id" form:"-"`
+		TransactionID           uuid.UUID  `json:"-" form:"-"`
+		CartItemID              *uuid.UUID `json:"cart_item_id,omitempty" form:"cart_item_id"`
+		ProductVariantID        uuid.UUID  `json:"-" form:"-"`
+		ProductID               uuid.UUID  `json:"-" form:"-"`
+		ProductName             string     `json:"-" form:"-"`
+		StockUnit               string     `json:"-" form:"-"`
+		Price                   int64      `json:"-" form:"-"`
+		DiscountMinimumQuantity int64      `json:"-" form:"-"`
+		DiscountAmount          int64      `json:"-" form:"-"`
+		Quantity                int64      `json:"quantity" form:"quantity"`
+		Subtotal                int64      `json:"-" form:"-"`
+		BuyerNote               string     `json:"buyer_note" form:"buyer_note"`
+		OutOfStock              bool       `json:"out_of_stock" form:"out_of_stock"`
 	}
 
 	TransactionFilter struct {
@@ -277,7 +277,7 @@ func (q *Transaction) Validate() error {
 		return errors.New("items: is required")
 	}
 	for i, item := range q.Items {
-		if item.CartItemID.Compare(uuid.Nil()) == 0 {
+		if item.CartItemID == nil || item.CartItemID.Compare(uuid.Nil()) == 0 {
 			return fmt.Errorf("items[%d].cart_item_id: is required", i)
 		}
 		item.BuyerNote = strings.TrimSpace(item.BuyerNote)
