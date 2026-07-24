@@ -179,34 +179,6 @@ func main() {
 					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
 					return nil
 				},
-			}, {
-				Name:  "today",
-				Usage: "generate today delivery plans",
-				Action: func(ctx context.Context, cmd *cli.Command) error {
-					now := time.Now().In(time.Local)
-					err := godotenv.Load(".env")
-					if err != nil {
-						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrLoad")
-						return err
-					}
-					if err = helper.InitHelper(); err != nil {
-						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrInitHelper")
-						return err
-					}
-					service, err := router.MakeHandler(ctx)
-					if err != nil {
-						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
-						return err
-					}
-					helper.InitDbWrite(service.DbWrite)
-					if _, err = service.TransactionDayService.FindOrCreateTransactionDay(ctx, now); err != nil {
-						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFindOrCreateTransactionDay")
-						return err
-					}
-					duration := time.Since(now)
-					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("generate today delivery plans successfully in %s", duration.String()), ctxt, "")
-					return nil
-				},
 			},
 		},
 	}

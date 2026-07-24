@@ -24,38 +24,36 @@ import (
 
 type (
 	Service struct {
-		DbWrite                    *pgxpool.Pool
-		Migration                  *migration.Migration
-		KafkaConsumer              *consumers.KafkaConsumer
-		FcmConsumer                *consumers.FcmConsumer
-		ZenzivaConsumer            *consumers.ZenzivaConsumer
-		RoutesApiConsumer          *consumers.RoutesApiConsumer
-		Storage                    fiber.Storage
-		AdminService               services.AdminService
-		BuyerService               services.BuyerService
-		ArticleService             services.ArticleService
-		BlogService                services.BlogService
-		BlockService               services.BlockService
-		MessageService             services.MessageService
-		ProductCategoryService     services.ProductCategoryService
-		ProductService             services.ProductService
-		ProductVariantService      services.ProductVariantService
-		SmsMessageService          services.SmsMessageService
-		SettingService             services.SettingService
-		DeliveryPlanService        services.DeliveryPlanService
-		SkippedDeliveryPlanService services.SkippedDeliveryPlanService
-		PointService               services.PointService
-		VoucherService             services.VoucherService
-		PointEarningCapService     services.PointEarningCapService
-		PointSpendingCapService    services.PointSpendingCapService
-		TransactionService         services.TransactionService
-		JsonWebTokenService        services.JsonWebTokenService
-		FcmRegistrationService     services.FcmRegistrationService
-		CartService                services.CartService
-		CartItemService            services.CartItemService
-		TransactionCounterService  services.TransactionCounterService
-		DeliveryRouteService       services.DeliveryRouteService
-		TransactionDayService      services.TransactionDayService
+		DbWrite                   *pgxpool.Pool
+		Migration                 *migration.Migration
+		KafkaConsumer             *consumers.KafkaConsumer
+		FcmConsumer               *consumers.FcmConsumer
+		ZenzivaConsumer           *consumers.ZenzivaConsumer
+		RoutesApiConsumer         *consumers.RoutesApiConsumer
+		Storage                   fiber.Storage
+		AdminService              services.AdminService
+		BuyerService              services.BuyerService
+		ArticleService            services.ArticleService
+		BlogService               services.BlogService
+		BlockService              services.BlockService
+		MessageService            services.MessageService
+		ProductCategoryService    services.ProductCategoryService
+		ProductService            services.ProductService
+		ProductVariantService     services.ProductVariantService
+		SmsMessageService         services.SmsMessageService
+		SettingService            services.SettingService
+		DeliveryPlanService       services.DeliveryPlanService
+		PointService              services.PointService
+		VoucherService            services.VoucherService
+		PointEarningCapService    services.PointEarningCapService
+		PointSpendingCapService   services.PointSpendingCapService
+		TransactionService        services.TransactionService
+		JsonWebTokenService       services.JsonWebTokenService
+		FcmRegistrationService    services.FcmRegistrationService
+		CartService               services.CartService
+		CartItemService           services.CartItemService
+		TransactionCounterService services.TransactionCounterService
+		DeliveryRouteService      services.DeliveryRouteService
 	}
 )
 
@@ -138,7 +136,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	smsMessageRepository := repositories.NewSmsMessageRepository(dbRead, dbWrite)
 	settingRepository := repositories.NewSettingRepository(dbRead, dbWrite)
 	deliveryPlanRepository := repositories.NewDeliveryPlanRepository(dbRead, dbWrite)
-	skippedDeliveryPlanRepository := repositories.NewSkippedDeliveryPlanRepository(dbRead, dbWrite)
 	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
 	voucherRepository := repositories.NewVoucherRepository(dbRead, dbWrite)
 	pointEarningCapRepository := repositories.NewPointEarningCapRepository(dbRead, dbWrite)
@@ -150,7 +147,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	cartItemRepository := repositories.NewCartItemRepository(dbRead, dbWrite)
 	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
 	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
-	transactionDayRepository := repositories.NewTransactionDayRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -163,7 +159,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaConsumer, zenzivaConsumer)
 	settingService := services.NewSettingService(settingRepository)
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
-	skippedDeliveryPlanService := services.NewSkippedDeliveryPlanService(skippedDeliveryPlanRepository)
 	pointService := services.NewPointService(pointRepository)
 	voucherService := services.NewVoucherService(voucherRepository)
 	pointEarningCapService := services.NewPointEarningCapService(pointEarningCapRepository)
@@ -175,40 +170,37 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	cartItemService := services.NewCartItemService(cartItemRepository)
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
-	transactionDayService := services.NewTransactionDayService(transactionDayRepository, settingRepository, deliveryPlanRepository)
 	return &Service{
-		DbWrite:                    dbWrite,
-		Migration:                  migration,
-		KafkaConsumer:              kafkaConsumer,
-		FcmConsumer:                fcmConsumer,
-		ZenzivaConsumer:            zenzivaConsumer,
-		RoutesApiConsumer:          routesApiConsumer,
-		Storage:                    storage,
-		AdminService:               adminService,
-		BuyerService:               buyerService,
-		ArticleService:             articleService,
-		BlogService:                blogService,
-		BlockService:               blockService,
-		MessageService:             messageService,
-		ProductCategoryService:     productCategoryService,
-		ProductService:             productService,
-		ProductVariantService:      productVariantService,
-		SmsMessageService:          smsMessageService,
-		SettingService:             settingService,
-		DeliveryPlanService:        deliveryPlanService,
-		SkippedDeliveryPlanService: skippedDeliveryPlanService,
-		PointService:               pointService,
-		VoucherService:             voucherService,
-		PointEarningCapService:     pointEarningCapService,
-		PointSpendingCapService:    pointSpendingCapService,
-		TransactionService:         transactionService,
-		JsonWebTokenService:        jsonWebTokenService,
-		FcmRegistrationService:     fcmRegistrationService,
-		CartService:                cartService,
-		CartItemService:            cartItemService,
-		TransactionCounterService:  transactionCounterService,
-		DeliveryRouteService:       deliveryRouteService,
-		TransactionDayService:      transactionDayService,
+		DbWrite:                   dbWrite,
+		Migration:                 migration,
+		KafkaConsumer:             kafkaConsumer,
+		FcmConsumer:               fcmConsumer,
+		ZenzivaConsumer:           zenzivaConsumer,
+		RoutesApiConsumer:         routesApiConsumer,
+		Storage:                   storage,
+		AdminService:              adminService,
+		BuyerService:              buyerService,
+		ArticleService:            articleService,
+		BlogService:               blogService,
+		BlockService:              blockService,
+		MessageService:            messageService,
+		ProductCategoryService:    productCategoryService,
+		ProductService:            productService,
+		ProductVariantService:     productVariantService,
+		SmsMessageService:         smsMessageService,
+		SettingService:            settingService,
+		DeliveryPlanService:       deliveryPlanService,
+		PointService:              pointService,
+		VoucherService:            voucherService,
+		PointEarningCapService:    pointEarningCapService,
+		PointSpendingCapService:   pointSpendingCapService,
+		TransactionService:        transactionService,
+		JsonWebTokenService:       jsonWebTokenService,
+		FcmRegistrationService:    fcmRegistrationService,
+		CartService:               cartService,
+		CartItemService:           cartItemService,
+		TransactionCounterService: transactionCounterService,
+		DeliveryRouteService:      deliveryRouteService,
 	}, nil
 }
 

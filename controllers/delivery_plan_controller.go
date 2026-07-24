@@ -21,12 +21,11 @@ import (
 
 type (
 	deliveryPlanController struct {
-		adminService               services.AdminService
-		deliveryPlanService        services.DeliveryPlanService
-		settingService             services.SettingService
-		skippedDeliveryPlanService services.SkippedDeliveryPlanService
-		buyerService               services.BuyerService
-		jsonWebTokenService        services.JsonWebTokenService
+		adminService        services.AdminService
+		deliveryPlanService services.DeliveryPlanService
+		settingService      services.SettingService
+		buyerService        services.BuyerService
+		jsonWebTokenService services.JsonWebTokenService
 	}
 )
 
@@ -34,17 +33,15 @@ func NewDeliveryPlanController(
 	adminService services.AdminService,
 	deliveryPlanService services.DeliveryPlanService,
 	settingService services.SettingService,
-	skippedDeliveryPlanService services.SkippedDeliveryPlanService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *deliveryPlanController {
 	return &deliveryPlanController{
-		adminService:               adminService,
-		deliveryPlanService:        deliveryPlanService,
-		settingService:             settingService,
-		skippedDeliveryPlanService: skippedDeliveryPlanService,
-		buyerService:               buyerService,
-		jsonWebTokenService:        jsonWebTokenService,
+		adminService:        adminService,
+		deliveryPlanService: deliveryPlanService,
+		settingService:      settingService,
+		buyerService:        buyerService,
+		jsonWebTokenService: jsonWebTokenService,
 	}
 }
 
