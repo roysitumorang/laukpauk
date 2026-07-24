@@ -322,7 +322,7 @@ func (q *transactionDayRepository) CreateTransactionDay(
 		`INSERT INTO delivery_times (
 			transaction_window_id
 			, delivery_speed
-			, delivery_time
+			, datetime
 			, created_at
 		) VALUES`,
 	)
@@ -348,7 +348,7 @@ func (q *transactionDayRepository) CreateTransactionDay(
 		` RETURNING id
 			, transaction_window_id
 			, delivery_speed
-			, delivery_time
+			, datetime
 			, created_at`,
 	)
 	if rows, err = tx.Query(ctx, sb.String(), params...); err != nil {

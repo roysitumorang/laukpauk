@@ -1388,7 +1388,7 @@ func init() {
 				, delivery_speed integer NOT NULL
 				, datetime timestamp with time zone NOT NULL
 				, created_at timestamp with time zone NOT NULL
-				, UNIQUE (transaction_window_id, datetime)
+				, UNIQUE (transaction_window_id, delivery_speed, datetime)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

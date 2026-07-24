@@ -175,7 +175,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	cartItemService := services.NewCartItemService(cartItemRepository)
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
-	transactionDayService := services.NewTransactionDayService(transactionDayRepository, deliveryPlanRepository)
+	transactionDayService := services.NewTransactionDayService(transactionDayRepository, settingRepository, deliveryPlanRepository)
 	return &Service{
 		DbWrite:                    dbWrite,
 		Migration:                  migration,
