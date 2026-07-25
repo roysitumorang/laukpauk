@@ -201,6 +201,9 @@ func (q *transactionRepository) FindTransactions(
 			, quantity
 			, subtotal
 			, buyer_note
+			, revised_quantity
+			, revised_subtotal
+			, revision_note
 			, out_of_stock
 		FROM transaction_items
 		WHERE transaction_id IN (`,
@@ -308,6 +311,9 @@ func (q *transactionRepository) FindTransactions(
 			&transactionItem.Quantity,
 			&transactionItem.Subtotal,
 			&transactionItem.BuyerNote,
+			&transactionItem.RevisedQuantity,
+			&transactionItem.RevisedSubtotal,
+			&transactionItem.RevisionNote,
 			&transactionItem.OutOfStock,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -473,6 +479,9 @@ func (q *transactionRepository) FindTransaction(
 			, quantity
 			, subtotal
 			, buyer_note
+			, revised_quantity
+			, revised_subtotal
+			, revision_note
 			, out_of_stock
 		FROM transaction_items
 		WHERE transaction_id = $1
@@ -502,6 +511,9 @@ func (q *transactionRepository) FindTransaction(
 			&transactionItem.Quantity,
 			&transactionItem.Subtotal,
 			&transactionItem.BuyerNote,
+			&transactionItem.RevisedQuantity,
+			&transactionItem.RevisedSubtotal,
+			&transactionItem.RevisionNote,
 			&transactionItem.OutOfStock,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -757,6 +769,9 @@ func (q *transactionRepository) CreateTransaction(
 			, quantity
 			, subtotal
 			, buyer_note
+			, revised_quantity
+			, revised_subtotal
+			, revision_note
 			, out_of_stock
 		) VALUES`,
 	)
@@ -775,15 +790,18 @@ func (q *transactionRepository) CreateTransaction(
 			&requestItem.Quantity,
 			&requestItem.Subtotal,
 			&requestItem.BuyerNote,
+			&requestItem.RevisedQuantity,
+			&requestItem.RevisedSubtotal,
+			&requestItem.RevisionNote,
 			&requestItem.OutOfStock,
 		)
-		if n = len(params); n > 12 {
+		if n = len(params); n > 15 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(
 			sb,
-			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
-			n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
+			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
 		)
 	}
 	_, _ = sb.WriteString(
@@ -799,6 +817,9 @@ func (q *transactionRepository) CreateTransaction(
 			, quantity
 			, subtotal
 			, buyer_note
+			, revised_quantity
+			, revised_subtotal
+			, revision_note
 			, out_of_stock`,
 	)
 	rows, err := tx.Query(ctx, sb.String(), params...)
@@ -825,6 +846,9 @@ func (q *transactionRepository) CreateTransaction(
 			&transactionItem.Quantity,
 			&transactionItem.Subtotal,
 			&transactionItem.BuyerNote,
+			&transactionItem.RevisedQuantity,
+			&transactionItem.RevisedSubtotal,
+			&transactionItem.RevisionNote,
 			&transactionItem.OutOfStock,
 		); err != nil {
 			if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
@@ -1045,9 +1069,12 @@ func (q *transactionRepository) UpdateTransaction(
 		if err = tx.QueryRow(
 			ctx,
 			`UPDATE transaction_items SET
-				out_of_stock = $1
-			WHERE transaction_id = $2
-				AND id = $3
+				revised_quantity = $1
+				, revised_subtotal = $2
+				, revision_note = $3
+				, out_of_stock = $4
+			WHERE transaction_id = $5
+				AND id = $6
 			RETURNING id
 				, transaction_id
 				, cart_item_id
@@ -1061,7 +1088,13 @@ func (q *transactionRepository) UpdateTransaction(
 				, quantity
 				, subtotal
 				, buyer_note
+				, revised_quantity
+				, revised_subtotal
+				, revision_note
 				, out_of_stock`,
+			requestItem.RevisedQuantity,
+			requestItem.RevisedSubtotal,
+			requestItem.RevisionNote,
 			requestItem.OutOfStock,
 			response.ID,
 			requestItem.ID,
@@ -1079,6 +1112,9 @@ func (q *transactionRepository) UpdateTransaction(
 			&responseItem.Quantity,
 			&responseItem.Subtotal,
 			&responseItem.BuyerNote,
+			&responseItem.RevisedQuantity,
+			&responseItem.RevisedSubtotal,
+			&responseItem.RevisionNote,
 			&responseItem.OutOfStock,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -1161,6 +1197,32 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString("payment_request_id IN (")
 		for i, paymentRequestID := range request.PaymentRequestIDs {
 			params = append(params, paymentRequestID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.PaymentTokenIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("payment_token_id IN (")
+		for i, paymentTokenID := range request.PaymentTokenIDs {
+			params = append(params, paymentTokenID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.PaymentIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("payment_id IN (")
+		for i, paymentID := range request.PaymentIDs {
+			params = append(params, paymentID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

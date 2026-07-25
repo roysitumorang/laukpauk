@@ -1909,6 +1909,9 @@ func init() {
 				, quantity bigint NOT NULL
 				, subtotal bigint NOT NULL
 				, buyer_note character varying NOT NULL
+				, revised_quantity bigint NOT NULL
+				, revised_subtotal bigint NOT NULL
+				, revision_note character varying NOT NULL
 				, out_of_stock bool NOT NULL
 				, UNIQUE (transaction_id, product_variant_id)
 			);`,

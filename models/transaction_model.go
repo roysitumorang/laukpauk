@@ -118,6 +118,9 @@ type (
 		Quantity                int64      `json:"quantity" form:"quantity"`
 		Subtotal                int64      `json:"-" form:"-"`
 		BuyerNote               string     `json:"buyer_note" form:"buyer_note"`
+		RevisedQuantity         int64      `json:"revised_quantity" form:"revised_quantity"`
+		RevisedSubtotal         int64      `json:"revised_subtotal" form:"-"`
+		RevisionNote            string     `json:"revision_note" form:"revision_note"`
 		OutOfStock              bool       `json:"out_of_stock" form:"out_of_stock"`
 	}
 
@@ -128,7 +131,9 @@ type (
 		CartIDs,
 		ReferrerIDs,
 		VoucherIDs,
-		PaymentRequestIDs []uuid.UUID
+		PaymentRequestIDs,
+		PaymentTokenIDs,
+		PaymentIDs []uuid.UUID
 		TransactionStatuses,
 		ExcludedTransactionStatuses []TransactionStatus
 		ReturnCountOnly bool
@@ -213,6 +218,16 @@ func (q *TransactionFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *Transaction
 
 func (q *TransactionFilter) WithPaymentRequestIDs(paymentRequestIDs ...uuid.UUID) *TransactionFilter {
 	q.PaymentRequestIDs = paymentRequestIDs
+	return q
+}
+
+func (q *TransactionFilter) WithPaymentTokenIDs(paymentTokenIDs ...uuid.UUID) *TransactionFilter {
+	q.PaymentTokenIDs = paymentTokenIDs
+	return q
+}
+
+func (q *TransactionFilter) WithPaymentIDs(paymentIDs ...uuid.UUID) *TransactionFilter {
+	q.PaymentIDs = paymentIDs
 	return q
 }
 
