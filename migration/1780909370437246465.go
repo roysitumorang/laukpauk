@@ -1587,6 +1587,7 @@ func init() {
 			ctx,
 			`CREATE TABLE payment_channels (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, business_id character varying NOT NULL
 				, name character varying NOT NULL
 				, channel_code character varying NOT NULL UNIQUE
 				, country character varying NOT NULL
@@ -1596,6 +1597,7 @@ func init() {
 				, payment_request_expiry real NOT NULL
 				, refund boolean NOT NULL
 				, "type" character varying NOT NULL
+				, channel_category character varying NOT NULL
 				, created_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -1611,6 +1613,7 @@ func init() {
 		}
 		params := [][]any{
 			{
+				"5f9e7c05d72844407e5289a3",
 				"BCA Virtual Account",
 				"BCA_VIRTUAL_ACCOUNT",
 				"ID",
@@ -1620,8 +1623,10 @@ func init() {
 				48,
 				false,
 				"BANK TRANSFER",
+				"VIRTUAL_ACCOUNT",
 				now,
 			}, {
+				"5f9e7c05d72844407e5289a3",
 				"BNI Virtual Account",
 				"BNI_VIRTUAL_ACCOUNT",
 				"ID",
@@ -1631,8 +1636,10 @@ func init() {
 				48,
 				false,
 				"BANK TRANSFER",
+				"VIRTUAL_ACCOUNT",
 				now,
 			}, {
+				"5f9e7c05d72844407e5289a3",
 				"BRI Virtual Account",
 				"BRI_VIRTUAL_ACCOUNT",
 				"ID",
@@ -1642,8 +1649,10 @@ func init() {
 				48,
 				false,
 				"BANK TRANSFER",
+				"VIRTUAL_ACCOUNT",
 				now,
 			}, {
+				"5f9e7c05d72844407e5289a3",
 				"Cards",
 				"CARDS",
 				"ID",
@@ -1653,8 +1662,10 @@ func init() {
 				0.166,
 				true,
 				"CARDS",
+				"PAYMENT",
 				now,
 			}, {
+				"5f9e7c05d72844407e5289a3",
 				"Mandiri Virtual Account",
 				"MANDIRI_VIRTUAL_ACCOUNT",
 				"ID",
@@ -1664,8 +1675,10 @@ func init() {
 				48,
 				false,
 				"BANK TRANSFER",
+				"VIRTUAL_ACCOUNT",
 				now,
 			}, {
+				"5f9e7c05d72844407e5289a3",
 				"QRIS",
 				"QRIS",
 				"ID",
@@ -1675,6 +1688,7 @@ func init() {
 				48,
 				false,
 				"QR CODE",
+				"QRIS",
 				now,
 			},
 		}
@@ -1682,7 +1696,8 @@ func init() {
 			if _, err = tx.Exec(
 				ctx,
 				`INSERT INTO payment_channels (
-					name
+					business_id
+					, name
 					, channel_code
 					, country
 					, currency
@@ -1691,8 +1706,9 @@ func init() {
 					, payment_request_expiry
 					, refund
 					, "type"
+					, channel_category
 					, created_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
 				params[i]...,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
