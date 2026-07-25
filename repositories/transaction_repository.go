@@ -114,6 +114,7 @@ func (q *transactionRepository) FindTransactions(
 		, delivery_address
 		, delivery_instruction
 		, delivery_datetime
+		, payment_channel_id
 		, payment_request_id
 		, payment_token_id
 		, created_at
@@ -247,6 +248,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DeliveryAddress,
 			&transaction.DeliveryInstruction,
 			&transaction.DeliveryDatetime,
+			&transaction.PaymentChannelID,
 			&transaction.PaymentRequestID,
 			&transaction.PaymentTokenID,
 			&transaction.CreatedAt,
@@ -372,6 +374,7 @@ func (q *transactionRepository) FindTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_channel_id
 			, payment_request_id
 			, payment_token_id
 			, created_at
@@ -435,6 +438,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentChannelID,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
 		&response.CreatedAt,
@@ -570,8 +574,6 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
-			, payment_request_id
-			, payment_token_id
 			, created_at
 			, updated_at
 			, revised_payment_amount
@@ -579,7 +581,7 @@ func (q *transactionRepository) CreateTransaction(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
+			, $31, $32, $33, $34, $35, $36, $37, $38
 		)
 		RETURNING id
 			, parent_id
@@ -617,6 +619,7 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_channel_id
 			, payment_request_id
 			, payment_token_id
 			, created_at
@@ -673,8 +676,6 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryAddress,
 		request.DeliveryInstruction,
 		request.DeliveryDatetime,
-		request.PaymentRequestID,
-		request.PaymentTokenID,
 		request.CreatedAt,
 		request.UpdatedAt,
 		request.RevisedPaymentAmount,
@@ -715,6 +716,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentChannelID,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
 		&response.CreatedAt,
@@ -917,6 +919,7 @@ func (q *transactionRepository) UpdateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_channel_id
 			, payment_request_id
 			, payment_token_id
 			, created_at
@@ -979,6 +982,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentChannelID,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
 		&response.CreatedAt,
@@ -1017,6 +1021,28 @@ func (q *transactionRepository) UpdateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(&sb, " transaction_status = $%d", n)
+	}
+
+	if response.PaymentChannelID == nil && request.PaymentChannelID != nil {
+		params = append(params, request.PaymentChannelID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_channel_id = $%d", n)
+	}
+	if response.PaymentRequestID == nil && request.PaymentRequestID != nil {
+		params = append(params, request.PaymentRequestID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_request_id = $%d", n)
+	}
+	if response.PaymentTokenID == nil && request.PaymentTokenID != nil {
+		params = append(params, request.PaymentTokenID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_token_id = $%d", n)
 	}
 	if response.PaymentRequestCancelledAt == nil && request.PaymentRequestCancelledAt != nil {
 		params = append(params, request.PaymentRequestCancelledAt)
@@ -1187,6 +1213,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, delivery_address
 				, delivery_instruction
 				, delivery_datetime
+				, payment_channel_id
 				, payment_request_id
 				, payment_token_id
 				, created_at
@@ -1247,6 +1274,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.DeliveryAddress,
 			&response.DeliveryInstruction,
 			&response.DeliveryDatetime,
+			&response.PaymentChannelID,
 			&response.PaymentRequestID,
 			&response.PaymentTokenID,
 			&response.CreatedAt,
@@ -1321,6 +1349,7 @@ func (q *transactionRepository) UpdateTransaction(
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
+		params = params[:0]
 		sb.Reset()
 		_, _ = sb.WriteString("UPDATE transaction_items SET")
 		if itemResponse.RevisedQuantity != itemRequest.RevisedQuantity {

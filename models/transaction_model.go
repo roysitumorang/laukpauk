@@ -79,8 +79,9 @@ type (
 		DeliveryAddress           string             `json:"delivery_address" form:"delivery_address"`
 		DeliveryInstruction       string             `json:"delivery_instruction" form:"delivery_instruction"`
 		DeliveryDatetime          time.Time          `json:"delivery_datetime" form:"delivery_datetime"`
-		PaymentRequestID          string             `json:"-" form:"-"`
-		PaymentTokenID            string             `json:"-" form:"-"`
+		PaymentChannelID          *uuid.UUID         `json:"payment_channel_id" form:"-"`
+		PaymentRequestID          *string            `json:"-" form:"-"`
+		PaymentTokenID            *string            `json:"-" form:"-"`
 		CreatedAt                 time.Time          `json:"created_at" form:"-"`
 		UpdatedAt                 time.Time          `json:"updated_at" form:"-"`
 		PaymentRequestCancelledAt *time.Time         `json:"-" form:"-"`
@@ -180,10 +181,10 @@ type (
 )
 
 func NewTransactionFilter() *TransactionFilter {
-	return new(TransactionFilter{
+	return &TransactionFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *TransactionFilter) WithTransactionIDs(transactionIDs ...uuid.UUID) *TransactionFilter {

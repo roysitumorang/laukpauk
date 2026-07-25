@@ -1769,8 +1769,9 @@ func init() {
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
 				, delivery_datetime timestamp with time zone NOT NULL
-				, payment_request_id character varying NOT NULL UNIQUE
-				, payment_token_id character varying NOT NULL UNIQUE
+				, payment_channel_id UUID REFERENCES payment_channels (id)
+				, payment_request_id character varying UNIQUE
+				, payment_token_id character varying UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, payment_request_cancelled_at timestamp with time zone
@@ -1853,14 +1854,14 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions (created_at);`,
+			`CREATE INDEX ON transactions (payment_channel_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions (payment_request_id);`,
+			`CREATE INDEX ON transactions (created_at);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

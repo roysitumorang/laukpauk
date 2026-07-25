@@ -300,6 +300,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.PointService,
 		q.ProductVariantService,
 		q.JsonWebTokenService,
+		q.PaymentChannelService,
 		q.XenditConsumer,
 	).Mount(app.Group("/transactions"))
 	controllers.NewFcmRegistrationController(

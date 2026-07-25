@@ -38,6 +38,7 @@ type (
 		pointService              services.PointService
 		productVariantService     services.ProductVariantService
 		jsonWebTokenService       services.JsonWebTokenService
+		paymentChannelService     services.PaymentChannelService
 		xenditConsumer            *consumers.XenditConsumer
 	}
 )
@@ -56,6 +57,7 @@ func NewTransactionController(
 	pointService services.PointService,
 	productVariantService services.ProductVariantService,
 	jsonWebTokenService services.JsonWebTokenService,
+	paymentChannelService services.PaymentChannelService,
 	xenditConsumer *consumers.XenditConsumer,
 ) *transactionController {
 	return &transactionController{
@@ -72,6 +74,7 @@ func NewTransactionController(
 		pointService:              pointService,
 		productVariantService:     productVariantService,
 		jsonWebTokenService:       jsonWebTokenService,
+		paymentChannelService:     paymentChannelService,
 		xenditConsumer:            xenditConsumer,
 	}
 }
@@ -444,6 +447,56 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
+	}
+	if request.PaymentAmount > 0 {
+		if request.PaymentChannelID == nil || request.PaymentChannelID.Compare(uuid.Nil()) == 0 {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage("payment_channel_id: is required").
+				WriteResponse(c)
+		}
+		paymentChannel, err := q.paymentChannelService.FindPaymentChannel(
+			ctx,
+			models.NewPaymentChannelFilter().
+				WithPaymentChannelIDs(*request.PaymentChannelID).
+				WithAmount(request.PaymentAmount),
+		)
+		if err != nil && !errors.Is(err, models.ErrPaymentChannelNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannel")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if paymentChannel == nil {
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage("payment_channel_id: not found").
+				WriteResponse(c)
+		}
+		paymentRequestID, paymentTokenID, err := q.xenditConsumer.CreatePaymentRequest(
+			ctx,
+			response.ID.String(),
+			paymentChannel.ChannelType,
+			paymentChannel.Country,
+			paymentChannel.Currency,
+			request.PaymentAmount,
+			"AUTOMATIC",
+			paymentChannel.ChannelCode,
+			helper.Sprintf("Pembayaran Transaksi %s", response.ReferenceNumber),
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePaymentRequest")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		response.PaymentChannelID = request.PaymentChannelID
+		response.PaymentRequestID = &paymentRequestID
+		response.PaymentTokenID = &paymentTokenID
+		if response, err = q.transactionService.UpdateTransaction(ctx, tx, response); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
 	}
 	cart.BuyerID = nil
 	cart.DeletedBuyerID = &currentBuyer.ID
