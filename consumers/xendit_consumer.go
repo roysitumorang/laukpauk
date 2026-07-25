@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/roysitumorang/laukpauk/helper"
@@ -124,11 +125,11 @@ func NewXenditConsumer(
 	apiKey string,
 	timeout time.Duration,
 ) *XenditConsumer {
-	var buffer bytes.Buffer
-	_, _ = fmt.Fprintf(&buffer, "%s:", apiKey)
+	var sb strings.Builder
+	_, _ = fmt.Fprintf(&sb, "%s:", apiKey)
 	return &XenditConsumer{
 		baseURL: baseURL,
-		apiKey:  base64.StdEncoding.EncodeToString(buffer.Bytes()),
+		apiKey:  base64.StdEncoding.EncodeToString(bytes.NewBufferString(sb.String()).Bytes()),
 		client: &fasthttp.Client{
 			ReadTimeout:  timeout,
 			WriteTimeout: timeout,
