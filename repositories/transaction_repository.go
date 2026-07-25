@@ -880,37 +880,8 @@ func (q *transactionRepository) UpdateTransaction(
 	}
 	err := tx.QueryRow(
 		ctx,
-		`SELECT id FROM transactions WHERE id = $1 FOR UPDATE`,
-		request.ID,
-	).Scan(&response.ID)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	if err = tx.QueryRow(
-		ctx,
-		`UPDATE transactions SET
-			transaction_status = $1
-			, payment_request_cancelled_at = $2
-			, payment_id = $3
-			, paid_at = $4
-			, payment_cancelled_at = $5
-			, processed_by = $6
-			, processed_at = $7
-			, revised_payment_amount = $8
-			, refund_amount = $9
-			, refunded_at = $10
-			, refund_id = $11
-			, cancelled_by = $12
-			, cancelled_at = $13
-			, cancellation_reason = $14
-			, shipped_by = $15
-			, shipped_at = $16
-			, completed_by = $17
-			, completed_at = $18
-			, updated_at = $19
-		WHERE id = $20
-		RETURNING id
+		`SELECT
+			id
 			, parent_id
 			, reordered
 			, buyer_id
@@ -935,11 +906,11 @@ func (q *transactionRepository) UpdateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
+			, delivery_route_id
 			, payment_amount
 			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
-			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
 			, delivery_distance_km
@@ -966,26 +937,10 @@ func (q *transactionRepository) UpdateTransaction(
 			, shipped_by
 			, shipped_at
 			, completed_by
-			, completed_at`,
-		request.TransactionStatus,
-		request.PaymentRequestCancelledAt,
-		request.PaymentID,
-		request.PaidAt,
-		request.PaymentCancelledAt,
-		request.ProcessedBy,
-		request.ProcessedAt,
-		request.RevisedPaymentAmount,
-		request.RefundAmount,
-		request.RefundedAt,
-		request.RefundID,
-		request.CancelledBy,
-		request.CancelledAt,
-		request.CancellationReason,
-		request.ShippedBy,
-		request.ShippedAt,
-		request.CompletedBy,
-		request.CompletedAt,
-		request.UpdatedAt,
+			, completed_at
+		FROM transactions
+		WHERE id = $1
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -1045,36 +1000,365 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.ShippedAt,
 		&response.CompletedBy,
 		&response.CompletedAt,
-	); err != nil {
+	)
+	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	for i, requestItem := range request.Items {
-		var responseItem models.TransactionItem
+	var (
+		params []any
+		sb     strings.Builder
+		n      int
+	)
+	_, _ = sb.WriteString("UPDATE transactions SET")
+	if response.TransactionStatus != request.TransactionStatus {
+		params = append(params, request.TransactionStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " transaction_status = $%d", n)
+	}
+	if response.PaymentRequestCancelledAt == nil && request.PaymentRequestCancelledAt != nil {
+		params = append(params, request.PaymentRequestCancelledAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_request_cancelled_at = $%d", n)
+	}
+	if response.PaymentID == nil && request.PaymentID != nil {
+		params = append(params, request.PaymentID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_id = $%d", n)
+	}
+	if response.PaidAt == nil && request.PaidAt != nil {
+		params = append(params, request.PaidAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " paid_at = $%d", n)
+	}
+	if response.PaymentCancelledAt == nil && request.PaymentCancelledAt != nil {
+		params = append(params, request.PaymentCancelledAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_cancelled_at = $%d", n)
+	}
+	if response.ProcessedBy == nil && request.ProcessedBy != nil {
+		params = append(params, request.ProcessedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " processed_by = $%d", n)
+	}
+	if response.ProcessedAt == nil && request.ProcessedAt != nil {
+		params = append(params, request.ProcessedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " processed_at = $%d", n)
+	}
+	if response.RevisedPaymentAmount != request.RevisedPaymentAmount {
+		params = append(params, request.RevisedPaymentAmount)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " revised_payment_amount = $%d", n)
+	}
+	if response.RefundAmount == nil && request.RefundAmount != nil {
+		params = append(params, request.RefundAmount)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " refund_amount = $%d", n)
+	}
+	if response.RefundedAt == nil && request.RefundedAt != nil {
+		params = append(params, request.RefundedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " refunded_at = $%d", n)
+	}
+	if response.RefundID == nil && request.RefundID != nil {
+		params = append(params, request.RefundID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " refund_id = $%d", n)
+	}
+	if response.CancelledBy == nil && request.CancelledBy != nil {
+		params = append(params, request.CancelledBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " cancelled_by = $%d", n)
+	}
+	if response.CancelledAt == nil && request.CancelledAt != nil {
+		params = append(params, request.CancelledAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " cancelled_at = $%d", n)
+	}
+	if response.CancellationReason == nil && request.CancellationReason != nil {
+		params = append(params, request.CancellationReason)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " cancellation_reason = $%d", n)
+	}
+	if response.ShippedBy == nil && request.ShippedBy != nil {
+		params = append(params, request.ShippedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " shipped_by = $%d", n)
+	}
+	if response.ShippedAt == nil && request.ShippedAt != nil {
+		params = append(params, request.ShippedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " shipped_at = $%d", n)
+	}
+	if response.CompletedBy == nil && request.CompletedBy != nil {
+		params = append(params, request.CompletedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " completed_by = $%d", n)
+	}
+	if response.CompletedAt == nil && request.CompletedAt != nil {
+		params = append(params, request.CompletedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " completed_at = $%d", n)
+	}
+	if response.CompletedAt == nil && request.CompletedAt != nil {
+		params = append(params, request.CompletedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " completed_at = $%d", n)
+	}
+	if len(params) > 0 {
+		params = append(params, request.UpdatedAt, request.ID)
+		n = len(params)
+		_, _ = fmt.Fprintf(
+			&sb,
+			`, updated_at = $%d
+			WHERE id = $%d
+			RETURNING id
+				, parent_id
+				, reordered
+				, buyer_id
+				, cart_id
+				, reference_number
+				, transaction_status
+				, recipient_name
+				, recipient_mobile_phone
+				, buyer_note
+				, unique_code
+				, shopping_cost
+				, referrer_id
+				, referral_code
+				, referral_points
+				, voucher_id
+				, voucher_type
+				, voucher_code
+				, voucher_discount
+				, reward_points_discounted
+				, reward_points_discount
+				, wallet_discounted
+				, wallet_amount
+				, wallet_discount
+				, discounted_shopping_cost
+				, payment_amount
+				, payment_due_date
+				, delivery_cost
+				, discounted_delivery_cost
+				, delivery_route_id
+				, delivery_longitude
+				, delivery_latitude
+				, delivery_distance_km
+				, delivery_address
+				, delivery_instruction
+				, delivery_datetime
+				, payment_request_id
+				, payment_token_id
+				, created_at
+				, updated_at
+				, payment_request_cancelled_at
+				, payment_id
+				, paid_at
+				, payment_cancelled_at
+				, processed_by
+				, processed_at
+				, revised_payment_amount
+				, refund_amount
+				, refunded_at
+				, refund_id
+				, cancelled_by
+				, cancelled_at
+				, cancellation_reason
+				, shipped_by
+				, shipped_at
+				, completed_by
+				, completed_at`,
+			n-1, n,
+		)
+		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			&response.ID,
+			&response.ParentID,
+			&response.Reordered,
+			&response.BuyerID,
+			&response.CartID,
+			&response.ReferenceNumber,
+			&response.TransactionStatus,
+			&response.RecipientName,
+			&response.RecipientMobilePhone,
+			&response.BuyerNote,
+			&response.UniqueCode,
+			&response.ShoppingCost,
+			&response.ReferrerID,
+			&response.ReferralCode,
+			&response.ReferralPoints,
+			&response.VoucherID,
+			&response.VoucherType,
+			&response.VoucherCode,
+			&response.VoucherDiscount,
+			&response.RewardPointsDiscounted,
+			&response.RewardPointsDiscount,
+			&response.WalletDiscounted,
+			&response.WalletAmount,
+			&response.WalletDiscount,
+			&response.DiscountedShoppingCost,
+			&response.PaymentAmount,
+			&response.PaymentDueDate,
+			&response.DeliveryCost,
+			&response.DiscountedDeliveryCost,
+			&response.DeliveryRouteID,
+			&response.DeliveryLongitude,
+			&response.DeliveryLatitude,
+			&response.DeliveryDistanceKM,
+			&response.DeliveryAddress,
+			&response.DeliveryInstruction,
+			&response.DeliveryDatetime,
+			&response.PaymentRequestID,
+			&response.PaymentTokenID,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+			&response.PaymentRequestCancelledAt,
+			&response.PaymentID,
+			&response.PaidAt,
+			&response.PaymentCancelledAt,
+			&response.ProcessedBy,
+			&response.ProcessedAt,
+			&response.RevisedPaymentAmount,
+			&response.RefundAmount,
+			&response.RefundedAt,
+			&response.RefundID,
+			&response.CancelledBy,
+			&response.CancelledAt,
+			&response.CancellationReason,
+			&response.ShippedBy,
+			&response.ShippedAt,
+			&response.CompletedBy,
+			&response.CompletedAt,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
+	}
+	for i, itemRequest := range request.Items {
+		var itemResponse models.TransactionItem
 		if err = tx.QueryRow(
 			ctx,
-			`SELECT id
+			`SELECT
+				id
+				, transaction_id
+				, product_variant_id
+				, product_id
+				, product_name
+				, stock_unit
+				, price
+				, discount_minimum_quantity
+				, discount_amount
+				, quantity
+				, subtotal
+				, buyer_note
+				, revised_quantity
+				, revised_subtotal
+				, revision_note
+				, out_of_stock
 			FROM transaction_items
 			WHERE transaction_id = $1
 				AND id = $2
 			FOR NO KEY UPDATE`,
 			request.ID,
+			itemRequest.ID,
 		).Scan(
-			response.ID,
-			requestItem.ID,
+			&itemResponse.ID,
+			&itemResponse.TransactionID,
+			&itemResponse.ProductVariantID,
+			&itemResponse.ProductID,
+			&itemResponse.ProductName,
+			&itemResponse.StockUnit,
+			&itemResponse.Price,
+			&itemResponse.DiscountMinimumQuantity,
+			&itemResponse.DiscountAmount,
+			&itemResponse.Quantity,
+			&itemResponse.Subtotal,
+			&itemResponse.BuyerNote,
+			&itemResponse.RevisedQuantity,
+			&itemResponse.RevisedSubtotal,
+			&itemResponse.RevisionNote,
+			&itemResponse.OutOfStock,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
-		if err = tx.QueryRow(
-			ctx,
-			`UPDATE transaction_items SET
-				revised_quantity = $1
-				, revised_subtotal = $2
-				, revision_note = $3
-				, out_of_stock = $4
-			WHERE transaction_id = $5
-				AND id = $6
+		sb.Reset()
+		_, _ = sb.WriteString("UPDATE transaction_items SET")
+		if itemResponse.RevisedQuantity != itemRequest.RevisedQuantity {
+			params = append(params, itemRequest.RevisedQuantity)
+			if n = len(params); n > 1 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sb, " revised_quantity = $%d", n)
+		}
+		if itemResponse.RevisedSubtotal != itemRequest.RevisedSubtotal {
+			params = append(params, itemRequest.RevisedSubtotal)
+			if n = len(params); n > 1 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sb, " revised_subtotal = $%d", n)
+		}
+		if itemResponse.RevisionNote != itemRequest.RevisionNote {
+			params = append(params, itemRequest.RevisionNote)
+			if n = len(params); n > 1 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sb, " revision_note = $%d", n)
+		}
+		if itemResponse.OutOfStock != itemRequest.OutOfStock {
+			params = append(params, itemRequest.OutOfStock)
+			if n = len(params); n > 1 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(&sb, " out_of_stock = $%d", n)
+		}
+		if len(params) == 0 {
+			response.Items[i] = &itemResponse
+			continue
+		}
+		params = append(params, itemRequest.ID)
+		_, _ = fmt.Fprintf(
+			&sb,
+			` WHERE id = $%d
 			RETURNING id
 				, transaction_id
 				, cart_item_id
@@ -1092,35 +1376,31 @@ func (q *transactionRepository) UpdateTransaction(
 				, revised_subtotal
 				, revision_note
 				, out_of_stock`,
-			requestItem.RevisedQuantity,
-			requestItem.RevisedSubtotal,
-			requestItem.RevisionNote,
-			requestItem.OutOfStock,
-			response.ID,
-			requestItem.ID,
-		).Scan(
-			&responseItem.ID,
-			&responseItem.TransactionID,
-			&responseItem.CartItemID,
-			&responseItem.ProductVariantID,
-			&responseItem.ProductID,
-			&responseItem.ProductName,
-			&responseItem.StockUnit,
-			&responseItem.Price,
-			&responseItem.DiscountMinimumQuantity,
-			&responseItem.DiscountAmount,
-			&responseItem.Quantity,
-			&responseItem.Subtotal,
-			&responseItem.BuyerNote,
-			&responseItem.RevisedQuantity,
-			&responseItem.RevisedSubtotal,
-			&responseItem.RevisionNote,
-			&responseItem.OutOfStock,
+			len(params),
+		)
+		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			&itemResponse.ID,
+			&itemResponse.TransactionID,
+			&itemResponse.CartItemID,
+			&itemResponse.ProductVariantID,
+			&itemResponse.ProductID,
+			&itemResponse.ProductName,
+			&itemResponse.StockUnit,
+			&itemResponse.Price,
+			&itemResponse.DiscountMinimumQuantity,
+			&itemResponse.DiscountAmount,
+			&itemResponse.Quantity,
+			&itemResponse.Subtotal,
+			&itemResponse.BuyerNote,
+			&itemResponse.RevisedQuantity,
+			&itemResponse.RevisedSubtotal,
+			&itemResponse.RevisionNote,
+			&itemResponse.OutOfStock,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
-		response.Items[i] = &responseItem
+		response.Items[i] = &itemResponse
 	}
 	return &response, nil
 }
