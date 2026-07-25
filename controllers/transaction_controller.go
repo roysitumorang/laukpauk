@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/consumers"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
@@ -37,6 +38,7 @@ type (
 		pointService              services.PointService
 		productVariantService     services.ProductVariantService
 		jsonWebTokenService       services.JsonWebTokenService
+		xenditConsumer            *consumers.XenditConsumer
 	}
 )
 
@@ -54,6 +56,7 @@ func NewTransactionController(
 	pointService services.PointService,
 	productVariantService services.ProductVariantService,
 	jsonWebTokenService services.JsonWebTokenService,
+	xenditConsumer *consumers.XenditConsumer,
 ) *transactionController {
 	return &transactionController{
 		adminService:              adminService,
@@ -69,6 +72,7 @@ func NewTransactionController(
 		pointService:              pointService,
 		productVariantService:     productVariantService,
 		jsonWebTokenService:       jsonWebTokenService,
+		xenditConsumer:            xenditConsumer,
 	}
 }
 

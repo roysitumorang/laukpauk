@@ -30,6 +30,7 @@ type (
 		FcmConsumer               *consumers.FcmConsumer
 		ZenzivaConsumer           *consumers.ZenzivaConsumer
 		RoutesApiConsumer         *consumers.RoutesApiConsumer
+		XenditConsumer            *consumers.XenditConsumer
 		Storage                   fiber.Storage
 		AdminService              services.AdminService
 		BuyerService              services.BuyerService
@@ -53,6 +54,7 @@ type (
 		CartService               services.CartService
 		TransactionCounterService services.TransactionCounterService
 		DeliveryRouteService      services.DeliveryRouteService
+		PaymentChannelService     services.PaymentChannelService
 	}
 )
 
@@ -119,6 +121,16 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		os.Getenv("GOOGLE_API_KEY"),
 		routesApiTimeoutDuration,
 	)
+	xenditTimeoutDuration, err := time.ParseDuration(os.Getenv("XENDIT_TIMEOUT_DURATION"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
+		return nil, err
+	}
+	xenditConsumer := consumers.NewXenditConsumer(
+		os.Getenv("XENDIT_BASE_URL"),
+		os.Getenv("XENDIT_API_KEY"),
+		xenditTimeoutDuration,
+	)
 	storage := valkey.New(valkey.Config{
 		URL: os.Getenv("REDIS_URL"),
 	})
@@ -145,6 +157,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	cartRepository := repositories.NewCartRepository(dbRead, dbWrite)
 	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
 	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
+	paymentChannelRepository := repositories.NewPaymentChannelRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -167,6 +180,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	cartService := services.NewCartService(cartRepository)
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
+	paymentChannelService := services.NewPaymentChannelService(paymentChannelRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
@@ -174,6 +188,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		FcmConsumer:               fcmConsumer,
 		ZenzivaConsumer:           zenzivaConsumer,
 		RoutesApiConsumer:         routesApiConsumer,
+		XenditConsumer:            xenditConsumer,
 		Storage:                   storage,
 		AdminService:              adminService,
 		BuyerService:              buyerService,
@@ -197,6 +212,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		CartService:               cartService,
 		TransactionCounterService: transactionCounterService,
 		DeliveryRouteService:      deliveryRouteService,
+		PaymentChannelService:     paymentChannelService,
 	}, nil
 }
 

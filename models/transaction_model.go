@@ -138,6 +138,38 @@ type (
 		Page int64
 		UrlValues url.Values
 	}
+
+	PaymentWebhookNotification struct {
+		PaymentCapture       PaymentEvent `json:"paymentCapture"`
+		PaymentAuthorization PaymentEvent `json:"paymentAuthorization"`
+		PaymentFailure       PaymentEvent `json:"paymentFailure"`
+	}
+
+	PaymentEvent struct {
+		Value struct {
+			Event      string    `json:"event"`
+			BusinessID string    `json:"business_id"`
+			Created    time.Time `json:"created"`
+			Data       struct {
+				PaymentID         string         `json:"payment_id"`
+				BusinessID        string         `json:"business_id"`
+				Status            string         `json:"status"`
+				PaymentRequestID  string         `json:"payment_request_id"`
+				RequestAmount     int64          `json:"request_amount"`
+				CustomerID        string         `json:"customer_id"`
+				ChannelCode       string         `json:"channel_code"`
+				Country           string         `json:"country"`
+				Currency          string         `json:"currency"`
+				ReferenceID       string         `json:"reference_id"`
+				Description       string         `json:"description"`
+				FailureCode       string         `json:"failure_code"`
+				ChannelProperties map[string]any `json:"channel_properties"`
+				ChannelType       string         `json:"type"`
+				Created           time.Time      `json:"created"`
+				Updated           time.Time      `json:"updated"`
+			} `json:"data"`
+		} `json:"value"`
+	}
 )
 
 func NewTransactionFilter() *TransactionFilter {

@@ -1596,7 +1596,7 @@ func init() {
 				, maximum_amount bigint NOT NULL
 				, payment_request_expiry real NOT NULL
 				, refund boolean NOT NULL
-				, "type" character varying NOT NULL
+				, channel_type character varying NOT NULL
 				, channel_category character varying NOT NULL
 				, created_at timestamp with time zone NOT NULL
 			);`,
@@ -1607,6 +1607,20 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			"CREATE INDEX ON payment_channels (LOWER(name));",
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			"CREATE INDEX ON payment_channels (minimum_amount);",
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			"CREATE INDEX ON payment_channels (maximum_amount);",
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1705,7 +1719,7 @@ func init() {
 					, maximum_amount
 					, payment_request_expiry
 					, refund
-					, "type"
+					, channel_type
 					, channel_category
 					, created_at
 				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,

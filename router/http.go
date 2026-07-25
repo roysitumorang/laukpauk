@@ -170,6 +170,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",
 				"/v1/buyer/delivery_routes":      "/delivery_routes/v1/buyer",
 				"/v1/buyer/setting":              "/setting/v1/buyer",
+				"/v1/buyer/payment_channels":     "/payment_channels/v1/buyer",
 				"/":                              "/blocks",
 				"/blogs":                         "/blocks/blogs",
 				"/read/*":                        "/blocks/blogs/$1",
@@ -299,6 +300,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.PointService,
 		q.ProductVariantService,
 		q.JsonWebTokenService,
+		q.XenditConsumer,
 	).Mount(app.Group("/transactions"))
 	controllers.NewFcmRegistrationController(
 		q.BuyerService,
@@ -325,6 +327,11 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.SettingService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/setting"))
+	controllers.NewPaymentChannelController(
+		q.BuyerService,
+		q.PaymentChannelService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/payment_channels"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).
