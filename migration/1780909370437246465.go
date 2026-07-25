@@ -1769,12 +1769,14 @@ func init() {
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
 				, delivery_datetime timestamp with time zone NOT NULL
+				, payment_request_id character varying NOT NULL UNIQUE
+				, payment_token_id character varying NOT NULL UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
+				, payment_request_cancelled_at timestamp with time zone
+				, payment_id character varying UNIQUE
 				, paid_at timestamp with time zone
-				, payment_request_id UUID
-				, payment_id UUID
-				, payment_status character varying
+				, payment_cancelled_at timestamp with time zone
 				, processed_by UUID REFERENCES users (id)
 				, processed_at timestamp with time zone
 				, revised_payment_amount bigint NOT NULL

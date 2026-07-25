@@ -114,12 +114,14 @@ func (q *transactionRepository) FindTransactions(
 		, delivery_address
 		, delivery_instruction
 		, delivery_datetime
+		, payment_request_id
+		, payment_token_id
 		, created_at
 		, updated_at
-		, paid_at
-		, payment_request_id
+		, payment_request_cancelled_at
 		, payment_id
-		, payment_status
+		, paid_at
+		, payment_cancelled_at
 		, processed_by
 		, processed_at
 		, revised_payment_amount
@@ -242,12 +244,14 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DeliveryAddress,
 			&transaction.DeliveryInstruction,
 			&transaction.DeliveryDatetime,
+			&transaction.PaymentRequestID,
+			&transaction.PaymentTokenID,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
-			&transaction.PaidAt,
-			&transaction.PaymentRequestID,
+			&transaction.PaymentRequestCancelledAt,
 			&transaction.PaymentID,
-			&transaction.PaymentStatus,
+			&transaction.PaidAt,
+			&transaction.PaymentCancelledAt,
 			&transaction.ProcessedBy,
 			&transaction.ProcessedAt,
 			&transaction.RevisedPaymentAmount,
@@ -362,12 +366,14 @@ func (q *transactionRepository) FindTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_request_id
+			, payment_token_id
 			, created_at
 			, updated_at
-			, paid_at
-			, payment_request_id
+			, payment_request_cancelled_at
 			, payment_id
-			, payment_status
+			, paid_at
+			, payment_cancelled_at
 			, processed_by
 			, processed_at
 			, revised_payment_amount
@@ -423,12 +429,14 @@ func (q *transactionRepository) FindTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentRequestID,
+		&response.PaymentTokenID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-		&response.PaidAt,
-		&response.PaymentRequestID,
+		&response.PaymentRequestCancelledAt,
 		&response.PaymentID,
-		&response.PaymentStatus,
+		&response.PaidAt,
+		&response.PaymentCancelledAt,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedPaymentAmount,
@@ -550,6 +558,8 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_request_id
+			, payment_token_id
 			, created_at
 			, updated_at
 			, revised_payment_amount
@@ -557,7 +567,7 @@ func (q *transactionRepository) CreateTransaction(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32, $33, $34, $35, $36, $37, $38
+			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
 		)
 		RETURNING id
 			, parent_id
@@ -595,12 +605,14 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_request_id
+			, payment_token_id
 			, created_at
 			, updated_at
-			, paid_at
-			, payment_request_id
+			, payment_request_cancelled_at
 			, payment_id
-			, payment_status
+			, paid_at
+			, payment_cancelled_at
 			, processed_by
 			, processed_at
 			, revised_payment_amount
@@ -649,6 +661,8 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryAddress,
 		request.DeliveryInstruction,
 		request.DeliveryDatetime,
+		request.PaymentRequestID,
+		request.PaymentTokenID,
 		request.CreatedAt,
 		request.UpdatedAt,
 		request.RevisedPaymentAmount,
@@ -689,12 +703,14 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentRequestID,
+		&response.PaymentTokenID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-		&response.PaidAt,
-		&response.PaymentRequestID,
+		&response.PaymentRequestCancelledAt,
 		&response.PaymentID,
-		&response.PaymentStatus,
+		&response.PaidAt,
+		&response.PaymentCancelledAt,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedPaymentAmount,
@@ -840,7 +856,7 @@ func (q *transactionRepository) UpdateTransaction(
 	}
 	err := tx.QueryRow(
 		ctx,
-		`SELECT id FROM transactions WHERE id = $1 FOR NO KEY UPDATE`,
+		`SELECT id FROM transactions WHERE id = $1 FOR UPDATE`,
 		request.ID,
 	).Scan(&response.ID)
 	if err != nil {
@@ -851,10 +867,10 @@ func (q *transactionRepository) UpdateTransaction(
 		ctx,
 		`UPDATE transactions SET
 			transaction_status = $1
-			, paid_at = $2
-			, payment_request_id = $3
-			, payment_id = $4
-			, payment_status = $5
+			, payment_request_cancelled_at = $2
+			, payment_id = $3
+			, paid_at = $4
+			, payment_cancelled_at = $5
 			, processed_by = $6
 			, processed_at = $7
 			, revised_payment_amount = $8
@@ -906,12 +922,14 @@ func (q *transactionRepository) UpdateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_request_id
+			, payment_token_id
 			, created_at
 			, updated_at
-			, paid_at
-			, payment_request_id
+			, payment_request_cancelled_at
 			, payment_id
-			, payment_status
+			, paid_at
+			, payment_cancelled_at
 			, processed_by
 			, processed_at
 			, revised_payment_amount
@@ -926,10 +944,10 @@ func (q *transactionRepository) UpdateTransaction(
 			, completed_by
 			, completed_at`,
 		request.TransactionStatus,
-		request.PaidAt,
-		request.PaymentRequestID,
+		request.PaymentRequestCancelledAt,
 		request.PaymentID,
-		request.PaymentStatus,
+		request.PaidAt,
+		request.PaymentCancelledAt,
 		request.ProcessedBy,
 		request.ProcessedAt,
 		request.RevisedPaymentAmount,
@@ -982,12 +1000,14 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentRequestID,
+		&response.PaymentTokenID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-		&response.PaidAt,
-		&response.PaymentRequestID,
+		&response.PaymentRequestCancelledAt,
 		&response.PaymentID,
-		&response.PaymentStatus,
+		&response.PaidAt,
+		&response.PaymentCancelledAt,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedPaymentAmount,
