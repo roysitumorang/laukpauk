@@ -46,11 +46,6 @@
 					placeholder="Nama Voucher" />
 				</div>
 				<div class="form-group col-lg-4">
-					<label for="budget" class="label-title">Budget Voucher</label>
-					<input type="number" name="budget" value="{{ request.Budget }}" id="budget" class="form-control" required
-						placeholder="Budget Voucher" />
-				</div>
-				<div class="form-group col-lg-4">
 					<label for="discount" class="label-title">Nilai Voucher</label>
 					<input type="number" name="discount" value="{{ request.Discount }}" id="discount" class="form-control" required
 						placeholder="Nilai Voucher" />

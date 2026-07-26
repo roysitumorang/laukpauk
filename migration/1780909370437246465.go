@@ -1297,7 +1297,6 @@ func init() {
 				, deleted_code character varying
 				, photo character varying NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
-				, budget bigint NOT NULL
 				, discount bigint NOT NULL
 				, minimum_purchase bigint NOT NULL
 				, quota_per_buyer bigint NOT NULL

@@ -79,7 +79,6 @@ type (
 		DeletedCode           *string               `json:"-" form:"-"`
 		Photo                 string                `json:"photo" form:"photo"`
 		Name                  string                `json:"name" form:"name"`
-		Budget                int64                 `json:"-" form:"budget"`
 		Discount              int64                 `json:"discount" form:"discount"`
 		MinimumPurchase       int64                 `json:"minimum_purchase" form:"minimum_purchase"`
 		QuotaPerBuyer         int                   `json:"-" form:"quota_per_buyer"`
@@ -222,9 +221,6 @@ func (q *Voucher) Validate() (err error) {
 	}
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
-	}
-	if q.Budget < 1 {
-		return errors.New("budget: is required")
 	}
 	if q.Discount < 1 {
 		return errors.New("discount: is required")

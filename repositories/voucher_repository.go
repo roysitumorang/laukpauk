@@ -86,7 +86,6 @@ func (q *voucherRepository) FindVouchers(
 		, deleted_code
 		, photo
 		, name
-		, budget
 		, discount
 		, minimum_purchase
 		, quota_per_buyer
@@ -164,7 +163,6 @@ func (q *voucherRepository) FindVouchers(
 			&voucher.DeletedCode,
 			&voucher.Photo,
 			&voucher.Name,
-			&voucher.Budget,
 			&voucher.Discount,
 			&voucher.MinimumPurchase,
 			&voucher.QuotaPerBuyer,
@@ -247,7 +245,6 @@ func (q *voucherRepository) FindVoucher(
 			, deleted_code
 			, photo
 			, name
-			, budget
 			, discount
 			, minimum_purchase
 			, quota_per_buyer
@@ -277,7 +274,6 @@ func (q *voucherRepository) FindVoucher(
 		&response.DeletedCode,
 		&response.Photo,
 		&response.Name,
-		&response.Budget,
 		&response.Discount,
 		&response.MinimumPurchase,
 		&response.QuotaPerBuyer,
@@ -344,7 +340,6 @@ func (q *voucherRepository) CreateVoucher(
 			, code
 			, photo
 			, name
-			, budget
 			, discount
 			, minimum_purchase
 			, quota_per_buyer
@@ -359,7 +354,7 @@ func (q *voucherRepository) CreateVoucher(
 			, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9,
-			$10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+			$10, $11, $12, $13, $14, $15, $16, $17, $18
 		)
 		RETURNING id
 			, record_status
@@ -369,7 +364,6 @@ func (q *voucherRepository) CreateVoucher(
 			, deleted_code
 			, photo
 			, name
-			, budget
 			, discount
 			, minimum_purchase
 			, quota_per_buyer
@@ -391,7 +385,6 @@ func (q *voucherRepository) CreateVoucher(
 		request.Code,
 		request.Photo,
 		request.Name,
-		request.Budget,
 		request.Discount,
 		request.MinimumPurchase,
 		request.QuotaPerBuyer,
@@ -413,7 +406,6 @@ func (q *voucherRepository) CreateVoucher(
 		&response.DeletedCode,
 		&response.Photo,
 		&response.Name,
-		&response.Budget,
 		&response.Discount,
 		&response.MinimumPurchase,
 		&response.QuotaPerBuyer,
@@ -459,21 +451,20 @@ func (q *voucherRepository) UpdateVoucher(
 			, deleted_code = $5
 			, photo = $6
 			, name = $7
-			, budget = $8
-			, discount = $9
-			, minimum_purchase = $10
-			, quota_per_buyer = $11
-			, effective_start_time = $12
-			, effective_end_time = $13
-			, effective_start_date = $14
-			, effective_end_date = $15
-			, description = $16
-			, updated_by = $17
-			, updated_at = $18
-			, deleted_by = $19
-			, deleted_at = $20
-			, deletion_reason = $21
-		WHERE id = $22
+			, discount = $8
+			, minimum_purchase = $9
+			, quota_per_buyer = $10
+			, effective_start_time = $11
+			, effective_end_time = $12
+			, effective_start_date = $13
+			, effective_end_date = $14
+			, description = $15
+			, updated_by = $16
+			, updated_at = $17
+			, deleted_by = $18
+			, deleted_at = $19
+			, deletion_reason = $20
+		WHERE id = $21
 		RETURNING id
 			, record_status
 			, voucher_type
@@ -482,7 +473,6 @@ func (q *voucherRepository) UpdateVoucher(
 			, deleted_code
 			, photo
 			, name
-			, budget
 			, discount
 			, minimum_purchase
 			, quota_per_buyer
@@ -505,7 +495,6 @@ func (q *voucherRepository) UpdateVoucher(
 		request.DeletedCode,
 		request.Photo,
 		request.Name,
-		request.Budget,
 		request.Discount,
 		request.MinimumPurchase,
 		request.QuotaPerBuyer,
@@ -529,7 +518,6 @@ func (q *voucherRepository) UpdateVoucher(
 		&response.DeletedCode,
 		&response.Photo,
 		&response.Name,
-		&response.Budget,
 		&response.Discount,
 		&response.MinimumPurchase,
 		&response.QuotaPerBuyer,
