@@ -32,6 +32,7 @@ const (
 	TransactionStatusPending TransactionStatus = iota
 	TransactionStatusCancelled
 	TransactionStatusPaid
+	TransactionStatusRevoked
 	TransactionStatusProcessed
 	TransactionStatusShipped
 	TransactionStatusCompleted
