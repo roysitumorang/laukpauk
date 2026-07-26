@@ -119,19 +119,17 @@ func (q *transactionRepository) FindTransactions(
 		, payment_token_id
 		, created_at
 		, updated_at
-		, payment_request_cancelled_at
+		, cancelled_at
 		, payment_id
 		, paid_at
-		, payment_cancelled_at
+		, revoked_at
+		, revocation_reason
 		, processed_by
 		, processed_at
 		, revised_payment_amount
 		, refund_amount
 		, refunded_at
 		, refund_id
-		, cancelled_by
-		, cancelled_at
-		, cancellation_reason
 		, shipped_by
 		, shipped_at
 		, completed_by
@@ -253,19 +251,17 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.PaymentTokenID,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
-			&transaction.PaymentRequestCancelledAt,
+			&transaction.CancelledAt,
 			&transaction.PaymentID,
 			&transaction.PaidAt,
-			&transaction.PaymentCancelledAt,
+			&transaction.RevokedAt,
+			&transaction.RevocationReason,
 			&transaction.ProcessedBy,
 			&transaction.ProcessedAt,
 			&transaction.RevisedPaymentAmount,
 			&transaction.RefundAmount,
 			&transaction.RefundedAt,
 			&transaction.RefundID,
-			&transaction.CancelledBy,
-			&transaction.CancelledAt,
-			&transaction.CancellationReason,
 			&transaction.ShippedBy,
 			&transaction.ShippedAt,
 			&transaction.CompletedBy,
@@ -379,19 +375,17 @@ func (q *transactionRepository) FindTransaction(
 			, payment_token_id
 			, created_at
 			, updated_at
-			, payment_request_cancelled_at
+			, cancelled_at
 			, payment_id
 			, paid_at
-			, payment_cancelled_at
+			, revoked_at
+			, revocation_reason
 			, processed_by
 			, processed_at
 			, revised_payment_amount
 			, refund_amount
 			, refunded_at
 			, refund_id
-			, cancelled_by
-			, cancelled_at
-			, cancellation_reason
 			, shipped_by
 			, shipped_at
 			, completed_by
@@ -443,19 +437,17 @@ func (q *transactionRepository) FindTransaction(
 		&response.PaymentTokenID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-		&response.PaymentRequestCancelledAt,
+		&response.CancelledAt,
 		&response.PaymentID,
 		&response.PaidAt,
-		&response.PaymentCancelledAt,
+		&response.RevokedAt,
+		&response.RevocationReason,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedPaymentAmount,
 		&response.RefundAmount,
 		&response.RefundedAt,
 		&response.RefundID,
-		&response.CancelledBy,
-		&response.CancelledAt,
-		&response.CancellationReason,
 		&response.ShippedBy,
 		&response.ShippedAt,
 		&response.CompletedBy,
@@ -624,19 +616,17 @@ func (q *transactionRepository) CreateTransaction(
 			, payment_token_id
 			, created_at
 			, updated_at
-			, payment_request_cancelled_at
+			, cancelled_at
 			, payment_id
 			, paid_at
-			, payment_cancelled_at
+			, revoked_at
+			, revocation_reason
 			, processed_by
 			, processed_at
 			, revised_payment_amount
 			, refund_amount
 			, refunded_at
 			, refund_id
-			, cancelled_by
-			, cancelled_at
-			, cancellation_reason
 			, shipped_by
 			, shipped_at
 			, completed_by
@@ -721,19 +711,17 @@ func (q *transactionRepository) CreateTransaction(
 		&response.PaymentTokenID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-		&response.PaymentRequestCancelledAt,
+		&response.CancelledAt,
 		&response.PaymentID,
 		&response.PaidAt,
-		&response.PaymentCancelledAt,
+		&response.RevokedAt,
+		&response.RevocationReason,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedPaymentAmount,
 		&response.RefundAmount,
 		&response.RefundedAt,
 		&response.RefundID,
-		&response.CancelledBy,
-		&response.CancelledAt,
-		&response.CancellationReason,
 		&response.ShippedBy,
 		&response.ShippedAt,
 		&response.CompletedBy,
@@ -924,19 +912,17 @@ func (q *transactionRepository) UpdateTransaction(
 			, payment_token_id
 			, created_at
 			, updated_at
-			, payment_request_cancelled_at
+			, cancelled_at
 			, payment_id
 			, paid_at
-			, payment_cancelled_at
+			, revoked_at
+			, revocation_reason
 			, processed_by
 			, processed_at
 			, revised_payment_amount
 			, refund_amount
 			, refunded_at
 			, refund_id
-			, cancelled_by
-			, cancelled_at
-			, cancellation_reason
 			, shipped_by
 			, shipped_at
 			, completed_by
@@ -987,19 +973,17 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.PaymentTokenID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
-		&response.PaymentRequestCancelledAt,
+		&response.CancelledAt,
 		&response.PaymentID,
 		&response.PaidAt,
-		&response.PaymentCancelledAt,
+		&response.RevokedAt,
+		&response.RevocationReason,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedPaymentAmount,
 		&response.RefundAmount,
 		&response.RefundedAt,
 		&response.RefundID,
-		&response.CancelledBy,
-		&response.CancelledAt,
-		&response.CancellationReason,
 		&response.ShippedBy,
 		&response.ShippedAt,
 		&response.CompletedBy,
@@ -1022,7 +1006,6 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		_, _ = fmt.Fprintf(&sb, " transaction_status = $%d", n)
 	}
-
 	if response.PaymentChannelID == nil && request.PaymentChannelID != nil {
 		params = append(params, request.PaymentChannelID)
 		if n = len(params); n > 1 {
@@ -1044,12 +1027,12 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		_, _ = fmt.Fprintf(&sb, " payment_token_id = $%d", n)
 	}
-	if response.PaymentRequestCancelledAt == nil && request.PaymentRequestCancelledAt != nil {
-		params = append(params, request.PaymentRequestCancelledAt)
+	if response.CancelledAt == nil && request.CancelledAt != nil {
+		params = append(params, request.CancelledAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_request_cancelled_at = $%d", n)
+		_, _ = fmt.Fprintf(&sb, " cancelled_at = $%d", n)
 	}
 	if response.PaymentID == nil && request.PaymentID != nil {
 		params = append(params, request.PaymentID)
@@ -1065,12 +1048,19 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		_, _ = fmt.Fprintf(&sb, " paid_at = $%d", n)
 	}
-	if response.PaymentCancelledAt == nil && request.PaymentCancelledAt != nil {
-		params = append(params, request.PaymentCancelledAt)
+	if response.RevokedAt == nil && request.RevokedAt != nil {
+		params = append(params, request.RevokedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_cancelled_at = $%d", n)
+		_, _ = fmt.Fprintf(&sb, " revoked_at = $%d", n)
+	}
+	if response.RevocationReason == nil && request.RevocationReason != nil {
+		params = append(params, request.RevocationReason)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " revocation_reason = $%d", n)
 	}
 	if response.ProcessedBy == nil && request.ProcessedBy != nil {
 		params = append(params, request.ProcessedBy)
@@ -1113,27 +1103,6 @@ func (q *transactionRepository) UpdateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(&sb, " refund_id = $%d", n)
-	}
-	if response.CancelledBy == nil && request.CancelledBy != nil {
-		params = append(params, request.CancelledBy)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, " cancelled_by = $%d", n)
-	}
-	if response.CancelledAt == nil && request.CancelledAt != nil {
-		params = append(params, request.CancelledAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, " cancelled_at = $%d", n)
-	}
-	if response.CancellationReason == nil && request.CancellationReason != nil {
-		params = append(params, request.CancellationReason)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(&sb, " cancellation_reason = $%d", n)
 	}
 	if response.ShippedBy == nil && request.ShippedBy != nil {
 		params = append(params, request.ShippedBy)
@@ -1218,19 +1187,17 @@ func (q *transactionRepository) UpdateTransaction(
 				, payment_token_id
 				, created_at
 				, updated_at
-				, payment_request_cancelled_at
+				, cancelled_at
 				, payment_id
 				, paid_at
-				, payment_cancelled_at
+				, revoked_at
+				, revocation_reason
 				, processed_by
 				, processed_at
 				, revised_payment_amount
 				, refund_amount
 				, refunded_at
 				, refund_id
-				, cancelled_by
-				, cancelled_at
-				, cancellation_reason
 				, shipped_by
 				, shipped_at
 				, completed_by
@@ -1279,19 +1246,17 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.PaymentTokenID,
 			&response.CreatedAt,
 			&response.UpdatedAt,
-			&response.PaymentRequestCancelledAt,
+			&response.CancelledAt,
 			&response.PaymentID,
 			&response.PaidAt,
-			&response.PaymentCancelledAt,
+			&response.RevokedAt,
+			&response.RevocationReason,
 			&response.ProcessedBy,
 			&response.ProcessedAt,
 			&response.RevisedPaymentAmount,
 			&response.RefundAmount,
 			&response.RefundedAt,
 			&response.RefundID,
-			&response.CancelledBy,
-			&response.CancelledAt,
-			&response.CancellationReason,
 			&response.ShippedBy,
 			&response.ShippedAt,
 			&response.CompletedBy,
