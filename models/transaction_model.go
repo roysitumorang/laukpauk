@@ -353,6 +353,8 @@ func (q *Transaction) CalculateShoppingCost() {
 		} else {
 			item.Subtotal = item.Price * item.Quantity
 		}
+		item.RevisedQuantity = item.Quantity
+		item.RevisedSubtotal = item.Subtotal
 		q.ShoppingCost += item.Subtotal
 		q.Items[i] = item
 	}
