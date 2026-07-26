@@ -49,7 +49,7 @@ type (
 		BuyerID                       uuid.UUID          `json:"buyer_id" form:"buyer_id"`
 		CartID                        *uuid.UUID         `json:"cart_id" form:"cart_id"`
 		ReferenceNumber               string             `json:"reference_number" form:"-"`
-		TransactionStatus             TransactionStatus  `json:"transaction_status" form:"-"`
+		Status                        TransactionStatus  `json:"status" form:"-"`
 		RecipientName                 string             `json:"recipient_name" form:"recipient_name"`
 		RecipientMobilePhone          string             `json:"-" form:"-"`
 		RawRecipientMobilePhone       string             `json:"recipient_mobile_phone" form:"recipient_mobile_phone"`

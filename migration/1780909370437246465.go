@@ -1738,7 +1738,7 @@ func init() {
 				, buyer_id UUID NOT NULL REFERENCES users (id)
 				, cart_id UUID NOT NULL REFERENCES carts (id) UNIQUE
 				, reference_number character varying NOT NULL
-				, transaction_status integer NOT NULL
+				, status integer NOT NULL
 				, recipient_name character varying NOT NULL
 				, recipient_mobile_phone character varying NOT NULL
 				, buyer_note character varying NOT NULL
@@ -1825,7 +1825,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON transactions (transaction_status);`,
+			`CREATE INDEX ON transactions (status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

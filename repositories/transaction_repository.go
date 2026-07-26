@@ -84,7 +84,7 @@ func (q *transactionRepository) FindTransactions(
 		, buyer_id
 		, cart_id
 		, reference_number
-		, transaction_status
+		, status
 		, recipient_name
 		, recipient_mobile_phone
 		, buyer_note
@@ -218,7 +218,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.BuyerID,
 			&transaction.CartID,
 			&transaction.ReferenceNumber,
-			&transaction.TransactionStatus,
+			&transaction.Status,
 			&transaction.RecipientName,
 			&transaction.RecipientMobilePhone,
 			&transaction.BuyerNote,
@@ -344,7 +344,7 @@ func (q *transactionRepository) FindTransaction(
 			, buyer_id
 			, cart_id
 			, reference_number
-			, transaction_status
+			, status
 			, recipient_name
 			, recipient_mobile_phone
 			, buyer_note
@@ -408,7 +408,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.BuyerID,
 		&response.CartID,
 		&response.ReferenceNumber,
-		&response.TransactionStatus,
+		&response.Status,
 		&response.RecipientName,
 		&response.RecipientMobilePhone,
 		&response.BuyerNote,
@@ -544,7 +544,7 @@ func (q *transactionRepository) CreateTransaction(
 			, buyer_id
 			, cart_id
 			, reference_number
-			, transaction_status
+			, status
 			, recipient_name
 			, recipient_mobile_phone
 			, buyer_note
@@ -591,7 +591,7 @@ func (q *transactionRepository) CreateTransaction(
 			, buyer_id
 			, cart_id
 			, reference_number
-			, transaction_status
+			, status
 			, recipient_name
 			, recipient_mobile_phone
 			, buyer_note
@@ -648,7 +648,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.BuyerID,
 		request.CartID,
 		request.ReferenceNumber,
-		request.TransactionStatus,
+		request.Status,
 		request.RecipientName,
 		request.RecipientMobilePhone,
 		request.BuyerNote,
@@ -690,7 +690,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.BuyerID,
 		&response.CartID,
 		&response.ReferenceNumber,
-		&response.TransactionStatus,
+		&response.Status,
 		&response.RecipientName,
 		&response.RecipientMobilePhone,
 		&response.BuyerNote,
@@ -893,7 +893,7 @@ func (q *transactionRepository) UpdateTransaction(
 			, buyer_id
 			, cart_id
 			, reference_number
-			, transaction_status
+			, status
 			, recipient_name
 			, recipient_mobile_phone
 			, buyer_note
@@ -956,7 +956,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.BuyerID,
 		&response.CartID,
 		&response.ReferenceNumber,
-		&response.TransactionStatus,
+		&response.Status,
 		&response.RecipientName,
 		&response.RecipientMobilePhone,
 		&response.BuyerNote,
@@ -1019,12 +1019,12 @@ func (q *transactionRepository) UpdateTransaction(
 		n      int
 	)
 	_, _ = sb.WriteString("UPDATE transactions SET")
-	if response.TransactionStatus != request.TransactionStatus {
-		params = append(params, request.TransactionStatus)
+	if response.Status != request.Status {
+		params = append(params, request.Status)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " transaction_status = $%d", n)
+		_, _ = fmt.Fprintf(&sb, " status = $%d", n)
 	}
 	if response.PaymentChannelID == nil && request.PaymentChannelID != nil {
 		params = append(params, request.PaymentChannelID)
@@ -1186,7 +1186,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, buyer_id
 				, cart_id
 				, reference_number
-				, transaction_status
+				, status
 				, recipient_name
 				, recipient_mobile_phone
 				, buyer_note
@@ -1247,7 +1247,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.BuyerID,
 			&response.CartID,
 			&response.ReferenceNumber,
-			&response.TransactionStatus,
+			&response.Status,
 			&response.RecipientName,
 			&response.RecipientMobilePhone,
 			&response.BuyerNote,
@@ -1545,7 +1545,7 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 	}
 	if len(request.TransactionStatuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("transaction_status IN (")
+		_, _ = sb.WriteString("status IN (")
 		for i, transactionStatus := range request.TransactionStatuses {
 			params = append(params, transactionStatus)
 			if i > 0 {
@@ -1558,7 +1558,7 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 	}
 	if len(request.ExcludedTransactionStatuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("transaction_status NOT IN (")
+		_, _ = sb.WriteString("status NOT IN (")
 		for i, excludedTransactionStatus := range request.ExcludedTransactionStatuses {
 			params = append(params, excludedTransactionStatus)
 			if i > 0 {

@@ -652,7 +652,7 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrTransactionNotFound.Error()).
 			WriteResponse(c)
 	}
-	transaction.TransactionStatus = models.TransactionStatusPaid
+	transaction.Status = models.TransactionStatusPaid
 	transaction.PaidAt = new(time.Now())
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -740,7 +740,7 @@ func (q *transactionController) AdminProcess(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	request.ID = transaction.ID
-	request.TransactionStatus = models.TransactionStatusProcessed
+	request.Status = models.TransactionStatusProcessed
 	request.ProcessedBy = &currentAdmin.ID
 	request.ProcessedAt = new(time.Now())
 	params.Push("request", request)
@@ -795,7 +795,7 @@ func (q *transactionController) AdminShip(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
 	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
-	transaction.TransactionStatus = models.TransactionStatusShipped
+	transaction.Status = models.TransactionStatusShipped
 	transaction.ShippedBy = &currentAdmin.ID
 	transaction.ShippedAt = new(time.Now())
 	params.Push("request", transaction)
@@ -850,7 +850,7 @@ func (q *transactionController) AdminDeliver(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
 	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
-	transaction.TransactionStatus = models.TransactionStatusCompleted
+	transaction.Status = models.TransactionStatusCompleted
 	params.Push("request", transaction)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
