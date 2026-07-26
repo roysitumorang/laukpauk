@@ -69,8 +69,6 @@ type (
 		WalletAmount                  int64              `json:"-" form:"-"`
 		WalletDiscount                int64              `json:"-" form:"-"`
 		DiscountedShoppingCost        int64              `json:"-" form:"-"`
-		PaymentAmount                 int64              `json:"payment_amount" form:"-"`
-		PaymentDueDate                time.Time          `json:"payment_due_date" form:"-"`
 		DeliveryCost                  int64              `json:"delivery_cost" form:"-"`
 		DiscountedDeliveryCost        int64              `json:"-" form:"-"`
 		DeliveryRouteID               uuid.UUID          `json:"delivery_route_id" form:"-"`
@@ -80,6 +78,8 @@ type (
 		DeliveryAddress               string             `json:"delivery_address" form:"delivery_address"`
 		DeliveryInstruction           string             `json:"delivery_instruction" form:"delivery_instruction"`
 		DeliveryDatetime              time.Time          `json:"delivery_datetime" form:"delivery_datetime"`
+		PaymentAmount                 int64              `json:"payment_amount" form:"-"`
+		PaymentDueDate                *time.Time         `json:"payment_due_date" form:"-"`
 		PaymentChannelID              *uuid.UUID         `json:"payment_channel_id" form:"-"`
 		PaymentRequestID              *string            `json:"-" form:"-"`
 		PaymentTokenID                *string            `json:"-" form:"-"`
@@ -412,6 +412,8 @@ func (q TransactionStatus) String() string {
 		return "cancelled"
 	case TransactionStatusPaid:
 		return "paid"
+	case TransactionStatusRevoked:
+		return "revoked"
 	case TransactionStatusProcessed:
 		return "processed"
 	case TransactionStatusShipped:

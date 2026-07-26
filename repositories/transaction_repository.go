@@ -103,8 +103,6 @@ func (q *transactionRepository) FindTransactions(
 		, wallet_amount
 		, wallet_discount
 		, discounted_shopping_cost
-		, payment_amount
-		, payment_due_date
 		, delivery_cost
 		, discounted_delivery_cost
 		, delivery_route_id
@@ -114,6 +112,8 @@ func (q *transactionRepository) FindTransactions(
 		, delivery_address
 		, delivery_instruction
 		, delivery_datetime
+		, payment_amount
+		, payment_due_date
 		, payment_channel_id
 		, payment_request_id
 		, payment_token_id
@@ -237,8 +237,6 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.WalletAmount,
 			&transaction.WalletDiscount,
 			&transaction.DiscountedShoppingCost,
-			&transaction.PaymentAmount,
-			&transaction.PaymentDueDate,
 			&transaction.DeliveryCost,
 			&transaction.DiscountedDeliveryCost,
 			&transaction.DeliveryRouteID,
@@ -248,6 +246,8 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DeliveryAddress,
 			&transaction.DeliveryInstruction,
 			&transaction.DeliveryDatetime,
+			&transaction.PaymentAmount,
+			&transaction.PaymentDueDate,
 			&transaction.PaymentChannelID,
 			&transaction.PaymentRequestID,
 			&transaction.PaymentTokenID,
@@ -363,8 +363,6 @@ func (q *transactionRepository) FindTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, payment_amount
-			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_route_id
@@ -374,6 +372,8 @@ func (q *transactionRepository) FindTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_amount
+			, payment_due_date
 			, payment_channel_id
 			, payment_request_id
 			, payment_token_id
@@ -427,8 +427,6 @@ func (q *transactionRepository) FindTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
-		&response.PaymentAmount,
-		&response.PaymentDueDate,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryRouteID,
@@ -438,6 +436,8 @@ func (q *transactionRepository) FindTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentAmount,
+		&response.PaymentDueDate,
 		&response.PaymentChannelID,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
@@ -563,8 +563,6 @@ func (q *transactionRepository) CreateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, payment_amount
-			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_route_id
@@ -574,6 +572,8 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_amount
+			, payment_due_date
 			, created_at
 			, updated_at
 			, revised_shopping_cost
@@ -610,8 +610,6 @@ func (q *transactionRepository) CreateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, payment_amount
-			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_route_id
@@ -621,6 +619,8 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_amount
+			, payment_due_date
 			, payment_channel_id
 			, payment_request_id
 			, payment_token_id
@@ -667,8 +667,6 @@ func (q *transactionRepository) CreateTransaction(
 		request.WalletAmount,
 		request.WalletDiscount,
 		request.DiscountedShoppingCost,
-		request.PaymentAmount,
-		request.PaymentDueDate,
 		request.DeliveryCost,
 		request.DiscountedDeliveryCost,
 		request.DeliveryRouteID,
@@ -678,6 +676,8 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryAddress,
 		request.DeliveryInstruction,
 		request.DeliveryDatetime,
+		request.PaymentAmount,
+		request.PaymentDueDate,
 		request.CreatedAt,
 		request.UpdatedAt,
 		request.RevisedShoppingCost,
@@ -709,8 +709,6 @@ func (q *transactionRepository) CreateTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
-		&response.PaymentAmount,
-		&response.PaymentDueDate,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryRouteID,
@@ -720,6 +718,8 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentAmount,
+		&response.PaymentDueDate,
 		&response.PaymentChannelID,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
@@ -912,8 +912,6 @@ func (q *transactionRepository) UpdateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, payment_amount
-			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
 			, delivery_route_id
@@ -923,6 +921,8 @@ func (q *transactionRepository) UpdateTransaction(
 			, delivery_address
 			, delivery_instruction
 			, delivery_datetime
+			, payment_amount
+			, payment_due_date
 			, payment_channel_id
 			, payment_request_id
 			, payment_token_id
@@ -975,8 +975,6 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
-		&response.PaymentAmount,
-		&response.PaymentDueDate,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
 		&response.DeliveryRouteID,
@@ -986,6 +984,8 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DeliveryAddress,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
+		&response.PaymentAmount,
+		&response.PaymentDueDate,
 		&response.PaymentChannelID,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
@@ -1025,6 +1025,13 @@ func (q *transactionRepository) UpdateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(&sb, " status = $%d", n)
+	}
+	if response.PaymentDueDate == nil && request.PaymentDueDate != nil {
+		params = append(params, request.PaymentDueDate)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_due_date = $%d", n)
 	}
 	if response.PaymentChannelID == nil && request.PaymentChannelID != nil {
 		params = append(params, request.PaymentChannelID)
@@ -1205,8 +1212,6 @@ func (q *transactionRepository) UpdateTransaction(
 				, wallet_amount
 				, wallet_discount
 				, discounted_shopping_cost
-				, payment_amount
-				, payment_due_date
 				, delivery_cost
 				, discounted_delivery_cost
 				, delivery_route_id
@@ -1216,6 +1221,8 @@ func (q *transactionRepository) UpdateTransaction(
 				, delivery_address
 				, delivery_instruction
 				, delivery_datetime
+				, payment_amount
+				, payment_due_date
 				, payment_channel_id
 				, payment_request_id
 				, payment_token_id
@@ -1266,8 +1273,6 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.WalletAmount,
 			&response.WalletDiscount,
 			&response.DiscountedShoppingCost,
-			&response.PaymentAmount,
-			&response.PaymentDueDate,
 			&response.DeliveryCost,
 			&response.DiscountedDeliveryCost,
 			&response.DeliveryRouteID,
@@ -1277,6 +1282,8 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.DeliveryAddress,
 			&response.DeliveryInstruction,
 			&response.DeliveryDatetime,
+			&response.PaymentAmount,
+			&response.PaymentDueDate,
 			&response.PaymentChannelID,
 			&response.PaymentRequestID,
 			&response.PaymentTokenID,

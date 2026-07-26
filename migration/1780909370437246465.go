@@ -1593,7 +1593,7 @@ func init() {
 				, currency character varying NOT NULL
 				, minimum_amount bigint NOT NULL
 				, maximum_amount bigint NOT NULL
-				, payment_request_expiry real NOT NULL
+				, payment_request_expiry double precision NOT NULL
 				, refund boolean NOT NULL
 				, channel_type character varying NOT NULL
 				, channel_category character varying NOT NULL
@@ -1757,8 +1757,6 @@ func init() {
 				, wallet_amount bigint NOT NULL
 				, wallet_discount bigint NOT NULL
 				, discounted_shopping_cost bigint NOT NULL
-				, payment_amount bigint NOT NULL
-				, payment_due_date timestamp with time zone NOT NULL
 				, delivery_cost bigint NOT NULL
 				, discounted_delivery_cost bigint NOT NULL
 				, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id)
@@ -1768,6 +1766,8 @@ func init() {
 				, delivery_address character varying NOT NULL
 				, delivery_instruction character varying NOT NULL
 				, delivery_datetime timestamp with time zone NOT NULL
+				, payment_amount bigint NOT NULL
+				, payment_due_date timestamp with time zone
 				, payment_channel_id UUID REFERENCES payment_channels (id)
 				, payment_request_id character varying UNIQUE
 				, payment_token_id character varying UNIQUE

@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/consumers"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -423,7 +424,6 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	)
 	request.BuyerID = currentBuyer.ID
 	request.ReferenceNumber = sb.String()
-	request.PaymentDueDate = now.Add(setting.PaymentTerms)
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
@@ -488,6 +488,30 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
+		paymentRequestExpiry, err := decimal.NewFromFloat64(paymentChannel.PaymentRequestExpiry)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewFromFloat64")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		oneHour, err := decimal.New(3_600_000_000_000, 0)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		nanoseconds, err := paymentRequestExpiry.Mul(oneHour)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrMul")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		roundedNanoseconds, _, _ := nanoseconds.Floor(0).Int64(0)
+		duration := min(time.Duration(roundedNanoseconds), setting.PaymentTerms)
+		request.PaymentDueDate = new(now.Add(duration))
 		response.PaymentChannelID = request.PaymentChannelID
 		response.PaymentRequestID = &paymentRequestID
 		response.PaymentTokenID = &paymentTokenID

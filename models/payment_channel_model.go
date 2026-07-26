@@ -33,7 +33,7 @@ type (
 		Currency             string    `json:"-" form:"-"`
 		MinimumAmount        int64     `json:"-" form:"-"`
 		MaximumAmount        int64     `json:"-" form:"-"`
-		PaymentRequestExpiry float32   `json:"-" form:"-"`
+		PaymentRequestExpiry float64   `json:"-" form:"-"`
 		Refund               bool      `json:"-" form:"-"`
 		ChannelType          string    `json:"-" form:"-"`
 		ChannelCategory      string    `json:"-" form:"-"`
