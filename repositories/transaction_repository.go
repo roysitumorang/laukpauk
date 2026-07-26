@@ -363,11 +363,11 @@ func (q *transactionRepository) FindTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, delivery_route_id
 			, payment_amount
 			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
+			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
 			, delivery_distance_km
@@ -427,11 +427,11 @@ func (q *transactionRepository) FindTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
-		&response.DeliveryRouteID,
 		&response.PaymentAmount,
 		&response.PaymentDueDate,
 		&response.DeliveryCost,
 		&response.DiscountedDeliveryCost,
+		&response.DeliveryRouteID,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
 		&response.DeliveryDistanceKM,
@@ -912,11 +912,11 @@ func (q *transactionRepository) UpdateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, delivery_route_id
 			, payment_amount
 			, payment_due_date
 			, delivery_cost
 			, discounted_delivery_cost
+			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
 			, delivery_distance_km
