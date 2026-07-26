@@ -1780,6 +1780,8 @@ func init() {
 				, revocation_reason character varying
 				, processed_by UUID REFERENCES users (id)
 				, processed_at timestamp with time zone
+				, revised_shopping_cost bigint NOT NULL
+				, revised_discounted_shopping_cost bigint NOT NULL
 				, revised_payment_amount bigint NOT NULL
 				, refund_amount bigint
 				, refunded_at timestamp with time zone

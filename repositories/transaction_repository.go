@@ -126,6 +126,8 @@ func (q *transactionRepository) FindTransactions(
 		, revocation_reason
 		, processed_by
 		, processed_at
+		, revised_shopping_cost
+		, revised_discounted_shopping_cost
 		, revised_payment_amount
 		, refund_amount
 		, refunded_at
@@ -258,6 +260,8 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.RevocationReason,
 			&transaction.ProcessedBy,
 			&transaction.ProcessedAt,
+			&transaction.RevisedShoppingCost,
+			&transaction.RevisedDiscountedShoppingCost,
 			&transaction.RevisedPaymentAmount,
 			&transaction.RefundAmount,
 			&transaction.RefundedAt,
@@ -382,6 +386,8 @@ func (q *transactionRepository) FindTransaction(
 			, revocation_reason
 			, processed_by
 			, processed_at
+			, revised_shopping_cost
+			, revised_discounted_shopping_cost
 			, revised_payment_amount
 			, refund_amount
 			, refunded_at
@@ -444,6 +450,8 @@ func (q *transactionRepository) FindTransaction(
 		&response.RevocationReason,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
+		&response.RevisedShoppingCost,
+		&response.RevisedDiscountedShoppingCost,
 		&response.RevisedPaymentAmount,
 		&response.RefundAmount,
 		&response.RefundedAt,
@@ -568,12 +576,14 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_datetime
 			, created_at
 			, updated_at
+			, revised_shopping_cost
+			, revised_discounted_shopping_cost
 			, revised_payment_amount
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32, $33, $34, $35, $36, $37, $38
+			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
 		)
 		RETURNING id
 			, parent_id
@@ -623,6 +633,8 @@ func (q *transactionRepository) CreateTransaction(
 			, revocation_reason
 			, processed_by
 			, processed_at
+			, revised_shopping_cost
+			, revised_discounted_shopping_cost
 			, revised_payment_amount
 			, refund_amount
 			, refunded_at
@@ -668,6 +680,8 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryDatetime,
 		request.CreatedAt,
 		request.UpdatedAt,
+		request.RevisedShoppingCost,
+		request.RevisedDiscountedShoppingCost,
 		request.RevisedPaymentAmount,
 	).Scan(
 		&response.ID,
@@ -718,6 +732,8 @@ func (q *transactionRepository) CreateTransaction(
 		&response.RevocationReason,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
+		&response.RevisedShoppingCost,
+		&response.RevisedDiscountedShoppingCost,
 		&response.RevisedPaymentAmount,
 		&response.RefundAmount,
 		&response.RefundedAt,
@@ -919,6 +935,8 @@ func (q *transactionRepository) UpdateTransaction(
 			, revocation_reason
 			, processed_by
 			, processed_at
+			, revised_shopping_cost
+			, revised_discounted_shopping_cost
 			, revised_payment_amount
 			, refund_amount
 			, refunded_at
@@ -980,6 +998,8 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.RevocationReason,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
+		&response.RevisedShoppingCost,
+		&response.RevisedDiscountedShoppingCost,
 		&response.RevisedPaymentAmount,
 		&response.RefundAmount,
 		&response.RefundedAt,
@@ -1075,6 +1095,20 @@ func (q *transactionRepository) UpdateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(&sb, " processed_at = $%d", n)
+	}
+	if response.RevisedShoppingCost != request.RevisedShoppingCost {
+		params = append(params, request.RevisedShoppingCost)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " revised_shopping_cost = $%d", n)
+	}
+	if response.RevisedDiscountedShoppingCost != request.RevisedDiscountedShoppingCost {
+		params = append(params, request.RevisedDiscountedShoppingCost)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " revised_discounted_shopping_cost = $%d", n)
 	}
 	if response.RevisedPaymentAmount != request.RevisedPaymentAmount {
 		params = append(params, request.RevisedPaymentAmount)
@@ -1194,6 +1228,8 @@ func (q *transactionRepository) UpdateTransaction(
 				, revocation_reason
 				, processed_by
 				, processed_at
+				, revised_shopping_cost
+				, revised_discounted_shopping_cost
 				, revised_payment_amount
 				, refund_amount
 				, refunded_at
@@ -1253,6 +1289,8 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.RevocationReason,
 			&response.ProcessedBy,
 			&response.ProcessedAt,
+			&response.RevisedShoppingCost,
+			&response.RevisedDiscountedShoppingCost,
 			&response.RevisedPaymentAmount,
 			&response.RefundAmount,
 			&response.RefundedAt,
