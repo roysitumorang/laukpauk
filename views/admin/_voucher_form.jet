@@ -71,18 +71,18 @@
 					<label for="effective_time" class="label-title">Jam Berlaku (Berlaku Mulai - Berlaku Sampai)</label>
 					<div class="input-group" id="effective_time">
 						<input type="time" name="effective_start_time" value="{{ request.RawEffectiveStartTime }}" id="effective_start_time"
-							step="1" class="form-control" required />
+							step="1" class="form-control time-picker" required />
 						<input type="time" name="effective_end_time" value="{{ request.RawEffectiveEndTime }}" id="effective_end_time"
-							step="1" class="form-control" required />
+							step="1" class="form-control time-picker" required />
 					</div>
 				</div>
 				<div class="form-group col-lg-5">
 					<label for="effective_date" class="label-title">Masa Berlaku (Berlaku Mulai - Berlaku Sampai)</label>
 					<div class="input-group" id="effective_date">
 						<input type="date" name="effective_start_date" value="{{ request.RawEffectiveStartDate }}" id="effective_start_date"
-							class="form-control" required />
+							class="form-control date-picker" required />
 						<input type="date" name="effective_end_date" value="{{ request.RawEffectiveEndDate }}" id="effective_end_date"
-							class="form-control" required />
+							class="form-control date-picker" required />
 					</div>
 				</div>
 				<div class="form-group col-lg-12">
@@ -102,6 +102,19 @@
 </form>
 <script>
 	document.addEventListener("DOMContentLoaded", () => {
+		flatpickr(".time-picker", {
+			noCalendar: true,
+			enableTime: true,
+			enableSeconds: true,
+			time_24hr: true,
+			dateFormat: "H:i:S",
+			minuteIncrement: 1,
+		});
+		flatpickr(".date-picker", {
+			altInput: true,
+			altFormat: "j F Y",
+			dateFormat: "Y-m-d",
+		});
 		document.getElementById("photo").addEventListener("change", (event) => {
 			let file = event.target.files[0]
 			if (!file || !file.type.startsWith("image/")) {
