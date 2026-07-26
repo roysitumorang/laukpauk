@@ -187,7 +187,7 @@ func (q *XenditConsumer) CreatePaymentRequest(
 		return "", "", err
 	}
 	if resp.StatusCode() != fasthttp.StatusCreated {
-		return "", "", errors.New(response.ErrorCode)
+		return "", "", fmt.Errorf("%s: %s", response.ErrorCode, response.Message)
 	}
 	return response.PaymentRequestID, response.PaymentTokenID, nil
 }
@@ -219,7 +219,7 @@ func (q *XenditConsumer) CancelPaymentRequest(
 		return false, err
 	}
 	if resp.StatusCode() != fasthttp.StatusOK {
-		return false, errors.New(response.ErrorCode)
+		return false, fmt.Errorf("%s: %s", response.ErrorCode, response.Message)
 	}
 	if response.Status != "SUCCEEDED" {
 		return false, errors.New(response.FailureCode)
@@ -254,7 +254,7 @@ func (q *XenditConsumer) CancelPayment(
 		return false, err
 	}
 	if resp.StatusCode() != fasthttp.StatusOK {
-		return false, errors.New(response.ErrorCode)
+		return false, fmt.Errorf("%s: %s", response.ErrorCode, response.Message)
 	}
 	if response.Status != "SUCCEEDED" {
 		return false, errors.New(response.FailureCode)
