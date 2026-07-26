@@ -48,14 +48,14 @@ type (
 		Reordered                     bool               `json:"reordered" form:"reordered"`
 		BuyerID                       uuid.UUID          `json:"buyer_id" form:"buyer_id"`
 		CartID                        *uuid.UUID         `json:"cart_id" form:"cart_id"`
-		ReferenceNumber               string             `json:"-" form:"-"`
-		TransactionStatus             TransactionStatus  `json:"-" form:"-"`
+		ReferenceNumber               string             `json:"reference_number" form:"-"`
+		TransactionStatus             TransactionStatus  `json:"transaction_status" form:"-"`
 		RecipientName                 string             `json:"recipient_name" form:"recipient_name"`
 		RecipientMobilePhone          string             `json:"-" form:"-"`
 		RawRecipientMobilePhone       string             `json:"recipient_mobile_phone" form:"recipient_mobile_phone"`
 		BuyerNote                     string             `json:"buyer_note" form:"buyer_note"`
-		UniqueCode                    int64              `json:"-" form:"-"`
-		ShoppingCost                  int64              `json:"-" form:"-"`
+		UniqueCode                    int64              `json:"unique_code" form:"-"`
+		ShoppingCost                  int64              `json:"shopping_cost" form:"-"`
 		ReferrerID                    *uuid.UUID         `json:"-" form:"-"`
 		ReferralCode                  *string            `json:"referral_code" form:"referral_code"`
 		ReferralPoints                int64              `json:"-" form:"-"`
@@ -69,9 +69,9 @@ type (
 		WalletAmount                  int64              `json:"-" form:"-"`
 		WalletDiscount                int64              `json:"-" form:"-"`
 		DiscountedShoppingCost        int64              `json:"-" form:"-"`
-		PaymentAmount                 int64              `json:"-" form:"-"`
-		PaymentDueDate                time.Time          `json:"-" form:"-"`
-		DeliveryCost                  int64              `json:"-" form:"-"`
+		PaymentAmount                 int64              `json:"payment_amount" form:"-"`
+		PaymentDueDate                time.Time          `json:"payment_due_date" form:"-"`
+		DeliveryCost                  int64              `json:"delivery_cost" form:"-"`
 		DiscountedDeliveryCost        int64              `json:"-" form:"-"`
 		DeliveryRouteID               uuid.UUID          `json:"delivery_route_id" form:"-"`
 		DeliveryLatitude              decimal.Decimal    `json:"delivery_latitude" form:"delivery_latitude"`
@@ -85,23 +85,23 @@ type (
 		PaymentTokenID                *string            `json:"-" form:"-"`
 		CreatedAt                     time.Time          `json:"created_at" form:"-"`
 		UpdatedAt                     time.Time          `json:"updated_at" form:"-"`
-		CancelledAt                   *time.Time         `json:"-" form:"-"`
+		CancelledAt                   *time.Time         `json:"cancelled_at" form:"-"`
 		PaymentID                     *string            `json:"-" form:"-"`
-		PaidAt                        *time.Time         `json:"-" form:"-"`
-		RevokedAt                     *time.Time         `json:"-" form:"-"`
-		RevocationReason              *string            `json:"-" form:"-"`
+		PaidAt                        *time.Time         `json:"paid_at" form:"-"`
+		RevokedAt                     *time.Time         `json:"revoked_at" form:"-"`
+		RevocationReason              *string            `json:"revocation_reason" form:"-"`
 		ProcessedBy                   *uuid.UUID         `json:"-" form:"-"`
-		ProcessedAt                   *time.Time         `json:"-" form:"-"`
-		RevisedShoppingCost           int64              `json:"-" form:"-"`
-		RevisedDiscountedShoppingCost int64              `json:"-" form:"-"`
-		RevisedPaymentAmount          int64              `json:"-" form:"-"`
-		RefundAmount                  *int64             `json:"-" form:"-"`
-		RefundedAt                    *time.Time         `json:"-" form:"-"`
+		ProcessedAt                   *time.Time         `json:"processed_at" form:"-"`
+		RevisedShoppingCost           int64              `json:"revised_shopping_cost" form:"-"`
+		RevisedDiscountedShoppingCost int64              `json:"revised_discounted_shopping_cost" form:"-"`
+		RevisedPaymentAmount          int64              `json:"revised_payment_amount" form:"-"`
+		RefundAmount                  *int64             `json:"refund_amount" form:"-"`
+		RefundedAt                    *time.Time         `json:"refunded_at" form:"-"`
 		RefundID                      *string            `json:"-" form:"-"`
 		ShippedBy                     *uuid.UUID         `json:"-" form:"-"`
-		ShippedAt                     *time.Time         `json:"-" form:"-"`
+		ShippedAt                     *time.Time         `json:"shipped_at" form:"-"`
 		CompletedBy                   *uuid.UUID         `json:"-" form:"-"`
-		CompletedAt                   *time.Time         `json:"-" form:"-"`
+		CompletedAt                   *time.Time         `json:"completed_at" form:"-"`
 		Items                         []*TransactionItem `json:"items" form:"items"`
 	}
 
@@ -110,15 +110,15 @@ type (
 		ID                      uuid.UUID  `json:"id" form:"-"`
 		TransactionID           uuid.UUID  `json:"-" form:"-"`
 		CartItemID              *uuid.UUID `json:"cart_item_id,omitempty" form:"cart_item_id"`
-		ProductVariantID        uuid.UUID  `json:"-" form:"-"`
+		ProductVariantID        uuid.UUID  `json:"product_variant_id" form:"-"`
 		ProductID               uuid.UUID  `json:"-" form:"-"`
-		ProductName             string     `json:"-" form:"-"`
-		StockUnit               string     `json:"-" form:"-"`
-		Price                   int64      `json:"-" form:"-"`
-		DiscountMinimumQuantity int64      `json:"-" form:"-"`
-		DiscountAmount          int64      `json:"-" form:"-"`
+		ProductName             string     `json:"product_name" form:"-"`
+		StockUnit               string     `json:"stock_unit" form:"-"`
+		Price                   int64      `json:"price" form:"-"`
+		DiscountMinimumQuantity int64      `json:"discount_minimum_quantity" form:"-"`
+		DiscountAmount          int64      `json:"discount_amount" form:"-"`
 		Quantity                int64      `json:"quantity" form:"quantity"`
-		Subtotal                int64      `json:"-" form:"-"`
+		Subtotal                int64      `json:"subtotal" form:"-"`
 		BuyerNote               string     `json:"buyer_note" form:"buyer_note"`
 		RevisedQuantity         int64      `json:"revised_quantity" form:"revised_quantity"`
 		RevisedSubtotal         int64      `json:"revised_subtotal" form:"-"`
