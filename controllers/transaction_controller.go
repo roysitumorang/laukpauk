@@ -511,7 +511,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 		roundedNanoseconds, _, _ := nanoseconds.Floor(0).Int64(0)
 		duration := min(time.Duration(roundedNanoseconds), setting.PaymentTerms)
-		request.PaymentDueDate = new(now.Add(duration))
+		response.PaymentDueDate = new(now.Add(duration))
 		response.PaymentChannelID = request.PaymentChannelID
 		response.PaymentRequestID = &paymentRequestID
 		response.PaymentTokenID = &paymentTokenID
