@@ -44,11 +44,11 @@ var (
 	loginMaxFailedAttempts int
 	loginLockoutDuration,
 	accessTokenAge time.Duration
-	sqIDs         *sqids.Sqids
-	dbWrite       *pgxpool.Pool
-	privateKey    *rsa.PrivateKey
-	snowflakeNode *snowflake.Node
-	bufferPool    = sync.Pool{
+	shortUniqueIDs *sqids.Sqids
+	dbWrite        *pgxpool.Pool
+	privateKey     *rsa.PrivateKey
+	snowflakeNode  *snowflake.Node
+	bufferPool     = sync.Pool{
 		New: func() any {
 			return &bytes.Buffer{}
 		},
@@ -95,11 +95,11 @@ var (
 		if !ok || envSqidsMinLength == "" {
 			return errors.New("env SQIDS_MIN_LENGTH is required")
 		}
-		sqidsMinLength, err := strconv.Atoi(envSqidsMinLength)
-		if err != nil || sqidsMinLength < 1 || sqidsMinLength > math.MaxUint8 {
+		sqidsMinLength, err := strconv.ParseUint(envSqidsMinLength, 10, 8)
+		if err != nil || sqidsMinLength < 1 {
 			return fmt.Errorf("env SQIDS_MIN_LENGTH requires a positive integer, min. 1, max %d", math.MaxUint8)
 		}
-		if sqIDs, err = sqids.New(sqids.Options{
+		if shortUniqueIDs, err = sqids.New(sqids.Options{
 			Alphabet:  lowerCasedAlphabets,
 			MinLength: uint8(sqidsMinLength),
 		}); err != nil {
@@ -140,23 +140,23 @@ func GenerateSnowflakeID() int64 {
 	return snowflakeNode.Generate().Int64()
 }
 
-func EncodeSqids(numbers ...int64) (string, error) {
+func EncodeShortUniqueIDs(numbers ...int64) (string, error) {
 	n := len(numbers)
 	if n == 0 {
 		return "", nil
 	}
-	unsignedNumbers := make([]uint64, len(numbers))
-	for i, number := range numbers {
-		unsignedNumbers[i] = uint64(number)
+	unsignedNumbers := make([]uint64, n)
+	for i := range numbers {
+		unsignedNumbers[i] = uint64(numbers[i])
 	}
-	return sqIDs.Encode(unsignedNumbers)
+	return shortUniqueIDs.Encode(unsignedNumbers)
 }
 
-func DecodeSqids(id string) int64 {
+func DecodeShortUniqueIDs(id string) int64 {
 	if id == "" {
 		return 0
 	}
-	unsignedNumbers := sqIDs.Decode(id)
+	unsignedNumbers := shortUniqueIDs.Decode(id)
 	if len(unsignedNumbers) == 0 {
 		return 0
 	}
