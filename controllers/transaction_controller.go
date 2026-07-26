@@ -214,8 +214,8 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	request.DeliveryCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
-	mapCartItemIDs := map[uuid.UUID]struct{}{}
 	if n := len(request.Items); n > 0 {
+		mapCartItemIDs := map[uuid.UUID]struct{}{}
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
 		for i, item := range request.Items {
 			if item.CartItemID == nil {
