@@ -92,6 +92,7 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Get("", q.AdminIndex).
 		Get("/:id", q.AdminShow).
 		Get("/:id/edit", q.AdminEdit).
+		Post("/:id/withdraw", q.AdminWithdraw).
 		Post("/:id/process", q.AdminProcess).
 		Post("/:id/ship", q.AdminShip).
 		Post("/:id/deliver", q.AdminDeliver)
@@ -750,6 +751,54 @@ func (q *transactionController) AdminEdit(c fiber.Ctx) (err error) {
 	}
 	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
 	return c.Render("admin/transaction_edit", params, "admin/layouts/authenticated")
+}
+
+func (q *transactionController) AdminWithdraw(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-AdminWithdraw"
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	request, _, err := q.prepareTransaction(
+		ctx,
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		false,
+		models.TransactionStatusWithdrawalPending,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/transactions")
+	}
+	if request == nil {
+		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
+	}
+	now := time.Now()
+	request.Status = models.TransactionStatusWithdrawn
+	request.WithdrawnBy = &currentAdmin.ID
+	request.WithdrawnAt = &now
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	if _, err = q.transactionService.UpdateTransaction(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
+	}
+	return flash.Success("transaction withdrawn successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
 }
 
 func (q *transactionController) AdminProcess(c fiber.Ctx) (err error) {
