@@ -103,8 +103,8 @@ func (q *transactionRepository) FindTransactions(
 		, wallet_amount
 		, wallet_discount
 		, discounted_shopping_cost
-		, delivery_cost
-		, discounted_delivery_cost
+		, delivery_estimated_cost
+		, discounted_delivery_estimated_cost
 		, delivery_route_id
 		, delivery_longitude
 		, delivery_latitude
@@ -139,6 +139,7 @@ func (q *transactionRepository) FindTransactions(
 		, refund_id
 		, shipped_by
 		, shipped_at
+		, delivery_actual_cost
 		, completed_by
 		, completed_at`,
 	)
@@ -242,8 +243,8 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.WalletAmount,
 			&transaction.WalletDiscount,
 			&transaction.DiscountedShoppingCost,
-			&transaction.DeliveryCost,
-			&transaction.DiscountedDeliveryCost,
+			&transaction.DeliveryEstimatedCost,
+			&transaction.DiscountedDeliveryEstimatedCost,
 			&transaction.DeliveryRouteID,
 			&transaction.DeliveryLongitude,
 			&transaction.DeliveryLatitude,
@@ -278,6 +279,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.RefundID,
 			&transaction.ShippedBy,
 			&transaction.ShippedAt,
+			&transaction.DeliveryActualCost,
 			&transaction.CompletedBy,
 			&transaction.CompletedAt,
 		); err != nil {
@@ -373,8 +375,8 @@ func (q *transactionRepository) FindTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, delivery_cost
-			, discounted_delivery_cost
+			, delivery_estimated_cost
+			, discounted_delivery_estimated_cost
 			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
@@ -409,6 +411,7 @@ func (q *transactionRepository) FindTransaction(
 			, refund_id
 			, shipped_by
 			, shipped_at
+			, delivery_actual_cost
 			, completed_by
 			, completed_at
 		FROM transactions %s`,
@@ -442,8 +445,8 @@ func (q *transactionRepository) FindTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
-		&response.DeliveryCost,
-		&response.DiscountedDeliveryCost,
+		&response.DeliveryEstimatedCost,
+		&response.DiscountedDeliveryEstimatedCost,
 		&response.DeliveryRouteID,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
@@ -478,6 +481,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.RefundID,
 		&response.ShippedBy,
 		&response.ShippedAt,
+		&response.DeliveryActualCost,
 		&response.CompletedBy,
 		&response.CompletedAt,
 	)
@@ -583,8 +587,8 @@ func (q *transactionRepository) CreateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, delivery_cost
-			, discounted_delivery_cost
+			, delivery_estimated_cost
+			, discounted_delivery_estimated_cost
 			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
@@ -599,11 +603,13 @@ func (q *transactionRepository) CreateTransaction(
 			, revised_shopping_cost
 			, revised_discounted_shopping_cost
 			, revised_payment_amount
+			, delivery_actual_cost
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
+			, $41
 		)
 		RETURNING id
 			, parent_id
@@ -630,8 +636,8 @@ func (q *transactionRepository) CreateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, delivery_cost
-			, discounted_delivery_cost
+			, delivery_estimated_cost
+			, discounted_delivery_estimated_cost
 			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
@@ -666,6 +672,7 @@ func (q *transactionRepository) CreateTransaction(
 			, refund_id
 			, shipped_by
 			, shipped_at
+			, delivery_actual_cost
 			, completed_by
 			, completed_at`,
 		request.ParentID,
@@ -692,8 +699,8 @@ func (q *transactionRepository) CreateTransaction(
 		request.WalletAmount,
 		request.WalletDiscount,
 		request.DiscountedShoppingCost,
-		request.DeliveryCost,
-		request.DiscountedDeliveryCost,
+		request.DeliveryEstimatedCost,
+		request.DiscountedDeliveryEstimatedCost,
 		request.DeliveryRouteID,
 		request.DeliveryLongitude,
 		request.DeliveryLatitude,
@@ -708,6 +715,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.RevisedShoppingCost,
 		request.RevisedDiscountedShoppingCost,
 		request.RevisedPaymentAmount,
+		request.DeliveryActualCost,
 	).Scan(
 		&response.ID,
 		&response.ParentID,
@@ -734,8 +742,8 @@ func (q *transactionRepository) CreateTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
-		&response.DeliveryCost,
-		&response.DiscountedDeliveryCost,
+		&response.DeliveryEstimatedCost,
+		&response.DiscountedDeliveryEstimatedCost,
 		&response.DeliveryRouteID,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
@@ -770,6 +778,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.RefundID,
 		&response.ShippedBy,
 		&response.ShippedAt,
+		&response.DeliveryActualCost,
 		&response.CompletedBy,
 		&response.CompletedAt,
 	)
@@ -942,8 +951,8 @@ func (q *transactionRepository) UpdateTransaction(
 			, wallet_amount
 			, wallet_discount
 			, discounted_shopping_cost
-			, delivery_cost
-			, discounted_delivery_cost
+			, delivery_estimated_cost
+			, discounted_delivery_estimated_cost
 			, delivery_route_id
 			, delivery_longitude
 			, delivery_latitude
@@ -978,6 +987,7 @@ func (q *transactionRepository) UpdateTransaction(
 			, refund_id
 			, shipped_by
 			, shipped_at
+			, delivery_actual_cost
 			, completed_by
 			, completed_at
 		FROM transactions
@@ -1010,8 +1020,8 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.WalletAmount,
 		&response.WalletDiscount,
 		&response.DiscountedShoppingCost,
-		&response.DeliveryCost,
-		&response.DiscountedDeliveryCost,
+		&response.DeliveryEstimatedCost,
+		&response.DiscountedDeliveryEstimatedCost,
 		&response.DeliveryRouteID,
 		&response.DeliveryLongitude,
 		&response.DeliveryLatitude,
@@ -1046,6 +1056,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.RefundID,
 		&response.ShippedBy,
 		&response.ShippedAt,
+		&response.DeliveryActualCost,
 		&response.CompletedBy,
 		&response.CompletedAt,
 	)
@@ -1234,6 +1245,13 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		_, _ = fmt.Fprintf(&sb, " shipped_at = $%d", n)
 	}
+	if response.DeliveryActualCost != request.DeliveryActualCost {
+		params = append(params, request.DeliveryActualCost)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " delivery_actual_cost = $%d", n)
+	}
 	if response.CompletedBy == nil && request.CompletedBy != nil {
 		params = append(params, request.CompletedBy)
 		if n = len(params); n > 1 {
@@ -1287,8 +1305,8 @@ func (q *transactionRepository) UpdateTransaction(
 				, wallet_amount
 				, wallet_discount
 				, discounted_shopping_cost
-				, delivery_cost
-				, discounted_delivery_cost
+				, delivery_estimated_cost
+				, discounted_delivery_estimated_cost
 				, delivery_route_id
 				, delivery_longitude
 				, delivery_latitude
@@ -1323,6 +1341,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, refund_id
 				, shipped_by
 				, shipped_at
+				, delivery_actual_cost
 				, completed_by
 				, completed_at`,
 			n-1, n,
@@ -1353,8 +1372,8 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.WalletAmount,
 			&response.WalletDiscount,
 			&response.DiscountedShoppingCost,
-			&response.DeliveryCost,
-			&response.DiscountedDeliveryCost,
+			&response.DeliveryEstimatedCost,
+			&response.DiscountedDeliveryEstimatedCost,
 			&response.DeliveryRouteID,
 			&response.DeliveryLongitude,
 			&response.DeliveryLatitude,
@@ -1389,6 +1408,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.RefundID,
 			&response.ShippedBy,
 			&response.ShippedAt,
+			&response.DeliveryActualCost,
 			&response.CompletedBy,
 			&response.CompletedAt,
 		); err != nil {

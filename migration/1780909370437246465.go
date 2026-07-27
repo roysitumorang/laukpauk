@@ -1757,8 +1757,8 @@ func init() {
 				, wallet_amount bigint NOT NULL
 				, wallet_discount bigint NOT NULL
 				, discounted_shopping_cost bigint NOT NULL
-				, delivery_cost bigint NOT NULL
-				, discounted_delivery_cost bigint NOT NULL
+				, delivery_estimated_cost bigint NOT NULL
+				, discounted_delivery_estimated_cost bigint NOT NULL
 				, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id)
 				, delivery_latitude character varying NOT NULL
 				, delivery_longitude character varying NOT NULL
@@ -1793,6 +1793,7 @@ func init() {
 				, refund_id character varying UNIQUE
 				, shipped_by UUID REFERENCES users (id)
 				, shipped_at timestamp with time zone
+				, delivery_actual_cost bigint NOT NULL
 				, completed_by UUID REFERENCES users (id)
 				, completed_at timestamp with time zone
 			);`,

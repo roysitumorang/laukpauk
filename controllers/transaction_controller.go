@@ -214,7 +214,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage("delivery_time: not found").
 			WriteResponse(c)
 	}
-	request.DeliveryCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
+	request.DeliveryEstimatedCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
 	if n := len(request.Items); n > 0 {
 		mapCartItemIDs := map[uuid.UUID]struct{}{}
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
