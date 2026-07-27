@@ -2,7 +2,6 @@ package helper
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -24,8 +23,6 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/keys"
 	"github.com/sqids/sqids-go"
 	"golang.org/x/crypto/bcrypt"
@@ -45,7 +42,6 @@ var (
 	loginLockoutDuration,
 	accessTokenAge time.Duration
 	shortUniqueIDs *sqids.Sqids
-	dbWrite        *pgxpool.Pool
 	privateKey     *rsa.PrivateKey
 	snowflakeNode  *snowflake.Node
 	bufferPool     = sync.Pool{
@@ -119,14 +115,6 @@ var (
 		return
 	})
 )
-
-func InitDbWrite(dbWriteOnly *pgxpool.Pool) {
-	dbWrite = dbWriteOnly
-}
-
-func BeginTx(ctx context.Context) (pgx.Tx, error) {
-	return dbWrite.Begin(ctx)
-}
 
 func String2ByteSlice(str string) []byte {
 	return unsafe.Slice(unsafe.StringData(str), len(str))

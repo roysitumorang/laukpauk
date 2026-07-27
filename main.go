@@ -71,7 +71,6 @@ func main() {
 						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
 						return err
 					}
-					helper.InitDbWrite(service.DbWrite)
 					if err = service.Migration.Migrate(ctx); err != nil {
 						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMigrate")
 						return err
@@ -168,7 +167,6 @@ func main() {
 						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
 						return err
 					}
-					helper.InitDbWrite(service.DbWrite)
 					var activity string
 					switch cmd.Args().First() {
 					case "new":

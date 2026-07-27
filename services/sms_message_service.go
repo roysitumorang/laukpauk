@@ -168,7 +168,7 @@ func (q *smsMessageService) ConsumeMessage(
 		}
 		smsMessage.MessageID = messageID
 		smsMessage.SentAt = new(time.Now())
-		tx, err := helper.BeginTx(ctx)
+		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 			return err
@@ -209,7 +209,7 @@ func (q *smsMessageService) ConsumeMessage(
 		}
 		smsMessage.DeliveryStatus = deliveryStatus
 		smsMessage.UpdatedAt = time.Now()
-		tx, err := helper.BeginTx(ctx)
+		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 			return err
