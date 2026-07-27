@@ -422,6 +422,11 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		counter.Hits,
 		strings.ToUpper(helper.RandomString(4)),
 	)
+	if request.PaymentAmount > 0 {
+		request.Status = models.TransactionStatusPending
+	} else {
+		request.Status = models.TransactionStatusPaid
+	}
 	request.BuyerID = currentBuyer.ID
 	request.ReferenceNumber = sb.String()
 	request.CreatedAt = now
