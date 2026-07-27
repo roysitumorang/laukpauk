@@ -101,7 +101,7 @@ type (
 		RevisedShoppingCost             int64              `json:"revised_shopping_cost" form:"-"`
 		RevisedDiscountedShoppingCost   int64              `json:"revised_discounted_shopping_cost" form:"-"`
 		RevisedPaymentAmount            int64              `json:"revised_payment_amount" form:"-"`
-		RefundAmount                    *int64             `json:"refund_amount" form:"-"`
+		RefundAmount                    int64              `json:"refund_amount" form:"-"`
 		RefundedAt                      *time.Time         `json:"refunded_at" form:"-"`
 		RefundID                        *string            `json:"-" form:"-"`
 		ShippedBy                       *uuid.UUID         `json:"-" form:"-"`
@@ -419,6 +419,60 @@ func (q *Transaction) CalculateDiscount() {
 	q.PaymentAmount = q.DiscountedShoppingCost + q.DiscountedDeliveryEstimatedCost
 	q.RevisedDiscountedShoppingCost = q.DiscountedShoppingCost
 	q.RevisedPaymentAmount = q.PaymentAmount
+}
+
+func (q *Transaction) Revise() {
+	q.RevisedShoppingCost = q.UniqueCode
+	for i, item := range q.Items {
+		if item.OutOfStock {
+			item.RevisedSubtotal = 0
+		} else if (item.DiscountMinimumQuantity > 0 &&
+			item.RevisedQuantity >= item.DiscountMinimumQuantity) ||
+			item.DiscountAmount > 0 {
+			item.RevisedSubtotal = max(0, item.SellingPrice-item.DiscountAmount) * item.RevisedQuantity
+		} else {
+			item.RevisedSubtotal = item.SellingPrice * item.RevisedQuantity
+		}
+		q.RevisedShoppingCost += item.RevisedSubtotal
+		q.Items[i] = item
+	}
+	q.RevisedDiscountedShoppingCost = q.RevisedShoppingCost
+	q.DiscountedDeliveryEstimatedCost = q.DeliveryEstimatedCost
+	if q.RewardPointsDiscounted && q.RewardPointsDiscount > 0 {
+		rewardPointsAmount := q.RewardPointsDiscount
+		if q.RevisedDiscountedShoppingCost > 0 {
+			rewardPointsDiscount := min(q.RevisedDiscountedShoppingCost, rewardPointsAmount)
+			q.RevisedDiscountedShoppingCost -= rewardPointsDiscount
+			rewardPointsAmount -= rewardPointsDiscount
+		}
+		if q.DiscountedDeliveryEstimatedCost > 0 && rewardPointsAmount > 0 {
+			rewardPointsDiscount := min(q.DiscountedDeliveryEstimatedCost, rewardPointsAmount)
+			q.DiscountedDeliveryEstimatedCost -= rewardPointsDiscount
+		}
+	} else if q.VoucherCode != nil && q.VoucherType != nil {
+		if *q.VoucherType == VoucherTypeShoppingCost {
+			q.RevisedDiscountedShoppingCost = max(0, q.RevisedDiscountedShoppingCost-q.VoucherDiscount)
+		} else {
+			q.DiscountedDeliveryEstimatedCost = max(0, q.DeliveryEstimatedCost-q.VoucherDiscount)
+		}
+	}
+	q.WalletDiscount = 0
+	if q.WalletDiscounted && q.WalletAmount > 0 {
+		walletAmount := q.WalletAmount
+		if q.RevisedDiscountedShoppingCost > 0 {
+			walletDiscount := min(q.RevisedDiscountedShoppingCost, q.WalletAmount)
+			q.RevisedDiscountedShoppingCost -= walletDiscount
+			walletAmount -= walletDiscount
+			q.WalletDiscount += walletDiscount
+		}
+		if q.DiscountedDeliveryEstimatedCost > 0 && walletAmount > 0 {
+			walletDiscount := min(q.DiscountedDeliveryEstimatedCost, q.WalletAmount)
+			q.DiscountedDeliveryEstimatedCost -= walletDiscount
+			q.WalletDiscount += walletDiscount
+		}
+	}
+	q.RevisedPaymentAmount = q.RevisedDiscountedShoppingCost + q.DiscountedDeliveryEstimatedCost
+	q.RefundAmount = q.PaymentAmount - q.RevisedPaymentAmount
 }
 
 func (q TransactionStatus) Int() int {

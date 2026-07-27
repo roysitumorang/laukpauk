@@ -607,13 +607,14 @@ func (q *transactionRepository) CreateTransaction(
 			, revised_shopping_cost
 			, revised_discounted_shopping_cost
 			, revised_payment_amount
+			, refund_amount
 			, delivery_actual_cost
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41
+			, $41, $42
 		)
 		RETURNING id
 			, parent_id
@@ -719,6 +720,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.RevisedShoppingCost,
 		request.RevisedDiscountedShoppingCost,
 		request.RevisedPaymentAmount,
+		request.RefundAmount,
 		request.DeliveryActualCost,
 	).Scan(
 		&response.ID,
@@ -1218,7 +1220,7 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		_, _ = fmt.Fprintf(&sb, " revised_payment_amount = $%d", n)
 	}
-	if response.RefundAmount == nil && request.RefundAmount != nil {
+	if response.RefundAmount != request.RefundAmount {
 		params = append(params, request.RefundAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")

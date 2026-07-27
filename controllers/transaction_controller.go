@@ -889,7 +889,7 @@ func (q *transactionController) AdminProcess(c fiber.Ctx) (err error) {
 		models.TransactionStatusPaid,
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
 	if transaction == nil {
@@ -905,11 +905,41 @@ func (q *transactionController) AdminProcess(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request.ID = transaction.ID
-	request.Status = models.TransactionStatusProcessed
-	request.ProcessedBy = &currentAdmin.ID
-	request.ProcessedAt = new(time.Now())
-	params.Push("request", request)
+	n := len(transaction.Items)
+	mapTransactionItemIDs := make(map[uuid.UUID]int, n)
+	for i, transactionItem := range transaction.Items {
+		mapTransactionItemIDs[transactionItem.ID] = i
+	}
+	for i, requestItem := range request.Items {
+		j, ok := mapTransactionItemIDs[requestItem.ID]
+		if !ok {
+			return c.Render("admin/transaction_edit", params.Push(
+				"flash", flash.Danger(helper.Sprintf("items[%d].id: not found", i)),
+			), "admin/layouts/authenticated")
+		}
+		transactionItem := transaction.Items[j]
+		requestItem.RevisionNote = strings.TrimSpace(requestItem.RevisionNote)
+		if requestItem.Quantity > transactionItem.Quantity {
+			return c.Render("admin/transaction_edit", params.Push(
+				"flash", flash.Danger(helper.Sprintf("items[%d].quantity: cannot exceed %d", i, transactionItem.Quantity)),
+			), "admin/layouts/authenticated")
+		} else if requestItem.Quantity < transactionItem.Quantity && requestItem.RevisionNote == "" {
+			return c.Render("admin/transaction_edit", params.Push(
+				"flash", flash.Danger(helper.Sprintf("items[%d].revison_note: is required", i)),
+			), "admin/layouts/authenticated")
+		}
+		transactionItem.Quantity = max(requestItem.Quantity, 0)
+		transactionItem.OutOfStock = transactionItem.Quantity == 0
+		transactionItem.RevisionNote = requestItem.RevisionNote
+		transaction.Items[j] = transactionItem
+	}
+	transaction.Revise()
+	now := time.Now()
+	transaction.Status = models.TransactionStatusProcessed
+	transaction.ProcessedBy = &currentAdmin.ID
+	transaction.ProcessedAt = &now
+	transaction.UpdatedAt = now
+	params.Push("request", transaction)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -925,7 +955,7 @@ func (q *transactionController) AdminProcess(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.transactionService.UpdateTransaction(ctx, tx, request); err != nil {
+	if _, err = q.transactionService.UpdateTransaction(ctx, tx, transaction); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return c.Render("admin/transaction_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -954,7 +984,7 @@ func (q *transactionController) AdminShip(c fiber.Ctx) (err error) {
 		models.TransactionStatusProcessed,
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
 	if transaction == nil {

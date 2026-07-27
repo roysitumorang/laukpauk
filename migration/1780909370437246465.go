@@ -1789,7 +1789,7 @@ func init() {
 				, revised_shopping_cost bigint NOT NULL
 				, revised_discounted_shopping_cost bigint NOT NULL
 				, revised_payment_amount bigint NOT NULL
-				, refund_amount bigint
+				, refund_amount bigint NOT NULL
 				, refunded_at timestamp with time zone
 				, refund_id character varying UNIQUE
 				, shipped_by UUID REFERENCES users (id)
