@@ -359,28 +359,206 @@ func (q *productVariantRepository) UpdateProductVariant(
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantRepository-UpdateProductVariant"
 	var response models.ProductVariant
-	if err := tx.QueryRow(
+	err := q.dbRead.QueryRow(
 		ctx,
 		`WITH v AS (
-			UPDATE product_variants SET
-				record_status = $1
-				, stock_unit = $2
-				, base_price = $3
-				, selling_price = $4
-				, discount_type = $5
-				, discount_rate = $6
-				, discount_minimum_quantity = $7
-				, discount_amount = $8
-				, sale_price = $9
-				, description = $10
-				, updated_by = $11
-				, updated_at = $12
-				, deleted_by = $13
-				, deleted_at = $14
-				, deletion_reason = $15
-			WHERE id = $16
-			RETURNING *
+			SELECT
+				id
+				, record_status
+				, product_id
+				, stock_unit
+				, base_price
+				, selling_price
+				, discount_type
+				, discount_rate
+				, discount_minimum_quantity
+				, discount_amount
+				, sale_price
+				, description
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+				, deleted_by
+				, deleted_at
+				, deletion_reason
+			FROM product_variants
+			WHERE id = $1
+			FOR UPDATE
 		)
+		SELECT
+			v.id
+			, v.record_status
+			, v.product_id
+			, p.name
+			, p.ready_stock
+			, v.stock_unit
+			, v.base_price
+			, v.selling_price
+			, v.discount_type
+			, v.discount_rate
+			, v.discount_minimum_quantity
+			, v.discount_amount
+			, v.sale_price
+			, v.description
+			, v.created_by
+			, v.created_at
+			, v.updated_by
+			, v.updated_at
+			, v.deleted_by
+			, v.deleted_at
+			, v.deletion_reason
+		FROM v
+		JOIN products p ON v.product_id = p.id`,
+		request.ID,
+	).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.ProductID,
+		&response.ProductName,
+		&response.ProductReadyStock,
+		&response.StockUnit,
+		&response.BasePrice,
+		&response.SellingPrice,
+		&response.DiscountType,
+		&response.DiscountRate,
+		&response.DiscountMinimumQuantity,
+		&response.DiscountAmount,
+		&response.SalePrice,
+		&response.Description,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrProductVariantNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	var (
+		params []any
+		sb     strings.Builder
+		n      int
+	)
+	_, _ = sb.WriteString("WITH v AS (UPDATE product_variants SET")
+	if response.RecordStatus != request.RecordStatus {
+		params = append(params, request.RecordStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " record_status = $%d", n)
+	}
+	if response.StockUnit != request.StockUnit {
+		params = append(params, request.StockUnit)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " stock_unit = $%d", n)
+	}
+	if response.BasePrice != request.BasePrice {
+		params = append(params, request.BasePrice)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " base_price = $%d", n)
+	}
+	if response.SellingPrice != request.SellingPrice {
+		params = append(params, request.SellingPrice)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " selling_price = $%d", n)
+	}
+	if response.DiscountType != request.DiscountType {
+		params = append(params, request.DiscountType)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " discount_type = $%d", n)
+	}
+	if response.DiscountRate != request.DiscountRate {
+		params = append(params, request.DiscountRate)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " discount_rate = $%d", n)
+	}
+	if response.DiscountMinimumQuantity != request.DiscountMinimumQuantity {
+		params = append(params, request.DiscountMinimumQuantity)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " discount_minimum_quantity = $%d", n)
+	}
+	if response.DiscountAmount != request.DiscountAmount {
+		params = append(params, request.DiscountAmount)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " discount_amount = $%d", n)
+	}
+	if response.SalePrice != request.SalePrice {
+		params = append(params, request.SalePrice)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " sale_price = $%d", n)
+	}
+	if response.Description != request.Description {
+		params = append(params, request.Description)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " description = $%d", n)
+	}
+	if len(params) == 0 {
+		return (&response).Populate(), nil
+	}
+	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+		params = append(params, request.UpdatedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " updated_by = $%d", n)
+	}
+	if !response.UpdatedAt.Equal(request.UpdatedAt) {
+		params = append(params, request.UpdatedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " updated_at = $%d", n)
+	}
+	if response.DeletedBy == nil && request.DeletedBy != nil {
+		params = append(params, request.DeletedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " deleted_by = $%d", n)
+	}
+	if response.DeletedAt == nil && request.DeletedAt != nil {
+		params = append(params, request.DeletedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " deleted_at = $%d", n)
+	}
+	if response.DeletionReason == nil && request.DeletionReason != nil {
+		params = append(params, request.DeletionReason)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " deletion_reason = $%d", n)
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		&sb,
+		` WHERE id = $%d RETURNING *)
  		SELECT
 			v.id
 			, v.record_status
@@ -405,23 +583,9 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, v.deletion_reason
 		FROM v
 		JOIN products p ON v.product_id = p.id`,
-		request.RecordStatus,
-		request.StockUnit,
-		request.BasePrice,
-		request.SellingPrice,
-		request.DiscountType,
-		request.DiscountRate,
-		request.DiscountMinimumQuantity,
-		request.DiscountAmount,
-		request.SalePrice,
-		request.Description,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.DeletedBy,
-		request.DeletedAt,
-		request.DeletionReason,
-		request.ID,
-	).Scan(
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductID,
