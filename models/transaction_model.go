@@ -121,7 +121,8 @@ type (
 		ProductID               uuid.UUID  `json:"-" form:"-"`
 		ProductName             string     `json:"product_name" form:"-"`
 		StockUnit               string     `json:"stock_unit" form:"-"`
-		Price                   int64      `json:"price" form:"-"`
+		BasePrice               int64      `json:"-" form:"-"`
+		SellingPrice            int64      `json:"selling_price" form:"-"`
 		DiscountMinimumQuantity int64      `json:"discount_minimum_quantity" form:"-"`
 		DiscountAmount          int64      `json:"discount_amount" form:"-"`
 		Quantity                int64      `json:"quantity" form:"quantity"`
@@ -362,9 +363,9 @@ func (q *Transaction) CalculateShoppingCost() {
 		} else if (item.DiscountMinimumQuantity > 0 &&
 			item.Quantity >= item.DiscountMinimumQuantity) ||
 			item.DiscountAmount > 0 {
-			item.Subtotal = max(0, item.Price-item.DiscountAmount) * item.Quantity
+			item.Subtotal = max(0, item.SellingPrice-item.DiscountAmount) * item.Quantity
 		} else {
-			item.Subtotal = item.Price * item.Quantity
+			item.Subtotal = item.SellingPrice * item.Quantity
 		}
 		item.RevisedQuantity = item.Quantity
 		item.RevisedSubtotal = item.Subtotal

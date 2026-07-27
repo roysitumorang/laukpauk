@@ -25,7 +25,8 @@ type (
 		ProductName             string       `json:"-" form:"-"`
 		ProductReadyStock       bool         `json:"-" form:"-"`
 		StockUnit               string       `json:"stock_unit" form:"stock_unit"`
-		Price                   int64        `json:"price" form:"price"`
+		BasePrice               int64        `json:"-" form:"base_price"`
+		SellingPrice            int64        `json:"selling_price" form:"selling_price"`
 		DiscountType            DiscountType `json:"discount_type" form:"discount_type"`
 		DiscountTypeName        string       `json:"discount_type_name" form:"-"`
 		DiscountRate            int64        `json:"discount_rate" form:"discount_rate"`
@@ -58,10 +59,10 @@ type (
 )
 
 func NewProductVariantFilter() *ProductVariantFilter {
-	return new(ProductVariantFilter{
+	return &ProductVariantFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *ProductVariantFilter) WithProductIDs(productIDs ...uuid.UUID) *ProductVariantFilter {
@@ -122,24 +123,30 @@ func (q *ProductVariant) Validate() error {
 	if q.StockUnit = strings.TrimSpace(q.StockUnit); q.StockUnit == "" {
 		return errors.New("stock_unit: is required")
 	}
-	if q.Price < 1 {
-		return errors.New("price: requires a positive integer minimum 1")
+	if q.BasePrice < 1 {
+		return errors.New("base_price: requires a positive integer minimum 1")
+	}
+	if q.SellingPrice < 1 {
+		return errors.New("selling_price: requires a positive integer minimum 1")
+	}
+	if q.BasePrice > q.SellingPrice {
+		return errors.New("selling_price: should exceed or equal base_price")
 	}
 	switch q.DiscountType {
 	case DiscountTypeFixedAmount:
 		if q.DiscountRate < 0 {
 			return errors.New("discount_rate: requires a positive integer minimum 0")
 		}
-		if q.DiscountRate >= q.Price {
+		if q.DiscountRate >= q.SellingPrice {
 			return errors.New("discount_rate: cannot equal or exceed price")
 		}
 		q.DiscountAmount = q.DiscountRate
-		q.SalePrice = q.Price - q.DiscountAmount
+		q.SalePrice = q.SellingPrice - q.DiscountAmount
 	case DiscountTypePercentage:
 		if q.DiscountRate < 0 || q.DiscountRate > 99 {
 			return errors.New("discount_rate: requires a positive integer minimum 0 maximum 99")
 		}
-		price, err := decimal.New(q.Price, 0)
+		sellingPrice, err := decimal.New(q.SellingPrice, 0)
 		if err != nil {
 			return err
 		}
@@ -147,7 +154,7 @@ func (q *ProductVariant) Validate() error {
 		if err != nil {
 			return err
 		}
-		discount, err := price.Mul(discountRate)
+		discount, err := sellingPrice.Mul(discountRate)
 		if err != nil {
 			return err
 		}
@@ -155,7 +162,7 @@ func (q *ProductVariant) Validate() error {
 			return err
 		}
 		q.DiscountAmount, _, _ = discount.Ceil(0).Int64(0)
-		q.SalePrice = q.Price - q.DiscountAmount
+		q.SalePrice = q.SellingPrice - q.DiscountAmount
 	default:
 		return errors.New("discount_type: not found")
 	}

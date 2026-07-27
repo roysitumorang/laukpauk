@@ -379,7 +379,8 @@ func init() {
 				, record_status integer NOT NULL
 				, product_id UUID NOT NULL REFERENCES products (id)
 				, stock_unit character varying NOT NULL COLLATE "natural_sort"
-				, price bigint NOT NULL
+				, base_price bigint NOT NULL
+				, selling_price bigint NOT NULL
 				, discount_type integer NOT NULL
 				, discount_rate bigint NOT NULL
 				, discount_minimum_quantity bigint NOT NULL
@@ -1937,7 +1938,8 @@ func init() {
 				, product_id UUID NOT NULL REFERENCES products (id)
 				, product_name character varying NOT NULL
 				, stock_unit character varying NOT NULL
-				, price bigint NOT NULL
+				, base_price bigint NOT NULL
+				, selling_price bigint NOT NULL
 				, discount_minimum_quantity bigint NOT NULL
 				, discount_amount bigint NOT NULL
 				, quantity bigint NOT NULL

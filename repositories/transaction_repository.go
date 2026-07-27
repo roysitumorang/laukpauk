@@ -202,7 +202,8 @@ func (q *transactionRepository) FindTransactions(
 			, product_id
 			, product_name
 			, stock_unit
-			, price
+			, base_price
+			, selling_price
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
@@ -319,7 +320,8 @@ func (q *transactionRepository) FindTransactions(
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
 			&transactionItem.StockUnit,
-			&transactionItem.Price,
+			&transactionItem.BasePrice,
+			&transactionItem.SellingPrice,
 			&transactionItem.DiscountMinimumQuantity,
 			&transactionItem.DiscountAmount,
 			&transactionItem.Quantity,
@@ -501,7 +503,8 @@ func (q *transactionRepository) FindTransaction(
 			, product_id
 			, product_name
 			, stock_unit
-			, price
+			, base_price
+			, selling_price
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
@@ -533,7 +536,8 @@ func (q *transactionRepository) FindTransaction(
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
 			&transactionItem.StockUnit,
-			&transactionItem.Price,
+			&transactionItem.BasePrice,
+			&transactionItem.SellingPrice,
 			&transactionItem.DiscountMinimumQuantity,
 			&transactionItem.DiscountAmount,
 			&transactionItem.Quantity,
@@ -808,7 +812,8 @@ func (q *transactionRepository) CreateTransaction(
 			, product_id
 			, product_name
 			, stock_unit
-			, price
+			, base_price
+			, selling_price
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
@@ -829,7 +834,8 @@ func (q *transactionRepository) CreateTransaction(
 			&requestItem.ProductID,
 			&requestItem.ProductName,
 			&requestItem.StockUnit,
-			&requestItem.Price,
+			&requestItem.BasePrice,
+			&requestItem.SellingPrice,
 			&requestItem.DiscountMinimumQuantity,
 			&requestItem.DiscountAmount,
 			&requestItem.Quantity,
@@ -845,8 +851,8 @@ func (q *transactionRepository) CreateTransaction(
 		}
 		_, _ = fmt.Fprintf(
 			sb,
-			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
-			n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
+			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			n-15, n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
 		)
 	}
 	_, _ = sb.WriteString(
@@ -856,7 +862,8 @@ func (q *transactionRepository) CreateTransaction(
 			, product_id
 			, product_name
 			, stock_unit
-			, price
+			, base_price
+			, selling_price
 			, discount_minimum_quantity
 			, discount_amount
 			, quantity
@@ -885,7 +892,8 @@ func (q *transactionRepository) CreateTransaction(
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
 			&transactionItem.StockUnit,
-			&transactionItem.Price,
+			&transactionItem.BasePrice,
+			&transactionItem.SellingPrice,
 			&transactionItem.DiscountMinimumQuantity,
 			&transactionItem.DiscountAmount,
 			&transactionItem.Quantity,
@@ -1427,7 +1435,8 @@ func (q *transactionRepository) UpdateTransaction(
 				, product_id
 				, product_name
 				, stock_unit
-				, price
+				, base_price
+				, selling_price
 				, discount_minimum_quantity
 				, discount_amount
 				, quantity
@@ -1450,7 +1459,8 @@ func (q *transactionRepository) UpdateTransaction(
 			&itemResponse.ProductID,
 			&itemResponse.ProductName,
 			&itemResponse.StockUnit,
-			&itemResponse.Price,
+			&itemResponse.BasePrice,
+			&itemResponse.SellingPrice,
 			&itemResponse.DiscountMinimumQuantity,
 			&itemResponse.DiscountAmount,
 			&itemResponse.Quantity,
@@ -1510,7 +1520,8 @@ func (q *transactionRepository) UpdateTransaction(
 				, product_id
 				, product_name
 				, stock_unit
-				, price
+				, base_price
+				, selling_price
 				, discount_minimum_quantity
 				, discount_amount
 				, quantity
@@ -1530,7 +1541,8 @@ func (q *transactionRepository) UpdateTransaction(
 			&itemResponse.ProductID,
 			&itemResponse.ProductName,
 			&itemResponse.StockUnit,
-			&itemResponse.Price,
+			&itemResponse.BasePrice,
+			&itemResponse.SellingPrice,
 			&itemResponse.DiscountMinimumQuantity,
 			&itemResponse.DiscountAmount,
 			&itemResponse.Quantity,

@@ -9,12 +9,21 @@
 			<input type="text" name="stock_unit" value="{{ request.StockUnit }}" id="stock_unit" placeholder="Nama Harga (misal 1 Kg)" class="form-control" />
 		</div>
 		<div class="form-group col-lg-4">
-			<label for="price" class="label-title">Harga</label>
+			<label for="base_price" class="label-title">Harga Dasar</label>
 			<div class="input-group">
 				<div class="input-group-prepend">
 					<span class="input-group-text">Rp.</span>
 				</div>
-				<input type="number" name="price" value="{{ request.Price }}" id="price" placeholder="Harga" class="form-control" />
+				<input type="number" name="base_price" value="{{ request.BasePrice }}" id="base_price" placeholder="Harga Dasar" class="form-control" />
+			</div>
+		</div>
+		<div class="form-group col-lg-4">
+			<label for="selling_price" class="label-title">Harga Jual</label>
+			<div class="input-group">
+				<div class="input-group-prepend">
+					<span class="input-group-text">Rp.</span>
+				</div>
+				<input type="number" name="selling_price" value="{{ request.SellingPrice }}" id="selling_price" placeholder="Harga Jual" class="form-control" />
 			</div>
 		</div>
 		<div class="form-group col-lg-4">

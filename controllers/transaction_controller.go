@@ -268,7 +268,8 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			item.ProductName = productVariant.ProductName
 			item.StockUnit = productVariant.StockUnit
 			item.DiscountMinimumQuantity = productVariant.DiscountMinimumQuantity
-			item.Price = productVariant.Price
+			item.BasePrice = productVariant.BasePrice
+			item.SellingPrice = productVariant.SellingPrice
 			request.Items[i] = item
 		}
 	}

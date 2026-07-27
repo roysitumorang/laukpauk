@@ -82,7 +82,8 @@ func (q *productVariantRepository) FindProductVariants(
 		, p.name
 		, p.ready_stock
 		, v.stock_unit
-		, v.price
+		, v.base_price
+		, v.selling_price
 		, v.discount_type
 		, v.discount_rate
 		, v.discount_minimum_quantity
@@ -151,7 +152,8 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ProductName,
 			&productVariant.ProductReadyStock,
 			&productVariant.StockUnit,
-			&productVariant.Price,
+			&productVariant.BasePrice,
+			&productVariant.SellingPrice,
 			&productVariant.DiscountType,
 			&productVariant.DiscountRate,
 			&productVariant.DiscountMinimumQuantity,
@@ -193,7 +195,8 @@ func (q *productVariantRepository) FindProductVariant(
 			, p.name
 			, p.ready_stock
 			, v.stock_unit
-			, v.price
+			, v.base_price
+			, v.selling_price
 			, v.discount_type
 			, v.discount_rate
 			, v.discount_minimum_quantity
@@ -220,7 +223,8 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.ProductName,
 		&response.ProductReadyStock,
 		&response.StockUnit,
-		&response.Price,
+		&response.BasePrice,
+		&response.SellingPrice,
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
@@ -259,7 +263,8 @@ func (q *productVariantRepository) CreateProductVariant(
 				record_status
 				, product_id
 				, stock_unit
-				, price
+				, base_price
+				, selling_price
 				, discount_type
 				, discount_rate
 				, discount_minimum_quantity
@@ -270,7 +275,7 @@ func (q *productVariantRepository) CreateProductVariant(
 				, created_at
 				, updated_by
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 			RETURNING *
 		)
 		SELECT
@@ -280,7 +285,8 @@ func (q *productVariantRepository) CreateProductVariant(
 			, p.name
 			, p.ready_stock
 			, v.stock_unit
-			, v.price
+			, v.base_price
+			, v.selling_price
 			, v.discount_type
 			, v.discount_rate
 			, v.discount_minimum_quantity
@@ -299,7 +305,8 @@ func (q *productVariantRepository) CreateProductVariant(
 		request.RecordStatus,
 		request.ProductID,
 		request.StockUnit,
-		request.Price,
+		request.BasePrice,
+		request.SellingPrice,
 		request.DiscountType,
 		request.DiscountRate,
 		request.DiscountMinimumQuantity,
@@ -317,7 +324,8 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ProductName,
 		&response.ProductReadyStock,
 		&response.StockUnit,
-		&response.Price,
+		&response.BasePrice,
+		&response.SellingPrice,
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
@@ -357,19 +365,20 @@ func (q *productVariantRepository) UpdateProductVariant(
 			UPDATE product_variants SET
 				record_status = $1
 				, stock_unit = $2
-				, price = $3
-				, discount_type = $4
-				, discount_rate = $5
-				, discount_minimum_quantity = $6
-				, discount_amount = $7
-				, sale_price = $8
-				, description = $9
-				, updated_by = $10
-				, updated_at = $11
-				, deleted_by = $12
-				, deleted_at = $13
-				, deletion_reason = $14
-			WHERE id = $15
+				, base_price = $3
+				, selling_price = $4
+				, discount_type = $5
+				, discount_rate = $6
+				, discount_minimum_quantity = $7
+				, discount_amount = $8
+				, sale_price = $9
+				, description = $10
+				, updated_by = $11
+				, updated_at = $12
+				, deleted_by = $13
+				, deleted_at = $14
+				, deletion_reason = $15
+			WHERE id = $16
 			RETURNING *
 		)
  		SELECT
@@ -379,7 +388,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, p.name
 			, p.ready_stock
 			, v.stock_unit
-			, v.price
+			, v.base_price
+			, v.selling_price
 			, v.discount_type
 			, v.discount_rate
 			, v.discount_minimum_quantity
@@ -397,7 +407,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 		JOIN products p ON v.product_id = p.id`,
 		request.RecordStatus,
 		request.StockUnit,
-		request.Price,
+		request.BasePrice,
+		request.SellingPrice,
 		request.DiscountType,
 		request.DiscountRate,
 		request.DiscountMinimumQuantity,
@@ -417,7 +428,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductName,
 		&response.ProductReadyStock,
 		&response.StockUnit,
-		&response.Price,
+		&response.BasePrice,
+		&response.SellingPrice,
 		&response.DiscountType,
 		&response.DiscountRate,
 		&response.DiscountMinimumQuantity,
