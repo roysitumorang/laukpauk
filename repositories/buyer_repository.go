@@ -440,132 +440,45 @@ func (q *buyerRepository) UpdateBuyer(
 ) (*models.Buyer, error) {
 	ctxt := "BuyerRepository-UpdateBuyer"
 	var response models.Buyer
-	err := tx.QueryRow(
+	err := q.dbRead.QueryRow(
 		ctx,
-		`WITH u AS (
-			UPDATE users SET
-				user_status = $1
-				, name = $2
-				, confirmation_token = $3
-				, confirmed_at = $4
-				, unconfirmed_mobile_phone = $5
-				, mobile_phone_confirmation_sent_at = $6
-				, mobile_phone_confirmation_token = $7
-				, mobile_phone_confirmed_at = $8
-				, mobile_phone = $9
-				, otp_token = $10
-				, otp_created_at = $11
-				, otp_expired_at = $12
-				, username = $13
-				, unconfirmed_email = $14
-				, email_confirmation_sent_at = $15
-				, email_confirmation_token = $16
-				, email_confirmed_at = $17
-				, email = $18
-				, encrypted_password = $19
-				, password_reset_at = $20
-				, password_reset_token = $21
-				, password_changed_at = $22
-				, photo = $23
-				, unread_notifications = $24
-				, updated_by = $25
-				, updated_at = $26
-				, deactivated_by = $27
-				, deactivated_at = $28
-				, deactivation_reason = $29
-			WHERE id = $37
-			RETURNING *
-		), b AS (
-			UPDATE buyers SET
-				referral_code = $30
-				, address = $31
-				, referrer_id = $32
-				, referral_points = $33
-				, reward_points = $34
-				, wallet = $35
-				, delivery_route_id = $36
-			WHERE user_id = $37
-			RETURNING *
-		)
-		SELECT
-			u.id
-			, u.user_type
-			, u.user_status
-			, u.name
-			, u.confirmation_token
-			, u.confirmed_at
-			, u.unconfirmed_mobile_phone
-			, u.mobile_phone_confirmation_sent_at
-			, u.mobile_phone_confirmation_token
-			, u.mobile_phone_confirmed_at
-			, u.mobile_phone
-			, u.otp_token
-			, u.otp_created_at
-			, u.otp_expired_at
-			, u.username
-			, u.unconfirmed_email
-			, u.email_confirmation_sent_at
-			, u.email_confirmation_token
-			, u.email_confirmed_at
-			, u.email
-			, u.encrypted_password
-			, u.password_reset_at
-			, u.password_reset_token
-			, u.password_changed_at
-			, u.photo
-			, u.unread_notifications
-			, u.created_by
-			, u.created_at
-			, u.updated_by
-			, u.updated_at
-			, u.deactivated_by
-			, u.deactivated_at
-			, u.deactivation_reason
-			, b.referral_code
-			, b.address
-			, b.referrer_id
-			, b.referral_points
-			, b.reward_points
-			, b.wallet
-			, b.delivery_route_id
-		FROM u
-		JOIN b ON u.id = b.user_id`,
-		request.UserStatus,
-		request.Name,
-		request.ConfirmationToken,
-		request.ConfirmedAt,
-		request.UnconfirmedMobilePhone,
-		request.MobilePhoneConfirmationSentAt,
-		request.MobilePhoneConfirmationToken,
-		request.MobilePhoneConfirmedAt,
-		request.MobilePhone,
-		request.OtpToken,
-		request.OtpCreatedAt,
-		request.OtpExpiredAt,
-		request.Username,
-		request.UnconfirmedEmail,
-		request.EmailConfirmationSentAt,
-		request.EmailConfirmationToken,
-		request.EmailConfirmedAt,
-		request.Email,
-		request.EncryptedPassword,
-		request.PasswordResetAt,
-		request.PasswordResetToken,
-		request.PasswordChangedAt,
-		request.Photo,
-		request.UnreadNotifications,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.DeactivatedBy,
-		request.DeactivatedAt,
-		request.DeactivationReason,
-		request.ReferralCode,
-		request.Address,
-		request.ReferrerID,
-		request.ReferralPoints,
-		request.RewardPoints,
-		request.Wallet,
-		request.DeliveryRouteID,
+		`SELECT
+			id
+			, user_type
+			, user_status
+			, name
+			, confirmation_token
+			, confirmed_at
+			, unconfirmed_mobile_phone
+			, mobile_phone_confirmation_sent_at
+			, mobile_phone_confirmation_token
+			, mobile_phone_confirmed_at
+			, mobile_phone
+			, otp_token
+			, otp_created_at
+			, otp_expired_at
+			, username
+			, unconfirmed_email
+			, email_confirmation_sent_at
+			, email_confirmation_token
+			, email_confirmed_at
+			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
+			, photo
+			, unread_notifications
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deactivated_by
+			, deactivated_at
+			, deactivation_reason
+		FROM users
+		WHERE id = $1
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -601,6 +514,33 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.DeactivatedBy,
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
+	)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	var (
+		params []any
+		sb     strings.Builder
+		n      int
+	)
+	if err = tx.QueryRow(
+		ctx,
+		`SELECT
+			user_id
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, delivery_route_id
+		FROM buyers
+		WHERE user_id = $1
+		FOR UPDATE`,
+		request.ID,
+	).Scan(
+		&response.ID,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,
@@ -608,11 +548,93 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.RewardPoints,
 		&response.Wallet,
 		&response.DeliveryRouteID,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrBuyerNotFound
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
 	}
-	if err != nil {
+	params = params[:0]
+	sb.Reset()
+	_, _ = sb.WriteString("UPDATE buyers SET")
+	if response.ReferralCode != request.ReferralCode {
+		params = append(params, request.ReferralCode)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " referral_code = $%d", n)
+	}
+	if response.Address != request.Address {
+		params = append(params, request.Address)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " address = $%d", n)
+	}
+	if response.ReferrerID == nil && request.ReferrerID != nil {
+		params = append(params, request.ReferrerID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " referrer_id = $%d", n)
+	}
+	if request.ReferralPoints != 0 {
+		params = append(params, request.ReferralPoints)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " referral_points = referral_points + $%d", n)
+	}
+	if request.RewardPoints != 0 {
+		params = append(params, request.RewardPoints)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " reward_points = reward_points + $%d", n)
+	}
+	if request.Wallet != 0 {
+		params = append(params, request.Wallet)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " wallet = wallet + $%d", n)
+	}
+	if (response.DeliveryRouteID == nil &&
+		request.DeliveryRouteID != nil) ||
+		(response.DeliveryRouteID != nil &&
+			request.DeliveryRouteID != nil &&
+			response.DeliveryRouteID.Compare(*request.DeliveryRouteID) != 0) {
+		params = append(params, request.DeliveryRouteID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " delivery_route_id = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		&sb,
+		` WHERE id = $%d
+		RETURNING user_id
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, delivery_route_id`,
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.ReferralCode,
+		&response.Address,
+		&response.ReferrerID,
+		&response.ReferralPoints,
+		&response.RewardPoints,
+		&response.Wallet,
+		&response.DeliveryRouteID,
+	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}

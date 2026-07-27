@@ -43,6 +43,10 @@ type (
 			ctx context.Context,
 			request *models.Transaction,
 		) (*models.Transaction, error)
+		CompleteTransaction(
+			ctx context.Context,
+			request *models.Transaction,
+		) (*models.Transaction, error)
 	}
 
 	transactionService struct {
@@ -564,6 +568,74 @@ func (q *transactionService) WithdrawTransaction(
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return nil, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return nil, err
+	}
+	return response, nil
+}
+
+func (q *transactionService) CompleteTransaction(
+	ctx context.Context,
+	request *models.Transaction,
+) (*models.Transaction, error) {
+	ctxt := "TransactionService-CompleteTransaction"
+	buyerIDs := []uuid.UUID{request.BuyerID}
+	if request.ReferrerID != nil {
+		buyerIDs = append(buyerIDs, *request.ReferrerID)
+	}
+	buyers, _, _, err := q.buyerRepository.FindBuyers(
+		ctx,
+		models.NewBuyerFilter().
+			WithBuyerIDs(buyerIDs...),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		return nil, err
+	}
+	mapBuyers := make(map[uuid.UUID]*models.Buyer, len(buyers))
+	for _, buyer := range buyers {
+		mapBuyers[buyer.ID] = buyer
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return nil, err
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	response, err := q.transactionRepository.UpdateTransaction(ctx, tx, request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+		return nil, err
+	}
+	if buyer, ok := mapBuyers[request.BuyerID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
+		buyer.ReferrerID = response.ReferrerID
+		buyer.ReferralPoints = 0
+		buyer.RewardPoints = 0
+		buyer.Wallet = max(0, response.RefundAmount)
+		if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+			return nil, err
+		}
+	}
+	if response.ReferrerID != nil {
+		if buyer, ok := mapBuyers[*response.ReferrerID]; ok {
+			buyer.ReferralPoints = -response.ReferralPoints
+			buyer.RewardPoints = response.RewardPointsDiscount
+			buyer.Wallet = 0
+			if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+				return nil, err
+			}
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")

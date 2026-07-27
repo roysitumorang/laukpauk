@@ -594,25 +594,8 @@ func (q *transactionController) AdminComplete(c fiber.Ctx) (err error) {
 	}
 	transaction.Status = models.TransactionStatusCompleted
 	transaction.CompletedAt = new(time.Now())
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	if _, err = q.transactionService.UpdateTransaction(ctx, tx, transaction); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
-	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+	if _, err = q.transactionService.CompleteTransaction(ctx, transaction); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCompleteTransaction")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 	}
 	return flash.Success("transaction completed successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
