@@ -290,18 +290,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.AdminService,
 		q.BuyerService,
 		q.TransactionService,
-		q.TransactionCounterService,
-		q.CartService,
-		q.DeliveryPlanService,
-		q.DeliveryRouteService,
-		q.SettingService,
-		q.VoucherService,
-		q.PointSpendingCapService,
-		q.PointService,
-		q.ProductVariantService,
 		q.JsonWebTokenService,
-		q.PaymentChannelService,
-		q.XenditConsumer,
 	).Mount(app.Group("/transactions"))
 	controllers.NewFcmRegistrationController(
 		q.BuyerService,

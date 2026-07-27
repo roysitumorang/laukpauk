@@ -174,7 +174,21 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	voucherService := services.NewVoucherService(voucherRepository)
 	pointEarningCapService := services.NewPointEarningCapService(pointEarningCapRepository)
 	pointSpendingCapService := services.NewPointSpendingCapService(pointSpendingCapRepository)
-	transactionService := services.NewTransactionService(transactionRepository)
+	transactionService := services.NewTransactionService(
+		transactionRepository,
+		buyerRepository,
+		transactionCounterRepository,
+		cartRepository,
+		deliveryPlanRepository,
+		deliveryRouteRepository,
+		settingRepository,
+		voucherRepository,
+		pointSpendingCapRepository,
+		pointRepository,
+		productVariantRepository,
+		paymentChannelRepository,
+		xenditConsumer,
+	)
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
 	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
 	cartService := services.NewCartService(cartRepository)

@@ -31,7 +31,6 @@ type (
 			ctx context.Context,
 			tx pgx.Tx,
 			request *models.Transaction,
-			sb *strings.Builder,
 		) (*models.Transaction, error)
 		UpdateTransaction(
 			ctx context.Context,
@@ -560,7 +559,6 @@ func (q *transactionRepository) CreateTransaction(
 	ctx context.Context,
 	tx pgx.Tx,
 	request *models.Transaction,
-	sb *strings.Builder,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionRepository-CreateTransaction"
 	var response models.Transaction
@@ -805,8 +803,10 @@ func (q *transactionRepository) CreateTransaction(
 	if len(request.Items) == 0 {
 		return &response, nil
 	}
-	var params []any
-	sb.Reset()
+	var (
+		params []any
+		sb     strings.Builder
+	)
 	_, _ = sb.WriteString(
 		`INSERT INTO transaction_items (
 			transaction_id
@@ -852,7 +852,7 @@ func (q *transactionRepository) CreateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(
-			sb,
+			&sb,
 			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
 			n-15, n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
 		)

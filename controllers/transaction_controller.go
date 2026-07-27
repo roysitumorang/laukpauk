@@ -3,19 +3,15 @@ package controllers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
 	"uuid"
 
-	"github.com/dustin/go-humanize"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
-	"github.com/roysitumorang/laukpauk/consumers"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
@@ -26,21 +22,10 @@ import (
 
 type (
 	transactionController struct {
-		adminService              services.AdminService
-		buyerService              services.BuyerService
-		transactionService        services.TransactionService
-		transactionCounterService services.TransactionCounterService
-		cartService               services.CartService
-		deliveryPlanService       services.DeliveryPlanService
-		deliveryRouteService      services.DeliveryRouteService
-		settingService            services.SettingService
-		voucherService            services.VoucherService
-		pointSpendingCapService   services.PointSpendingCapService
-		pointService              services.PointService
-		productVariantService     services.ProductVariantService
-		jsonWebTokenService       services.JsonWebTokenService
-		paymentChannelService     services.PaymentChannelService
-		xenditConsumer            *consumers.XenditConsumer
+		adminService        services.AdminService
+		buyerService        services.BuyerService
+		transactionService  services.TransactionService
+		jsonWebTokenService services.JsonWebTokenService
 	}
 )
 
@@ -48,35 +33,13 @@ func NewTransactionController(
 	adminService services.AdminService,
 	buyerService services.BuyerService,
 	transactionService services.TransactionService,
-	transactionCounterService services.TransactionCounterService,
-	cartService services.CartService,
-	deliveryPlanService services.DeliveryPlanService,
-	deliveryRouteService services.DeliveryRouteService,
-	settingService services.SettingService,
-	voucherService services.VoucherService,
-	pointSpendingCapService services.PointSpendingCapService,
-	pointService services.PointService,
-	productVariantService services.ProductVariantService,
 	jsonWebTokenService services.JsonWebTokenService,
-	paymentChannelService services.PaymentChannelService,
-	xenditConsumer *consumers.XenditConsumer,
 ) *transactionController {
 	return &transactionController{
-		adminService:              adminService,
-		buyerService:              buyerService,
-		transactionService:        transactionService,
-		transactionCounterService: transactionCounterService,
-		cartService:               cartService,
-		deliveryPlanService:       deliveryPlanService,
-		deliveryRouteService:      deliveryRouteService,
-		settingService:            settingService,
-		voucherService:            voucherService,
-		pointSpendingCapService:   pointSpendingCapService,
-		pointService:              pointService,
-		productVariantService:     productVariantService,
-		jsonWebTokenService:       jsonWebTokenService,
-		paymentChannelService:     paymentChannelService,
-		xenditConsumer:            xenditConsumer,
+		adminService:        adminService,
+		buyerService:        buyerService,
+		transactionService:  transactionService,
+		jsonWebTokenService: jsonWebTokenService,
 	}
 }
 
@@ -142,407 +105,9 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	cart, err := q.cartService.FindCart(
-		ctx,
-		models.NewCartFilter().
-			WithBuyerIDs(currentBuyer.ID),
-	)
-	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if cart == nil || request.CartID == nil || request.CartID.Compare(cart.ID) != 0 {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage("cart_id: not found").
-			WriteResponse(c)
-	}
-	mapCartItems := map[uuid.UUID]*models.CartItem{}
-	for _, cartItem := range cart.Items {
-		mapCartItems[cartItem.ID] = cartItem
-	}
-	deliveryRoute, err := q.deliveryRouteService.FindDeliveryRoute(
-		ctx,
-		models.NewDeliveryRouteFilter().
-			WithDeliveryRouteIDs(request.DeliveryRouteID),
-	)
-	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryRoute")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if deliveryRoute == nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage("delivery_route_id: not found").
-			WriteResponse(c)
-	}
-	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
-	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
-	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
-	setting, err := q.settingService.FindSetting(ctx)
-	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if setting == nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrSettingNotFound.Error()).
-			WriteResponse(c)
-	}
-	now := time.Now().In(time.Local)
-	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
-		ctx,
-		models.NewDeliveryPlanFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithTransactionDatetime(now),
-	)
-	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if deliveryPlan == nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
-	}
-	if _, ok := deliveryPlan.MapDeliveryTimes[request.DeliveryDatetime.UnixNano()]; !ok {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage("delivery_time: not found").
-			WriteResponse(c)
-	}
-	request.DeliveryEstimatedCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
-	if n := len(request.Items); n > 0 {
-		mapCartItemIDs := map[uuid.UUID]struct{}{}
-		productVariantIDs := make([]uuid.UUID, len(request.Items))
-		for i, item := range request.Items {
-			if item.CartItemID == nil {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(helper.Sprintf("items[%d].cart_item_id: is required", i)).
-					WriteResponse(c)
-			}
-			cartItem, ok := mapCartItems[*item.CartItemID]
-			if !ok {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(helper.Sprintf("items[%d].cart_item_id: not found in your cart", i)).
-					WriteResponse(c)
-			}
-			if _, ok = mapCartItemIDs[*item.CartItemID]; ok {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(helper.Sprintf("items[%d].cart_item_id: duplicated", i)).
-					WriteResponse(c)
-			}
-			mapCartItemIDs[*item.CartItemID] = struct{}{}
-			item.ProductVariantID = cartItem.ProductVariantID
-			item.Quantity = cartItem.Quantity
-			request.Items[i] = item
-			productVariantIDs[i] = item.ProductVariantID
-		}
-		productVariants, _, err := q.productVariantService.FindProductVariants(
-			ctx,
-			models.NewProductVariantFilter().
-				WithRecordStatuses(models.RecordStatusActive).
-				WithProductVariantIDs(productVariantIDs...),
-		)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		mapProductVariants := make(map[uuid.UUID]*models.ProductVariant, len(productVariants))
-		for _, productVariant := range productVariants {
-			mapProductVariants[productVariant.ID] = productVariant
-		}
-		for i, item := range request.Items {
-			productVariant, ok := mapProductVariants[item.ProductVariantID]
-			if !ok || !productVariant.ProductReadyStock {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(helper.Sprintf("items[%d].product_variant_id: not found or out of stock", i)).
-					WriteResponse(c)
-			}
-			item.ProductID = productVariant.ProductID
-			item.ProductName = productVariant.ProductName
-			item.StockUnit = productVariant.StockUnit
-			item.DiscountMinimumQuantity = productVariant.DiscountMinimumQuantity
-			item.BasePrice = productVariant.BasePrice
-			item.SellingPrice = productVariant.SellingPrice
-			request.Items[i] = item
-		}
-	}
-	request.CalculateShoppingCost()
-	var sb strings.Builder
-	if setting.ReferralPointsEnabled {
-		if request.ReferralCode != nil {
-			if request.ShoppingCost < setting.ReferralPointsMinimumShoppingCost {
-				sb.Reset()
-				_, _ = fmt.Fprintf(&sb, "referral_code: requires shopping cost minimum %s", humanize.Comma(setting.ReferralPointsMinimumShoppingCost))
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(sb.String()).
-					WriteResponse(c)
-			}
-			referrer, err := q.buyerService.FindBuyer(
-				ctx,
-				models.NewBuyerFilter().
-					WithReferralCodes(*request.ReferralCode),
-			)
-			if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(err.Error()).
-					WriteResponse(c)
-			}
-			if referrer == nil {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage("referral_code: is invalid").
-					WriteResponse(c)
-			}
-			_, pagination, err := q.transactionService.FindTransactions(
-				ctx,
-				models.NewTransactionFilter().
-					WithBuyerIDs(currentBuyer.ID).
-					WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
-					WithReferrerIDs(referrer.ID).
-					WithReturnCountOnly(true),
-			)
-			if err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(err.Error()).
-					WriteResponse(c)
-			}
-			total := int(pagination.Info.Total)
-			if (currentBuyer.ReferrerID != nil &&
-				currentBuyer.ReferrerID.Compare(referrer.ID) != 0) ||
-				total >= len(setting.ReferralPointsSlots) {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage("referral_code: is invalid").
-					WriteResponse(c)
-			}
-			currentBuyer.ReferrerID = &referrer.ID
-			request.ReferrerID = &referrer.ID
-			request.ReferralPoints = setting.ReferralPointsSlots[total]
-		} else {
-			request.ReferrerID = nil
-			request.ReferralPoints = 0
-		}
-	}
-	request.RewardPointsDiscount = 0
-	if request.RewardPointsDiscounted {
-		pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
-			ctx,
-			models.NewPointSpendingCapFilter().
-				WithRecordStatuses(models.RecordStatusActive).
-				WithShoppingCosts(request.ShoppingCost),
-		)
-		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		if pointSpendingCap != nil {
-			request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
-		}
-	} else if setting.VoucherEnabled {
-		if request.VoucherCode != nil {
-			voucher, err := q.voucherService.FindVoucher(
-				ctx,
-				models.NewVoucherFilter().
-					WithRecordStatuses(models.RecordStatusActive).
-					WithCodes(*request.VoucherCode).
-					WithTransactionDatetime(now).
-					WithBuyerIDs(currentBuyer.ID),
-			)
-			if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(err.Error()).
-					WriteResponse(c)
-			}
-			if voucher == nil {
-				return helper.NewResponse(fiber.StatusUnprocessableEntity).
-					SetMessage(models.ErrVoucherNotFound.Error()).
-					WriteResponse(c)
-			}
-			if voucher.QuotaPerBuyer > 0 {
-				_, pagination, err := q.transactionService.FindTransactions(
-					ctx,
-					models.NewTransactionFilter().
-						WithBuyerIDs(currentBuyer.ID).
-						WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
-						WithVoucherIDs(voucher.ID).
-						WithReturnCountOnly(true),
-				)
-				if err != nil {
-					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-					return helper.NewResponse(fiber.StatusUnprocessableEntity).
-						SetMessage(err.Error()).
-						WriteResponse(c)
-				}
-				if pagination.Info.Total >= int64(voucher.QuotaPerBuyer) {
-					return helper.NewResponse(fiber.StatusUnprocessableEntity).
-						SetMessage("voucher quota exceeded").
-						WriteResponse(c)
-				}
-			}
-			request.VoucherID = &voucher.ID
-			request.VoucherDiscount = voucher.Discount
-			request.VoucherType = &voucher.VoucherType
-		} else {
-			request.VoucherID = nil
-			request.VoucherDiscount = 0
-			request.VoucherType = nil
-		}
-	}
-	request.CalculateDiscount()
-	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "%s%03d", now.Format("06"), now.YearDay())
-	counter, err := q.transactionCounterService.SaveTransactionCounter(
-		ctx,
-		&models.TransactionCounter{
-			TransactionWindow: sb.String(),
-			CreatedAt:         now,
-			UpdatedAt:         now,
-		},
-	)
+	response, err := q.transactionService.CreateTransaction(ctx, currentBuyer, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveTransactionCounter")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	sb.Reset()
-	_, _ = fmt.Fprintf(
-		&sb,
-		models.TransactionReferenceNumberFormat,
-		counter.TransactionWindow,
-		counter.Hits,
-		strings.ToUpper(helper.RandomString(4)),
-	)
-	if request.PaymentAmount > 0 {
-		request.Status = models.TransactionStatusPending
-	} else {
-		request.Status = models.TransactionStatusPaid
-		request.PaidAt = &now
-	}
-	request.BuyerID = currentBuyer.ID
-	request.ReferenceNumber = sb.String()
-	request.CreatedAt = now
-	request.UpdatedAt = now
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	response, err := q.transactionService.CreateTransaction(ctx, tx, request, &sb)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if request.PaymentAmount > 0 {
-		if request.PaymentChannelID == nil || request.PaymentChannelID.Compare(uuid.Nil()) == 0 {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage("payment_channel_id: is required").
-				WriteResponse(c)
-		}
-		paymentChannel, err := q.paymentChannelService.FindPaymentChannel(
-			ctx,
-			models.NewPaymentChannelFilter().
-				WithPaymentChannelIDs(*request.PaymentChannelID).
-				WithAmount(request.PaymentAmount),
-		)
-		if err != nil && !errors.Is(err, models.ErrPaymentChannelNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannel")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		if paymentChannel == nil {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage("payment_channel_id: not found").
-				WriteResponse(c)
-		}
-		paymentRequestID, paymentTokenID, err := q.xenditConsumer.CreatePaymentRequest(
-			ctx,
-			response.ID.String(),
-			paymentChannel.ChannelType,
-			paymentChannel.Country,
-			paymentChannel.Currency,
-			request.PaymentAmount,
-			"AUTOMATIC",
-			paymentChannel.ChannelCode,
-			helper.Sprintf("Pembayaran Transaksi %s", response.ReferenceNumber),
-		)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePaymentRequest")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		paymentRequestExpiry, err := decimal.NewFromFloat64(paymentChannel.PaymentRequestExpiry)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewFromFloat64")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		oneHour, err := decimal.New(3_600_000_000_000, 0)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		nanoseconds, err := paymentRequestExpiry.Mul(oneHour)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrMul")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		roundedNanoseconds, _, _ := nanoseconds.Floor(0).Int64(0)
-		duration := min(time.Duration(roundedNanoseconds), setting.PaymentTerms)
-		response.PaymentDueDate = new(now.Add(duration))
-		response.PaymentChannelID = request.PaymentChannelID
-		response.PaymentRequestID = &paymentRequestID
-		response.PaymentTokenID = &paymentTokenID
-		if response, err = q.transactionService.UpdateTransaction(ctx, tx, response); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-	}
-	cart.BuyerID = nil
-	cart.DeletedBuyerID = &currentBuyer.ID
-	cart.UpdatedAt = now
-	cart.Items = nil
-	if _, err = q.cartService.SaveCart(ctx, tx, cart); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -847,29 +412,11 @@ func (q *transactionController) AdminWithdraw(c fiber.Ctx) (err error) {
 	if request == nil {
 		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
-	now := time.Now()
 	request.Status = models.TransactionStatusWithdrawn
 	request.WithdrawnBy = &currentAdmin.ID
-	request.WithdrawnAt = &now
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	if _, err = q.transactionService.UpdateTransaction(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
-	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+	request.WithdrawnAt = new(time.Now().In(time.Local))
+	if _, err = q.transactionService.WithdrawTransaction(ctx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrWithdrawTransaction")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
 	}
 	return flash.Success("transaction withdrawn successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", request.ID))
