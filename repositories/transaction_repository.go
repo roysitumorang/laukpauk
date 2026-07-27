@@ -1635,6 +1635,12 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if !request.PaymentDueDate.IsZero() {
+		params = append(params, request.PaymentDueDate)
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "payment_due_date < $%d", len(params))
+		conds = append(conds, sb.String())
+	}
 	if len(request.TransactionStatuses) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("status IN (")

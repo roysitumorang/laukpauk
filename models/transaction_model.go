@@ -138,10 +138,11 @@ type (
 		BuyerIDs,
 		CartIDs,
 		ReferrerIDs,
-		VoucherIDs,
+		VoucherIDs []uuid.UUID
 		PaymentRequestIDs,
 		PaymentTokenIDs,
-		PaymentIDs []uuid.UUID
+		PaymentIDs []string
+		PaymentDueDate time.Time
 		TransactionStatuses,
 		ExcludedTransactionStatuses []TransactionStatus
 		ReturnCountOnly bool
@@ -224,18 +225,23 @@ func (q *TransactionFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *Transaction
 	return q
 }
 
-func (q *TransactionFilter) WithPaymentRequestIDs(paymentRequestIDs ...uuid.UUID) *TransactionFilter {
+func (q *TransactionFilter) WithPaymentRequestIDs(paymentRequestIDs ...string) *TransactionFilter {
 	q.PaymentRequestIDs = paymentRequestIDs
 	return q
 }
 
-func (q *TransactionFilter) WithPaymentTokenIDs(paymentTokenIDs ...uuid.UUID) *TransactionFilter {
+func (q *TransactionFilter) WithPaymentTokenIDs(paymentTokenIDs ...string) *TransactionFilter {
 	q.PaymentTokenIDs = paymentTokenIDs
 	return q
 }
 
-func (q *TransactionFilter) WithPaymentIDs(paymentIDs ...uuid.UUID) *TransactionFilter {
+func (q *TransactionFilter) WithPaymentIDs(paymentIDs ...string) *TransactionFilter {
 	q.PaymentIDs = paymentIDs
+	return q
+}
+
+func (q *TransactionFilter) WithPaymentDueDate(paymentDueDate time.Time) *TransactionFilter {
+	q.PaymentDueDate = paymentDueDate
 	return q
 }
 

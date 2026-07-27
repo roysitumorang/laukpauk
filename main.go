@@ -28,6 +28,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	"github.com/roysitumorang/laukpauk/config"
@@ -122,6 +123,53 @@ func main() {
 							}
 						})
 						if err != nil {
+							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
+							return err
+						}
+						helper.Log(ctx, slog.LevelInfo, helper.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
+						if entryID, err = c.AddFunc("* * * * *", func() {
+							now := time.Now()
+							transactions, _, err := service.TransactionService.FindTransactions(
+								ctx,
+								models.NewTransactionFilter().
+									WithPaymentDueDate(now),
+							)
+							if err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+								return
+							}
+							if len(transactions) == 0 {
+								return
+							}
+							tx, err := helper.BeginTx(ctx)
+							if err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+								return
+							}
+							defer func(ctx context.Context) {
+								if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+									err = nil
+								}
+								if err != nil {
+									helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+								}
+							}(ctx)
+							for _, transaction := range transactions {
+								transaction.Status = models.TransactionStatusCancelled
+								transaction.CancelledAt = &now
+								if _, err = service.TransactionService.UpdateTransaction(
+									ctx,
+									tx,
+									transaction,
+								); err != nil {
+									helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+									return
+								}
+							}
+							if err = tx.Commit(ctx); err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+							}
+						}); err != nil {
 							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
 							return err
 						}
