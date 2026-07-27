@@ -87,7 +87,8 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Get("", buyerKeyAuth, q.V1BuyerIndex).
 		Post("", buyerKeyAuth, q.V1BuyerCreate).
 		Get("/:id", buyerKeyAuth, q.V1BuyerShow).
-		Post("/pay", q.V1Pay)
+		Post("/pay", q.V1Pay).
+		Post("/:id/withdraw", buyerKeyAuth, q.V1BuyerWithdraw)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/:id", q.AdminShow).
@@ -585,78 +586,6 @@ func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
 		WriteResponse(c)
 }
 
-func (q *transactionController) AdminIndex(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-AdminIndex"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	request := new(models.TransactionFilter)
-	rows := []*models.Transaction{}
-	pagination := new(models.Pagination)
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Data Transaction",
-		"limits", models.Limits,
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-		"sortings", []models.Sorting{
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Newest-Oldest",
-			},
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Oldest-Newest",
-			},
-		},
-	)
-	if request, err = sanitizers.FindTransactions(ctx, c); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-		return c.Render("admin/transaction_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if rows, pagination, err = q.transactionService.FindTransactions(
-		c,
-		request,
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-		return c.Render("admin/transaction_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	return c.Render("admin/transaction_index", params.Push(
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-	), "admin/layouts/authenticated")
-}
-
-func (q *transactionController) AdminShow(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-AdminShow"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, err := q.prepareTransaction(
-		ctx,
-		c,
-		flash,
-		currentAdmin,
-		csrfToken,
-		true,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/transactions")
-	}
-	return c.Render("admin/transaction_show", params, "admin/layouts/authenticated")
-}
-
 func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1Pay"
@@ -728,6 +657,151 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
 		WriteResponse(c)
+}
+
+func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "TransactionController-V1BuyerWithdraw"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	transactionID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	transaction, err := q.transactionService.FindTransaction(
+		c,
+		models.NewTransactionFilter().
+			WithBuyerIDs(currentBuyer.ID).
+			WithTransactionIDs(transactionID).
+			WithTransactionStatuses(models.TransactionStatusPaid),
+	)
+	if err != nil && !errors.Is(err, models.ErrTransactionNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if transaction == nil {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	request, statusCode, err := sanitizers.ValidateTransactionWithdrawal(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransactionWithdrawal")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	now := time.Now()
+	transaction.Status = models.TransactionStatusWithdrawalPending
+	transaction.WithdrawalRequestedAt = &now
+	transaction.WithdrawalReason = &request.Reason
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	response, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
+}
+
+func (q *transactionController) AdminIndex(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-AdminIndex"
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	request := new(models.TransactionFilter)
+	rows := []*models.Transaction{}
+	pagination := new(models.Pagination)
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Data Transaction",
+		"limits", models.Limits,
+		"request", request,
+		"rows", rows,
+		"pagination", pagination,
+		"sortings", []models.Sorting{
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Newest-Oldest",
+			},
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Oldest-Newest",
+			},
+		},
+	)
+	if request, err = sanitizers.FindTransactions(ctx, c); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		return c.Render("admin/transaction_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	if rows, pagination, err = q.transactionService.FindTransactions(
+		c,
+		request,
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		return c.Render("admin/transaction_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	return c.Render("admin/transaction_index", params.Push(
+		"request", request,
+		"rows", rows,
+		"pagination", pagination,
+	), "admin/layouts/authenticated")
+}
+
+func (q *transactionController) AdminShow(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-AdminShow"
+	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+	defer flash.Clear(c, sess.Session)
+	_, params, err := q.prepareTransaction(
+		ctx,
+		c,
+		flash,
+		currentAdmin,
+		csrfToken,
+		true,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/transactions")
+	}
+	return c.Render("admin/transaction_show", params, "admin/layouts/authenticated")
 }
 
 func (q *transactionController) AdminEdit(c fiber.Ctx) (err error) {

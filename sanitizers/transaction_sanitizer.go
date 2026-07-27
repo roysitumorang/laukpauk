@@ -96,3 +96,14 @@ func ValidateTransactionPayment(ctx context.Context, c fiber.Ctx) (*models.Trans
 	}
 	return &response, fiber.StatusOK, nil
 }
+
+func ValidateTransactionWithdrawal(ctx context.Context, c fiber.Ctx) (*models.TransactionWithdrawal, int, error) {
+	ctxt := "TransactionSanitizer-ValidateTransactionWithdrawal"
+	var response models.TransactionWithdrawal
+	err := c.Bind().Body(&response)
+	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
+		return &response, fiberErr.Code, err
+	}
+	return &response, fiber.StatusOK, nil
+}

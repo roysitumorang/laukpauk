@@ -188,6 +188,10 @@ type (
 			} `json:"data"`
 		} `json:"value"`
 	}
+
+	TransactionWithdrawal struct {
+		Reason string `json:"reason"`
+	}
 )
 
 func NewTransactionFilter() *TransactionFilter {
@@ -446,4 +450,11 @@ func (q TransactionStatus) String() string {
 
 func (q TransactionStatus) Equal(v TransactionStatus) bool {
 	return q.Int() == v.Int()
+}
+
+func (q *TransactionWithdrawal) Validate() error {
+	if q.Reason = strings.TrimSpace(q.Reason); q.Reason == "" {
+		return errors.New("reason: is required")
+	}
+	return nil
 }
