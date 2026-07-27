@@ -846,7 +846,7 @@ func (q *transactionRepository) CreateTransaction(
 			&requestItem.RevisionNote,
 			&requestItem.OutOfStock,
 		)
-		if n = len(params); n > 15 {
+		if n = len(params); n > 16 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(
