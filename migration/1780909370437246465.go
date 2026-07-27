@@ -1776,8 +1776,10 @@ func init() {
 				, cancelled_at timestamp with time zone
 				, payment_id character varying UNIQUE
 				, paid_at timestamp with time zone
-				, revoked_at timestamp with time zone
-				, revocation_reason character varying
+				, withdrawal_requested_at timestamp with time zone
+				, withdrawal_reason character varying
+				, withdrawn_by UUID REFERENCES users (id)
+				, withdrawn_at timestamp with time zone
 				, processed_by UUID REFERENCES users (id)
 				, processed_at timestamp with time zone
 				, revised_shopping_cost bigint NOT NULL
@@ -1861,6 +1863,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (created_at);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transactions (withdrawn_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

@@ -32,7 +32,8 @@ const (
 	TransactionStatusPending TransactionStatus = iota
 	TransactionStatusCancelled
 	TransactionStatusPaid
-	TransactionStatusRevoked
+	TransactionStatusWithdrawalPending
+	TransactionStatusWithdrawn
 	TransactionStatusProcessed
 	TransactionStatusShipped
 	TransactionStatusCompleted
@@ -88,8 +89,10 @@ type (
 		CancelledAt                   *time.Time         `json:"cancelled_at" form:"-"`
 		PaymentID                     *string            `json:"-" form:"-"`
 		PaidAt                        *time.Time         `json:"paid_at" form:"-"`
-		RevokedAt                     *time.Time         `json:"revoked_at" form:"-"`
-		RevocationReason              *string            `json:"revocation_reason" form:"-"`
+		WithdrawalRequestedAt         *time.Time         `json:"withdrawal_requested_at"`
+		WithdrawalReason              *string            `json:"withdrawal_reason" form:"-"`
+		WithdrawnBy                   *uuid.UUID         `json:"-" form:"-"`
+		WithdrawnAt                   *time.Time         `json:"withdrawn_at" form:"-"`
 		ProcessedBy                   *uuid.UUID         `json:"-" form:"-"`
 		ProcessedAt                   *time.Time         `json:"processed_at" form:"-"`
 		RevisedShoppingCost           int64              `json:"revised_shopping_cost" form:"-"`
@@ -412,8 +415,10 @@ func (q TransactionStatus) String() string {
 		return "cancelled"
 	case TransactionStatusPaid:
 		return "paid"
-	case TransactionStatusRevoked:
-		return "revoked"
+	case TransactionStatusWithdrawalPending:
+		return "withdrawal_pending"
+	case TransactionStatusWithdrawn:
+		return "withdrawn"
 	case TransactionStatusProcessed:
 		return "processed"
 	case TransactionStatusShipped:

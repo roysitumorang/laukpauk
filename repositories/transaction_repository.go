@@ -122,8 +122,10 @@ func (q *transactionRepository) FindTransactions(
 		, cancelled_at
 		, payment_id
 		, paid_at
-		, revoked_at
-		, revocation_reason
+		, withdrawal_requested_at
+		, withdrawal_reason
+		, withdrawn_by
+		, withdrawn_at
 		, processed_by
 		, processed_at
 		, revised_shopping_cost
@@ -256,8 +258,10 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.CancelledAt,
 			&transaction.PaymentID,
 			&transaction.PaidAt,
-			&transaction.RevokedAt,
-			&transaction.RevocationReason,
+			&transaction.WithdrawalRequestedAt,
+			&transaction.WithdrawalReason,
+			&transaction.WithdrawnBy,
+			&transaction.WithdrawnAt,
 			&transaction.ProcessedBy,
 			&transaction.ProcessedAt,
 			&transaction.RevisedShoppingCost,
@@ -382,8 +386,10 @@ func (q *transactionRepository) FindTransaction(
 			, cancelled_at
 			, payment_id
 			, paid_at
-			, revoked_at
-			, revocation_reason
+			, withdrawal_requested_at
+			, withdrawal_reason
+			, withdrawn_by
+			, withdrawn_at
 			, processed_by
 			, processed_at
 			, revised_shopping_cost
@@ -446,8 +452,10 @@ func (q *transactionRepository) FindTransaction(
 		&response.CancelledAt,
 		&response.PaymentID,
 		&response.PaidAt,
-		&response.RevokedAt,
-		&response.RevocationReason,
+		&response.WithdrawalRequestedAt,
+		&response.WithdrawalReason,
+		&response.WithdrawnBy,
+		&response.WithdrawnAt,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedShoppingCost,
@@ -628,8 +636,10 @@ func (q *transactionRepository) CreateTransaction(
 			, cancelled_at
 			, payment_id
 			, paid_at
-			, revoked_at
-			, revocation_reason
+			, withdrawal_requested_at
+			, withdrawal_reason
+			, withdrawn_by
+			, withdrawn_at
 			, processed_by
 			, processed_at
 			, revised_shopping_cost
@@ -726,8 +736,10 @@ func (q *transactionRepository) CreateTransaction(
 		&response.CancelledAt,
 		&response.PaymentID,
 		&response.PaidAt,
-		&response.RevokedAt,
-		&response.RevocationReason,
+		&response.WithdrawalRequestedAt,
+		&response.WithdrawalReason,
+		&response.WithdrawnBy,
+		&response.WithdrawnAt,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedShoppingCost,
@@ -929,8 +941,10 @@ func (q *transactionRepository) UpdateTransaction(
 			, cancelled_at
 			, payment_id
 			, paid_at
-			, revoked_at
-			, revocation_reason
+			, withdrawal_requested_at
+			, withdrawal_reason
+			, withdrawn_by
+			, withdrawn_at
 			, processed_by
 			, processed_at
 			, revised_shopping_cost
@@ -992,8 +1006,10 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.CancelledAt,
 		&response.PaymentID,
 		&response.PaidAt,
-		&response.RevokedAt,
-		&response.RevocationReason,
+		&response.WithdrawalRequestedAt,
+		&response.WithdrawalReason,
+		&response.WithdrawnBy,
+		&response.WithdrawnAt,
 		&response.ProcessedBy,
 		&response.ProcessedAt,
 		&response.RevisedShoppingCost,
@@ -1017,7 +1033,7 @@ func (q *transactionRepository) UpdateTransaction(
 		n      int
 	)
 	_, _ = sb.WriteString("UPDATE transactions SET")
-	if response.Status != request.Status {
+	if response.Status < request.Status {
 		params = append(params, request.Status)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -1073,19 +1089,33 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		_, _ = fmt.Fprintf(&sb, " paid_at = $%d", n)
 	}
-	if response.RevokedAt == nil && request.RevokedAt != nil {
-		params = append(params, request.RevokedAt)
+	if response.WithdrawalRequestedAt == nil && request.WithdrawalRequestedAt != nil {
+		params = append(params, request.WithdrawalRequestedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " revoked_at = $%d", n)
+		_, _ = fmt.Fprintf(&sb, " withdrawal_requested_at = $%d", n)
 	}
-	if response.RevocationReason == nil && request.RevocationReason != nil {
-		params = append(params, request.RevocationReason)
+	if response.WithdrawalReason == nil && request.WithdrawalReason != nil {
+		params = append(params, request.WithdrawalReason)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " revocation_reason = $%d", n)
+		_, _ = fmt.Fprintf(&sb, " withdrawal_reason = $%d", n)
+	}
+	if response.WithdrawnBy == nil && request.WithdrawnBy != nil {
+		params = append(params, request.WithdrawnBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " withdrawn_by = $%d", n)
+	}
+	if response.WithdrawnAt == nil && request.WithdrawnAt != nil {
+		params = append(params, request.WithdrawnAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " withdrawn_at = $%d", n)
 	}
 	if response.ProcessedBy == nil && request.ProcessedBy != nil {
 		params = append(params, request.ProcessedBy)
@@ -1229,8 +1259,10 @@ func (q *transactionRepository) UpdateTransaction(
 				, cancelled_at
 				, payment_id
 				, paid_at
-				, revoked_at
-				, revocation_reason
+				, withdrawal_requested_at
+				, withdrawal_reason
+				, withdrawn_by
+				, withdrawn_at
 				, processed_by
 				, processed_at
 				, revised_shopping_cost
@@ -1290,8 +1322,10 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.CancelledAt,
 			&response.PaymentID,
 			&response.PaidAt,
-			&response.RevokedAt,
-			&response.RevocationReason,
+			&response.WithdrawalRequestedAt,
+			&response.WithdrawalReason,
+			&response.WithdrawnBy,
+			&response.WithdrawnAt,
 			&response.ProcessedBy,
 			&response.ProcessedAt,
 			&response.RevisedShoppingCost,
