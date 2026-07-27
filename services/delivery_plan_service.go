@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -31,6 +32,7 @@ type (
 			tx pgx.Tx,
 			request *models.DeliveryPlan,
 		) (*models.DeliveryPlan, error)
+		UpdateDate(ctx context.Context) error
 	}
 
 	deliveryPlanService struct {
@@ -112,4 +114,63 @@ func (q *deliveryPlanService) UpdateDeliveryPlan(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
 	}
 	return response, err
+}
+
+func (q *deliveryPlanService) UpdateDate(ctx context.Context) error {
+	ctxt := "DeliveryPlanService-UpdateDate"
+	now := time.Now().In(time.Local)
+	weekday := models.DeliveryWeekdayWeekdays
+	if wd := now.Weekday(); wd == time.Sunday ||
+		wd == time.Friday ||
+		wd == time.Saturday {
+		weekday = models.DeliveryWeekday(wd)
+	}
+	deliveryPlans, _, _, err := q.deliveryPlanRepository.FindDeliveryPlans(
+		ctx,
+		models.NewDeliveryPlanFilter().
+			WithDeliveryWeekdays(weekday),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
+		return err
+	}
+	var request []*models.DeliveryPlan
+	for _, deliveryPlan := range deliveryPlans {
+		if deliveryPlan.TransactionWindowMin.In(time.Local).Format(time.DateOnly) == now.Format(time.DateOnly) {
+			continue
+		}
+		if err = deliveryPlan.Validate(); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
+			return err
+		}
+		deliveryPlan.UpdatedAt = now
+		request = append(request, deliveryPlan)
+	}
+	if len(request) == 0 {
+		return nil
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return err
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	for i := range request {
+		if _, err = q.deliveryPlanRepository.UpdateDeliveryPlan(ctx, tx, request[i]); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
+			return err
+		}
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return err
+	}
+	return nil
 }

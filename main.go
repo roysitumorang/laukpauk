@@ -134,6 +134,15 @@ func main() {
 							return err
 						}
 						helper.Log(ctx, slog.LevelInfo, helper.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
+						if entryID, err = c.AddFunc("* * * * *", func() {
+							if err = service.DeliveryPlanService.UpdateDate(ctx); err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDate")
+							}
+						}); err != nil {
+							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
+							return err
+						}
+						helper.Log(ctx, slog.LevelInfo, helper.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
 						c.Start()
 						helper.Log(ctx, slog.LevelInfo, "cron: scheduled tasks running!...", ctxt, "")
 						return nil
@@ -184,6 +193,37 @@ func main() {
 					}
 					duration := time.Since(now)
 					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("%s migration successfully in %s", activity, duration.String()), ctxt, "")
+					return nil
+				},
+			}, {
+				Name:  "delivery_plan",
+				Usage: "delivery_plan update",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.Args().Len() == 0 ||
+						cmd.Args().First() != "update" {
+						return errors.New("requires a parameter: update")
+					}
+					now := time.Now()
+					err := godotenv.Load(".env")
+					if err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrLoad")
+						return err
+					}
+					if err = helper.InitHelper(); err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrInitHelper")
+						return err
+					}
+					service, err := router.MakeHandler(ctx)
+					if err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
+						return err
+					}
+					if err = service.DeliveryPlanService.UpdateDate(ctx); err != nil {
+						helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDate")
+						return err
+					}
+					duration := time.Since(now)
+					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("delivery_plan date updated successfully in %s", duration.String()), ctxt, "")
 					return nil
 				},
 			},

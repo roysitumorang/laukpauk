@@ -504,7 +504,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	if !response.TransactionWindowMin.Equal(request.TransactionWindowMin) ||
 		!response.TransactionWindowMax.Equal(request.TransactionWindowMax) {
 		params = append(params, request.TransactionWindowMin, request.TransactionWindowMax)
-		if n = len(params); n > 1 {
+		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(&sb, " transaction_window = tstzrange($%d, $%d, '[]')", n-1, n)
