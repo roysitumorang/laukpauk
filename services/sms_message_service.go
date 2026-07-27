@@ -173,10 +173,15 @@ func (q *smsMessageService) ConsumeMessage(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 			return err
 		}
-		if _, err = q.smsMessageRepository.UpdateSmsMessage(ctx, tx, smsMessage); err != nil {
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
+		defer func(ctx context.Context) {
+			if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+				err = nil
+			}
+			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 			}
+		}(ctx)
+		if _, err = q.smsMessageRepository.UpdateSmsMessage(ctx, tx, smsMessage); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSmsMessage")
 			return err
 		}
@@ -214,10 +219,15 @@ func (q *smsMessageService) ConsumeMessage(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 			return err
 		}
-		if _, err = q.smsMessageRepository.UpdateSmsMessage(ctx, tx, smsMessage); err != nil {
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
+		defer func(ctx context.Context) {
+			if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+				err = nil
+			}
+			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 			}
+		}(ctx)
+		if _, err = q.smsMessageRepository.UpdateSmsMessage(ctx, tx, smsMessage); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSmsMessage")
 			return err
 		}
