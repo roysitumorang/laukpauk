@@ -107,3 +107,14 @@ func ValidateTransactionWithdrawal(ctx context.Context, c fiber.Ctx) (*models.Tr
 	}
 	return &response, fiber.StatusOK, nil
 }
+
+func ValidateTransactionShipment(ctx context.Context, c fiber.Ctx) (*models.TransactionShipment, int, error) {
+	ctxt := "TransactionSanitizer-ValidateTransactionShipment"
+	var response models.TransactionShipment
+	err := c.Bind().Body(&response)
+	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
+		return &response, fiberErr.Code, err
+	}
+	return &response, fiber.StatusOK, nil
+}

@@ -96,7 +96,7 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Post("/:id/withdraw", q.AdminWithdraw).
 		Post("/:id/process", q.AdminProcess).
 		Post("/:id/ship", q.AdminShip).
-		Post("/:id/deliver", q.AdminDeliver)
+		Post("/:id/complete", q.AdminComplete)
 
 }
 
@@ -974,13 +974,13 @@ func (q *transactionController) AdminShip(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-AdminShip"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	transaction, params, err := q.prepareTransaction(
+	transaction, _, err := q.prepareTransaction(
 		ctx,
 		c,
 		flash,
 		currentAdmin,
 		csrfToken,
-		true,
+		false,
 		models.TransactionStatusProcessed,
 	)
 	if err != nil {
@@ -990,17 +990,21 @@ func (q *transactionController) AdminShip(c fiber.Ctx) (err error) {
 	if transaction == nil {
 		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
-	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
+	request, _, err := sanitizers.ValidateTransactionShipment(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransactionShipment")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
+	}
+	now := time.Now()
 	transaction.Status = models.TransactionStatusShipped
 	transaction.ShippedBy = &currentAdmin.ID
-	transaction.ShippedAt = new(time.Now())
-	params.Push("request", transaction)
+	transaction.ShippedAt = &now
+	transaction.DeliveryActualCost = request.DeliveryActualCost
+	transaction.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/transaction_show", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -1012,48 +1016,41 @@ func (q *transactionController) AdminShip(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.transactionService.UpdateTransaction(ctx, tx, transaction); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-		return c.Render("admin/transaction_show", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/transaction_show", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 	}
 	return flash.Success("transaction shipped successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 }
 
-func (q *transactionController) AdminDeliver(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-AdminDeliver"
+func (q *transactionController) AdminComplete(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-AdminComplete"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	transaction, params, err := q.prepareTransaction(
+	transaction, _, err := q.prepareTransaction(
 		ctx,
 		c,
 		flash,
 		currentAdmin,
 		csrfToken,
-		true,
+		false,
 		models.TransactionStatusShipped,
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
 	if transaction == nil {
 		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
-	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
 	transaction.Status = models.TransactionStatusCompleted
-	params.Push("request", transaction)
+	transaction.CompletedAt = new(time.Now())
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/transaction_show", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -1065,17 +1062,13 @@ func (q *transactionController) AdminDeliver(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.transactionService.UpdateTransaction(ctx, tx, transaction); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-		return c.Render("admin/transaction_show", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/transaction_show", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 	}
-	return flash.Success("transaction delivered successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
+	return flash.Success("transaction completed successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))
 }
 
 func (q *transactionController) prepare(c fiber.Ctx) (

@@ -192,6 +192,10 @@ type (
 	TransactionWithdrawal struct {
 		Reason string `json:"reason"`
 	}
+
+	TransactionShipment struct {
+		DeliveryActualCost int64 `json:"-" form:"delivery_actual_cost"`
+	}
 )
 
 func NewTransactionFilter() *TransactionFilter {
@@ -509,6 +513,13 @@ func (q TransactionStatus) Equal(v TransactionStatus) bool {
 func (q *TransactionWithdrawal) Validate() error {
 	if q.Reason = strings.TrimSpace(q.Reason); q.Reason == "" {
 		return errors.New("reason: is required")
+	}
+	return nil
+}
+
+func (q *TransactionShipment) Validate() error {
+	if q.DeliveryActualCost < 1 {
+		return errors.New("delivery_actual_cost: is required")
 	}
 	return nil
 }
