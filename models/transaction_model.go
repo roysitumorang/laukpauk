@@ -87,6 +87,9 @@ type (
 		CreatedAt                     time.Time          `json:"created_at" form:"-"`
 		UpdatedAt                     time.Time          `json:"updated_at" form:"-"`
 		CancelledAt                   *time.Time         `json:"cancelled_at" form:"-"`
+		PaymentStatus                 *string            `json:"-" form:"-"`
+		PaymentFailureCode            *string            `json:"-" form:"-"`
+		PaymentCapturedAt             *time.Time         `json:"-" form:"-"`
 		PaymentID                     *string            `json:"-" form:"-"`
 		PaidAt                        *time.Time         `json:"paid_at" form:"-"`
 		WithdrawalRequestedAt         *time.Time         `json:"withdrawal_requested_at"`
@@ -151,13 +154,13 @@ type (
 		UrlValues url.Values
 	}
 
-	PaymentWebhookNotification struct {
-		PaymentCapture       PaymentEvent `json:"paymentCapture"`
-		PaymentAuthorization PaymentEvent `json:"paymentAuthorization"`
-		PaymentFailure       PaymentEvent `json:"paymentFailure"`
+	TransactionPaymentWebhookNotification struct {
+		PaymentCapture       TransactionPaymentEvent `json:"paymentCapture"`
+		PaymentAuthorization TransactionPaymentEvent `json:"paymentAuthorization"`
+		PaymentFailure       TransactionPaymentEvent `json:"paymentFailure"`
 	}
 
-	PaymentEvent struct {
+	TransactionPaymentEvent struct {
 		Value struct {
 			Event      string    `json:"event"`
 			BusinessID string    `json:"business_id"`

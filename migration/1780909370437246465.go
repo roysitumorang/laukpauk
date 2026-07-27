@@ -1774,6 +1774,9 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, cancelled_at timestamp with time zone
+				, payment_status character varying
+				, payment_failure_code character varying
+				, payment_captured_at timestamp with time zone
 				, payment_id character varying UNIQUE
 				, paid_at timestamp with time zone
 				, withdrawal_requested_at timestamp with time zone

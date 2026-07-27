@@ -120,6 +120,9 @@ func (q *transactionRepository) FindTransactions(
 		, created_at
 		, updated_at
 		, cancelled_at
+		, payment_status
+		, payment_failure_code
+		, payment_captured_at
 		, payment_id
 		, paid_at
 		, withdrawal_requested_at
@@ -256,6 +259,9 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
 			&transaction.CancelledAt,
+			&transaction.PaymentStatus,
+			&transaction.PaymentFailureCode,
+			&transaction.PaymentCapturedAt,
 			&transaction.PaymentID,
 			&transaction.PaidAt,
 			&transaction.WithdrawalRequestedAt,
@@ -384,6 +390,9 @@ func (q *transactionRepository) FindTransaction(
 			, created_at
 			, updated_at
 			, cancelled_at
+			, payment_status
+			, payment_failure_code
+			, payment_captured_at
 			, payment_id
 			, paid_at
 			, withdrawal_requested_at
@@ -450,6 +459,9 @@ func (q *transactionRepository) FindTransaction(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.CancelledAt,
+		&response.PaymentStatus,
+		&response.PaymentFailureCode,
+		&response.PaymentCapturedAt,
 		&response.PaymentID,
 		&response.PaidAt,
 		&response.WithdrawalRequestedAt,
@@ -583,6 +595,7 @@ func (q *transactionRepository) CreateTransaction(
 			, payment_amount
 			, created_at
 			, updated_at
+			, paid_at
 			, revised_shopping_cost
 			, revised_discounted_shopping_cost
 			, revised_payment_amount
@@ -590,7 +603,7 @@ func (q *transactionRepository) CreateTransaction(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32, $33, $34, $35, $36, $37, $38, $39
+			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
 		)
 		RETURNING id
 			, parent_id
@@ -634,6 +647,9 @@ func (q *transactionRepository) CreateTransaction(
 			, created_at
 			, updated_at
 			, cancelled_at
+			, payment_status
+			, payment_failure_code
+			, payment_captured_at
 			, payment_id
 			, paid_at
 			, withdrawal_requested_at
@@ -688,6 +704,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.PaymentAmount,
 		request.CreatedAt,
 		request.UpdatedAt,
+		request.PaidAt,
 		request.RevisedShoppingCost,
 		request.RevisedDiscountedShoppingCost,
 		request.RevisedPaymentAmount,
@@ -734,6 +751,9 @@ func (q *transactionRepository) CreateTransaction(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.CancelledAt,
+		&response.PaymentStatus,
+		&response.PaymentFailureCode,
+		&response.PaymentCapturedAt,
 		&response.PaymentID,
 		&response.PaidAt,
 		&response.WithdrawalRequestedAt,
@@ -939,6 +959,9 @@ func (q *transactionRepository) UpdateTransaction(
 			, created_at
 			, updated_at
 			, cancelled_at
+			, payment_status
+			, payment_failure_code
+			, payment_captured_at
 			, payment_id
 			, paid_at
 			, withdrawal_requested_at
@@ -1004,6 +1027,9 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.CancelledAt,
+		&response.PaymentStatus,
+		&response.PaymentFailureCode,
+		&response.PaymentCapturedAt,
 		&response.PaymentID,
 		&response.PaidAt,
 		&response.WithdrawalRequestedAt,
@@ -1046,6 +1072,27 @@ func (q *transactionRepository) UpdateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(&sb, " payment_due_date = $%d", n)
+	}
+	if response.PaymentStatus == nil && request.PaymentStatus != nil {
+		params = append(params, request.PaymentStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_status = $%d", n)
+	}
+	if response.PaymentFailureCode == nil && request.PaymentFailureCode != nil {
+		params = append(params, request.PaymentFailureCode)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_failure_code = $%d", n)
+	}
+	if response.PaymentCapturedAt == nil && request.PaymentCapturedAt != nil {
+		params = append(params, request.PaymentCapturedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_captured_at = $%d", n)
 	}
 	if response.PaymentChannelID == nil && request.PaymentChannelID != nil {
 		params = append(params, request.PaymentChannelID)
@@ -1257,6 +1304,9 @@ func (q *transactionRepository) UpdateTransaction(
 				, created_at
 				, updated_at
 				, cancelled_at
+				, payment_status
+				, payment_failure_code
+				, payment_captured_at
 				, payment_id
 				, paid_at
 				, withdrawal_requested_at
@@ -1320,6 +1370,9 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.CreatedAt,
 			&response.UpdatedAt,
 			&response.CancelledAt,
+			&response.PaymentStatus,
+			&response.PaymentFailureCode,
+			&response.PaymentCapturedAt,
 			&response.PaymentID,
 			&response.PaidAt,
 			&response.WithdrawalRequestedAt,

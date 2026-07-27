@@ -87,7 +87,7 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Get("", buyerKeyAuth, q.V1BuyerIndex).
 		Post("", buyerKeyAuth, q.V1BuyerCreate).
 		Get("/:id", buyerKeyAuth, q.V1BuyerShow).
-		Post("/:id/pay", q.V1Pay)
+		Post("/pay", q.V1Pay)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/:id", q.AdminShow).
@@ -426,6 +426,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		request.Status = models.TransactionStatusPending
 	} else {
 		request.Status = models.TransactionStatusPaid
+		request.PaidAt = &now
 	}
 	request.BuyerID = currentBuyer.ID
 	request.ReferenceNumber = sb.String()
@@ -657,11 +658,18 @@ func (q *transactionController) AdminShow(c fiber.Ctx) (err error) {
 func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1Pay"
-	transactionID, err := uuid.Parse(c.Params("id"))
+	request, statusCode, err := sanitizers.ValidateTransactionPayment(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransactionPayment")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	transactionID, err := uuid.Parse(request.PaymentCapture.Value.Data.ReferenceID)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrTransactionNotFound.Error()).
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	transaction, err := q.transactionService.FindTransaction(
@@ -671,7 +679,7 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 			WithTransactionStatuses(models.TransactionStatusPending),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -681,8 +689,14 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrTransactionNotFound.Error()).
 			WriteResponse(c)
 	}
-	transaction.Status = models.TransactionStatusPaid
-	transaction.PaidAt = new(time.Now())
+	if transaction.PaymentStatus = &request.PaymentCapture.Value.Data.Status; *transaction.PaymentStatus == "SUCCEEDED" {
+		transaction.Status = models.TransactionStatusPaid
+		transaction.PaidAt = &request.PaymentCapture.Value.Data.Created
+	} else {
+		transaction.PaymentFailureCode = &request.PaymentFailure.Value.Data.FailureCode
+	}
+	transaction.PaymentCapturedAt = &request.PaymentCapture.Value.Data.Created
+	transaction.PaymentID = &request.PaymentCapture.Value.Data.PaymentID
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -710,8 +724,7 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	return helper.NewResponse(fiber.StatusOK).
-		SetMessage("transaction paid successfully").
+	return helper.NewResponse(fiber.StatusNoContent).
 		WriteResponse(c)
 }
 

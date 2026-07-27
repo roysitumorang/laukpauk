@@ -85,3 +85,14 @@ func ValidateTransaction(ctx context.Context, c fiber.Ctx) (*models.Transaction,
 	}
 	return &response, fiber.StatusOK, nil
 }
+
+func ValidateTransactionPayment(ctx context.Context, c fiber.Ctx) (*models.TransactionPaymentWebhookNotification, int, error) {
+	ctxt := "TransactionSanitizer-ValidateTransactionPayment"
+	var response models.TransactionPaymentWebhookNotification
+	err := c.Bind().Body(&response)
+	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
+		return &response, fiberErr.Code, err
+	}
+	return &response, fiber.StatusOK, nil
+}
