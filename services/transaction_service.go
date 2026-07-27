@@ -149,7 +149,7 @@ func (q *transactionService) CreateTransaction(
 	cart, err := q.cartRepository.FindCart(
 		ctx,
 		models.NewCartFilter().
-			WithBuyerIDs(request.BuyerID),
+			WithBuyerIDs(buyer.ID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
@@ -385,6 +385,7 @@ func (q *transactionService) CreateTransaction(
 		request.Status = models.TransactionStatusPaid
 		request.PaidAt = &now
 	}
+	request.BuyerID = buyer.ID
 	request.ReferenceNumber = sb.String()
 	request.CreatedAt = now
 	request.UpdatedAt = now
