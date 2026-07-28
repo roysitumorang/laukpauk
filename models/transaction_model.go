@@ -84,6 +84,9 @@ type (
 		PaymentChannelID                *uuid.UUID         `json:"payment_channel_id" form:"-"`
 		PaymentRequestID                *string            `json:"-" form:"-"`
 		PaymentTokenID                  *string            `json:"-" form:"-"`
+		PaymentChannelName              *string            `json:"payment_channel_name" form:"-"`
+		PaymentVirtualAccountNumber     *string            `json:"payment_virtual_account_number" form:"-"`
+		PaymentVirtualAccountExpiredAt  *time.Time         `json:"payment_virtual_account_expired_at" form:"-"`
 		CreatedAt                       time.Time          `json:"created_at" form:"-"`
 		UpdatedAt                       time.Time          `json:"updated_at" form:"-"`
 		CancelledAt                     *time.Time         `json:"cancelled_at" form:"-"`

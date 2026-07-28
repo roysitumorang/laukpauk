@@ -1770,8 +1770,11 @@ func init() {
 				, payment_amount bigint NOT NULL
 				, payment_due_date timestamp with time zone
 				, payment_channel_id UUID REFERENCES payment_channels (id)
+				, payment_channel_name character varying
 				, payment_request_id character varying UNIQUE
 				, payment_token_id character varying UNIQUE
+				, payment_virtual_account_number character varying
+				, payment_virtual_account_expired_at timestamp with time zone
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, cancelled_at timestamp with time zone

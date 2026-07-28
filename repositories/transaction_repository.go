@@ -114,8 +114,11 @@ func (q *transactionRepository) FindTransactions(
 		, payment_amount
 		, payment_due_date
 		, payment_channel_id
+		, payment_channel_name
 		, payment_request_id
 		, payment_token_id
+		, payment_virtual_account_number
+		, payment_virtual_account_expired_at
 		, created_at
 		, updated_at
 		, cancelled_at
@@ -255,8 +258,11 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.PaymentAmount,
 			&transaction.PaymentDueDate,
 			&transaction.PaymentChannelID,
+			&transaction.PaymentChannelName,
 			&transaction.PaymentRequestID,
 			&transaction.PaymentTokenID,
+			&transaction.PaymentVirtualAccountNumber,
+			&transaction.PaymentVirtualAccountExpiredAt,
 			&transaction.CreatedAt,
 			&transaction.UpdatedAt,
 			&transaction.CancelledAt,
@@ -388,8 +394,11 @@ func (q *transactionRepository) FindTransaction(
 			, payment_amount
 			, payment_due_date
 			, payment_channel_id
+			, payment_channel_name
 			, payment_request_id
 			, payment_token_id
+			, payment_virtual_account_number
+			, payment_virtual_account_expired_at
 			, created_at
 			, updated_at
 			, cancelled_at
@@ -458,8 +467,11 @@ func (q *transactionRepository) FindTransaction(
 		&response.PaymentAmount,
 		&response.PaymentDueDate,
 		&response.PaymentChannelID,
+		&response.PaymentChannelName,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
+		&response.PaymentVirtualAccountNumber,
+		&response.PaymentVirtualAccountExpiredAt,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.CancelledAt,
@@ -651,8 +663,11 @@ func (q *transactionRepository) CreateTransaction(
 			, payment_amount
 			, payment_due_date
 			, payment_channel_id
+			, payment_channel_name
 			, payment_request_id
 			, payment_token_id
+			, payment_virtual_account_number
+			, payment_virtual_account_expired_at
 			, created_at
 			, updated_at
 			, cancelled_at
@@ -758,8 +773,11 @@ func (q *transactionRepository) CreateTransaction(
 		&response.PaymentAmount,
 		&response.PaymentDueDate,
 		&response.PaymentChannelID,
+		&response.PaymentChannelName,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
+		&response.PaymentVirtualAccountNumber,
+		&response.PaymentVirtualAccountExpiredAt,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.CancelledAt,
@@ -973,8 +991,11 @@ func (q *transactionRepository) UpdateTransaction(
 			, payment_amount
 			, payment_due_date
 			, payment_channel_id
+			, payment_channel_name
 			, payment_request_id
 			, payment_token_id
+			, payment_virtual_account_number
+			, payment_virtual_account_expired_at
 			, created_at
 			, updated_at
 			, cancelled_at
@@ -1042,8 +1063,11 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.PaymentAmount,
 		&response.PaymentDueDate,
 		&response.PaymentChannelID,
+		&response.PaymentChannelName,
 		&response.PaymentRequestID,
 		&response.PaymentTokenID,
+		&response.PaymentVirtualAccountNumber,
+		&response.PaymentVirtualAccountExpiredAt,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 		&response.CancelledAt,
@@ -1122,6 +1146,13 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		_, _ = fmt.Fprintf(&sb, " payment_channel_id = $%d", n)
 	}
+	if response.PaymentChannelName == nil && request.PaymentChannelName != nil {
+		params = append(params, request.PaymentChannelName)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_channel_name = $%d", n)
+	}
 	if response.PaymentRequestID == nil && request.PaymentRequestID != nil {
 		params = append(params, request.PaymentRequestID)
 		if n = len(params); n > 1 {
@@ -1135,6 +1166,20 @@ func (q *transactionRepository) UpdateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(&sb, " payment_token_id = $%d", n)
+	}
+	if response.PaymentVirtualAccountNumber == nil && request.PaymentVirtualAccountNumber != nil {
+		params = append(params, request.PaymentVirtualAccountNumber)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_virtual_account_number = $%d", n)
+	}
+	if response.PaymentVirtualAccountExpiredAt == nil && request.PaymentVirtualAccountExpiredAt != nil {
+		params = append(params, request.PaymentVirtualAccountExpiredAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " payment_virtual_account_expired_at = $%d", n)
 	}
 	if response.CancelledAt == nil && request.CancelledAt != nil {
 		params = append(params, request.CancelledAt)
@@ -1327,6 +1372,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, payment_amount
 				, payment_due_date
 				, payment_channel_id
+				, payment_channel_name
 				, payment_request_id
 				, payment_token_id
 				, created_at
@@ -1394,6 +1440,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.PaymentAmount,
 			&response.PaymentDueDate,
 			&response.PaymentChannelID,
+			&response.PaymentChannelName,
 			&response.PaymentRequestID,
 			&response.PaymentTokenID,
 			&response.CreatedAt,

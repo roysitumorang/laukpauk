@@ -31,8 +31,7 @@ type (
 		CaptureMethod      string `json:"capture_method"`
 		ChannelCode        string `json:"channel_code"`
 		ChannelProperties  struct {
-			FailureReturnURL string `json:"failure_return_url"`
-			SuccessReturnURL string `json:"success_return_url"`
+			DisplayName string `json:"display_name"`
 		} `json:"channel_properties"`
 		Description string         `json:"description"`
 		Metadata    map[string]any `json:"metadata"`
@@ -41,25 +40,33 @@ type (
 	XenditPaymentRequestResponse struct {
 		ErrorCode         string         `json:"error_code"`
 		Message           string         `json:"message"`
-		BusinessID        string         `json:"business_id"`
-		ReferenceID       string         `json:"reference_id"`
 		PaymentRequestID  string         `json:"payment_request_id"`
-		PaymentTokenID    string         `json:"payment_token_id"`
-		CustomerID        string         `json:"customer_id"`
-		LatestPaymentID   string         `json:"latest_payment_id"`
-		ChannelType       string         `json:"type"`
+		PaymentTokenID    *string        `json:"payment_token_id"`
 		Country           string         `json:"country"`
 		Currency          string         `json:"currency"`
-		RequestAmount     int64          `json:"request_amount"`
-		CaptureMethod     string         `json:"capture_method"`
-		ChannelCode       string         `json:"channel_code"`
-		ChannelProperties map[string]any `json:"channel_properties"`
-		Status            string         `json:"status"`
-		FailureCode       string         `json:"failure_code"`
+		BusinessID        string         `json:"business_id"`
+		ReferenceID       string         `json:"reference_id"`
 		Description       string         `json:"description"`
 		Metadata          map[string]any `json:"metadata"`
 		Created           time.Time      `json:"created"`
 		Updated           time.Time      `json:"updated"`
+		Status            string         `json:"status"`
+		CaptureMethod     string         `json:"capture_method"`
+		ChannelCode       string         `json:"channel_code"`
+		RequestAmount     int64          `json:"request_amount"`
+		ChannelProperties struct {
+			DisplayName string    `json:"display_name"`
+			ExpiresAt   time.Time `json:"expires_at"`
+		} `json:"channel_properties"`
+		ChannelType string `json:"type"`
+		Actions     []struct {
+			Type       string `json:"type"`
+			Descriptor string `json:"descriptor"`
+			Value      string `json:"value"`
+		} `json:"actions"`
+		CustomerID      string `json:"customer_id"`
+		LatestPaymentID string `json:"latest_payment_id"`
+		FailureCode     string `json:"failure_code"`
 	}
 
 	XenditPaymentCancellationResponse struct {
@@ -139,15 +146,22 @@ func NewXenditConsumer(
 
 func (q *XenditConsumer) CreatePaymentRequest(
 	ctx context.Context,
+	buyerID,
 	referenceID,
-	paymentChannelType,
+	displayName,
 	country,
 	currency string,
 	requestAmount int64,
 	captureMethod,
 	channelCode,
 	description string,
-) (string, string, error) {
+) (
+	paymentRequestID string,
+	paymentTokenID *string,
+	virtualAccountNumber *string,
+	virtualAccountExpiredAt *time.Time,
+	err error,
+) {
 	ctxt := "XenditConsumer-CreatePaymentRequest"
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -160,10 +174,11 @@ func (q *XenditConsumer) CreatePaymentRequest(
 	req.Header.SetContentType("application/json")
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("api-version", "2024-11-11")
+	req.Header.Set("for-user-id ", buyerID)
 	req.Header.Set("Authorization", helper.Sprintf("Basic %s", q.apiKey))
 	request := XenditPaymentRequestRequest{
 		ReferenceID:        referenceID,
-		PaymentChannelType: paymentChannelType,
+		PaymentChannelType: "PAY",
 		Country:            country,
 		Currency:           currency,
 		RequestAmount:      requestAmount,
@@ -171,25 +186,30 @@ func (q *XenditConsumer) CreatePaymentRequest(
 		ChannelCode:        channelCode,
 		Description:        description,
 	}
+	request.ChannelProperties.DisplayName = displayName
 	requestBody, err := json.Marshal(request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrMarshal")
-		return "", "", err
+		return "", nil, nil, nil, err
 	}
 	req.SetBodyRaw(requestBody)
 	if err = q.client.Do(req, resp); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
-		return "", "", err
+		return "", nil, nil, nil, err
 	}
 	var response XenditPaymentRequestResponse
 	if err = json.Unmarshal(resp.Body(), &response); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
-		return "", "", err
+		return "", nil, nil, nil, err
 	}
 	if resp.StatusCode() != fasthttp.StatusCreated {
-		return "", "", fmt.Errorf("%s: %s", response.ErrorCode, response.Message)
+		return "", nil, nil, nil, fmt.Errorf("%s: %s", response.ErrorCode, response.Message)
 	}
-	return response.PaymentRequestID, response.PaymentTokenID, nil
+	if len(response.Actions) > 0 {
+		virtualAccountNumber = &response.Actions[0].Value
+	}
+	virtualAccountExpiredAt = &response.ChannelProperties.ExpiresAt
+	return response.PaymentRequestID, response.PaymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, nil
 }
 
 func (q *XenditConsumer) CancelPaymentRequest(

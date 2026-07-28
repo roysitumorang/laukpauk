@@ -10,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/dustin/go-humanize"
-	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/consumers"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -424,10 +423,11 @@ func (q *transactionService) CreateTransaction(
 		if paymentChannel == nil {
 			return nil, errors.New("payment_channel_id: not found")
 		}
-		paymentRequestID, paymentTokenID, err := q.xenditConsumer.CreatePaymentRequest(
+		paymentRequestID, paymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, err := q.xenditConsumer.CreatePaymentRequest(
 			ctx,
+			response.BuyerID.String(),
 			response.ID.String(),
-			paymentChannel.ChannelType,
+			helper.Sprintf("Transaksi %s", response.ReferenceNumber),
 			paymentChannel.Country,
 			paymentChannel.Currency,
 			request.PaymentAmount,
@@ -439,27 +439,17 @@ func (q *transactionService) CreateTransaction(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePaymentRequest")
 			return nil, err
 		}
-		paymentRequestExpiry, err := decimal.NewFromFloat64(paymentChannel.PaymentRequestExpiry)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewFromFloat64")
-			return nil, err
+		duration := setting.PaymentTerms
+		if virtualAccountExpiredAt != nil {
+			duration = virtualAccountExpiredAt.Sub(response.CreatedAt) - time.Second
 		}
-		oneHour, err := decimal.New(3_600_000_000_000, 0)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
-			return nil, err
-		}
-		nanoseconds, err := paymentRequestExpiry.Mul(oneHour)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrMul")
-			return nil, err
-		}
-		roundedNanoseconds, _, _ := nanoseconds.Floor(0).Int64(0)
-		duration := min(time.Duration(roundedNanoseconds), setting.PaymentTerms)
 		response.PaymentDueDate = new(now.Add(duration))
 		response.PaymentChannelID = request.PaymentChannelID
+		response.PaymentChannelName = &paymentChannel.Name
 		response.PaymentRequestID = &paymentRequestID
-		response.PaymentTokenID = &paymentTokenID
+		response.PaymentTokenID = paymentTokenID
+		response.PaymentVirtualAccountNumber = virtualAccountNumber
+		response.PaymentVirtualAccountExpiredAt = virtualAccountExpiredAt
 		if response, err = q.transactionRepository.UpdateTransaction(ctx, tx, response); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 			return nil, err
