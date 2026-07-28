@@ -37,7 +37,11 @@ type (
 			tx pgx.Tx,
 			request *models.Transaction,
 		) (*models.Transaction, error)
-		CancelOverdueTransactions(ctx context.Context) error
+		AutoCancelOverdueTransactions(ctx context.Context) error
+		RequestWithdrawal(
+			ctx context.Context,
+			request *models.Transaction,
+		) (*models.Transaction, error)
 		WithdrawTransaction(
 			ctx context.Context,
 			request *models.Transaction,
@@ -46,6 +50,7 @@ type (
 			ctx context.Context,
 			request *models.Transaction,
 		) (*models.Transaction, error)
+		AutoCompleteTransactions(ctx context.Context) error
 	}
 
 	transactionService struct {
@@ -483,8 +488,8 @@ func (q *transactionService) UpdateTransaction(
 	return response, nil
 }
 
-func (q *transactionService) CancelOverdueTransactions(ctx context.Context) error {
-	ctxt := "TransactionService-CancelOverdueTransactions"
+func (q *transactionService) AutoCancelOverdueTransactions(ctx context.Context) error {
+	ctxt := "TransactionService-AutoCancelOverdueTransactions"
 	now := time.Now().In(time.Local)
 	transactions, _, _, err := q.transactionRepository.FindTransactions(
 		ctx,
@@ -529,6 +534,56 @@ func (q *transactionService) CancelOverdueTransactions(ctx context.Context) erro
 		return err
 	}
 	return nil
+}
+
+func (q *transactionService) RequestWithdrawal(
+	ctx context.Context,
+	request *models.Transaction,
+) (*models.Transaction, error) {
+	ctxt := "TransactionService-RequestWithdrawal"
+	setting, err := q.settingRepository.FindSetting(ctx)
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return nil, err
+	}
+	if setting == nil {
+		return nil, models.ErrSettingNotFound
+	}
+	now := time.Now().In(time.Local)
+	if setting.TransactionAutoWithdrawalEnabled &&
+		setting.TransactionAutoWithdrawalWindowMin != nil &&
+		setting.TransactionAutoWithdrawalWindowMax != nil &&
+		!request.CreatedAt.Before(*setting.TransactionAutoWithdrawalWindowMin) &&
+		!request.CreatedAt.After(*setting.TransactionAutoWithdrawalWindowMax) {
+		request.Status = models.TransactionStatusWithdrawn
+		request.WithdrawnAt = &now
+	} else {
+		request.Status = models.TransactionStatusWithdrawalPending
+		request.WithdrawalRequestedAt = &now
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return nil, err
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	response, err := q.transactionRepository.UpdateTransaction(ctx, tx, request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+		return nil, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return nil, err
+	}
+	return response, nil
 }
 
 func (q *transactionService) WithdrawTransaction(
@@ -582,7 +637,7 @@ func (q *transactionService) CompleteTransaction(
 			WithBuyerIDs(buyerIDs...),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
 		return nil, err
 	}
 	mapBuyers := make(map[uuid.UUID]*models.Buyer, len(buyers))
@@ -602,12 +657,14 @@ func (q *transactionService) CompleteTransaction(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
+	request.Status = models.TransactionStatusCompleted
+	request.CompletedAt = new(time.Now())
 	response, err := q.transactionRepository.UpdateTransaction(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return nil, err
 	}
-	if buyer, ok := mapBuyers[request.BuyerID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
+	if buyer, ok := mapBuyers[response.BuyerID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
 		buyer.ReferrerID = response.ReferrerID
 		buyer.ReferralPoints = 0
 		buyer.RewardPoints = 0
@@ -633,4 +690,105 @@ func (q *transactionService) CompleteTransaction(
 		return nil, err
 	}
 	return response, nil
+}
+
+func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error {
+	ctxt := "TransactionService-AutoCompleteTransactions"
+	setting, err := q.settingRepository.FindSetting(ctx)
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return err
+	}
+	if setting == nil {
+		return models.ErrSettingNotFound
+	}
+	now := time.Now().In(time.Local)
+	transactions, _, _, err := q.transactionRepository.FindTransactions(
+		ctx,
+		models.NewTransactionFilter().
+			WithTransactionStatuses(models.TransactionStatusShipped).
+			WithShippedAt(now.Add(-setting.MaximumDeliveryTime)),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+		return err
+	}
+	if len(transactions) == 0 {
+		return nil
+	}
+	var buyerIDs []uuid.UUID
+	mapBuyerIDs := map[uuid.UUID]struct{}{}
+	for _, transaction := range transactions {
+		if _, ok := mapBuyerIDs[transaction.BuyerID]; !ok {
+			buyerIDs = append(buyerIDs, transaction.BuyerID)
+			mapBuyerIDs[transaction.BuyerID] = struct{}{}
+		}
+		if transaction.ReferrerID != nil {
+			if _, ok := mapBuyerIDs[*transaction.ReferrerID]; !ok {
+				buyerIDs = append(buyerIDs, *transaction.ReferrerID)
+				mapBuyerIDs[*transaction.ReferrerID] = struct{}{}
+			}
+		}
+	}
+	buyers, _, _, err := q.buyerRepository.FindBuyers(
+		ctx,
+		models.NewBuyerFilter().
+			WithBuyerIDs(buyerIDs...),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		return err
+	}
+	mapBuyers := make(map[uuid.UUID]*models.Buyer, len(buyers))
+	for _, buyer := range buyers {
+		mapBuyers[buyer.ID] = buyer
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return err
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	for _, transaction := range transactions {
+		transaction.Status = models.TransactionStatusCompleted
+		transaction.CompletedAt = &now
+		response, err := q.transactionRepository.UpdateTransaction(ctx, tx, transaction)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+			return err
+		}
+		if buyer, ok := mapBuyers[response.BuyerID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
+			buyer.ReferrerID = response.ReferrerID
+			buyer.ReferralPoints = 0
+			buyer.RewardPoints = 0
+			buyer.Wallet = max(0, response.RefundAmount)
+			if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+				return err
+			}
+		}
+		if response.ReferrerID != nil {
+			if buyer, ok := mapBuyers[*response.ReferrerID]; ok {
+				buyer.ReferralPoints = -response.ReferralPoints
+				buyer.RewardPoints = response.RewardPointsDiscount
+				buyer.Wallet = 0
+				if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
+					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+					return err
+				}
+			}
+		}
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return err
+	}
+	return nil
 }

@@ -147,7 +147,8 @@ type (
 		PaymentRequestIDs,
 		PaymentTokenIDs,
 		PaymentIDs []string
-		PaymentDueDate time.Time
+		PaymentDueDate,
+		ShippedAt time.Time
 		TransactionStatuses,
 		ExcludedTransactionStatuses []TransactionStatus
 		ReturnCountOnly bool
@@ -255,6 +256,11 @@ func (q *TransactionFilter) WithPaymentIDs(paymentIDs ...string) *TransactionFil
 
 func (q *TransactionFilter) WithPaymentDueDate(paymentDueDate time.Time) *TransactionFilter {
 	q.PaymentDueDate = paymentDueDate
+	return q
+}
+
+func (q *TransactionFilter) WithShippedAt(shippedAt time.Time) *TransactionFilter {
+	q.ShippedAt = shippedAt
 	return q
 }
 

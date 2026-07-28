@@ -777,6 +777,9 @@ func init() {
 				, delivery_max_distance_km bigint NOT NULL
 				, whatsapp_phone_number character varying NOT NULL
 				, payment_terms interval NOT NULL
+				, maximum_delivery_time interval NOT NULL
+				, transaction_auto_withdrawal_enabled boolean NOT NULL
+				, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id)
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES users (id)
@@ -803,6 +806,7 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
 			return
 		}
+		now := time.Now().In(time.Local)
 		setting := models.Setting{
 			VoucherEnabled:                       true,
 			ReferralPointsEnabled:                true,
@@ -816,8 +820,29 @@ func init() {
 			DeliveryMaxDistanceKM:                15,
 			WhatsappPhoneNumber:                  "628116099887",
 			PaymentTerms:                         24 * time.Hour,
+			MaximumDeliveryTime:                  4 * time.Hour,
+			TransactionAutoWithdrawalEnabled:     true,
+			TransactionAutoWithdrawalWindowMin: new(time.Date(
+				now.Year(),
+				now.Month(),
+				now.Day(),
+				10,
+				0,
+				0,
+				0,
+				now.Location(),
+			)),
+			TransactionAutoWithdrawalWindowMax: new(time.Date(
+				now.Year(),
+				now.Month(),
+				now.Day(),
+				21,
+				59,
+				59,
+				0,
+				now.Location(),
+			)),
 		}
-		now := time.Now().In(time.Local)
 		if _, err = tx.Exec(
 			ctx,
 			`INSERT INTO setting (
@@ -838,14 +863,17 @@ func init() {
 				, delivery_max_distance_km
 				, whatsapp_phone_number
 				, payment_terms
+				, maximum_delivery_time
+				, transaction_auto_withdrawal_enabled
+				, transaction_auto_withdrawal_window
 				, created_by
 				, created_at
 				, updated_by
 				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-				, $21
+				, $11, $12, $13, $14, $15, $16, $17, $18, $19
+				, tstzrange($20, $21, '[]'), $22, $23, $24, $25
 			)`,
 			setting.MaintenanceMode,
 			setting.VacationMode,
@@ -864,6 +892,10 @@ func init() {
 			setting.DeliveryMaxDistanceKM,
 			setting.WhatsappPhoneNumber,
 			setting.PaymentTerms,
+			setting.MaximumDeliveryTime,
+			setting.TransactionAutoWithdrawalEnabled,
+			setting.TransactionAutoWithdrawalWindowMin,
+			setting.TransactionAutoWithdrawalWindowMax,
 			adminID,
 			now,
 			adminID,
@@ -1920,6 +1952,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (shipped_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transactions (shipped_at);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

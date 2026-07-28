@@ -77,6 +77,10 @@ func (q *settingRepository) FindSetting(
 			, delivery_max_distance_km
 			, whatsapp_phone_number
 			, payment_terms
+			, maximum_delivery_time
+			, transaction_auto_withdrawal_enabled
+			, lower(transaction_auto_withdrawal_window)
+			, upper(transaction_auto_withdrawal_window)
 			, created_by
 			, created_at
 			, updated_by
@@ -101,6 +105,10 @@ func (q *settingRepository) FindSetting(
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
+		&response.MaximumDeliveryTime,
+		&response.TransactionAutoWithdrawalEnabled,
+		&response.TransactionAutoWithdrawalWindowMin,
+		&response.TransactionAutoWithdrawalWindowMax,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -144,6 +152,10 @@ func (q *settingRepository) UpdateSetting(
 			, delivery_max_distance_km
 			, whatsapp_phone_number
 			, payment_terms
+			, maximum_delivery_time
+			, transaction_auto_withdrawal_enabled
+			, lower(transaction_auto_withdrawal_window)
+			, upper(transaction_auto_withdrawal_window)
 			, created_by
 			, created_at
 			, updated_by
@@ -170,6 +182,10 @@ func (q *settingRepository) UpdateSetting(
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
+		&response.MaximumDeliveryTime,
+		&response.TransactionAutoWithdrawalEnabled,
+		&response.TransactionAutoWithdrawalWindowMin,
+		&response.TransactionAutoWithdrawalWindowMax,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -309,6 +325,55 @@ func (q *settingRepository) UpdateSetting(
 		}
 		_, _ = fmt.Fprintf(&sb, " payment_terms = $%d", n)
 	}
+	if response.MaximumDeliveryTime != request.MaximumDeliveryTime {
+		params = append(params, request.MaximumDeliveryTime)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " maximum_delivery_time = $%d", n)
+	}
+	if response.TransactionAutoWithdrawalEnabled != request.TransactionAutoWithdrawalEnabled {
+		params = append(params, request.TransactionAutoWithdrawalEnabled)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " transaction_auto_withdrawal_enabled = $%d", n)
+	}
+	if response.TransactionAutoWithdrawalEnabled != request.TransactionAutoWithdrawalEnabled {
+		params = append(params, request.TransactionAutoWithdrawalEnabled)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " transaction_auto_withdrawal_enabled = $%d", n)
+	}
+	var requestWindowMin,
+		responseWindowMin,
+		requestWindowMax,
+		responseWindowMax time.Time
+	if request.TransactionAutoWithdrawalWindowMin != nil {
+		requestWindowMin = *request.TransactionAutoWithdrawalWindowMin
+	}
+	if response.TransactionAutoWithdrawalWindowMin != nil {
+		responseWindowMin = *response.TransactionAutoWithdrawalWindowMin
+	}
+	if request.TransactionAutoWithdrawalWindowMax != nil {
+		requestWindowMax = *request.TransactionAutoWithdrawalWindowMax
+	}
+	if response.TransactionAutoWithdrawalWindowMax != nil {
+		responseWindowMax = *response.TransactionAutoWithdrawalWindowMax
+	}
+	if !responseWindowMin.Equal(requestWindowMin) ||
+		!responseWindowMax.Equal(requestWindowMax) {
+		params = append(
+			params,
+			request.TransactionAutoWithdrawalWindowMin,
+			request.TransactionAutoWithdrawalWindowMax,
+		)
+		if n = len(params); n > 2 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(&sb, " transaction_auto_withdrawal_window = tstzrange($%d, $%d, '[]')", n-1, n)
+	}
 	if len(params) == 0 {
 		return &response, nil
 	}
@@ -337,6 +402,10 @@ func (q *settingRepository) UpdateSetting(
 			, delivery_max_distance_km
 			, whatsapp_phone_number
 			, payment_terms
+			, maximum_delivery_time
+			, transaction_auto_withdrawal_enabled
+			, lower(transaction_auto_withdrawal_window)
+			, upper(transaction_auto_withdrawal_window)
 			, created_by
 			, created_at
 			, updated_by
@@ -362,6 +431,10 @@ func (q *settingRepository) UpdateSetting(
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
+		&response.MaximumDeliveryTime,
+		&response.TransactionAutoWithdrawalEnabled,
+		&response.TransactionAutoWithdrawalWindowMin,
+		&response.TransactionAutoWithdrawalWindowMax,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -415,6 +488,10 @@ func (q *settingRepository) AddReferralPointsExpense(
 			, delivery_max_distance_km
 			, whatsapp_phone_number
 			, payment_terms
+			, maximum_delivery_time
+			, transaction_auto_withdrawal_enabled
+			, lower(transaction_auto_withdrawal_window)
+			, upper(transaction_auto_withdrawal_window)
 			, created_by
 			, created_at
 			, updated_by
@@ -441,6 +518,10 @@ func (q *settingRepository) AddReferralPointsExpense(
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
 		&response.PaymentTerms,
+		&response.MaximumDeliveryTime,
+		&response.TransactionAutoWithdrawalEnabled,
+		&response.TransactionAutoWithdrawalWindowMin,
+		&response.TransactionAutoWithdrawalWindowMax,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,

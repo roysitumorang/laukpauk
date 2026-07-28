@@ -260,34 +260,10 @@ func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	now := time.Now()
-	transaction.Status = models.TransactionStatusWithdrawalPending
-	transaction.WithdrawalRequestedAt = &now
 	transaction.WithdrawalReason = &request.Reason
-	tx, err := repositories.BeginTx(ctx)
+	response, err := q.transactionService.RequestWithdrawal(ctx, transaction)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	response, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRequestWithdrawal")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -592,8 +568,6 @@ func (q *transactionController) AdminComplete(c fiber.Ctx) (err error) {
 	if transaction == nil {
 		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/admin/transactions")
 	}
-	transaction.Status = models.TransactionStatusCompleted
-	transaction.CompletedAt = new(time.Now())
 	if _, err = q.transactionService.CompleteTransaction(ctx, transaction); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCompleteTransaction")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/transactions/%s", transaction.ID))

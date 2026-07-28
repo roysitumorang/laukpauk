@@ -126,12 +126,14 @@ func main() {
 						}
 						helper.Log(ctx, slog.LevelInfo, helper.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
 						if entryID, err = c.AddFunc("* * * * *", func() {
-							if err = service.TransactionService.CancelOverdueTransactions(ctx); err != nil {
-								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCancelOverdueTransactions")
-								return
+							if err = service.TransactionService.AutoCompleteTransactions(ctx); err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoCompleteTransactions")
 							}
-							if err = service.DeliveryPlanService.UpdateDate(ctx); err != nil {
-								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDate")
+							if err = service.TransactionService.AutoCancelOverdueTransactions(ctx); err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoCancelOverdueTransactions")
+							}
+							if err = service.DeliveryPlanService.AutoUpdateDate(ctx); err != nil {
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoUpdateDate")
 							}
 						}); err != nil {
 							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
@@ -213,12 +215,43 @@ func main() {
 						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
 						return err
 					}
-					if err = service.DeliveryPlanService.UpdateDate(ctx); err != nil {
-						helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDate")
+					if err = service.DeliveryPlanService.AutoUpdateDate(ctx); err != nil {
+						helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoUpdateDate")
 						return err
 					}
 					duration := time.Since(now)
-					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("delivery_plan date updated successfully in %s", duration.String()), ctxt, "")
+					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("delivery plan date updated successfully in %s", duration.String()), ctxt, "")
+					return nil
+				},
+			}, {
+				Name:  "transaction",
+				Usage: "transaction autocomplete",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.Args().Len() == 0 ||
+						cmd.Args().First() != "autocomplete" {
+						return errors.New("requires a parameter: autocomplete")
+					}
+					now := time.Now()
+					err := godotenv.Load(".env")
+					if err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrLoad")
+						return err
+					}
+					if err = helper.InitHelper(); err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrInitHelper")
+						return err
+					}
+					service, err := router.MakeHandler(ctx)
+					if err != nil {
+						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
+						return err
+					}
+					if err = service.TransactionService.AutoCompleteTransactions(ctx); err != nil {
+						helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoCompleteTransactions")
+						return err
+					}
+					duration := time.Since(now)
+					helper.Log(ctx, slog.LevelInfo, helper.Sprintf("transactions autocompleted successfully in %s", duration.String()), ctxt, "")
 					return nil
 				},
 			},

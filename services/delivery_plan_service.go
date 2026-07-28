@@ -32,7 +32,7 @@ type (
 			tx pgx.Tx,
 			request *models.DeliveryPlan,
 		) (*models.DeliveryPlan, error)
-		UpdateDate(ctx context.Context) error
+		AutoUpdateDate(ctx context.Context) error
 	}
 
 	deliveryPlanService struct {
@@ -116,8 +116,8 @@ func (q *deliveryPlanService) UpdateDeliveryPlan(
 	return response, err
 }
 
-func (q *deliveryPlanService) UpdateDate(ctx context.Context) error {
-	ctxt := "DeliveryPlanService-UpdateDate"
+func (q *deliveryPlanService) AutoUpdateDate(ctx context.Context) error {
+	ctxt := "DeliveryPlanService-AutoUpdateDate"
 	now := time.Now().In(time.Local)
 	weekday := models.DeliveryWeekdayWeekdays
 	if wd := now.Weekday(); wd == time.Sunday ||
