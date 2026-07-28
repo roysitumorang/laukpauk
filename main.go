@@ -128,13 +128,8 @@ func main() {
 						if entryID, err = c.AddFunc("* * * * *", func() {
 							if err = service.TransactionService.CancelOverdueTransactions(ctx); err != nil {
 								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCancelOverdueTransactions")
+								return
 							}
-						}); err != nil {
-							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
-							return err
-						}
-						helper.Log(ctx, slog.LevelInfo, helper.Sprintf("cron: entry added with ID %d", entryID), ctxt, "")
-						if entryID, err = c.AddFunc("* * * * *", func() {
 							if err = service.DeliveryPlanService.UpdateDate(ctx); err != nil {
 								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDate")
 							}
