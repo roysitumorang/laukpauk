@@ -32,6 +32,16 @@ type (
 		ChannelCode        string `json:"channel_code"`
 		ChannelProperties  struct {
 			DisplayName string `json:"display_name"`
+			CardDetails struct {
+				CVN                   string `json:"cvn"`
+				CardNumber            string `json:"card_number"`
+				ExpiryYear            string `json:"expiry_year"`
+				ExpiryMonth           string `json:"expiry_month"`
+				CardholderFirstName   string `json:"cardholder_first_name"`
+				CardholderLastName    string `json:"cardholder_last_name"`
+				CardholderEmail       string `json:"cardholder_email"`
+				CardholderPhoneNumber string `json:"cardholder_phone_number"`
+			} `json:"card_details"`
 		} `json:"channel_properties"`
 		Description string         `json:"description"`
 		Metadata    map[string]any `json:"metadata"`
