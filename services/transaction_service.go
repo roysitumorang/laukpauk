@@ -14,6 +14,7 @@ import (
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
@@ -256,7 +257,6 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	request.CalculateShoppingCost()
-	var sb strings.Builder
 	if setting.ReferralPointsEnabled {
 		if request.ReferralCode != nil {
 			if request.ShoppingCost < setting.ReferralPointsMinimumShoppingCost {
@@ -361,8 +361,13 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	request.CalculateDiscount()
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "%s%03d", now.Format("06"), now.YearDay())
+	_, _ = fmt.Fprintf(sb, "%s%03d", now.Format("06"), now.YearDay())
 	counter, err := q.transactionCounterRepository.SaveTransactionCounter(
 		ctx,
 		&models.TransactionCounter{
@@ -377,7 +382,7 @@ func (q *transactionService) CreateTransaction(
 	}
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		models.TransactionReferenceNumberFormat,
 		counter.TransactionWindow,
 		counter.Hits,
