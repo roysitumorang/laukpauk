@@ -14,7 +14,7 @@ import (
 	"github.com/gofiber/storage/valkey"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/config"
-	"github.com/roysitumorang/laukpauk/consumers"
+	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migration"
 	"github.com/roysitumorang/laukpauk/models"
@@ -26,11 +26,11 @@ type (
 	Service struct {
 		DbWrite                   *pgxpool.Pool
 		Migration                 *migration.Migration
-		KafkaConsumer             *consumers.KafkaConsumer
-		FcmConsumer               *consumers.FcmConsumer
-		ZenzivaConsumer           *consumers.ZenzivaConsumer
-		RoutesApiConsumer         *consumers.RoutesApiConsumer
-		XenditConsumer            *consumers.XenditConsumer
+		KafkaClient               *externals.KafkaClient
+		FcmClient                 *externals.FcmClient
+		ZenzivaClient             *externals.ZenzivaClient
+		RoutesApiClient           *externals.RoutesApiClient
+		XenditClient              *externals.XenditClient
 		Storage                   fiber.Storage
 		AdminService              services.AdminService
 		BuyerService              services.BuyerService
@@ -71,12 +71,12 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		return nil, err
 	}
 	migration := migration.New(dbRead, dbWrite)
-	kafkaConsumer, err := consumers.NewKafkaConsumer(ctx, strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
+	kafkaClient, err := externals.NewKafkaClient(ctx, strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewKafkaConsumer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewKafkaClient")
 		return nil, err
 	}
-	if err = kafkaConsumer.Ping(ctx); err != nil {
+	if err = kafkaClient.Ping(ctx); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 		return nil, err
 	}
@@ -87,49 +87,34 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 			Messages: []models.TopicMessage{},
 		}
 	}
-	_ = kafkaConsumer.Publish(ctx, topics...)
-	fcmTimeoutDuration, err := time.ParseDuration(os.Getenv("FCM_TIMEOUT_DURATION"))
+	_ = kafkaClient.Publish(ctx, topics...)
+	externalApiCallTimeoutDuration, err := time.ParseDuration(os.Getenv("EXTERNAL_API_CALL_TIMEOUT_DURATION"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
 		return nil, err
 	}
-	fcmConsumer := consumers.NewFcmConsumer(os.Getenv("FIREBASE_PROJECT_ID"), fcmTimeoutDuration)
+	fcmClient := externals.NewFcmClient(os.Getenv("FIREBASE_PROJECT_ID"), externalApiCallTimeoutDuration)
 	zenzivaMessageMaxLength, err := strconv.Atoi(os.Getenv("ZENZIVA_MESSAGE_MAX_LENGTH"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAtoi")
 		return nil, err
 	}
-	zenzivaTimeoutDuration, err := time.ParseDuration(os.Getenv("ZENZIVA_TIMEOUT_DURATION"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return nil, err
-	}
-	zenzivaConsumer := consumers.NewZenzivaConsumer(
+	zenzivaClient := externals.NewZenzivaClient(
 		os.Getenv("ZENZIVA_BASE_URL"),
 		os.Getenv("ZENZIVA_USER_KEY"),
 		os.Getenv("ZENZIVA_API_KEY"),
 		zenzivaMessageMaxLength,
-		zenzivaTimeoutDuration,
+		externalApiCallTimeoutDuration,
 	)
-	routesApiTimeoutDuration, err := time.ParseDuration(os.Getenv("ROUTES_API_TIMEOUT_DURATION"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return nil, err
-	}
-	routesApiConsumer := consumers.NewRoutesApiConsumer(
+	routesApiClient := externals.NewRoutesApiClient(
 		os.Getenv("ROUTES_API_ENDPOINT"),
 		os.Getenv("GOOGLE_API_KEY"),
-		routesApiTimeoutDuration,
+		externalApiCallTimeoutDuration,
 	)
-	xenditTimeoutDuration, err := time.ParseDuration(os.Getenv("XENDIT_TIMEOUT_DURATION"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return nil, err
-	}
-	xenditConsumer := consumers.NewXenditConsumer(
+	xenditClient := externals.NewXenditClient(
 		os.Getenv("XENDIT_BASE_URL"),
 		os.Getenv("XENDIT_API_KEY"),
-		xenditTimeoutDuration,
+		externalApiCallTimeoutDuration,
 	)
 	storage := valkey.New(valkey.Config{
 		URL: os.Getenv("REDIS_URL"),
@@ -167,7 +152,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	productService := services.NewProductService(productRepository, productCategoryRepository)
 	productVariantService := services.NewProductVariantService(productVariantRepository, productRepository)
-	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaConsumer, zenzivaConsumer)
+	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaClient, zenzivaClient)
 	settingService := services.NewSettingService(settingRepository)
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
 	pointService := services.NewPointService(pointRepository)
@@ -187,7 +172,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		pointRepository,
 		productVariantRepository,
 		paymentChannelRepository,
-		xenditConsumer,
+		xenditClient,
 	)
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
 	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
@@ -198,11 +183,11 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
-		KafkaConsumer:             kafkaConsumer,
-		FcmConsumer:               fcmConsumer,
-		ZenzivaConsumer:           zenzivaConsumer,
-		RoutesApiConsumer:         routesApiConsumer,
-		XenditConsumer:            xenditConsumer,
+		KafkaClient:               kafkaClient,
+		FcmClient:                 fcmClient,
+		ZenzivaClient:             zenzivaClient,
+		RoutesApiClient:           routesApiClient,
+		XenditClient:              xenditClient,
 		Storage:                   storage,
 		AdminService:              adminService,
 		BuyerService:              buyerService,
@@ -242,7 +227,7 @@ func (q *Service) Consume(ctx context.Context) error {
 		}
 	}()
 	for {
-		fetches := q.KafkaConsumer.PollFetches(ctx)
+		fetches := q.KafkaClient.PollFetches(ctx)
 		if fetches.IsClientClosed() {
 			return nil
 		}
@@ -252,11 +237,11 @@ func (q *Service) Consume(ctx context.Context) error {
 			return err
 		}
 		records := fetches.Records()
-		if err := q.KafkaConsumer.CommitUncommittedOffsets(ctx); err != nil {
+		if err := q.KafkaClient.CommitUncommittedOffsets(ctx); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommitUncommittedOffsets")
 			return err
 		}
-		q.KafkaConsumer.AllowRebalance()
+		q.KafkaClient.AllowRebalance()
 		for _, record := range records {
 			now := time.Now()
 			duration := time.Since(now)

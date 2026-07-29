@@ -11,7 +11,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/jackc/pgx/v5"
-	"github.com/roysitumorang/laukpauk/consumers"
+	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -66,7 +66,7 @@ type (
 		pointRepository              repositories.PointRepository
 		productVariantRepository     repositories.ProductVariantRepository
 		paymentChannelRepository     repositories.PaymentChannelRepository
-		xenditConsumer               *consumers.XenditConsumer
+		xenditClient                 *externals.XenditClient
 	}
 )
 
@@ -83,7 +83,7 @@ func NewTransactionService(
 	pointRepository repositories.PointRepository,
 	productVariantRepository repositories.ProductVariantRepository,
 	paymentChannelRepository repositories.PaymentChannelRepository,
-	xenditConsumer *consumers.XenditConsumer,
+	xenditClient *externals.XenditClient,
 ) TransactionService {
 	return &transactionService{
 		transactionRepository:        transactionRepository,
@@ -98,7 +98,7 @@ func NewTransactionService(
 		pointRepository:              pointRepository,
 		productVariantRepository:     productVariantRepository,
 		paymentChannelRepository:     paymentChannelRepository,
-		xenditConsumer:               xenditConsumer,
+		xenditClient:                 xenditClient,
 	}
 }
 
@@ -428,7 +428,7 @@ func (q *transactionService) CreateTransaction(
 		if paymentChannel == nil {
 			return nil, errors.New("payment_channel_id: not found")
 		}
-		paymentRequestID, paymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, err := q.xenditConsumer.CreatePaymentRequest(
+		paymentRequestID, paymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, err := q.xenditClient.CreatePaymentRequest(
 			ctx,
 			response.BuyerID.String(),
 			response.ID.String(),
@@ -524,7 +524,7 @@ func (q *transactionService) AutoCancelOverdueTransactions(ctx context.Context) 
 			return err
 		}
 		if transaction.PaymentRequestID != nil {
-			if _, err = q.xenditConsumer.CancelPaymentRequest(ctx, *transaction.PaymentRequestID); err != nil {
+			if _, err = q.xenditClient.CancelPaymentRequest(ctx, *transaction.PaymentRequestID); err != nil {
 				return err
 			}
 		}
@@ -592,7 +592,7 @@ func (q *transactionService) WithdrawTransaction(
 ) (*models.Transaction, error) {
 	ctxt := "TransactionService-WithdrawTransaction"
 	if request.PaymentID != nil {
-		if _, err := q.xenditConsumer.CancelPayment(ctx, *request.PaymentID); err != nil {
+		if _, err := q.xenditClient.CancelPayment(ctx, *request.PaymentID); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCancelPayment")
 			return nil, err
 		}

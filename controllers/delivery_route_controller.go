@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
-	"github.com/roysitumorang/laukpauk/consumers"
+	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middleware"
 	"github.com/roysitumorang/laukpauk/models"
@@ -25,7 +25,7 @@ type (
 		deliveryRouteService services.DeliveryRouteService
 		settingService       services.SettingService
 		jsonWebTokenService  services.JsonWebTokenService
-		routesApiConsumer    *consumers.RoutesApiConsumer
+		routesApiClient      *externals.RoutesApiClient
 	}
 )
 
@@ -35,7 +35,7 @@ func NewDeliveryRouteController(
 	deliveryRouteService services.DeliveryRouteService,
 	settingService services.SettingService,
 	jsonWebTokenService services.JsonWebTokenService,
-	routesApiConsumer *consumers.RoutesApiConsumer,
+	routesApiClient *externals.RoutesApiClient,
 ) *deliveryRouteController {
 	return &deliveryRouteController{
 		adminService:         adminService,
@@ -43,7 +43,7 @@ func NewDeliveryRouteController(
 		deliveryRouteService: deliveryRouteService,
 		settingService:       settingService,
 		jsonWebTokenService:  jsonWebTokenService,
-		routesApiConsumer:    routesApiConsumer,
+		routesApiClient:      routesApiClient,
 	}
 }
 
@@ -95,7 +95,7 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetData(response).
 			WriteResponse(c)
 	}
-	if request.DistanceMeters, err = q.routesApiConsumer.ComputeDistanceMeters(
+	if request.DistanceMeters, err = q.routesApiClient.ComputeDistanceMeters(
 		ctx,
 		setting.DeliveryOriginLongitude.String(),
 		setting.DeliveryOriginLatitude.String(),

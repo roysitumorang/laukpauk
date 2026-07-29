@@ -309,7 +309,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.DeliveryRouteService,
 		q.SettingService,
 		q.JsonWebTokenService,
-		q.RoutesApiConsumer,
+		q.RoutesApiClient,
 	).Mount(app.Group("/delivery_routes"))
 	controllers.NewSettingController(
 		q.AdminService,

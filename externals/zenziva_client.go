@@ -1,4 +1,4 @@
-package consumers
+package externals
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/valyala/fasthttp"
 )
 
@@ -20,7 +21,7 @@ const (
 type (
 	ZenzivaMessageType int
 
-	ZenzivaConsumer struct {
+	ZenzivaClient struct {
 		baseURL,
 		userKey,
 		apiKey string
@@ -59,36 +60,40 @@ type (
 	}
 )
 
-func NewZenzivaConsumer(
+func NewZenzivaClient(
 	baseURL,
 	userKey,
 	apiKey string,
 	messageMaxLength int,
 	timeout time.Duration,
-) *ZenzivaConsumer {
-	return new(ZenzivaConsumer{
+) *ZenzivaClient {
+	return &ZenzivaClient{
 		baseURL:          baseURL,
 		userKey:          userKey,
 		apiKey:           apiKey,
 		messageMaxLength: messageMaxLength,
-		client: new(fasthttp.Client{
+		client: &fasthttp.Client{
 			ReadTimeout:  timeout,
 			WriteTimeout: timeout,
-		}),
-	})
+		},
+	}
 }
 
-func (q *ZenzivaConsumer) SendSMS(ctx context.Context, to, message string) (*int64, error) {
+func (q *ZenzivaClient) SendSMS(ctx context.Context, to, message string) (*int64, error) {
 	return q.send(ctx, ZensivaMessageTypeSms, to, message)
 }
 
-func (q *ZenzivaConsumer) SendOTP(ctx context.Context, to, message string) (*int64, error) {
+func (q *ZenzivaClient) SendOTP(ctx context.Context, to, message string) (*int64, error) {
 	return q.send(ctx, ZenzivaMessageTypeOtp, to, message)
 }
 
-func (q *ZenzivaConsumer) send(ctx context.Context, messageType ZenzivaMessageType, to, message string) (*int64, error) {
-	ctxt := "ZenzivaConsumer-send"
-	var sb strings.Builder
+func (q *ZenzivaClient) send(ctx context.Context, messageType ZenzivaMessageType, to, message string) (*int64, error) {
+	ctxt := "ZenzivaClient-send"
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	requestBody, err := json.Marshal(ZenzivaRequest{
 		UserKey: q.userKey,
 		PassKey: q.apiKey,
@@ -105,7 +110,8 @@ func (q *ZenzivaConsumer) send(ctx context.Context, messageType ZenzivaMessageTy
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	_, _ = fmt.Fprintf(&sb, "%s/masking/api/%s/", q.baseURL, messageType.String())
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s/masking/api/%s/", q.baseURL, messageType.String())
 	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType("application/json")
@@ -119,19 +125,24 @@ func (q *ZenzivaConsumer) send(ctx context.Context, messageType ZenzivaMessageTy
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
 	}
-	return new(response.MessageID), nil
+	return &response.MessageID, nil
 }
 
-func (q *ZenzivaConsumer) CheckReport(ctx context.Context, messageID int64) (*string, error) {
+func (q *ZenzivaClient) CheckReport(ctx context.Context, messageID int64) (*string, error) {
 	ctxt := "ZenzivaConsumer-CheckReport"
-	var sb strings.Builder
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer func() {
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	_, _ = fmt.Fprintf(&sb, "%s/masking/api/report/?userkey=%s&passkey=%s&messageId=%d", q.baseURL, q.userKey, q.apiKey, messageID)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s/masking/api/report/?userkey=%s&passkey=%s&messageId=%d", q.baseURL, q.userKey, q.apiKey, messageID)
 	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodGet)
 	err := q.client.Do(req, resp)
@@ -147,16 +158,21 @@ func (q *ZenzivaConsumer) CheckReport(ctx context.Context, messageID int64) (*st
 	return new(strings.ToLower(response.DeliveryStatus)), nil
 }
 
-func (q *ZenzivaConsumer) CheckBalance(ctx context.Context) (*ZenzivaBalance, error) {
+func (q *ZenzivaClient) CheckBalance(ctx context.Context) (*ZenzivaBalance, error) {
 	ctxt := "ZenzivaConsumer-CheckBalance"
-	var sb strings.Builder
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer func() {
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	_, _ = fmt.Fprintf(&sb, "%s/api/balance/?userkey=%s&passkey=%s", q.baseURL, q.userKey, q.apiKey)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s/api/balance/?userkey=%s&passkey=%s", q.baseURL, q.userKey, q.apiKey)
 	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodGet)
 	err := q.client.Do(req, resp)
@@ -169,7 +185,7 @@ func (q *ZenzivaConsumer) CheckBalance(ctx context.Context) (*ZenzivaBalance, er
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q ZenzivaMessageType) Int() int {

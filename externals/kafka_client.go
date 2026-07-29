@@ -1,21 +1,23 @@
-package consumers
+package externals
 
 import (
 	"context"
 	"encoding/json/v2"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 type (
-	KafkaConsumer struct {
+	KafkaClient struct {
 		client *kgo.Client
 	}
 
@@ -25,8 +27,8 @@ type (
 	}
 )
 
-func NewKafkaConsumer(ctx context.Context, brokers []string) (*KafkaConsumer, error) {
-	ctxt := "KafkaConsumer-NewKafkaConsumer"
+func NewKafkaClient(ctx context.Context, brokers []string) (*KafkaClient, error) {
+	ctxt := "KafkaClient-NewKafkaConsumer"
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumerGroup(config.AppName),
@@ -41,23 +43,28 @@ func NewKafkaConsumer(ctx context.Context, brokers []string) (*KafkaConsumer, er
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrNewClient")
 		return nil, err
 	}
-	return &KafkaConsumer{client: client}, nil
+	return &KafkaClient{client: client}, nil
 }
 
-func (s *KafkaConsumer) Ping(ctx context.Context) (err error) {
-	ctxt := "KafkaConsumer-Ping"
+func (s *KafkaClient) Ping(ctx context.Context) (err error) {
+	ctxt := "KafkaClient-Ping"
 	if err = s.client.Ping(ctx); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 	}
 	return
 }
 
-func (s *KafkaConsumer) Publish(ctx context.Context, request ...models.TopicRequest) (err error) {
-	ctxt := "KafkaConsumer-Publish"
+func (s *KafkaClient) Publish(ctx context.Context, request ...models.TopicRequest) (err error) {
+	ctxt := "KafkaClient-Publish"
 	n := len(request)
 	if n == 0 {
 		return
 	}
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	now := time.Now()
 	var wg sync.WaitGroup
 	for _, topic := range request {
@@ -78,7 +85,9 @@ func (s *KafkaConsumer) Publish(ctx context.Context, request ...models.TopicRequ
 					helper.Capture(ctx, slog.LevelError, fmt.Errorf("publish message failed: %v", err), ctxt, "ErrProduce")
 					return
 				}
-				helper.Log(ctx, slog.LevelInfo, helper.Sprintf("published message to topic %s[%d]@%d: %s in %s", result.Topic, result.Partition, result.Offset, result.Value, time.Since(now).String()), ctxt, "")
+				sb.Reset()
+				_, _ = fmt.Fprintf(sb, "published message to topic %s[%d]@%d: %s in %s", result.Topic, result.Partition, result.Offset, result.Value, time.Since(now).String())
+				helper.Log(ctx, slog.LevelInfo, sb.String(), ctxt, "")
 			})
 		}
 	}
@@ -89,18 +98,18 @@ func (s *KafkaConsumer) Publish(ctx context.Context, request ...models.TopicRequ
 	return
 }
 
-func (s *KafkaConsumer) PollFetches(ctx context.Context) kgo.Fetches {
+func (s *KafkaClient) PollFetches(ctx context.Context) kgo.Fetches {
 	return s.client.PollFetches(ctx)
 }
 
-func (s *KafkaConsumer) CommitUncommittedOffsets(ctx context.Context) (err error) {
-	ctxt := "KafkaConsumer-CommitUncommittedOffsets"
+func (s *KafkaClient) CommitUncommittedOffsets(ctx context.Context) (err error) {
+	ctxt := "KafkaClient-CommitUncommittedOffsets"
 	if err = s.client.CommitUncommittedOffsets(ctx); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommitUncommittedOffsets")
 	}
 	return
 }
 
-func (s *KafkaConsumer) AllowRebalance() {
+func (s *KafkaClient) AllowRebalance() {
 	s.client.AllowRebalance()
 }

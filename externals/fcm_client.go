@@ -1,4 +1,4 @@
-package consumers
+package externals
 
 import (
 	"context"
@@ -17,11 +17,12 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/valyala/fasthttp"
 )
 
 type (
-	FcmConsumer struct {
+	FcmClient struct {
 		baseURL string
 		client  *fasthttp.Client
 	}
@@ -56,13 +57,18 @@ type (
 	}
 )
 
-func NewFcmConsumer(
+func NewFcmClient(
 	projectID string,
 	timeout time.Duration,
-) *FcmConsumer {
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, "https://fcm.googleapis.com/v1/projects/%s/messages:send", projectID)
-	return &FcmConsumer{
+) *FcmClient {
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "https://fcm.googleapis.com/v1/projects/%s/messages:send", projectID)
+	return &FcmClient{
 		baseURL: sb.String(),
 		client: &fasthttp.Client{
 			ReadTimeout:  timeout,
@@ -71,15 +77,20 @@ func NewFcmConsumer(
 	}
 }
 
-func (q *FcmConsumer) Send(ctx context.Context, token, title, body, image string, data map[string]string) (*string, error) {
-	ctxt := "FcmConsumer-Send"
+func (q *FcmClient) Send(ctx context.Context, token, title, body, image string, data map[string]string) (*string, error) {
+	ctxt := "FcmClient-Send"
 	bearerToken, err := q.CreateOauth2Token(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrTokenSource")
 		return nil, err
 	}
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, "Bearer %s", bearerToken.AccessToken)
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "Bearer %s", bearerToken.AccessToken)
 	requestBody, err := json.Marshal(FcmRequest{
 		Token: token,
 		Notification: FcmNotification{
@@ -116,8 +127,8 @@ func (q *FcmConsumer) Send(ctx context.Context, token, title, body, image string
 	return &response.Name, nil
 }
 
-func (q *FcmConsumer) CreateOauth2Token(ctx context.Context) (*FcmTokenResponse, error) {
-	ctxt := "FcmConsumer-CreateOauth2Token"
+func (q *FcmClient) CreateOauth2Token(ctx context.Context) (*FcmTokenResponse, error) {
+	ctxt := "FcmClient-CreateOauth2Token"
 	jsonBytes, err := base64.StdEncoding.DecodeString(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecodeString")

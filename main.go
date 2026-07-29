@@ -109,7 +109,7 @@ func main() {
 									ID:    smsMessage.ID,
 								}
 							}
-							if err = service.KafkaConsumer.Publish(
+							if err = service.KafkaClient.Publish(
 								ctx,
 								models.TopicRequest{
 									Topic:    models.TopicSms,

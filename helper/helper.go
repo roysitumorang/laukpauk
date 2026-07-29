@@ -24,6 +24,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/roysitumorang/laukpauk/keys"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/sqids/sqids-go"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -44,12 +45,7 @@ var (
 	shortUniqueIDs *sqids.Sqids
 	privateKey     *rsa.PrivateKey
 	snowflakeNode  *snowflake.Node
-	bufferPool     = sync.Pool{
-		New: func() any {
-			return &bytes.Buffer{}
-		},
-	}
-	InitHelper = sync.OnceValue(func() (err error) {
+	InitHelper     = sync.OnceValue(func() (err error) {
 		location, ok := os.LookupEnv("TZ")
 		if !ok || location == "" {
 			return errors.New("env TZ is required")
@@ -273,13 +269,13 @@ func GetAccessTokenAge() time.Duration {
 }
 
 func Sprintf(format string, a ...any) string {
-	buffer := bufferPool.Get().(*bytes.Buffer)
+	sb := pools.BuilderPool.Get().(*strings.Builder)
 	defer func() {
-		buffer.Reset()
-		bufferPool.Put(buffer)
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
 	}()
-	_, _ = fmt.Fprintf(buffer, format, a...)
-	return buffer.String()
+	_, _ = fmt.Fprintf(sb, format, a...)
+	return sb.String()
 }
 
 func TruncateString(s string, maxLength int) string {

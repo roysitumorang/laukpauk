@@ -1,4 +1,4 @@
-package consumers
+package externals
 
 import (
 	"bytes"
@@ -12,11 +12,12 @@ import (
 	"time"
 
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/valyala/fasthttp"
 )
 
 type (
-	XenditConsumer struct {
+	XenditClient struct {
 		baseURL,
 		apiKey string
 		client *fasthttp.Client
@@ -137,16 +138,21 @@ type (
 	}
 )
 
-func NewXenditConsumer(
+func NewXenditClient(
 	baseURL,
 	apiKey string,
 	timeout time.Duration,
-) *XenditConsumer {
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, "%s:", apiKey)
-	return &XenditConsumer{
+) *XenditClient {
+	sb := pools.BufferPool.Get().(*bytes.Buffer)
+	defer func() {
+		sb.Reset()
+		pools.BufferPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s:", apiKey)
+	return &XenditClient{
 		baseURL: baseURL,
-		apiKey:  base64.StdEncoding.EncodeToString(bytes.NewBufferString(sb.String()).Bytes()),
+		apiKey:  base64.StdEncoding.EncodeToString(sb.Bytes()),
 		client: &fasthttp.Client{
 			ReadTimeout:  timeout,
 			WriteTimeout: timeout,
@@ -154,7 +160,7 @@ func NewXenditConsumer(
 	}
 }
 
-func (q *XenditConsumer) CreatePaymentRequest(
+func (q *XenditClient) CreatePaymentRequest(
 	ctx context.Context,
 	buyerID,
 	referenceID,
@@ -173,19 +179,28 @@ func (q *XenditConsumer) CreatePaymentRequest(
 	err error,
 ) {
 	ctxt := "XenditConsumer-CreatePaymentRequest"
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer func() {
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	req.SetRequestURI(helper.Sprintf("%s/v3/payment_requests", q.baseURL))
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s/v3/payment_requests", q.baseURL)
+	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType("application/json")
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("api-version", "2024-11-11")
 	req.Header.Set("for-user-id ", buyerID)
-	req.Header.Set("Authorization", helper.Sprintf("Basic %s", q.apiKey))
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "Basic %s", q.apiKey)
+	req.Header.Set("Authorization", sb.String())
 	request := XenditPaymentRequestRequest{
 		ReferenceID:        referenceID,
 		PaymentChannelType: "PAY",
@@ -222,22 +237,31 @@ func (q *XenditConsumer) CreatePaymentRequest(
 	return response.PaymentRequestID, response.PaymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, nil
 }
 
-func (q *XenditConsumer) CancelPaymentRequest(
+func (q *XenditClient) CancelPaymentRequest(
 	ctx context.Context,
 	paymentRequestID string,
 ) (bool, error) {
 	ctxt := "XenditConsumer-CancelPaymentRequest"
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer func() {
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	req.SetRequestURI(helper.Sprintf("%s/v3/payment_requests/%s/cancel", q.baseURL, paymentRequestID))
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s/v3/payment_requests/%s/cancel", q.baseURL, paymentRequestID)
+	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("api-version", "2024-11-11")
-	req.Header.Set("Authorization", helper.Sprintf("Basic %s", q.apiKey))
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "Basic %s", q.apiKey)
+	req.Header.Set("Authorization", sb.String())
 	err := q.client.Do(req, resp)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
@@ -257,22 +281,31 @@ func (q *XenditConsumer) CancelPaymentRequest(
 	return true, nil
 }
 
-func (q *XenditConsumer) CancelPayment(
+func (q *XenditClient) CancelPayment(
 	ctx context.Context,
 	paymentID string,
 ) (bool, error) {
 	ctxt := "XenditConsumer-CancelPayment"
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer func() {
 		fasthttp.ReleaseRequest(req)
 		fasthttp.ReleaseResponse(resp)
 	}()
-	req.SetRequestURI(helper.Sprintf("%s/v3/payments/%s/cancel", q.baseURL, paymentID))
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s/v3/payments/%s/cancel", q.baseURL, paymentID)
+	req.SetRequestURI(sb.String())
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("api-version", "2024-11-11")
-	req.Header.Set("Authorization", helper.Sprintf("Basic %s", q.apiKey))
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "Basic %s", q.apiKey)
+	req.Header.Set("Authorization", sb.String())
 	err := q.client.Do(req, resp)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")

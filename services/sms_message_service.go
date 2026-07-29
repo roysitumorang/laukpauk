@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/roysitumorang/laukpauk/consumers"
+	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -42,20 +42,20 @@ type (
 
 	smsMessageService struct {
 		smsMessageRepository repositories.SmsMessageRepository
-		kafkaConsumer        *consumers.KafkaConsumer
-		zenzivaConsumer      *consumers.ZenzivaConsumer
+		kafkaClient          *externals.KafkaClient
+		zenzivaClient        *externals.ZenzivaClient
 	}
 )
 
 func NewSmsMessageService(
 	smsMessageRepository repositories.SmsMessageRepository,
-	kafkaConsumer *consumers.KafkaConsumer,
-	zenzivaConsumer *consumers.ZenzivaConsumer,
+	kafkaClient *externals.KafkaClient,
+	zenzivaClient *externals.ZenzivaClient,
 ) SmsMessageService {
 	return new(smsMessageService{
 		smsMessageRepository: smsMessageRepository,
-		kafkaConsumer:        kafkaConsumer,
-		zenzivaConsumer:      zenzivaConsumer,
+		kafkaClient:          kafkaClient,
+		zenzivaClient:        zenzivaClient,
 	})
 }
 
@@ -155,9 +155,9 @@ func (q *smsMessageService) ConsumeMessage(
 		}
 		var messageID *int64
 		if smsMessage.MessageType == models.SmsMessageTypeOtp {
-			messageID, err = q.zenzivaConsumer.SendOTP(ctx, smsMessage.MobilePhone, smsMessage.Body)
+			messageID, err = q.zenzivaClient.SendOTP(ctx, smsMessage.MobilePhone, smsMessage.Body)
 		} else {
-			messageID, err = q.zenzivaConsumer.SendSMS(ctx, smsMessage.MobilePhone, smsMessage.Body)
+			messageID, err = q.zenzivaClient.SendSMS(ctx, smsMessage.MobilePhone, smsMessage.Body)
 		}
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSend")
@@ -204,7 +204,7 @@ func (q *smsMessageService) ConsumeMessage(
 			smsMessage.MessageID == nil {
 			return nil
 		}
-		deliveryStatus, err := q.zenzivaConsumer.CheckReport(ctx, *smsMessage.MessageID)
+		deliveryStatus, err := q.zenzivaClient.CheckReport(ctx, *smsMessage.MessageID)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCheckReport")
 			return err

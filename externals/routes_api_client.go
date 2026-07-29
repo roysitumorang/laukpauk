@@ -1,15 +1,16 @@
-package consumers
+package externals
 
 import (
+	"bytes"
 	"context"
 	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/valyala/fasthttp"
 )
 
@@ -18,7 +19,7 @@ var (
 )
 
 type (
-	RoutesApiConsumer struct {
+	RoutesApiClient struct {
 		endpoint,
 		apiKey string
 		client *fasthttp.Client
@@ -29,12 +30,12 @@ type (
 	}
 )
 
-func NewRoutesApiConsumer(
+func NewRoutesApiClient(
 	endpoint,
 	apiKey string,
 	timeout time.Duration,
-) *RoutesApiConsumer {
-	return &RoutesApiConsumer{
+) *RoutesApiClient {
+	return &RoutesApiClient{
 		endpoint: endpoint,
 		apiKey:   apiKey,
 		client: &fasthttp.Client{
@@ -44,17 +45,22 @@ func NewRoutesApiConsumer(
 	}
 }
 
-func (q *RoutesApiConsumer) ComputeDistanceMeters(
+func (q *RoutesApiClient) ComputeDistanceMeters(
 	ctx context.Context,
 	originLongitude,
 	originLatitude,
 	destinationLongitude,
 	destinationLatitude string,
 ) (int64, error) {
-	ctxt := "RoutesApiConsumer-ComputeDistanceMeters"
-	var sb strings.Builder
+	ctxt := "RoutesApiClient-ComputeDistanceMeters"
+	sb := pools.BufferPool.Get().(*bytes.Buffer)
+	defer func() {
+		sb.Reset()
+		pools.BufferPool.Put(sb)
+	}()
+	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`{"origins":[{"waypoint":{"location":{"latLng":{"latitude":%s,"longitude":%s}}}}],"destinations":[{"waypoint":{"location":{"latLng":{"latitude":%s,"longitude":%s}}}}],"travelMode":"TWO_WHEELER","routingPreference":"TRAFFIC_AWARE"}`,
 		originLatitude,
 		originLongitude,
@@ -72,7 +78,7 @@ func (q *RoutesApiConsumer) ComputeDistanceMeters(
 	req.Header.SetContentType("application/json")
 	req.Header.Add("X-Goog-Api-Key", q.apiKey)
 	req.Header.Add("X-Goog-FieldMask", "distanceMeters")
-	req.SetBodyRaw(helper.String2ByteSlice(sb.String()))
+	req.SetBodyRaw(sb.Bytes())
 	err := q.client.Do(req, resp)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
