@@ -119,7 +119,7 @@ func (q *landingPageController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlockItems")
-		return c.Render("admin/block_hero_index", params.Push(
+		return c.Render("admin/landing_page_hero_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -128,11 +128,11 @@ func (q *landingPageController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
 	params.Push("request", request)
 	if rows, pagination, err = q.landingPageItemService.FindLandingPageItems(ctx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/block_hero_index", params.Push(
+		return c.Render("admin/landing_page_hero_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/block_hero_index", params.Push(
+	return c.Render("admin/landing_page_hero_index", params.Push(
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
@@ -161,7 +161,7 @@ func (q *landingPageController) AdminHeroItemNew(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	return c.Render("admin/block_hero_new", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_hero_new", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
@@ -194,7 +194,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -208,7 +208,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -223,7 +223,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.CreateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageItem")
-		return c.Render("admin/block_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -231,7 +231,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_hero_new", params.Push(
+			return c.Render("admin/landing_page_hero_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(nil),
 			), "admin/layouts/authenticated")
@@ -239,7 +239,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -287,7 +287,7 @@ func (q *landingPageController) AdminHeroItemEdit(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	return c.Render("admin/block_hero_edit", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_hero_edit", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
@@ -335,7 +335,7 @@ func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -352,7 +352,7 @@ func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -366,21 +366,21 @@ func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.UpdateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageItem")
-		return c.Render("admin/block_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_hero_edit", params.Push(
+			return c.Render("admin/landing_page_hero_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -481,12 +481,12 @@ func (q *landingPageController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPage")
-		return c.Render("admin/block_feature_index", params.Push(
+		return c.Render("admin/landing_page_feature_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if landingPage == nil {
-		return c.Render("admin/block_feature_index", params.Push(
+		return c.Render("admin/landing_page_feature_index", params.Push(
 			"flash", models.ErrLandingPageNotFound.Error(),
 		), "admin/layouts/authenticated")
 	}
@@ -498,7 +498,7 @@ func (q *landingPageController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {
 	params.Push("paginationRequest", paginationRequest)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/block_feature_index", params.Push(
+		return c.Render("admin/landing_page_feature_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -508,11 +508,11 @@ func (q *landingPageController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {
 			WithLandingPageNames(models.LandingPageNameFeature),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/block_feature_index", params.Push(
+		return c.Render("admin/landing_page_feature_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/block_feature_index", params.Push(
+	return c.Render("admin/landing_page_feature_index", params.Push(
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
@@ -596,7 +596,7 @@ func (q *landingPageController) AdminFeatureItemNew(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	return c.Render("admin/block_feature_new", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_feature_new", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) {
@@ -629,7 +629,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_feature_new", params.Push(
+		return c.Render("admin/landing_page_feature_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -644,7 +644,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_feature_new", params.Push(
+		return c.Render("admin/landing_page_feature_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -659,7 +659,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 	}(ctx)
 	if _, err = q.landingPageItemService.CreateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageItem")
-		return c.Render("admin/block_feature_new", params.Push(
+		return c.Render("admin/landing_page_feature_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -667,7 +667,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_feature_new", params.Push(
+			return c.Render("admin/landing_page_feature_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(nil),
 			), "admin/layouts/authenticated")
@@ -675,7 +675,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_feature_new", params.Push(
+		return c.Render("admin/landing_page_feature_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -723,7 +723,7 @@ func (q *landingPageController) AdminFeatureItemEdit(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	return c.Render("admin/block_feature_edit", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_feature_edit", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) {
@@ -774,7 +774,7 @@ func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) 
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_feature_edit", params.Push(
+		return c.Render("admin/landing_page_feature_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 		), "admin/layouts/authenticated")
@@ -792,7 +792,7 @@ func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) 
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_feature_edit", params.Push(
+		return c.Render("admin/landing_page_feature_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -806,21 +806,21 @@ func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) 
 	}(ctx)
 	if _, err = q.landingPageItemService.UpdateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageItem")
-		return c.Render("admin/block_feature_edit", params.Push(
+		return c.Render("admin/landing_page_feature_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_feature_edit", params.Push(
+			return c.Render("admin/landing_page_feature_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_feature_edit", params.Push(
+		return c.Render("admin/landing_page_feature_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -921,12 +921,12 @@ func (q *landingPageController) AdminWhyItemIndex(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPage")
-		return c.Render("admin/block_why_index", params.Push(
+		return c.Render("admin/landing_page_why_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if landingPage == nil {
-		return c.Render("admin/block_why_index", params.Push(
+		return c.Render("admin/landing_page_why_index", params.Push(
 			"flash", models.ErrLandingPageNotFound.Error(),
 		), "admin/layouts/authenticated")
 	}
@@ -938,7 +938,7 @@ func (q *landingPageController) AdminWhyItemIndex(c fiber.Ctx) (err error) {
 	params.Push("paginationRequest", paginationRequest)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/block_why_index", params.Push(
+		return c.Render("admin/landing_page_why_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -949,11 +949,11 @@ func (q *landingPageController) AdminWhyItemIndex(c fiber.Ctx) (err error) {
 			WithLandingPageNames(models.LandingPageNameWhy),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/block_why_index", params.Push(
+		return c.Render("admin/landing_page_why_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/block_why_index", params.Push(
+	return c.Render("admin/landing_page_why_index", params.Push(
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
@@ -1037,7 +1037,7 @@ func (q *landingPageController) AdminWhyItemNew(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	return c.Render("admin/block_why_new", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_why_new", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
@@ -1070,7 +1070,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_why_new", params.Push(
+		return c.Render("admin/landing_page_why_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1085,7 +1085,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_why_new", params.Push(
+		return c.Render("admin/landing_page_why_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1100,7 +1100,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.CreateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageItem")
-		return c.Render("admin/block_why_new", params.Push(
+		return c.Render("admin/landing_page_why_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1108,7 +1108,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_why_new", params.Push(
+			return c.Render("admin/landing_page_why_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(nil),
 			), "admin/layouts/authenticated")
@@ -1116,7 +1116,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_why_new", params.Push(
+		return c.Render("admin/landing_page_why_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1164,7 +1164,7 @@ func (q *landingPageController) AdminWhyItemEdit(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	return c.Render("admin/block_why_edit", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_why_edit", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
@@ -1215,7 +1215,7 @@ func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_why_edit", params.Push(
+		return c.Render("admin/landing_page_why_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -1232,7 +1232,7 @@ func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_why_edit", params.Push(
+		return c.Render("admin/landing_page_why_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -1246,21 +1246,21 @@ func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.UpdateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageItem")
-		return c.Render("admin/block_why_edit", params.Push(
+		return c.Render("admin/landing_page_why_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_why_edit", params.Push(
+			return c.Render("admin/landing_page_why_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_why_edit", params.Push(
+		return c.Render("admin/landing_page_why_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -1354,16 +1354,16 @@ func (q *landingPageController) AdminCommitmentIndex(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPage")
-		return c.Render("admin/block_commitment_index", params.Push(
+		return c.Render("admin/landing_page_commitment_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if landingPage == nil {
-		return c.Render("admin/block_commitment_index", params.Push(
+		return c.Render("admin/landing_page_commitment_index", params.Push(
 			"flash", models.ErrLandingPageNotFound,
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/block_commitment_index", params.Push(
+	return c.Render("admin/landing_page_commitment_index", params.Push(
 		"request", landingPage,
 		"existing", landingPage,
 	), "admin/layouts/authenticated")
@@ -1457,16 +1457,16 @@ func (q *landingPageController) AdminFreeShoppingIndex(c fiber.Ctx) (err error) 
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPage")
-		return c.Render("admin/block_free_shopping_index", params.Push(
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if landingPage == nil {
-		return c.Render("admin/block_free_shopping_index", params.Push(
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
 			"flash", models.ErrLandingPageNotFound.Error(),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/block_free_shopping_index", params.Push(
+	return c.Render("admin/landing_page_free_shopping_index", params.Push(
 		"request", landingPage,
 		"landingPage", landingPage,
 	), "admin/layouts/authenticated")
@@ -1536,7 +1536,7 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
 	}
-	return flash.Success("block updated successfully").Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+	return flash.Success("landing page free shopping updated successfully").Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
 }
 
 func (q *landingPageController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {
@@ -1569,16 +1569,16 @@ func (q *landingPageController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPage")
-		return c.Render("admin/block_kitchen_hero_index", params.Push(
+		return c.Render("admin/landing_page_kitchen_hero_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if landingPage == nil {
-		return c.Render("admin/block_kitchen_hero_index", params.Push(
+		return c.Render("admin/landing_page_kitchen_hero_index", params.Push(
 			"flash", models.ErrLandingPageNotFound.Error(),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/block_kitchen_hero_index", params.Push(
+	return c.Render("admin/landing_page_kitchen_hero_index", params.Push(
 		"request", landingPage,
 		"landingPage", landingPage,
 	), "admin/layouts/authenticated")
@@ -1688,12 +1688,12 @@ func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPage")
-		return c.Render("admin/block_faq_index", params.Push(
+		return c.Render("admin/landing_page_faq_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if landingPage == nil {
-		return c.Render("admin/block_faq_index", params.Push(
+		return c.Render("admin/landing_page_faq_index", params.Push(
 			"flash", models.ErrLandingPageNotFound.Error(),
 		), "admin/layouts/authenticated")
 	}
@@ -1705,7 +1705,7 @@ func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 	params.Push("paginationRequest", paginationRequest)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/block_faq_index", params.Push(
+		return c.Render("admin/landing_page_faq_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -1715,11 +1715,11 @@ func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 			WithLandingPageNames(models.LandingPageNameFAQ),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/block_faq_index", params.Push(
+		return c.Render("admin/landing_page_faq_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/block_faq_index", params.Push(
+	return c.Render("admin/landing_page_faq_index", params.Push(
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
@@ -1745,7 +1745,7 @@ func (q *landingPageController) AdminFaqItemNew(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	return c.Render("admin/block_faq_new", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_faq_new", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
@@ -1778,7 +1778,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_faq_new", params.Push(
+		return c.Render("admin/landing_page_faq_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1793,7 +1793,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_faq_new", params.Push(
+		return c.Render("admin/landing_page_faq_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1808,7 +1808,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.CreateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageItem")
-		return c.Render("admin/block_faq_new", params.Push(
+		return c.Render("admin/landing_page_faq_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1816,7 +1816,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_faq_new", params.Push(
+			return c.Render("admin/landing_page_faq_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(nil),
 			), "admin/layouts/authenticated")
@@ -1824,7 +1824,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_faq_new", params.Push(
+		return c.Render("admin/landing_page_faq_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -1872,7 +1872,7 @@ func (q *landingPageController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	return c.Render("admin/block_faq_edit", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_faq_edit", params, "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
@@ -1923,7 +1923,7 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/block_faq_edit", params.Push(
+		return c.Render("admin/landing_page_faq_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -1940,7 +1940,7 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/block_faq_edit", params.Push(
+		return c.Render("admin/landing_page_faq_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -1954,21 +1954,21 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.UpdateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageItem")
-		return c.Render("admin/block_faq_edit", params.Push(
+		return c.Render("admin/landing_page_faq_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/block_faq_edit", params.Push(
+			return c.Render("admin/landing_page_faq_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/block_faq_edit", params.Push(
+		return c.Render("admin/landing_page_faq_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
