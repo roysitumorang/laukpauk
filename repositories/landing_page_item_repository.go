@@ -82,7 +82,7 @@ func (q *landingPageItemRepository) FindLandingPageItems(
 		"COUNT(1)",
 		`id
 		, record_status
-		, block_name
+		, landing_page_name
 		, subject
 		, body
 		, link_text
@@ -177,7 +177,7 @@ func (q *landingPageItemRepository) FindLandingPageItem(
 		`SELECT
 			id
 			, record_status
-			, block_name
+			, landing_page_name
 			, subject
 			, body
 			, link_text
@@ -296,7 +296,7 @@ func (q *landingPageItemRepository) CreateLandingPageItem(
 		ctx,
 		`INSERT INTO block_items (
 			record_status
-			, block_name
+			, landing_page_name
 			, subject
 			, body
 			, link_text
@@ -309,7 +309,7 @@ func (q *landingPageItemRepository) CreateLandingPageItem(
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id
 			, record_status
-			, block_name
+			, landing_page_name
 			, subject
 			, body
 			, link_text
@@ -368,7 +368,7 @@ func (q *landingPageItemRepository) UpdateLandingPageItem(
 		`SELECT
 			id
 			, record_status
-			, block_name
+			, landing_page_name
 			, subject
 			, body
 			, link_text
@@ -513,7 +513,7 @@ func (q *landingPageItemRepository) UpdateLandingPageItem(
 		` WHERE id = $%d
 		RETURNING id
 			, record_status
-			, block_name
+			, landing_page_name
 			, subject
 			, body
 			, link_text
