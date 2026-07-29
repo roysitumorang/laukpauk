@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 type (
@@ -28,10 +30,12 @@ type (
 )
 
 func NewPagination(total, pages, limit, page int64, baseURL string, urlValues url.Values) (*Pagination, error) {
-	var (
-		response Pagination
-		sb       strings.Builder
-	)
+	var response Pagination
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	response.Info.Total = total
 	response.Info.Page = page
 	response.Info.Pages = pages
@@ -45,14 +49,14 @@ func NewPagination(total, pages, limit, page int64, baseURL string, urlValues ur
 			return nil, err
 		}
 		sb.Reset()
-		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		_, _ = fmt.Fprintf(sb, "%s?%s", baseURL, queryString)
 		response.Links.Current = sb.String()
 		u.Del("page")
 		if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
 			return nil, err
 		}
 		sb.Reset()
-		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		_, _ = fmt.Fprintf(sb, "%s?%s", baseURL, queryString)
 		response.Links.First = sb.String()
 	}
 	if n := pages - 1; page < n {
@@ -63,14 +67,14 @@ func NewPagination(total, pages, limit, page int64, baseURL string, urlValues ur
 			return nil, err
 		}
 		sb.Reset()
-		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		_, _ = fmt.Fprintf(sb, "%s?%s", baseURL, queryString)
 		response.Links.Last = sb.String()
 		u.Set("page", strconv.FormatInt(page+1, 10))
 		if queryString, err = url.QueryUnescape(u.Encode()); err != nil {
 			return nil, err
 		}
 		sb.Reset()
-		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		_, _ = fmt.Fprintf(sb, "%s?%s", baseURL, queryString)
 		response.Links.Next = sb.String()
 	}
 	if page > 0 {
@@ -81,7 +85,7 @@ func NewPagination(total, pages, limit, page int64, baseURL string, urlValues ur
 			return nil, err
 		}
 		sb.Reset()
-		_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+		_, _ = fmt.Fprintf(sb, "%s?%s", baseURL, queryString)
 		response.Links.Current = sb.String()
 		if page > 1 {
 			u.Set("page", strconv.FormatInt(page-1, 10))
@@ -89,7 +93,7 @@ func NewPagination(total, pages, limit, page int64, baseURL string, urlValues ur
 				return nil, err
 			}
 			sb.Reset()
-			_, _ = fmt.Fprintf(&sb, "%s?%s", baseURL, queryString)
+			_, _ = fmt.Fprintf(sb, "%s?%s", baseURL, queryString)
 			response.Links.Previous = sb.String()
 		}
 	}

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 	"uuid"
+
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 const (
@@ -83,7 +85,7 @@ type (
 )
 
 func NewBlockFilter() *BlockFilter {
-	return new(BlockFilter)
+	return &BlockFilter{}
 }
 
 func (q *BlockFilter) WithBlockIDs(blockIDs ...uuid.UUID) *BlockFilter {
@@ -238,7 +240,12 @@ func (q *BlockItem) PhotoPath() *string {
 	if q.Photo == nil {
 		return nil
 	}
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, BlockPhotoPath, q.BlockName, *q.Photo)
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, BlockPhotoPath, q.BlockName, *q.Photo)
 	return new(sb.String())
 }
