@@ -361,7 +361,7 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	request.CalculateDiscount()
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

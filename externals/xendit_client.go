@@ -1,14 +1,12 @@
 package externals
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/roysitumorang/laukpauk/helper"
@@ -143,7 +141,7 @@ func NewXenditClient(
 	apiKey string,
 	timeout time.Duration,
 ) *XenditClient {
-	sb := pools.BufferPool.Get().(*bytes.Buffer)
+	sb := pools.BufferPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BufferPool.Put(sb)
@@ -179,7 +177,7 @@ func (q *XenditClient) CreatePaymentRequest(
 	err error,
 ) {
 	ctxt := "XenditConsumer-CreatePaymentRequest"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -242,7 +240,7 @@ func (q *XenditClient) CancelPaymentRequest(
 	paymentRequestID string,
 ) (bool, error) {
 	ctxt := "XenditConsumer-CancelPaymentRequest"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -286,7 +284,7 @@ func (q *XenditClient) CancelPayment(
 	paymentID string,
 ) (bool, error) {
 	ctxt := "XenditConsumer-CancelPayment"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

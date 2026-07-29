@@ -5,7 +5,6 @@ import (
 	"maps"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/roysitumorang/laukpauk/pools"
 )
@@ -31,7 +30,7 @@ type (
 
 func NewPagination(total, pages, limit, page int64, baseURL string, urlValues url.Values) (*Pagination, error) {
 	var response Pagination
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

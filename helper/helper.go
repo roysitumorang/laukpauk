@@ -269,7 +269,7 @@ func GetAccessTokenAge() time.Duration {
 }
 
 func Sprintf(format string, a ...any) string {
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

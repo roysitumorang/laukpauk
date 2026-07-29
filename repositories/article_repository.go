@@ -58,7 +58,7 @@ func (q *articleRepository) FindArticles(
 	request *models.ArticleFilter,
 ) ([]*models.Article, int64, int64, error) {
 	ctxt := "ArticleRepository-FindArticles"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -170,7 +170,7 @@ func (q *articleRepository) FindArticle(
 	request *models.ArticleFilter,
 ) (*models.Article, error) {
 	ctxt := "ArticleRepository-FindArticle"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -334,7 +334,7 @@ func (q *articleRepository) UpdateArticle(
 	}
 	var params []any
 	var n int
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

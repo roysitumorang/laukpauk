@@ -244,15 +244,22 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BuyerService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/auth"))
-	controllers.NewHomeController(q.AdminService).Mount(app.Group("/home"))
-	controllers.NewArticleController(q.AdminService, q.ArticleService).Mount(app.Group("/articles"))
-	controllers.NewBlogController(q.AdminService, q.BlogService).Mount(app.Group("/blogs"))
-	controllers.NewBlockController(
+	controllers.NewHomeController(
 		q.AdminService,
-		q.BlockService,
+		q.LandingPageService,
+		q.LandingPageItemService,
 		q.BlogService,
 		q.MessageService,
-	).Mount(app.Group("/blocks"))
+	).Mount(app.Group("/home"))
+	controllers.NewArticleController(q.AdminService, q.ArticleService).Mount(app.Group("/articles"))
+	controllers.NewBlogController(q.AdminService, q.BlogService).Mount(app.Group("/blogs"))
+	controllers.NewLandingPageController(
+		q.AdminService,
+		q.LandingPageService,
+		q.LandingPageItemService,
+		q.BlogService,
+		q.MessageService,
+	).Mount(app.Group("/landing_pages"))
 	controllers.NewProductCategoryController(q.AdminService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
 	controllers.NewProductController(
 		q.AdminService,

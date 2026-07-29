@@ -89,7 +89,7 @@ func (q *ZenzivaClient) SendOTP(ctx context.Context, to, message string) (*int64
 
 func (q *ZenzivaClient) send(ctx context.Context, messageType ZenzivaMessageType, to, message string) (*int64, error) {
 	ctxt := "ZenzivaClient-send"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -130,7 +130,7 @@ func (q *ZenzivaClient) send(ctx context.Context, messageType ZenzivaMessageType
 
 func (q *ZenzivaClient) CheckReport(ctx context.Context, messageID int64) (*string, error) {
 	ctxt := "ZenzivaConsumer-CheckReport"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -160,7 +160,7 @@ func (q *ZenzivaClient) CheckReport(ctx context.Context, messageID int64) (*stri
 
 func (q *ZenzivaClient) CheckBalance(ctx context.Context) (*ZenzivaBalance, error) {
 	ctxt := "ZenzivaConsumer-CheckBalance"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

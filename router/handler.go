@@ -36,7 +36,8 @@ type (
 		BuyerService              services.BuyerService
 		ArticleService            services.ArticleService
 		BlogService               services.BlogService
-		BlockService              services.BlockService
+		LandingPageService        services.LandingPageService
+		LandingPageItemService    services.LandingPageItemService
 		MessageService            services.MessageService
 		ProductCategoryService    services.ProductCategoryService
 		ProductService            services.ProductService
@@ -124,7 +125,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	buyerRepository := repositories.NewBuyerRepository(dbRead, dbWrite)
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
 	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
-	blockRepository := repositories.NewBlockRepository(dbRead, dbWrite)
+	landingPageRepository := repositories.NewLandingPageRepository(dbRead, dbWrite)
+	landingPageItemRepository := repositories.NewLandingPageItemRepository(dbRead, dbWrite)
 	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
 	productCategoryRepository := repositories.NewProductCategoryRepository(dbRead, dbWrite)
 	productRepository := repositories.NewProductRepository(dbRead, dbWrite)
@@ -147,7 +149,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
 	blogService := services.NewBlogService(blogRepository)
-	blockService := services.NewBlockService(blockRepository)
+	landingPageService := services.NewLandingPageService(landingPageRepository)
+	landingPageItemService := services.NewLandingPageItemService(landingPageItemRepository)
 	messageService := services.NewMessageService(messageRepository)
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	productService := services.NewProductService(productRepository, productCategoryRepository)
@@ -193,7 +196,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		BuyerService:              buyerService,
 		ArticleService:            articleService,
 		BlogService:               blogService,
-		BlockService:              blockService,
+		LandingPageService:        landingPageService,
+		LandingPageItemService:    landingPageItemService,
 		MessageService:            messageService,
 		ProductCategoryService:    productCategoryService,
 		ProductService:            productService,

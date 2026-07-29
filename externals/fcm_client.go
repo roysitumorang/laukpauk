@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -61,7 +60,7 @@ func NewFcmClient(
 	projectID string,
 	timeout time.Duration,
 ) *FcmClient {
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -84,7 +83,7 @@ func (q *FcmClient) Send(ctx context.Context, token, title, body, image string, 
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrTokenSource")
 		return nil, err
 	}
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

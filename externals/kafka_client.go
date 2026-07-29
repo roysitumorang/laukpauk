@@ -5,7 +5,6 @@ import (
 	"encoding/json/v2"
 	"fmt"
 	"log/slog"
-	"strings"
 	"sync"
 	"time"
 
@@ -60,7 +59,7 @@ func (s *KafkaClient) Publish(ctx context.Context, request ...models.TopicReques
 	if n == 0 {
 		return
 	}
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

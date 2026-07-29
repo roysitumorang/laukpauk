@@ -48,7 +48,7 @@ func (q *adminRepository) FindAdmins(
 	request *models.AdminFilter,
 ) ([]*models.Admin, int64, int64, error) {
 	ctxt := "AdminRepository-FindAdmins"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
@@ -202,7 +202,7 @@ func (q *adminRepository) FindAdmin(
 	request *models.AdminFilter,
 ) (*models.Admin, error) {
 	ctxt := "AdminRepository-FindAdmin"
-	sb := pools.BuilderPool.Get().(*strings.Builder)
+	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)

@@ -1,7 +1,6 @@
 package externals
 
 import (
-	"bytes"
 	"context"
 	"encoding/json/v2"
 	"errors"
@@ -53,7 +52,7 @@ func (q *RoutesApiClient) ComputeDistanceMeters(
 	destinationLatitude string,
 ) (int64, error) {
 	ctxt := "RoutesApiClient-ComputeDistanceMeters"
-	sb := pools.BufferPool.Get().(*bytes.Buffer)
+	sb := pools.BufferPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BufferPool.Put(sb)
