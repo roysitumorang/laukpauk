@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 type (
@@ -46,10 +47,10 @@ func NewArticleRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) ArticleRepository {
-	return new(articleRepository{
+	return &articleRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *articleRepository) FindArticles(
@@ -57,10 +58,14 @@ func (q *articleRepository) FindArticles(
 	request *models.ArticleFilter,
 ) ([]*models.Article, int64, int64, error) {
 	ctxt := "ArticleRepository-FindArticles"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM articles %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM articles %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -99,7 +104,7 @@ func (q *articleRepository) FindArticles(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -121,7 +126,7 @@ func (q *articleRepository) FindArticles(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -165,11 +170,15 @@ func (q *articleRepository) FindArticle(
 	request *models.ArticleFilter,
 ) (*models.Article, error) {
 	ctxt := "ArticleRepository-FindArticle"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, record_status
@@ -211,7 +220,7 @@ func (q *articleRepository) FindArticle(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *articleRepository) CreateArticle(
@@ -274,7 +283,7 @@ func (q *articleRepository) CreateArticle(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *articleRepository) UpdateArticle(
@@ -284,20 +293,130 @@ func (q *articleRepository) UpdateArticle(
 ) (*models.Article, error) {
 	ctxt := "ArticleRepository-UpdateArticle"
 	var response models.Article
-	if err := tx.QueryRow(
+	err := tx.QueryRow(
 		ctx,
-		`UPDATE articles SET
-			record_status = $1
-			, subject = $2
-			, body = $3
-			, photo = $4
-			, link = $5
-			, updated_by = $6
-			, updated_at = $7
-			, deleted_by = $8
-			, deleted_at = $9
-			, deletion_reason = $10
-		WHERE id = $11
+		`SELECT
+			id
+			, record_status
+			, subject
+			, body
+			, photo
+			, link
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM articles
+		WHERE id = $1
+		FOR NO KEY UPDATE`,
+		request.ID,
+	).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Subject,
+		&response.Body,
+		&response.Photo,
+		&response.Link,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	_, _ = sb.WriteString("UPDATE articles SET")
+	if response.RecordStatus != request.RecordStatus {
+		params = append(params, request.RecordStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+	}
+	if response.Subject != request.Subject {
+		params = append(params, request.Subject)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " subject = $%d", n)
+	}
+	if response.Body != request.Body {
+		params = append(params, request.Body)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " body = $%d", n)
+	}
+	if response.Photo != request.Photo {
+		params = append(params, request.Photo)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+	}
+	if response.Link != request.Link {
+		params = append(params, request.Link)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " link = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+		params = append(params, request.UpdatedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+	}
+	if !response.UpdatedAt.Equal(request.UpdatedAt) {
+		params = append(params, request.UpdatedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+	}
+	if response.DeletedBy == nil && request.DeletedBy != nil {
+		params = append(params, request.DeletedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+	}
+	if response.DeletedAt == nil && request.DeletedAt != nil {
+		params = append(params, request.DeletedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+	}
+	if response.DeletionReason == nil && request.DeletionReason != nil {
+		params = append(params, request.DeletionReason)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		sb,
+		` WHERE id = $%d
 		RETURNING id
 			, record_status
 			, subject
@@ -311,18 +430,9 @@ func (q *articleRepository) UpdateArticle(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.Subject,
-		request.Body,
-		request.Photo,
-		request.Link,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.DeletedBy,
-		request.DeletedAt,
-		request.DeletionReason,
-		request.ID,
-	).Scan(
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Subject,
@@ -340,7 +450,7 @@ func (q *articleRepository) UpdateArticle(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *articleRepository) buildCondition(request *models.ArticleFilter, sb *strings.Builder) (condition string, params []any) {
