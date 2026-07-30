@@ -48,7 +48,7 @@
 							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 						</div>
 						{{ end }}
-						<form method="GET" action="/admin/articles">
+						<form method="GET" action="/admin/articles" id="search">
 							<div class="row">
 								<div class="col-sm-4 col-md-6">
 									<div class="dataTables_length" id="listArtikel_length">
@@ -79,6 +79,12 @@
 												{{ end }}
 											</select>
 										</label>
+									</div>
+								</div>
+								<div class="col-sm-4 col-md-6">
+									<div class="dataTables_length" id="listBlog_length">
+										<button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+										<button type="reset" class="btn btn-default" id="reset"><i class="fa fa-sync"></i> Reset</button>
 									</div>
 								</div>
 							</div>
@@ -119,11 +125,10 @@
 									<td class="text-left">
 										<div class="row">
 											<div class="col-lg-3 text-center">
-												<a href="{{ baseURL }}/images/artikel/{{ row.Photo }}" target="_blank">
-													<img src="{{ baseURL }}/images/artikel/compress/{{ row.Photo }}"
+												<a href="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/assets/img/no-image.png{{ end }}" target="_blank">
+													<img src="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/assets/img/no-image.png{{ end }}"
 														class="img-circle cp"
-														style="width:50px; height:50px;"
-														onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+														style="width:50px; height:50px;" />
 												</a>
 											</div>
 											<div class="col-lg-9">
@@ -190,44 +195,12 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-	$('#listArtikel').DataTable();
-
-	function deleteArtikel(thisContext, namaArtikel) {
-		let el = $(thisContext);
-		Swal.fire({
-			title: `Konfirmasi Penghapusan Artikel`,
-			html: `Apakah anda yakin akan menghapus artikel <b class='text-info'>${namaArtikel}</b> ini ?`,
-			type: 'question',
-			showConfirmButton: true,
-			showCancelButton: true,
-			cancelButtonText: 'Batal',
-			confirmButtonText: 'Ya, Lanjutkan !',
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				let idArtikel = el.attr('idArtikel');
-				$.ajax({
-					url: `{{ baseURL }}/admin/artikel/delete/${idArtikel}`,
-					success: function(responseFromServer) {
-						let rFS = JSON.parse(responseFromServer);
-						let swalText = `<span class='text-danger'>Gagal menghapus artikel !</span>`;
-						let swalType = 'error';
-						if (rFS.statusHapusArtikel) {
-							swalText = `<span class='text-success'>Berhasil menghapus artikel !</span>`;
-							swalType = 'success';
-						}
-						Swal.fire({
-							title: `Penghapusan Data Artikel`,
-							html: swalText,
-							type: swalType
-						}).then(() => {
-							if (rFS.statusHapusArtikel) {
-								location.reload();
-							}
-						});
-					}
-				})
-			}
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("reset").addEventListener("click", (event) => {
+			event.preventDefault();
+			let form = event.target.form;
+			form.querySelectorAll("input[type=text]").forEach((select) => select.value = "");
+			form.querySelectorAll("select").forEach((select) => select.selectedIndex = 0);
 		});
-	}
+	});
 </script>

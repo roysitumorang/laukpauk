@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"mime/multipart"
 	"os"
 	"time"
 	"uuid"
@@ -140,6 +139,7 @@ func (q *articleController) AdminNew(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Artikel",
 		"request", request,
+		"article", request,
 	)
 	return c.Render("admin/article_new", params, "admin/layouts/authenticated")
 }
@@ -163,6 +163,7 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Add New Artikel",
 		"request", request,
+		"article", request,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateArticle(ctx, c)
 	params.Push("request", request)
@@ -189,6 +190,7 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(""),
 		), "admin/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
@@ -203,18 +205,23 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateArticle")
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(""),
 		), "admin/layouts/authenticated")
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("admin/article_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+	if photo != nil {
+		if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
+			return c.Render("admin/article_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(""),
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/article_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(""),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
@@ -296,7 +303,6 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 	if article == nil {
 		return flash.Danger(models.ErrArticleNotFound.Error()).Redirect(c, sess.Session, "/admin/articles")
 	}
-	request := new(models.Article)
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -304,10 +310,13 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 		"pageTitle", helper.Sprintf("Edit Data Artikel|%s", article.Subject),
-		"request", request,
+		"request", article,
 		"article", article,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateArticle(ctx, c)
+	if photo == nil {
+		request.Photo = article.Photo
+	}
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateArticle")
@@ -323,9 +332,6 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	if photo == nil {
-		request.Photo = article.Photo
-	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -347,11 +353,13 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = q.saveFile(c, photo, request.Photo); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("admin/article_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+	if photo != nil {
+		if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
+			return c.Render("admin/article_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
@@ -422,14 +430,4 @@ func (q *articleController) AdminDelete(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("article deleted successfully").
 		Redirect(c, sess.Session, "/admin/articles")
-}
-
-func (q *articleController) saveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
-	if file == nil {
-		return nil
-	}
-	if err := c.SaveFile(file, helper.Sprintf(models.ArticlePhotoPath, filename)); err != nil {
-		return err
-	}
-	return c.SaveFile(file, helper.Sprintf(models.ArticlePhotoCompressPath, filename))
 }

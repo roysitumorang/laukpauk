@@ -21,10 +21,6 @@ var (
 
 const (
 	ArticleSortingFieldSubject = "subject"
-
-	ArticlePhotoName         = "artikel-%d%s"
-	ArticlePhotoPath         = "./images/artikel/%s"
-	ArticlePhotoCompressPath = "./images/artikel/compress/%s"
 )
 
 type (
@@ -59,10 +55,10 @@ type (
 )
 
 func NewArticleFilter() *ArticleFilter {
-	return new(ArticleFilter{
+	return &ArticleFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *ArticleFilter) WithArticleIDs(articleIDs ...uuid.UUID) *ArticleFilter {
@@ -120,4 +116,17 @@ func (q *Article) Validate() error {
 		return fmt.Errorf("link: %w", err)
 	}
 	return nil
+}
+
+func (q *Article) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+func (q *Article) SetPhoto(photo string) *Article {
+	q.Photo = photo
+	return q
+}
+
+func (q *Article) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.Photo, baseURLs...)
 }
