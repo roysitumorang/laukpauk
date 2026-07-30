@@ -509,7 +509,7 @@ func (q *landingPageController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {
 	}
 	if landingPage == nil {
 		return c.Render("admin/landing_page_feature_index", params.Push(
-			"flash", models.ErrLandingPageNotFound.Error(),
+			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
 	params.Push(
@@ -957,7 +957,7 @@ func (q *landingPageController) AdminWhyItemIndex(c fiber.Ctx) (err error) {
 	}
 	if landingPage == nil {
 		return c.Render("admin/landing_page_why_index", params.Push(
-			"flash", models.ErrLandingPageNotFound.Error(),
+			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
 	params.Push(
@@ -1388,7 +1388,7 @@ func (q *landingPageController) AdminCommitmentIndex(c fiber.Ctx) (err error) {
 	}
 	if landingPage == nil {
 		return c.Render("admin/landing_page_commitment_index", params.Push(
-			"flash", models.ErrLandingPageNotFound,
+			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return c.Render("admin/landing_page_commitment_index", params.Push(
@@ -1524,7 +1524,7 @@ func (q *landingPageController) AdminFreeShoppingIndex(c fiber.Ctx) (err error) 
 	}
 	if landingPage == nil {
 		return c.Render("admin/landing_page_free_shopping_index", params.Push(
-			"flash", models.ErrLandingPageNotFound.Error(),
+			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return c.Render("admin/landing_page_free_shopping_index", params.Push(
@@ -1675,7 +1675,7 @@ func (q *landingPageController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {
 	}
 	if landingPage == nil {
 		return c.Render("admin/landing_page_kitchen_hero_index", params.Push(
-			"flash", models.ErrLandingPageNotFound.Error(),
+			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
 	return c.Render("admin/landing_page_kitchen_hero_index", params.Push(
@@ -1842,7 +1842,7 @@ func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 	}
 	if landingPage == nil {
 		return c.Render("admin/landing_page_faq_index", params.Push(
-			"flash", models.ErrLandingPageNotFound.Error(),
+			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
 	params.Push(
