@@ -102,6 +102,9 @@ func ValidateLandingPageCustomAttributes(
 		}
 	case models.LandingPageNameKitchenHero:
 		body := strings.TrimSpace(response["body"])
+		if body == "" {
+			return response, nil, errors.New("body: is required")
+		}
 		var photoFilename string
 		if photo, err = c.FormFile("photo"); err == nil {
 			file, err := photo.Open()

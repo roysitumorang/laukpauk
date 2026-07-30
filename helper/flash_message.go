@@ -28,21 +28,25 @@ func NewFlashMessage() *FlashMessage {
 }
 
 func (f *FlashMessage) Danger(message string) *FlashMessage {
+	clear(f.Data)
 	f.Data[danger] = message
 	return f
 }
 
 func (f *FlashMessage) Success(message string) *FlashMessage {
+	clear(f.Data)
 	f.Data[success] = message
 	return f
 }
 
 func (f *FlashMessage) Warning(message string) *FlashMessage {
+	clear(f.Data)
 	f.Data[warning] = message
 	return f
 }
 
 func (f *FlashMessage) Info(message string) *FlashMessage {
+	clear(f.Data)
 	f.Data[info] = message
 	return f
 }
