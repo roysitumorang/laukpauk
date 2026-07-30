@@ -37,7 +37,7 @@
 									<h5>Halaman Bantuan</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/blocks/faq/items/new" class="btn btn-link btn-sm">
+									<a href="{{ baseURL }}/admin/landing_pages/faq/items/new" class="btn btn-link btn-sm">
 										Data Bantuan Baru
 									</a>
 								</div>
@@ -49,7 +49,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="GET" action="/admin/blocks/faq">
+							<form method="GET" action="/admin/landing_pages/faq">
 								<div class="row">
 									<div class="col-sm-12 col-md-6">
 										<div class="dataTables_length" id="listBlog_length">
@@ -68,6 +68,24 @@
 											<label for="q">
 												Search: <input type="text" name="q" id="q" value="{{ paginationRequest.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
 											</label>
+										</div>
+									</div>
+									<div class="col-sm-4 col-md-6">
+										<div class="dataTables_length" id="listBlog_length">
+											<label for="limit">
+												Sort by
+												<select name="sort_by" multiple id="sort_by" aria-controls="listBlog" class="custom-select custom-select-sm form-control form-control-sm">
+													{{ range _, sorting := sortings }}
+													<option value="{{ sorting.String() }}"{{ if paginationRequest.MapSortings.Contains(sorting.String()) }} selected{{ end }}>{{ sorting.Label }}</option>
+													{{ end }}
+												</select>
+											</label>
+										</div>
+									</div>
+									<div class="col-sm-4 col-md-6">
+										<div class="dataTables_length" id="listBlog_length">
+											<button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+											<button type="reset" class="btn btn-default" id="reset"><i class="fa fa-sync"></i> Reset</button>
 										</div>
 									</div>
 								</div>
@@ -106,14 +124,14 @@
 										</td>
 										<td>
 											<h6 class="mb-1 text-bold text-primary">{{ row.Subject }}</h6>
-											<p class="mb-0 text-sm text-muted">{{ row.Body }}</p>
+											<p class="mb-0 text-sm text-muted">{{ row.Body | raw }}</p>
 										</td>
 										<td>
 											<div class="text-center">
-												<a href="{{ baseURL }}/admin/blocks/{{ row.BlockName }}/items/{{ row.ID }}/edit">
+												<a href="{{ baseURL }}/admin/landing_pages/{{ row.LandingPageName }}/items/{{ row.ID }}/edit">
 													<span class="fa fa-edit text-warning cp" data-toggle="tooltip" data-placement="top" title="Edit"></span>
 												</a>
-												<form method="POST" action="{{ baseURL }}/admin/blocks/{{ row.BlockName }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+												<form method="POST" action="{{ baseURL }}/admin/landing_pages/{{ row.LandingPageName }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 													<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 														<span class="fa fa-trash text-danger cp ml-2"
 														data-toggle="tooltip"
@@ -159,84 +177,12 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-	let baseURL = "{{ baseURL }}/admin/";
-	let _tabelBantuanOptions = {
-		processing: true,
-		serverSide: true,
-		ajax: {
-			url: `{{ baseURL }}/admin/Bantuan/getBantuan${location.search}`,
-			dataSrc: "listBantuan"
-		},
-		columns: [{
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<p class="mb-0 text-center"><b>${meta.row + 1}.</b></p>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				let content = data.content;
-				if (content.length >= 50) {
-					content = `${content.substr(0, 50)}`;
-				}
-				return `<h6 class="mb-1 text-bold text-primary">${data.title}</h6>
-					<p class="mb-0 text-sm text-muted">${content} .. <a href="${baseURL}website/bantuan/${data.id}">selengkapnya</a></p>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<div class="text-center">
-						<a href="${baseURL}website/editBantuan/${data.id}">
-							<span class="fa fa-edit text-warning cp"
-								data-toggle="tooltip" data-placement="top" title="Edit"></span>
-						</a>
-						<span class="fa fa-trash text-danger ml-2 cp" onClick="hapusBantuan(this)"
-							data-detail-bantuan="${JSON.stringify(data)}"
-							data-toggle="tooltip" data-placement="top" title="Hapus"></span>
-					</div>`;
-			}
-		}]
-	};
-	let _tabelBantuan = $("#tabelBantuan").DataTable(_tabelBantuanOptions);
-
-	function hapusBantuan(thisContext) {
-		let _el = $(thisContext);
-		let _detailBantuan = JSON.parse(_el.attr("data-detail-bantuan"));
-		Swal.fire({
-			title: "Halaman Bantuan",
-			html: `Apakah anda yakin akan menghapus data bantuan ini ?`,
-			type: "question",
-			showCancelButton: true,
-			cancelButtonText: "Batal",
-			showConfirmButton: true,
-			confirmButtonText: "Ya, lanjutkan!",
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				$.ajax({
-					url: `{{ baseURL }}/admin/Bantuan/deleteBantuan/${_detailBantuan.id}`,
-					success: function(_decodedRFS) {
-						let _statusDelete = _decodedRFS.statusDelete;
-						let _html, _type;
-						if (_statusDelete) {
-							_html = "Berhasil menghapus bantuan!";
-							_type = "success";
-						} else {
-							_html = "Gagal menghapus bantuan, silahkan coba lagi!";
-							_type = "error";
-						}
-						Swal.fire({
-							title: "Halaman Bantuan",
-							html: _html,
-							type: _type
-						}).then(() => {
-							if (_statusDelete) {
-								_tabelBantuan.draw();
-							}
-						});
-					}
-				});
-			}
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("reset").addEventListener("click", (event) => {
+			event.preventDefault();
+			let form = event.target.form;
+			form.querySelectorAll("input[type=text]").forEach((select) => select.value = "");
+			form.querySelectorAll("select").forEach((select) => select.selectedIndex = 0);
 		});
-	}
+	});
 </script>

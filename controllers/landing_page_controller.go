@@ -1798,7 +1798,9 @@ func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	paginationRequest := &models.LandingPageItemFilter{}
 	rows := []*models.LandingPageItem{}
-	request := &models.LandingPage{}
+	request := &models.LandingPage{
+		CustomAttributes: map[string]string{},
+	}
 	pagination := &models.Pagination{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -1813,6 +1815,18 @@ func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 		"landingPage", request,
 		"rows", rows,
 		"pagination", pagination,
+		"sortings", []models.Sorting{
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Newest-Oldest",
+			},
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Oldest-Newest",
+			},
+		},
 	)
 	landingPage, err := q.landingPageService.FindLandingPage(
 		ctx,
@@ -1890,7 +1904,6 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
@@ -1963,7 +1976,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("landing page FAQ item created successfully").Redirect(c, sess.Session, "/admin/landing_pages/faq")
+	return flash.Clear(c, sess.Session).Success("landing page FAQ item created successfully").Redirect(c, sess.Session, "/admin/landing_pages/faq")
 }
 
 func (q *landingPageController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
@@ -1977,6 +1990,17 @@ func (q *landingPageController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
 	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
+	request := &models.LandingPageItem{}
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Edit Data Bantuan",
+		"request", request,
+		"landingPageItem", request,
+	)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -1991,18 +2015,14 @@ func (q *landingPageController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageItemNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/faq")
+		return c.Render("admin/landing_page_faq_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
 	}
 	if landingPageItem == nil {
 		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/faq")
 	}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Edit Data Bantuan",
+	params.Push(
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
@@ -2017,9 +2037,19 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
+	request := &models.LandingPageItem{}
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Edit Data Bantuan",
+		"request", request,
+		"landingPageItem", request,
+	)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -2039,19 +2069,16 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	if landingPageItem == nil {
 		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/faq")
 	}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Edit Data Bantuan",
+	params.Push(
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
 	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFAQ)
+	if photo == nil {
+		request.Photo = landingPageItem.Photo
+	}
 	params.Push(
-		"request", landingPageItem,
+		"request", request,
 		"landingPageItem", landingPageItem,
 	)
 	if err != nil {
@@ -2068,9 +2095,6 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	if photo == nil {
-		request.Photo = landingPageItem.Photo
-	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -2106,7 +2130,7 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("landing page FAQ item updated successfully").Redirect(c, sess.Session, "/admin/landing_pages/faq")
+	return flash.Clear(c, sess.Session).Success("landing page FAQ item updated successfully").Redirect(c, sess.Session, "/admin/landing_pages/faq")
 }
 
 func (q *landingPageController) AdminFaqItemDelete(c fiber.Ctx) (err error) {
@@ -2117,7 +2141,6 @@ func (q *landingPageController) AdminFaqItemDelete(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -2163,5 +2186,5 @@ func (q *landingPageController) AdminFaqItemDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/faq")
 	}
-	return flash.Success("landing page FAQ item deleted successfully").Redirect(c, sess.Session, "/admin/landing_pages/faq")
+	return flash.Clear(c, sess.Session).Success("landing page FAQ item deleted successfully").Redirect(c, sess.Session, "/admin/landing_pages/faq")
 }

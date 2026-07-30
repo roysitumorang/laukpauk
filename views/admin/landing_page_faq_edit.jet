@@ -37,7 +37,7 @@
 									<h5>Edit Data Bantuan</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/blocks/faq">
+									<a href="{{ baseURL }}/admin/landing_pages/faq">
 										<button class="btn btn-link btn-sm">List Data Bantuan</button>
 									</a>
 								</div>
@@ -49,9 +49,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="POST" action="{{ baseURL }}/admin/blocks/faq/items/{{ blockItemID }}" enctype="multipart/form-data">
-								{{ include "_block_faq_form" }}
-							</form>
+							{{ include "_landing_page_faq_form" }}
 						</div>
 					</div>
 				</div>
@@ -63,43 +61,7 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-	let baseURL = '{{ baseURL }}/admin/';
-	let idElement = '/{{ blockItemID }}';
 	$('#content').summernote({
 		toolbar: _summernoteCustomToolbar
-	});
-	$('#formBantuan').on('submit', function(e) {
-		e.preventDefault();
-		let _formData = new FormData();
-		_formData.append('title', $('#title').val());
-		_formData.append('content', $('#content').val());
-		$.ajax({
-			url: `${baseURL}Bantuan/saveBantuan${idElement}`,
-			type: 'POST',
-			data: _formData,
-			processData: false,
-			contentType: false,
-			cache: false,
-			success: function(_decodedRFS) {
-				let _statusSaveBantuan = _decodedRFS.statusSaveBantuan;
-				let _swalType, _swalMessage;
-				if (_statusSaveBantuan) {
-					_swalMessage = 'Berhasil menyimpan data bantuan!';
-					_swalType = 'success';
-				} else {
-					_swalMessage = 'Gagal menyimpan data bantuan!';
-					_swalType = 'error';
-				}
-				Swal.fire({
-					title: 'Bantuan',
-					html: _swalMessage,
-					type: _swalType
-				}).then(() => {
-					if (_statusSaveBantuan) {
-						location.href = `${baseURL}website/bantuan`;
-					}
-				});
-			}
-		});
 	});
 </script>
