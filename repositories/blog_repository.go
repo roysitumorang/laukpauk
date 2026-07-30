@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 type (
@@ -48,10 +49,10 @@ func NewBlogRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) BlogRepository {
-	return new(blogRepository{
+	return &blogRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *blogRepository) FindBlogs(
@@ -59,10 +60,14 @@ func (q *blogRepository) FindBlogs(
 	request *models.BlogFilter,
 ) ([]*models.Blog, int64, int64, error) {
 	ctxt := "BlogRepository-FindBlogs"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM blogs %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM blogs %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -102,7 +107,7 @@ func (q *blogRepository) FindBlogs(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -124,7 +129,7 @@ func (q *blogRepository) FindBlogs(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -169,11 +174,15 @@ func (q *blogRepository) FindBlog(
 	request *models.BlogFilter,
 ) (*models.Blog, error) {
 	ctxt := "BlogRepository-FindBlog"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, record_status
@@ -217,7 +226,7 @@ func (q *blogRepository) FindBlog(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *blogRepository) CreateBlog(
@@ -288,7 +297,7 @@ func (q *blogRepository) CreateBlog(
 		}
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *blogRepository) UpdateBlog(
@@ -298,21 +307,146 @@ func (q *blogRepository) UpdateBlog(
 ) (*models.Blog, error) {
 	ctxt := "BlogRepository-UpdateBlog"
 	var response models.Blog
-	if err := tx.QueryRow(
+	err := tx.QueryRow(
 		ctx,
-		`UPDATE blogs SET
-			record_status = $1
-			, subject = $2
-			, body = $3
-			, slug = $4
-			, deleted_slug = $5
-			, photo = $6
-			, updated_by = $7
-			, updated_at = $8
-			, deleted_by = $9
-			, deleted_at = $10
-			, deletion_reason = $11
-		WHERE id = $12
+		`SELECT
+			id
+			, record_status
+			, subject
+			, body
+			, slug
+			, deleted_slug
+			, photo
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM blogs
+		WHERE id = $1
+		FOR UPDATE`,
+		request.ID,
+	).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Subject,
+		&response.Body,
+		&response.Slug,
+		&response.DeletedSlug,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrBlogNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	var params []any
+	var n int
+	_, _ = sb.WriteString("UPDATE blogs SET")
+	if response.RecordStatus != request.RecordStatus {
+		params = append(params, request.RecordStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+	}
+	if response.Subject != request.Subject {
+		params = append(params, request.Subject)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " subject = $%d", n)
+	}
+	if response.Body != request.Body {
+		params = append(params, request.Body)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " body = $%d", n)
+	}
+	if (response.Slug == nil && request.Slug != nil) ||
+		(response.Slug != nil && request.Slug == nil) ||
+		(response.Slug != nil && request.Slug != nil && response.Slug != request.Slug) {
+		params = append(params, request.Slug)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " slug = $%d", n)
+	}
+	if (response.DeletedSlug == nil && request.DeletedSlug != nil) ||
+		(response.DeletedSlug != nil && request.DeletedSlug == nil) ||
+		(response.DeletedSlug != nil && request.DeletedSlug != nil && response.DeletedSlug != request.DeletedSlug) {
+		params = append(params, request.Slug)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_slug = $%d", n)
+	}
+	if response.Photo != request.Photo {
+		params = append(params, request.Photo)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+		params = append(params, request.UpdatedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+	}
+	if !response.UpdatedAt.Equal(request.UpdatedAt) {
+		params = append(params, request.UpdatedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+	}
+	if response.DeletedBy == nil && request.DeletedBy != nil {
+		params = append(params, request.DeletedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+	}
+	if response.DeletedAt == nil && request.DeletedAt != nil {
+		params = append(params, request.DeletedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+	}
+	if response.DeletionReason == nil && request.DeletionReason != nil {
+		params = append(params, request.DeletionReason)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		sb,
+		` WHERE id = $%d
 		RETURNING id
 			, record_status
 			, subject
@@ -327,19 +461,9 @@ func (q *blogRepository) UpdateBlog(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.Subject,
-		request.Body,
-		request.Slug,
-		request.DeletedSlug,
-		request.Photo,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.DeletedBy,
-		request.DeletedAt,
-		request.DeletionReason,
-		request.ID,
-	).Scan(
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Subject,
@@ -364,7 +488,7 @@ func (q *blogRepository) UpdateBlog(
 		}
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *blogRepository) buildCondition(request *models.BlogFilter, sb *strings.Builder) (condition string, params []any) {

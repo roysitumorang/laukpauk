@@ -43,9 +43,7 @@
 						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 					</div>
 					{{ end }}
-					<form method="POST" action="{{ baseURL }}/admin/blogs/{{ blog.ID }}" enctype="multipart/form-data">
-						{{ include "_blog_form" }}
-					</form>
+					{{ include "_blog_form" }}
 				</div>
 			</div>
 		</div>

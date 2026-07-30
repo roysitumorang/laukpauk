@@ -21,10 +21,6 @@ var (
 
 const (
 	BlogSortingFieldSubject = "subject"
-
-	BlogPhotoName         = "blog-%d%s"
-	BlogPhotoPath         = "./images/blog/%s"
-	BlogPhotoCompressPath = "./images/blog/compress/%s"
 )
 
 type (
@@ -62,10 +58,10 @@ type (
 )
 
 func NewBlogFilter() *BlogFilter {
-	return new(BlogFilter{
+	return &BlogFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *BlogFilter) WithBlogIDs(blogIDs ...uuid.UUID) *BlogFilter {
@@ -133,4 +129,17 @@ func (q *Blog) Validate() error {
 		return errors.New("slug: invalid characters")
 	}
 	return nil
+}
+
+func (q *Blog) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+func (q *Blog) SetPhoto(photo string) *Blog {
+	q.Photo = photo
+	return q
+}
+
+func (q *Blog) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.Photo, baseURLs...)
 }

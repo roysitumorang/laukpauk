@@ -81,6 +81,12 @@
 										</label>
 									</div>
 								</div>
+								<div class="col-sm-4 col-md-6">
+									<div class="dataTables_length" id="listBlog_length">
+										<button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+										<button type="reset" class="btn btn-default" id="reset"><i class="fa fa-sync"></i> Reset</button>
+									</div>
+								</div>
 							</div>
 						</form>
 						{{ if pagination.Info.Total > pagination.Info.Limit }}
@@ -119,11 +125,10 @@
 									<td class="text-left">
 										<div class="row">
 											<div class="col-lg-3 text-center">
-												<a href="{{ baseURL }}/images/blog/{{ row.Photo }}" target="_blank">
-													<img src="{{ baseURL }}/images/blog/compress/{{ row.Photo }}"
+												<a href="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/assets/img/no-image.png{{ end }}" target="_blank">
+													<img src="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/assets/img/no-image.png{{ end }}"
 														class="img-circle cp"
-														style="width:50px; height:50px;"
-														onError="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+														style="width:50px; height:50px;" />
 												</a>
 											</div>
 											<div class="col-lg-9">
@@ -137,10 +142,10 @@
 										</div>
 									</td>
 									<td class="text-left">
-										{{ row.CreatedAt }}
+										{{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}
 										{{ if row.CreatedAt != row.UpdatedAt }}
 										<br />
-										Updated At: {{ row.UpdatedAt }}
+										Updated At: {{ row.UpdatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}
 										{{ end }}
 									</td>
 									<td class="vam text-center">
@@ -195,134 +200,12 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-	let baseURL = '{{ baseURL }}/admin/';
-	let siteURL = '{{ baseURL }}/';
-	let uploadGambarBlog = 'images/blog';
-	let uploadGambarAdmin = 'images/admin';
-	let _tabelBlogOptions = {
-	processing: true,
-	serverSide: true,
-	ajax: {
-		url: `{{ baseURL }}/admin/blog/getBlog${location.search}`,
-		dataSrc: 'listBlog'
-	},
-	columns: [{
-		data: null,
-		render: function(data, type, row, meta) {
-			return `<p class='mb-0 text-center'><b>${meta.row + 1}.</b></p>`;
-		}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				let content = data.content;
-				if (content.length >= 100) {
-					content = `${content.substr(0, 100)} ..`;
-				}
-				return `
-					<div class='row'>
-						<div class='col-lg-1'>
-							<a href='${baseURL}/${uploadGambarBlog}/${data.foto}' target='_blank'>
-								<img src='${baseURL}/${uploadGambarBlog}/${data.foto}' alt='${data.title}' class='img-circle size-50-50' />
-							</a>
-						</div>
-						<div class='col-lg-11 pl-3'>
-							<h6 class='mb-1 text-bold text-primary'>${data.title}</h6>
-							<p class='mb-0 text-sm text-muted'>${content}</p>
-							<a href='${siteURL}read/${data.permalink}' target='_blank'>
-								<span style='font-size:0.9rem;'>${siteURL}read/${data.permalink}</span>
-							</a>
-						</div>
-					</div>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				let _updater = '';
-				if (data.updatedBy != null) {
-					_updater = `
-						<div class='mt-1 mb-0 text-sm row'>
-							<div class='col-lg-1'>
-								<a href='${baseURL}/${uploadGambarAdmin}/${data.updaterFoto}' target='_blank'>
-									<img src='${baseURL}${uploadGambarAdmin}/${data.updaterFoto}' class='img-circle size-25-25'
-									alt='${data.updaterNama}' />
-								</a>
-							</div>
-							<div class='col-lg-11 pl-3'>
-								<b class='text-muted text-sm'>Diupdate oleh ${data.updaterNama}</b>
-								<p class='text-sm mb-0 text-muted'>Pada ${data.updatedAt}</p>
-							</div>
-						</div>`;
-				}
-				return `
-					<div class='row'>
-						<div class='col-lg-2 text-center'>
-							<a href='${baseURL}/${uploadGambarAdmin}/${data.creatorFoto}' target='_blank'>
-								<img src='${baseURL}/${uploadGambarAdmin}/${data.creatorFoto}' alt='${data.creatorNama}' class='img-circle size-50-50' />
-							</a>
-						</div>
-						<div class='col-lg-10 pl-3'>
-							<b class='mb-1 text-bold text-secondary'>${data.creatorNama}</b>
-							<p class='mb-0 text-sm text-muted'>${data.createdAt}</p>
-							${_updater}
-						</div>
-					</div>`;
-				}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				return `
-					<div class='text-center'>
-						<a href='${baseURL}blog/editBlog/${data.id}'>
-							<span class="fa fa-edit text-warning cp"
-							data-toggle='tooltip' data-placement='top' title='Edit'></span>
-						</a>
-						<span class="fa fa-trash text-danger ml-2 cp" onClick='hapusBlog(this)'
-							data-detail-blog='${JSON.stringify(data)}'
-							data-toggle='tooltip' data-placement='top' title='Hapus'></span>
-					</div>`;
-			}
-		}]
-	};
-	let _tabelBlog = $('#tabelBlog').DataTable(_tabelBlogOptions);
-
-	function hapusBlog(thisContext) {
-		let _el = $(thisContext);
-		let _detailBlog = JSON.parse(_el.attr('data-detail-blog'));
-		Swal.fire({
-			title: 'Blog',
-			html: `Apakah anda yakin akan menghapus blog ini ?`,
-			type: 'question',
-			showCancelButton: true,
-			cancelButtonText: 'Batal',
-			showConfirmButton: true,
-			confirmButtonText: 'Ya, lanjutkan!',
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				$.ajax({
-					url: `http://localhost:81/admin/blog/deleteBlog/${_detailBlog.id}`,
-					success: function(_decodedRFS) {
-						let _statusDelete = _decodedRFS.statusDelete;
-						let _html, _type;
-						if (_statusDelete) {
-							_html = 'Berhasil menghapus blog!';
-							_type = 'success';
-						} else {
-							_html = 'Gagal menghapus blog, silahkan coba lagi!';
-							_type = 'error';
-						}
-						Swal.fire({
-							title: 'Blog',
-							html: _html,
-							type: _type
-						}).then(() => {
-							if (_statusDelete) {
-								_tabelBlog.draw();
-							}
-						});
-					}
-				});
-			}
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("reset").addEventListener("click", (event) => {
+			event.preventDefault();
+			let form = event.target.form;
+			form.querySelectorAll("input[type=text]").forEach((select) => select.value = "");
+			form.querySelectorAll("select").forEach((select) => select.selectedIndex = 0);
 		});
-	}
+	});
 </script>
