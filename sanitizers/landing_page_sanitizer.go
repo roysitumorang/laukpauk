@@ -38,8 +38,17 @@ func ValidateLandingPageCustomAttributes(
 		response = map[string]string{"subject": subject}
 	case models.LandingPageNameWhy:
 		subject := strings.TrimSpace(response["subject"])
+		if subject == "" {
+			return nil, nil, errors.New("subject: is required")
+		}
 		linkText := strings.TrimSpace(response["link_text"])
+		if linkText == "" {
+			return nil, nil, errors.New("link_text: is required")
+		}
 		linkURL := strings.TrimSpace(response["link_url"])
+		if linkURL == "" {
+			return nil, nil, errors.New("link_url: is required")
+		}
 		response = map[string]string{
 			"subject":   subject,
 			"link_text": linkText,

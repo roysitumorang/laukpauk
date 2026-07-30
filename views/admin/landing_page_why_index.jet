@@ -28,7 +28,7 @@
 	<!-- Main content -->
 	<div class="content">
 		<div class="container-fluid">
-			<form method="POST" action="{{ baseURL }}/admin/blocks/why/custom_attributes" id="formButtonTextWhy">
+			<form method="POST" action="{{ baseURL }}/admin/landing_pages/why/custom_attributes" id="formButtonTextWhy">
 				<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 				<div class="row">
 					<div class="col-lg-12">
@@ -85,7 +85,7 @@
 									<h5>Daftar Penjelasan</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/blocks/why/items/new" class="btn btn-link btn-sm">
+									<a href="{{ baseURL }}/admin/landing_pages/why/items/new" class="btn btn-link btn-sm">
 										Penjelasan Baru
 									</a>
 								</div>
@@ -97,7 +97,7 @@
 								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 							</div>
 							{{ end }}
-							<form method="GET" action="/admin/blocks/why">
+							<form method="GET" action="/admin/landing_pages/why">
 								<div class="row">
 									<div class="col-sm-12 col-md-6">
 										<div class="dataTables_length" id="listBlog_length">
@@ -116,6 +116,24 @@
 											<label for="q">
 												Search: <input type="text" name="q" id="q" value="{{ paginationRequest.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
 											</label>
+										</div>
+									</div>
+									<div class="col-sm-4 col-md-6">
+										<div class="dataTables_length" id="listBlog_length">
+											<label for="limit">
+												Sort by
+												<select name="sort_by" multiple id="sort_by" aria-controls="listBlog" class="custom-select custom-select-sm form-control form-control-sm">
+													{{ range _, sorting := sortings }}
+													<option value="{{ sorting.String() }}"{{ if paginationRequest.MapSortings.Contains(sorting.String()) }} selected{{ end }}>{{ sorting.Label }}</option>
+													{{ end }}
+												</select>
+											</label>
+										</div>
+									</div>
+									<div class="col-sm-4 col-md-6">
+										<div class="dataTables_length" id="listBlog_length">
+											<button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+											<button type="reset" class="btn btn-default" id="reset"><i class="fa fa-sync"></i> Reset</button>
 										</div>
 									</div>
 								</div>
@@ -154,8 +172,8 @@
 											<p class="mb-0 text-center"><b>{{ row.RowNo }}.</b></p>
 										</td>
 										<td>
-											<a href="{{ baseURL }}/{{ row.PhotoPath() }}" target="_blank">
-												<img src="{{ baseURL }}/{{ row.PhotoPath() }}" alt="{{ row.Subject }}" class="img-circle size-50-50">
+											<a href="{{ row.PhotoPath(baseURL) }}" target="_blank">
+												<img src="{{ row.PhotoPath(baseURL) }}" alt="{{ row.Subject }}" class="img-circle size-50-50">
 											</a>
 										</td>
 										<td>
@@ -164,10 +182,10 @@
 										</td>
 										<td>
 											<div class="text-center">
-												<a href="{{ baseURL }}/admin/blocks/{{ row.BlockName }}/items/{{ row.ID }}/edit">
+												<a href="{{ baseURL }}/admin/landing_pages/{{ row.LandingPageName }}/items/{{ row.ID }}/edit">
 													<span class="fa fa-edit text-warning cp" data-toggle="tooltip" data-placement="top" title="Edit"></span>
 												</a>
-												<form method="POST" action="{{ baseURL }}/admin/blocks/{{ row.BlockName }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+												<form method="POST" action="{{ baseURL }}/admin/landing_pages/{{ row.LandingPageName }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 													<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 														<span class="fa fa-trash text-danger cp ml-2"
 														data-toggle="tooltip"
@@ -213,121 +231,12 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-	let baseURL = '{{ baseURL }}/admin/';
-	let uploadGambarWhy = 'upload/gambar/landing-page-imgs/why';
-	let _tabelWhyOptions = {
-		processing: true,
-		serverSide: true,
-		ajax: {
-			url: `{{ baseURL }}/admin/Why/getWhy${location.search}`,
-			dataSrc: 'listWhy'
-		},
-		columns: [{
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<p class='mb-0 text-center'><b>${meta.row + 1}.</b></p>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<a href='${baseURL}/${uploadGambarWhy}/${data.img}' target='_blank'>
-					<img src='${baseURL}/${uploadGambarWhy}/${data.img}' alt='${data.title}' class='img-circle size-50-50' />
-				</a>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				let content = data.content;
-				if (content.length >= 50) {
-					content = `${content.substr(0, 50)}`;
-				}
-				return `<h6 class='mb-1 text-bold text-primary'>${data.title}</h6>
-					<p class='mb-0 text-sm text-muted'>${content} .. <a href='${baseURL}website/why/${data.id}'>selengkapnya</a></p>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<div class='text-center'>
-						<a href='${baseURL}website/editWhy/${data.id}'>
-							<span class="fa fa-edit text-warning cp"
-								data-toggle='tooltip' data-placement='top' title='Edit'></span>
-						</a>
-						<span class="fa fa-trash text-danger ml-2 cp" onClick='hapusWhy(this)'
-							data-detail-why='${JSON.stringify(data)}'
-							data-toggle='tooltip' data-placement='top' title='Hapus'></span>
-					</div>`;
-			}
-		}]
-	};
-	let _tabelWhy = $('#tabelWhy').DataTable(_tabelWhyOptions);
-
-	function hapusWhy(thisContext) {
-		let _el = $(thisContext);
-		let _detailWhy = JSON.parse(_el.attr('data-detail-why'));
-		Swal.fire({
-			title: 'Mengapa Harus Laukpauk',
-			html: `Apakah anda yakin akan menghapus penjelasan ini ?`,
-			type: 'question',
-			showCancelButton: true,
-			cancelButtonText: 'Batal',
-			showConfirmButton: true,
-			confirmButtonText: 'Ya, lanjutkan!',
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				$.ajax({
-					url: `{{ baseURL }}/admin/Why/deleteWhy/${_detailWhy.id}`,
-					success: function(_decodedRFS) {
-						let _statusDelete = _decodedRFS.statusDelete;
-						let _html, _type;
-						if (_statusDelete) {
-							_html = 'Berhasil menghapus penjelasan !';
-							_type = 'success';
-						} else {
-							_html = 'Gagal menghapus penjelasan , silahkan coba lagi!';
-							_type = 'error';
-						}
-						Swal.fire({
-							title: 'Mengapa Harus Laukpauk',
-							html: _html,
-							type: _type
-						}).then(() => {
-							if (_statusDelete) {
-								_tabelWhy.draw();
-							}
-						});
-					}
-				});
-			}
-		});
-	}
-	$('#formJudulWhy, #formButtonTextWhy, #formButtonLinkWhy').on('submit', function(e) {
-		e.preventDefault();
-		let _data = $(this).serialize();
-		$.ajax({
-			url: '{{ baseURL }}/admin/Why/saveProperties',
-			data: _data,
-			type: 'POST',
-			success: function(_decodedRFS) {
-				let _statusSave = _decodedRFS.statusSave;
-				let _type, _message;
-				if (_statusSave) {
-					_type = 'success';
-					_message = 'Berhasil mengubah data !';
-				} else {
-					_type = 'error';
-					_message = 'Gagal mengubah data! Ulangi lagi!';
-				}
-				Swal.fire({
-					title: 'Mengapa Harus Laukpauk',
-					html: _message,
-					type: _type
-				}).then(() => {
-					if (_statusSave) {
-						location.href = `${baseURL}Website/why`;
-					}
-				});
-			}
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("reset").addEventListener("click", (event) => {
+			event.preventDefault();
+			let form = event.target.form;
+			form.querySelectorAll("input[type=text]").forEach((select) => select.value = "");
+			form.querySelectorAll("select").forEach((select) => select.selectedIndex = 0);
 		});
 	});
 </script>
