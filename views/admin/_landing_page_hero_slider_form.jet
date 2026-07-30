@@ -3,7 +3,7 @@
 	{{ if !landingPageItem.New() }}<input type="hidden" name="id" value="{{ landingPageItem.ID }}" />{{ end }}
 	<div class="row">
 		<div class="col-lg-4">
-			<label for="heroImage">
+			<label for="photo">
 				<img src="{{ if request.Photo }}{{ request.PhotoPath(baseURL) }}{{ else }}{{ baseURL }}/assets/img/upload-icon.png{{ end }}"
 					alt="Gambar Hero Slider"
 					class="w-100 cp"

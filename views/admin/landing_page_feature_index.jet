@@ -33,14 +33,14 @@
 					<div class="card">
 						<div class="card-body">
 							<h5>Judul Sekarang</h5>
-							<span class="text-muted text-sm">{{ existing.CustomAttributes["subject"] }}</span>
+							<span class="text-muted text-sm">{{ landingPage.CustomAttributes["subject"] }}</span>
 							<hr />
 							<div class="row">
 								<div class="col-lg-2">
 									<h5>Judul</h5>
 								</div>
 								<div class="col-lg-10">
-									<form method="POST" action="{{ baseURL }}/admin/blocks/feature/custom_attributes" id="formJudul">
+									<form method="POST" action="{{ baseURL }}/admin/landing_pages/feature/custom_attributes" id="formJudul">
 										<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 										<div class="input-group">
 											<input type="text" name="subject" value="{{ request.CustomAttributes["subject"] }}" placeholder="Fitur Laukpauk" class="form-control" />
@@ -67,7 +67,7 @@
 										<h5>Fitur Laukpauk</h5>
 									</div>
 									<div class="col-lg-8 text-right">
-										<a href="{{ baseURL }}/admin/blocks/feature/items/new">
+										<a href="{{ baseURL }}/admin/landing_pages/feature/items/new">
 											<button class="btn btn-link btn-sm">Fitur Baru</button>
 										</a>
 									</div>
@@ -79,7 +79,7 @@
 									<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 								</div>
 								{{ end }}
-								<form method="GET" action="/admin/blocks/feature">
+								<form method="GET" action="/admin/landing_pages/feature">
 									<div class="row">
 										<div class="col-sm-12 col-md-6">
 											<div class="dataTables_length" id="listBlog_length">
@@ -98,6 +98,24 @@
 												<label for="q">
 													Search: <input type="text" name="q" id="q" value="{{ paginationRequest.Keyword }}" class="form-control form-control-sm" placeholder="Search" />
 												</label>
+											</div>
+										</div>
+										<div class="col-sm-4 col-md-6">
+											<div class="dataTables_length" id="listBlog_length">
+												<label for="limit">
+													Sort by
+													<select name="sort_by" multiple id="sort_by" aria-controls="listBlog" class="custom-select custom-select-sm form-control form-control-sm">
+														{{ range _, sorting := sortings }}
+														<option value="{{ sorting.String() }}"{{ if paginationRequest.MapSortings.Contains(sorting.String()) }} selected{{ end }}>{{ sorting.Label }}</option>
+														{{ end }}
+													</select>
+												</label>
+											</div>
+										</div>
+										<div class="col-sm-4 col-md-6">
+											<div class="dataTables_length" id="listBlog_length">
+												<button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Search</button>
+												<button type="reset" class="btn btn-default" id="reset"><i class="fa fa-sync"></i> Reset</button>
 											</div>
 										</div>
 									</div>
@@ -136,8 +154,8 @@
 												<p class="mb-0 text-center"><b>{{ row.RowNo }}.</b></p>
 											</td>
 											<td>
-												<a href="{{ baseURL }}/{{ row.PhotoPath() }}" target="_blank">
-													<img src="{{ baseURL }}/{{ row.PhotoPath() }}" alt="{{ row.Subject }}" class="img-circle size-50-50">
+												<a href="{{ row.PhotoPath(baseURL) }}" target="_blank">
+													<img src="{{ row.PhotoPath(baseURL) }}" alt="{{ row.Subject }}" class="img-circle size-50-50">
 												</a>
 											</td>
 											<td>
@@ -146,10 +164,10 @@
 											</td>
 											<td>
 												<div class="text-center">
-													<a href="{{ baseURL }}/admin/blocks/{{ row.BlockName }}/items/{{ row.ID }}/edit">
+													<a href="{{ baseURL }}/admin/landing_pages/{{ row.LandingPageName }}/items/{{ row.ID }}/edit">
 														<span class="fa fa-edit text-warning cp" data-toggle="tooltip" data-placement="top" title="Edit"></span>
 													</a>
-													<form method="POST" action="{{ baseURL }}/admin/blocks/{{ row.BlockName }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+													<form method="POST" action="{{ baseURL }}/admin/landing_pages/{{ row.LandingPageName }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 														<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 															<span class="fa fa-trash text-danger cp ml-2"
 															data-toggle="tooltip"
@@ -196,121 +214,12 @@
 </div>
 <!-- /.content-wrapper -->
 <script>
-	let baseURL = "{{ baseURL }}/admin/";
-	let uploadGambarFitur = "images/landing-page/feature";
-	let _tabelFiturOptions = {
-		processing: true,
-		serverSide: true,
-		ajax: {
-			url: `{{ baseURL }}/admin/Fitur/getFitur${location.search}`,
-			dataSrc: "listFitur"
-		},
-		columns: [{
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<p class="mb-0 text-center"><b>${meta.row + 1}.</b></p>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<a href="${baseURL}/${uploadGambarFitur}/${data.img}" target="_blank">
-						<img src="${baseURL}/${uploadGambarFitur}/${data.img}" alt="${data.title}" class="img-circle size-50-50" />
-					</a>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				let content = data.content;
-				if (content.length >= 50) {
-					content = `${content.substr(0, 50)}`;
-				}
-				return `<h6 class="mb-1 text-bold text-primary">${data.title}</h6>
-					<p class="mb-0 text-sm text-muted">${content} .. <a href="${baseURL}website/fitur/${data.id}">selengkapnya</a></p>`;
-			}
-		}, {
-			data: null,
-			render: function(data, type, row, meta) {
-				return `<div class="text-center">
-						<a href="${baseURL}website/editFitur/${data.id}">
-							<span class="fa fa-edit text-warning cp"
-							data-toggle="tooltip" data-placement="top" title="Edit"></span>
-						</a>
-						<span class="fa fa-trash text-danger ml-2 cp" onClick="hapusFitur(this)"
-							data-detail-fitur="${JSON.stringify(data)}"
-							data-toggle="tooltip" data-placement="top" title="Hapus"></span>
-					</div>`;
-			}
-		}]
-	};
-	let _tabelFitur = $("#tabelFitur").DataTable(_tabelFiturOptions);
-
-	function hapusFitur(thisContext) {
-		let _el = $(thisContext);
-		let _detailFitur = JSON.parse(_el.attr("data-detail-fitur"));
-		Swal.fire({
-			title: "Fitur Laukpauk",
-			html: `Apakah anda yakin akan menghapus fitur ini ?`,
-			type: "question",
-			showCancelButton: true,
-			cancelButtonText: "Batal",
-			showConfirmButton: true,
-			confirmButtonText: "Ya, lanjutkan!",
-			focusCancel: true
-		}).then((konfirmasi) => {
-			if (konfirmasi.value) {
-				$.ajax({
-					url: `{{ baseURL }}/admin/Fitur/deleteFitur/${_detailFitur.id}`,
-					success: function(_decodedRFS) {
-						let _statusDelete = _decodedRFS.statusDelete;
-						let _html, _type;
-						if (_statusDelete) {
-							_html = "Berhasil menghapus fitur!";
-							_type = "success";
-						} else {
-							_html = "Gagal menghapus fitur, silahkan coba lagi!";
-							_type = "error";
-						}
-						Swal.fire({
-							title: "Fitur Laukpauk",
-							html: _html,
-							type: _type
-						}).then(() => {
-							if (_statusDelete) {
-								_tabelFitur.draw();
-							}
-						});
-					}
-				});
-			}
-		});
-	}
-	$("#formJudul").on("submit", function(e) {
-		e.preventDefault();
-		let _data = $(this).serialize();
-		$.ajax({
-			url: "{{ baseURL }}/admin/Fitur/saveJudul",
-			data: _data,
-			type: "POST",
-			success: function(_decodedRFS) {
-				let _statusSaveJudul = _decodedRFS.statusSaveJudul;
-				let _type, _message;
-				if (_statusSaveJudul) {
-					_type = "success";
-					_message = "Berhasil mengubah judul !";
-				} else {
-					_type = "error";
-					_message = "Gagal mengubah judul! Ulangi lagi!";
-				}
-				Swal.fire({
-					title: "Fitur Laukpauk",
-					html: _message,
-					type: _type
-				}).then(() => {
-					if (_statusSaveJudul) {
-						location.href = `${baseURL}Website/fitur`;
-					}
-				});
-			}
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("reset").addEventListener("click", (event) => {
+			event.preventDefault();
+			let form = event.target.form;
+			form.querySelectorAll("input[type=text]").forEach((select) => select.value = "");
+			form.querySelectorAll("select").forEach((select) => select.selectedIndex = 0);
 		});
 	});
 </script>

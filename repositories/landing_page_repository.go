@@ -288,6 +288,7 @@ func (q *landingPageRepository) UpdateLandingPage(
 		FROM landing_pages
 		WHERE id = $1
 		FOR NO KEY UPDATE`,
+		request.ID,
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,

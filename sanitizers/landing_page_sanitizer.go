@@ -32,6 +32,9 @@ func ValidateLandingPageCustomAttributes(
 	switch landingPageName {
 	case models.LandingPageNameFeature:
 		subject := strings.TrimSpace(response["subject"])
+		if subject == "" {
+			return nil, nil, errors.New("subject: is required")
+		}
 		response = map[string]string{"subject": subject}
 	case models.LandingPageNameWhy:
 		subject := strings.TrimSpace(response["subject"])
