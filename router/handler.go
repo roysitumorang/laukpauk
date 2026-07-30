@@ -16,7 +16,7 @@ import (
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
-	"github.com/roysitumorang/laukpauk/migration"
+	"github.com/roysitumorang/laukpauk/migrations"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/services"
@@ -25,7 +25,7 @@ import (
 type (
 	Service struct {
 		DbWrite                   *pgxpool.Pool
-		Migration                 *migration.Migration
+		Migration                 *migrations.Migration
 		KafkaClient               *externals.KafkaClient
 		FcmClient                 *externals.FcmClient
 		ZenzivaClient             *externals.ZenzivaClient
@@ -71,7 +71,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrGetDbWriteOnly")
 		return nil, err
 	}
-	migration := migration.New(dbRead, dbWrite)
+	migration := migrations.NewMigration(dbWrite)
 	kafkaClient, err := externals.NewKafkaClient(ctx, strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewKafkaClient")

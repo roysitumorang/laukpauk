@@ -1,10 +1,11 @@
-package migration
+package migrations
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"slices"
 	"time"
@@ -14,30 +15,38 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-type (
-	Migration struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type Migration struct {
+	dbWrite *pgxpool.Pool
+}
 
-var (
-	Migrations = map[int64]func(ctx context.Context, tx pgx.Tx) error{}
-)
+var Migrations = map[int64]func(ctx context.Context, tx pgx.Tx) error{}
 
-func New(
-	dbRead,
+func NewMigration(
 	dbWrite *pgxpool.Pool,
 ) *Migration {
 	return &Migration{
-		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	}
 }
 
 func (m *Migration) Migrate(ctx context.Context) error {
 	ctxt := "Migration-Migrate"
-	if _, err := m.dbWrite.Exec(
+	tx, err := m.dbWrite.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel: pgx.Serializable,
+	})
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBeginTx")
+		return err
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	if _, err = tx.Exec(
 		ctx,
 		`CREATE TABLE IF NOT EXISTS migrations (
 			"version" bigint NOT NULL PRIMARY KEY
@@ -46,7 +55,7 @@ func (m *Migration) Migrate(ctx context.Context) error {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return err
 	}
-	rows, err := m.dbRead.Query(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
+	rows, err := tx.Query(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = nil
 	}
@@ -55,59 +64,35 @@ func (m *Migration) Migrate(ctx context.Context) error {
 		return err
 	}
 	defer rows.Close()
-	mapVersions := map[int64]int{}
+	mapVersions := map[int64]struct{}{}
 	for rows.Next() {
 		var version int64
 		if err := rows.Scan(&version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return err
 		}
-		mapVersions[version] = 1
+		mapVersions[version] = struct{}{}
 	}
-	sortedVersions := make([]int64, len(Migrations))
-	var i int
-	for version := range Migrations {
-		sortedVersions[i] = version
-		i++
-	}
-	if len(sortedVersions) > 0 {
-		slices.Sort(
-			sortedVersions)
-	}
-	tx, err := m.dbWrite.Begin(ctx)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBegin")
-		return err
-	}
+	sortedVersions := slices.Collect(maps.Keys(Migrations))
+	slices.Sort(sortedVersions)
 	for _, version := range sortedVersions {
 		if _, ok := mapVersions[version]; ok {
 			continue
 		}
 		function, ok := Migrations[version]
 		if !ok {
-			err := fmt.Errorf("migration function for version %d not found", version)
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrOK")
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-			}
-			return err
+			return fmt.Errorf("migration function for version %d not found", version)
 		}
-		if err := function(ctx, tx); err != nil {
+		if err = function(ctx, tx); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFunction")
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-			}
 			return err
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES ($1)`, version); err != nil {
+		if _, err = tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES ($1)`, version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			if errRollback := tx.Rollback(ctx); errRollback != nil {
-				helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-			}
 			return err
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommit")
 		return err
 	}
