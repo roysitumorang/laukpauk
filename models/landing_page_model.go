@@ -64,6 +64,14 @@ func NewLandingPageFilter() *LandingPageFilter {
 	}
 }
 
+func (q *LandingPage) PhotoPath(baseURLs ...string) string {
+	photo, ok := q.CustomAttributes["photo"]
+	if !ok || photo == "" {
+		return ""
+	}
+	return helper.PhotoPath(photo, baseURLs...)
+}
+
 func (q *LandingPageFilter) WithLandingPageIDs(landingPageIDs ...uuid.UUID) *LandingPageFilter {
 	q.LandingPageIDs = landingPageIDs
 	return q

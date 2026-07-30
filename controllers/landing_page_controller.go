@@ -1497,7 +1497,9 @@ func (q *landingPageController) AdminFreeShoppingIndex(c fiber.Ctx) (err error) 
 	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
-	request := &models.LandingPage{}
+	request := &models.LandingPage{
+		CustomAttributes: map[string]string{},
+	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -1539,8 +1541,21 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	csrfToken := csrf.TokenFromContext(c)
+	request := &models.LandingPage{
+		CustomAttributes: map[string]string{},
+	}
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentAdmin", currentAdmin,
+		"pageTitle", "Uang Belanja Gratis",
+		"request", request,
+		"landingPage", request,
+	)
 	landingPage, err := q.landingPageService.FindLandingPage(
 		ctx,
 		models.NewLandingPageFilter().
@@ -1549,20 +1564,31 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPage")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
 	}
 	if landingPage == nil {
-		return flash.Danger(models.ErrLandingPageNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
+			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
+		), "admin/layouts/authenticated")
 	}
-	request, photo, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameFreeShopping)
+	customAttributes, photo, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameFreeShopping)
+	if photo == nil {
+		customAttributes["photo"] = landingPage.CustomAttributes["photo"]
+	}
+	request.CustomAttributes = customAttributes
+	params.Push(
+		"request", request,
+		"landingPage", landingPage,
+	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockCustomAttributes")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
 	}
-	if photo == nil {
-		request["photo"] = landingPage.CustomAttributes["photo"]
-	}
-	landingPage.CustomAttributes = request
+	landingPage.CustomAttributes = request.CustomAttributes
 	landingPage.UpdatedBy = currentAdmin.ID
 	landingPage.UpdatedAt = time.Now()
 	landingPage.DeletedBy = nil
@@ -1571,7 +1597,9 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -1581,21 +1609,32 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.landingPageService.UpdateLandingPage(ctx, tx, landingPage); err != nil {
+	response, err := q.landingPageService.UpdateLandingPage(ctx, tx, landingPage)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPage")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
 	}
-	if photo != nil && request["photo"] != "" {
-		if err = helper.SaveFile(c, photo, request["photo"]); err != nil {
+	if photo != nil && request.CustomAttributes["photo"] != "" {
+		if err = helper.SaveFile(c, photo, request.CustomAttributes["photo"]); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+			return c.Render("admin/landing_page_free_shopping_index", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+		return c.Render("admin/landing_page_free_shopping_index", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
 	}
-	return flash.Success("landing page free shopping updated successfully").Redirect(c, sess.Session, "/admin/landing_pages/free-shopping")
+	return c.Render("admin/landing_page_free_shopping_index", params.Push(
+		"flash", flash.Clear(c, sess.Session).Success("landing page free shopping updated successfully"),
+		"request", response,
+		"landingPage", response,
+	), "admin/layouts/authenticated")
 }
 
 func (q *landingPageController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {

@@ -19,35 +19,37 @@ func ValidateLandingPageCustomAttributes(
 	c fiber.Ctx,
 	landingPageName models.LandingPageName,
 ) (
-	response map[string]string,
-	photo *multipart.FileHeader,
-	err error,
+	map[string]string,
+	*multipart.FileHeader,
+	error,
 ) {
 	ctxt := "LandingPageSanitizer-ValidateLandingPageCustomAttributes"
-	err = c.Bind().Body(&response)
+	var response map[string]string
+	err := c.Bind().Body(&response)
 	if _, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
-		return nil, nil, err
+		return response, nil, err
 	}
+	var photo *multipart.FileHeader
 	switch landingPageName {
 	case models.LandingPageNameFeature:
 		subject := strings.TrimSpace(response["subject"])
 		if subject == "" {
-			return nil, nil, errors.New("subject: is required")
+			return response, nil, errors.New("subject: is required")
 		}
 		response = map[string]string{"subject": subject}
 	case models.LandingPageNameWhy:
 		subject := strings.TrimSpace(response["subject"])
 		if subject == "" {
-			return nil, nil, errors.New("subject: is required")
+			return response, nil, errors.New("subject: is required")
 		}
 		linkText := strings.TrimSpace(response["link_text"])
 		if linkText == "" {
-			return nil, nil, errors.New("link_text: is required")
+			return response, nil, errors.New("link_text: is required")
 		}
 		linkURL := strings.TrimSpace(response["link_url"])
 		if linkURL == "" {
-			return nil, nil, errors.New("link_url: is required")
+			return response, nil, errors.New("link_url: is required")
 		}
 		response = map[string]string{
 			"subject":   subject,
@@ -57,11 +59,11 @@ func ValidateLandingPageCustomAttributes(
 	case models.LandingPageNameCommitment:
 		subject := strings.TrimSpace(response["subject"])
 		if subject == "" {
-			return nil, nil, errors.New("subject: is required")
+			return response, nil, errors.New("subject: is required")
 		}
 		body := strings.TrimSpace(response["body"])
 		if body == "" {
-			return nil, nil, errors.New("body: is required")
+			return response, nil, errors.New("body: is required")
 		}
 		response = map[string]string{
 			"subject": subject,
@@ -69,7 +71,13 @@ func ValidateLandingPageCustomAttributes(
 		}
 	case models.LandingPageNameFreeShopping:
 		subject := strings.TrimSpace(response["subject"])
+		if subject == "" {
+			return response, nil, errors.New("subject: is required")
+		}
 		body := strings.TrimSpace(response["body"])
+		if body == "" {
+			return response, nil, errors.New("body: is required")
+		}
 		var photoFilename string
 		if photo, err = c.FormFile("photo"); err == nil {
 			file, err := photo.Open()
