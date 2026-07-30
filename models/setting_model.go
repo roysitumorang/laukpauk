@@ -14,7 +14,7 @@ var (
 
 type (
 	Setting struct {
-		ID                                    int64           `json:"-" form:"id"`
+		ID                                    uint64          `json:"-" form:"id"`
 		MaintenanceMode                       bool            `json:"maintenance_mode" form:"maintenance_mode"`
 		VacationMode                          bool            `json:"vacation_mode" form:"vacation_mode"`
 		VacationStartDate                     *time.Time      `json:"vacation_start_date" form:"vacation_start_date"`
