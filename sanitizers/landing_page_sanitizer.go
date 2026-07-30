@@ -56,7 +56,13 @@ func ValidateLandingPageCustomAttributes(
 		}
 	case models.LandingPageNameCommitment:
 		subject := strings.TrimSpace(response["subject"])
+		if subject == "" {
+			return nil, nil, errors.New("subject: is required")
+		}
 		body := strings.TrimSpace(response["body"])
+		if body == "" {
+			return nil, nil, errors.New("body: is required")
+		}
 		response = map[string]string{
 			"subject": subject,
 			"body":    body,
