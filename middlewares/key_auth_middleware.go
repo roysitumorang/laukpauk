@@ -1,4 +1,4 @@
-package middleware
+package middlewares
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-func BuyerKeyAuth(
+func BuyerKeyAuthMiddleware(
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) fiber.Handler {

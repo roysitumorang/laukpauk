@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
-	"github.com/roysitumorang/laukpauk/middleware"
+	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
@@ -46,7 +46,7 @@ func NewLandingPageController(
 }
 
 func (q *landingPageController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
+	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	admin := r.Group("/admin", adminSessionAuth)
 	admin.Group("/hero").
 		Get("", q.AdminHeroItemIndex).

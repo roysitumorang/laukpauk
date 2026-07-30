@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
-	"github.com/roysitumorang/laukpauk/middleware"
+	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
@@ -41,7 +41,7 @@ func NewCartController(
 }
 
 func (q *cartController) Mount(r fiber.Router) {
-	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex).
 		Post("", q.V1BuyerSave)

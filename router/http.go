@@ -39,7 +39,7 @@ import (
 	"github.com/roysitumorang/laukpauk/controllers"
 	_ "github.com/roysitumorang/laukpauk/docs"
 	"github.com/roysitumorang/laukpauk/helper"
-	"github.com/roysitumorang/laukpauk/middleware"
+	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
 	slogfiber "github.com/samber/slog-fiber"
 )
@@ -99,6 +99,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		// DisableValueRedaction: true,
 		SingleUseToken: true,
 	})
+	basicAuth := middlewares.BasicAuthMiddleware()
 	middlewares := []any{
 		recover.New(recover.Config{
 			EnableStackTrace: true,
@@ -207,7 +208,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		)
 	}
 	app.Use(middlewares...)
-	basicAuth := middleware.BasicAuth()
 	if debug {
 		app.Get("/swagger/*", swaggo.HandlerDefault)
 	}

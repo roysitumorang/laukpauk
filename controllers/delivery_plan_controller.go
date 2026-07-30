@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
-	"github.com/roysitumorang/laukpauk/middleware"
+	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
@@ -46,7 +46,7 @@ func NewDeliveryPlanController(
 }
 
 func (q *deliveryPlanController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
+	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).
@@ -54,7 +54,7 @@ func (q *deliveryPlanController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
 		Post("/:id/delete", q.AdminDelete)
-	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("/now", q.V1BuyerShow)
 }

@@ -1,4 +1,4 @@
-package middleware
+package middlewares
 
 import (
 	"uuid"
@@ -9,7 +9,7 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-func AdminSessionAuth(
+func AdminSessionAuthMiddleware(
 	adminService services.AdminService,
 ) fiber.Handler {
 	return func(c fiber.Ctx) error {

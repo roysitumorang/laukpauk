@@ -13,7 +13,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
-	"github.com/roysitumorang/laukpauk/middleware"
+	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
@@ -44,8 +44,8 @@ func NewTransactionController(
 }
 
 func (q *transactionController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
-	buyerKeyAuth := middleware.BuyerKeyAuth(q.buyerService, q.jsonWebTokenService)
+	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/v1/buyer").
 		Get("", buyerKeyAuth, q.V1BuyerIndex).
 		Post("", buyerKeyAuth, q.V1BuyerCreate).

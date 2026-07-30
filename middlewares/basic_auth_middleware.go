@@ -1,4 +1,4 @@
-package middleware
+package middlewares
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-func BasicAuth() fiber.Handler {
+func BasicAuthMiddleware() fiber.Handler {
 	return basicauth.New(basicauth.Config{
 		Users: map[string]string{
 			os.Getenv("BASIC_AUTH_USERNAME"): os.Getenv("BASIC_AUTH_PASSWORD"),

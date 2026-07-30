@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
-	"github.com/roysitumorang/laukpauk/middleware"
+	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
@@ -40,7 +40,7 @@ func NewPointController(
 }
 
 func (q *pointController) Mount(r fiber.Router) {
-	adminSessionAuth := middleware.AdminSessionAuth(q.adminService)
+	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).
