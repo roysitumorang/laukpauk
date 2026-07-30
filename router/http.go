@@ -71,7 +71,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	sessionStore.RegisterType(uuid.UUID{})
 	sessionStore.RegisterType(&models.Admin{})
 	app := fiber.New(fiber.Config{
-		RegexHandler: coregex.MustCompile,
+		StrictRouting: true,
+		RegexHandler:  coregex.MustCompile,
 		JSONEncoder: func(v any) ([]byte, error) {
 			return json.Marshal(v)
 		},

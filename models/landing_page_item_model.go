@@ -112,7 +112,7 @@ func (q *LandingPageItem) Validate() error {
 		*q.LinkURL = strings.TrimSpace(*q.LinkURL)
 	}
 	switch q.LandingPageName {
-	case LandingPageNameHero:
+	case LandingPageNameHeroSlider:
 		if q.Subject == "" {
 			return errors.New("subject: is required")
 		}
@@ -158,6 +158,10 @@ func (q *LandingPageItem) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (q *LandingPageItem) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
 }
 
 func (q *LandingPageItem) SetPhoto(photo *string) *LandingPageItem {

@@ -98,6 +98,17 @@ func (q *landingPageItemRepository) FindLandingPageItems(
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
+	sortBy := request.Sortings
+	if len(sortBy) == 0 {
+		sortBy = append(sortBy, models.DefaultSortBy)
+	}
+	_, _ = sb.WriteString(" ORDER BY")
+	for i, item := range sortBy {
+		if i > 0 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+	}
 	pages := int64(1)
 	var offset int64
 	if request.Limit > 0 {
@@ -294,7 +305,7 @@ func (q *landingPageItemRepository) CreateLandingPageItem(
 	var response models.LandingPageItem
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO block_items (
+		`INSERT INTO landing_page_items (
 			record_status
 			, landing_page_name
 			, subject

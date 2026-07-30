@@ -1,6 +1,6 @@
 <!-- Mashead header-->
 <header class="owl-carousel hero-slider owl-theme" id="hero">
-	{{ range _, row := hero.Items }}
+	{{ range _, row := heroSlider.Items }}
 	<div class="hero-slider-item pb-lg-5">
 		<div class="col px-0 mx-xl-5 mx-lg-5 mx-md-0 mx-sm-0 mx-0">
 			<div class="mx-md-3 mx-sm-3 mx-3 col-xl-7 col-lg-7 hero-slider-content">

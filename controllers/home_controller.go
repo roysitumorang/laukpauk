@@ -68,7 +68,7 @@ func (q *homeController) Index(c fiber.Ctx) (err error) {
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	var hero,
+	var heroSlider,
 		feature,
 		why,
 		freeShopping,
@@ -80,7 +80,7 @@ func (q *homeController) Index(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"pageTitle", "Laukpauk | Belanja Sayur Online",
-		"hero", hero,
+		"heroSlider", heroSlider,
 		"feature", feature,
 		"why", why,
 		"freeShopping", freeShopping,
@@ -119,7 +119,7 @@ func (q *homeController) Index(c fiber.Ctx) (err error) {
 		mapLandingPages[landingPageItem.LandingPageName] = landingPage
 	}
 	return c.Render("landing_page/index", params.Push(
-		"hero", mapLandingPages[models.LandingPageNameHero],
+		"heroSlider", mapLandingPages[models.LandingPageNameHeroSlider],
 		"feature", mapLandingPages[models.LandingPageNameFeature],
 		"why", mapLandingPages[models.LandingPageNameWhy],
 		"freeShopping", mapLandingPages[models.LandingPageNameFreeShopping],

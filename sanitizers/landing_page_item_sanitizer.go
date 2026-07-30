@@ -31,6 +31,33 @@ func FindLandingPageItems(ctx context.Context, c fiber.Ctx) (*models.LandingPage
 		urlValues.Set("q", keyword)
 		response.WithKeyword(keyword)
 	}
+	if sortBy := urlValues["sort_by"]; len(sortBy) > 0 {
+		urlValues.Set("sort_by", c.Query("sort_by"))
+		var sortings []models.Sorting
+		for _, sorting := range sortBy {
+			if !strings.Contains(sorting, ":") {
+				if _, ok := models.MapLandingPageSortings[sorting]; ok {
+					sortings = append(sortings, models.Sorting{
+						Field:     sorting,
+						Direction: models.SortingDirectionAsc,
+					})
+				}
+			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
+				field, order := items[0], items[1]
+				if _, ok := models.MapLandingPageSortings[field]; ok &&
+					(models.SortingDirectionAsc.Equal(order) ||
+						models.SortingDirectionDesc.Equal(order)) {
+					sortings = append(sortings, models.Sorting{
+						Field:     field,
+						Direction: models.SortingDirection(order),
+					})
+				}
+			}
+		}
+		response.WithSortings(sortings...)
+	} else {
+		response.WithSortings(models.DefaultSortBy)
+	}
 	limit, _ := utils.ParseInt(c.Query("limit"))
 	if _, ok := models.MapLimits[limit]; !ok {
 		limit = models.Limits[0]

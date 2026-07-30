@@ -11,9 +11,12 @@ import (
 )
 
 var ErrLandingPageNotFound = errors.New("landing page not found")
+var MapLandingPageSortings = map[string]struct{}{
+	SortingFieldID: {},
+}
 
 const (
-	LandingPageNameHero         LandingPageName = "hero"
+	LandingPageNameHeroSlider   LandingPageName = "hero-slider"
 	LandingPageNameFeature      LandingPageName = "feature"
 	LandingPageNameWhy          LandingPageName = "why"
 	LandingPageNameFreeShopping LandingPageName = "free-shopping"

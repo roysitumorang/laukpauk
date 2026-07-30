@@ -48,13 +48,13 @@ func NewLandingPageController(
 func (q *landingPageController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	admin := r.Group("/admin", adminSessionAuth)
-	admin.Group("/hero").
-		Get("", q.AdminHeroItemIndex).
-		Get("/items/new", q.AdminHeroItemNew).
-		Post("/items", q.AdminHeroItemCreate).
-		Get("/items/:id/edit", q.AdminHeroItemEdit).
-		Post("/items/:id", q.AdminHeroItemUpdate).
-		Post("/items/:id/delete", q.AdminHeroItemDelete)
+	admin.Group("/hero-slider").
+		Get("", q.AdminHeroSliderItemIndex).
+		Get("/items/new", q.AdminHeroSliderItemNew).
+		Post("/items", q.AdminHeroSliderItemCreate).
+		Get("/items/:id/edit", q.AdminHeroSliderItemEdit).
+		Post("/items/:id", q.AdminHeroSliderItemUpdate).
+		Post("/items/:id/delete", q.AdminHeroSliderItemDelete)
 	admin.Group("/feature").
 		Get("", q.AdminFeatureItemIndex).
 		Post("/custom_attributes", q.AdminFeatureUpdate).
@@ -89,9 +89,9 @@ func (q *landingPageController) Mount(r fiber.Router) {
 		Post("/items/:id/delete", q.AdminFaqItemDelete)
 }
 
-func (q *landingPageController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroSliderItemIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageController-AdminHeroItemIndex"
+	ctxt := "LandingPageController-AdminHeroSliderItemIndex"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -114,31 +114,43 @@ func (q *landingPageController) AdminHeroItemIndex(c fiber.Ctx) (err error) {
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
+		"sortings", []models.Sorting{
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionDesc,
+				Label:     "Newest-Oldest",
+			},
+			{
+				Field:     models.SortingFieldID,
+				Direction: models.SortingDirectionAsc,
+				Label:     "Oldest-Newest",
+			},
+		},
 	)
 	request, err = sanitizers.FindLandingPageItems(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlockItems")
-		return c.Render("admin/landing_page_hero_index", params.Push(
+		return c.Render("admin/landing_page_hero_slider_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	request.WithRecordStatus(models.RecordStatusActive).
-		WithLandingPageNames(models.LandingPageNameHero)
+		WithLandingPageNames(models.LandingPageNameHeroSlider)
 	params.Push("request", request)
 	if rows, pagination, err = q.landingPageItemService.FindLandingPageItems(ctx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItems")
-		return c.Render("admin/landing_page_hero_index", params.Push(
+		return c.Render("admin/landing_page_hero_slider_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return c.Render("admin/landing_page_hero_index", params.Push(
+	return c.Render("admin/landing_page_hero_slider_index", params.Push(
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
 }
 
-func (q *landingPageController) AdminHeroItemNew(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroSliderItemNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -161,18 +173,17 @@ func (q *landingPageController) AdminHeroItemNew(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	return c.Render("admin/landing_page_hero_new", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_hero_slider_new", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroSliderItemCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageController-AdminHeroItemCreate"
+	ctxt := "LandingPageController-AdminHeroSliderItemCreate"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{
@@ -189,13 +200,14 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHero)
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHeroSlider)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/landing_page_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_slider_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
 	now := time.Now().In(time.Local)
@@ -208,7 +220,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/landing_page_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_slider_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -223,7 +235,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.CreateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateLandingPageItem")
-		return c.Render("admin/landing_page_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_slider_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
@@ -231,7 +243,7 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/landing_page_hero_new", params.Push(
+			return c.Render("admin/landing_page_hero_slider_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(nil),
 			), "admin/layouts/authenticated")
@@ -239,17 +251,17 @@ func (q *landingPageController) AdminHeroItemCreate(c fiber.Ctx) (err error) {
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/landing_page_hero_new", params.Push(
+		return c.Render("admin/landing_page_hero_slider_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(nil),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("landing page hero item created successfully").Redirect(c, sess.Session, "/admin/landing_pages/hero")
+	return flash.Clear(c, sess.Session).Success("landing page hero slider item created successfully").Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 }
 
-func (q *landingPageController) AdminHeroItemEdit(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroSliderItemEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageController-AdminHeroItemEdit"
+	ctxt := "LandingPageController-AdminHeroSliderItemEdit"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -261,21 +273,21 @@ func (q *landingPageController) AdminHeroItemEdit(c fiber.Ctx) (err error) {
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	landingPageItem, err := q.landingPageItemService.FindLandingPageItem(
 		ctx,
 		models.NewLandingPageItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithLandingPageNames(models.LandingPageNameHero).
+			WithLandingPageNames(models.LandingPageNameHeroSlider).
 			WithLandingPageItemIDs(landingPageItemID),
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageItemNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	if landingPageItem == nil {
-		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -287,38 +299,37 @@ func (q *landingPageController) AdminHeroItemEdit(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	return c.Render("admin/landing_page_hero_edit", params, "admin/layouts/authenticated")
+	return c.Render("admin/landing_page_hero_slider_edit", params, "admin/layouts/authenticated")
 }
 
-func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroSliderItemUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageController-AdminHeroItemUpdate"
+	ctxt := "LandingPageController-AdminHeroSliderItemUpdate"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	defer flash.Clear(c, sess.Session)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	landingPageItem, err := q.landingPageItemService.FindLandingPageItem(
 		ctx,
 		models.NewLandingPageItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithLandingPageNames(models.LandingPageNameHero).
+			WithLandingPageNames(models.LandingPageNameHeroSlider).
 			WithLandingPageItemIDs(landingPageItemID),
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageItemNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	if landingPageItem == nil {
-		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -330,12 +341,15 @@ func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHero)
+	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHeroSlider)
+	if photo == nil {
+		request.Photo = landingPageItem.Photo
+	}
 	params.Push("request", request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockItem")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageItem")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/landing_page_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_slider_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -346,13 +360,10 @@ func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	if photo == nil {
-		request.Photo = landingPageItem.Photo
-	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/landing_page_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_slider_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
@@ -366,30 +377,30 @@ func (q *landingPageController) AdminHeroItemUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.UpdateLandingPageItem(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageItem")
-		return c.Render("admin/landing_page_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_slider_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/landing_page_hero_edit", params.Push(
+			return c.Render("admin/landing_page_hero_slider_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/landing_page_hero_edit", params.Push(
+		return c.Render("admin/landing_page_hero_slider_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	return flash.Success("landing page hero item updated successfully").Redirect(c, sess.Session, "/admin/landing_pages/hero")
+	return flash.Clear(c, sess.Session).Success("landing page hero slider item updated successfully").Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 }
 
-func (q *landingPageController) AdminHeroItemDelete(c fiber.Ctx) (err error) {
+func (q *landingPageController) AdminHeroSliderItemDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "LandingPageController-AdminHeroItemDelete"
+	ctxt := "LandingPageController-AdminHeroSliderItemDelete"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -400,21 +411,21 @@ func (q *landingPageController) AdminHeroItemDelete(c fiber.Ctx) (err error) {
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	landingPageItem, err := q.landingPageItemService.FindLandingPageItem(
 		ctx,
 		models.NewLandingPageItemFilter().
 			WithRecordStatus(models.RecordStatusActive).
-			WithLandingPageNames(models.LandingPageNameHero).
+			WithLandingPageNames(models.LandingPageNameHeroSlider).
 			WithLandingPageItemIDs(landingPageItemID),
 	)
 	if err != nil && !errors.Is(err, models.ErrLandingPageItemNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindLandingPageItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	if landingPageItem == nil {
-		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(models.ErrLandingPageItemNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	landingPageItem.RecordStatus = models.RecordStatusDeleted
 	landingPageItem.DeletedBy = &currentAdmin.ID
@@ -423,7 +434,7 @@ func (q *landingPageController) AdminHeroItemDelete(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -435,13 +446,13 @@ func (q *landingPageController) AdminHeroItemDelete(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.landingPageItemService.UpdateLandingPageItem(ctx, tx, landingPageItem); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateLandingPageItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 	}
-	return flash.Success("landing page hero item deleted successfully").Redirect(c, sess.Session, "/admin/landing_pages/hero")
+	return flash.Success("landing page hero slider item deleted successfully").Redirect(c, sess.Session, "/admin/landing_pages/hero-slider")
 }
 
 func (q *landingPageController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {

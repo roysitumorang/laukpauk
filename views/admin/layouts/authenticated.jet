@@ -212,7 +212,7 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/blocks") }} menu-open{{ end }}">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/landing_pages") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-globe"></i>
 								<p>
@@ -220,45 +220,45 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/blocks") }} style="display:block"{{ end }}>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/landing_pages") }} style="display:block"{{ end }}>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blocks/hero" class="nav-link">
+									<a href="{{ baseURL }}/admin/landing_pages/hero-slider" class="nav-link">
 										<i class="fa fa-image nav-icon"></i>
 										<p>Hero Slider</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blocks/feature" class="nav-link">
+									<a href="{{ baseURL }}/admin/landing_pages/feature" class="nav-link">
 										<i class="fa fa-box nav-icon"></i>
 										<p>Fitur Laukpauk</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blocks/why" class="nav-link">
+									<a href="{{ baseURL }}/admin/landing_pages/why" class="nav-link">
 										<i class="fa fa-question nav-icon"></i>
 										<p>Mengapa Pilih Laukpauk</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blocks/commitment" class="nav-link">
+									<a href="{{ baseURL }}/admin/landing_pages/commitment" class="nav-link">
 										<i class="fa fa-handshake nav-icon"></i>
 										<p>Komitmen</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blocks/free-shopping" class="nav-link">
+									<a href="{{ baseURL }}/admin/landing_pages/free-shopping" class="nav-link">
 										<i class="fa fa-dollar-sign nav-icon"></i>
 										<p>Uang Belanja Gratis</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blocks/kitchen-hero" class="nav-link">
+									<a href="{{ baseURL }}/admin/landing_pages/kitchen-hero" class="nav-link">
 										<i class="fa fa-utensils nav-icon"></i>
 										<p>Pahlawan Dapur</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blocks/faq" class="nav-link">
+									<a href="{{ baseURL }}/admin/landing_pages/faq" class="nav-link">
 										<i class="fa fa-question-circle nav-icon"></i>
 										<p>Halaman Bantuan</p>
 									</a>
