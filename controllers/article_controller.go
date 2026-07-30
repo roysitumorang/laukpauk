@@ -165,7 +165,7 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 		"request", request,
 		"article", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateArticle(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateArticle(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateArticle")
@@ -209,7 +209,7 @@ func (q *articleController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil {
-		if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/article_new", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -313,7 +313,7 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		"request", article,
 		"article", article,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateArticle(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateArticle(ctx, c)
 	if photo == nil {
 		request.Photo = article.Photo
 	}
@@ -354,7 +354,7 @@ func (q *articleController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil {
-		if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/article_edit", params.Push(
 				"flash", flash.Danger(err.Error()),

@@ -8,6 +8,8 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
+	"image/jpeg"
+	"image/png"
 	"math"
 	"math/big"
 	"mime/multipart"
@@ -23,6 +25,8 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kolesa-team/go-webp/encoder"
+	"github.com/kolesa-team/go-webp/webp"
 	"github.com/roysitumorang/laukpauk/keys"
 	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/sqids/sqids-go"
@@ -304,11 +308,75 @@ func PhotoLocation(filename string) string {
 	return Sprintf(".%s", PhotoPath(filename))
 }
 
-func SaveFile(c fiber.Ctx, file *multipart.FileHeader, filename string) error {
+func SaveFile(c fiber.Ctx, file *multipart.FileHeader, mimetype *string, filename string) error {
 	if file == nil {
 		return nil
 	}
-	return c.SaveFile(file, PhotoLocation(filename))
+	dst := PhotoLocation(filename)
+	err := c.SaveFile(file, dst)
+	if err != nil {
+		return err
+	}
+	if mimetype != nil {
+		switch *mimetype {
+		case "image/jpeg":
+			if err = Jpeg2Webp(dst, dst); err != nil {
+				return err
+			}
+		case "image/png":
+			if err = Png2Webp(dst, dst); err != nil {
+				return err
+			}
+		}
+	}
+	return os.Chmod(dst, 0644)
+}
+
+func Jpeg2Webp(src, dst string) error {
+	input, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+	image, err := jpeg.Decode(input)
+	if err != nil {
+		return err
+	}
+	output, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 80)
+	if err != nil {
+		return err
+	}
+	return webp.Encode(output, image, options)
+}
+
+func Png2Webp(src, dst string) error {
+	input, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+	image, err := png.Decode(input)
+	if err != nil {
+		return err
+	}
+	output, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 80)
+	if err != nil {
+		return err
+	}
+	if err = webp.Encode(output, image, options); err != nil {
+		return err
+	}
+	return webp.Encode(output, image, options)
 }
 
 func RandomInteger(bound int64) int64 {

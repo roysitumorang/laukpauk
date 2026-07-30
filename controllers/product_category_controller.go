@@ -125,7 +125,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	request, params, _ := q.prepareProductCategory(ctx, c, flash, currentAdmin, csrfToken, true)
-	request, photo, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	params.Push(
 		"request", request,
 		"productCategory", request,
@@ -195,7 +195,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -245,7 +245,7 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	request, photo, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductCategory")
@@ -305,7 +305,7 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),

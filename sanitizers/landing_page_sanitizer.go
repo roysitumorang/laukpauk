@@ -21,6 +21,7 @@ func ValidateLandingPageCustomAttributes(
 ) (
 	map[string]string,
 	*multipart.FileHeader,
+	*string,
 	error,
 ) {
 	ctxt := "LandingPageSanitizer-ValidateLandingPageCustomAttributes"
@@ -28,28 +29,29 @@ func ValidateLandingPageCustomAttributes(
 	err := c.Bind().Body(&response)
 	if _, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
-		return response, nil, err
+		return response, nil, nil, err
 	}
 	var photo *multipart.FileHeader
+	var mimeType *string
 	switch landingPageName {
 	case models.LandingPageNameFeature:
 		subject := strings.TrimSpace(response["subject"])
 		if subject == "" {
-			return response, nil, errors.New("subject: is required")
+			return response, nil, nil, errors.New("subject: is required")
 		}
 		response = map[string]string{"subject": subject}
 	case models.LandingPageNameWhy:
 		subject := strings.TrimSpace(response["subject"])
 		if subject == "" {
-			return response, nil, errors.New("subject: is required")
+			return response, nil, nil, errors.New("subject: is required")
 		}
 		linkText := strings.TrimSpace(response["link_text"])
 		if linkText == "" {
-			return response, nil, errors.New("link_text: is required")
+			return response, nil, nil, errors.New("link_text: is required")
 		}
 		linkURL := strings.TrimSpace(response["link_url"])
 		if linkURL == "" {
-			return response, nil, errors.New("link_url: is required")
+			return response, nil, nil, errors.New("link_url: is required")
 		}
 		response = map[string]string{
 			"subject":   subject,
@@ -59,11 +61,11 @@ func ValidateLandingPageCustomAttributes(
 	case models.LandingPageNameCommitment:
 		subject := strings.TrimSpace(response["subject"])
 		if subject == "" {
-			return response, nil, errors.New("subject: is required")
+			return response, nil, nil, errors.New("subject: is required")
 		}
 		body := strings.TrimSpace(response["body"])
 		if body == "" {
-			return response, nil, errors.New("body: is required")
+			return response, nil, nil, errors.New("body: is required")
 		}
 		response = map[string]string{
 			"subject": subject,
@@ -72,28 +74,29 @@ func ValidateLandingPageCustomAttributes(
 	case models.LandingPageNameFreeShopping:
 		subject := strings.TrimSpace(response["subject"])
 		if subject == "" {
-			return response, nil, errors.New("subject: is required")
+			return response, nil, nil, errors.New("subject: is required")
 		}
 		body := strings.TrimSpace(response["body"])
 		if body == "" {
-			return response, nil, errors.New("body: is required")
+			return response, nil, nil, errors.New("body: is required")
 		}
 		var photoFilename string
 		if photo, err = c.FormFile("photo"); err == nil {
 			file, err := photo.Open()
 			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrOpen")
-				return response, nil, err
+				return response, nil, nil, err
 			}
 			mtype, err := mimetype.DetectReader(file)
 			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDetectReader")
-				return response, nil, err
+				return response, nil, nil, err
 			}
 			if _, ok := mimeTypes[mtype.String()]; !ok {
-				return response, nil, errors.New("photo: invalid JPG/PNG file")
+				return response, nil, nil, errors.New("photo: invalid JPG/PNG/WEBP file")
 			}
-			photoFilename = helper.Sprintf("%s%s", uuid.New().String(), mtype.Extension())
+			mimeType = new(mtype.String())
+			photoFilename = helper.Sprintf("%s.webp", uuid.New().String())
 		}
 		response = map[string]string{
 			"subject": subject,
@@ -103,29 +106,30 @@ func ValidateLandingPageCustomAttributes(
 	case models.LandingPageNameKitchenHero:
 		body := strings.TrimSpace(response["body"])
 		if body == "" {
-			return response, nil, errors.New("body: is required")
+			return response, nil, nil, errors.New("body: is required")
 		}
 		var photoFilename string
 		if photo, err = c.FormFile("photo"); err == nil {
 			file, err := photo.Open()
 			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrOpen")
-				return response, nil, err
+				return response, nil, nil, err
 			}
 			mtype, err := mimetype.DetectReader(file)
 			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDetectReader")
-				return response, nil, err
+				return response, nil, nil, err
 			}
 			if _, ok := mimeTypes[mtype.String()]; !ok {
-				return response, nil, errors.New("photo: invalid JPG/PNG file")
+				return response, nil, nil, errors.New("photo: invalid JPG/PNG/WEBP file")
 			}
-			photoFilename = helper.Sprintf("%s%s", uuid.New().String(), mtype.Extension())
+			mimeType = new(mtype.String())
+			photoFilename = helper.Sprintf("%s.webp", uuid.New().String())
 		}
 		response = map[string]string{
 			"body":  body,
 			"photo": photoFilename,
 		}
 	}
-	return response, photo, nil
+	return response, photo, mimeType, nil
 }

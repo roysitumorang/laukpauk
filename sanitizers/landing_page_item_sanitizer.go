@@ -78,6 +78,7 @@ func ValidateLandingPageItem(
 ) (
 	*models.LandingPageItem,
 	*multipart.FileHeader,
+	*string,
 	int,
 	error,
 ) {
@@ -86,29 +87,31 @@ func ValidateLandingPageItem(
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
-		return nil, nil, fiberErr.Code, err
+		return nil, nil, nil, fiberErr.Code, err
 	}
 	response.LandingPageName = landingPageName
+	var mimeType *string
 	photo, err := c.FormFile("photo")
 	if err == nil {
 		file, err := photo.Open()
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrOpen")
-			return &response, nil, fiber.StatusBadRequest, err
+			return &response, nil, nil, fiber.StatusBadRequest, err
 		}
 		mtype, err := mimetype.DetectReader(file)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDetectReader")
-			return &response, nil, fiber.StatusBadRequest, err
+			return &response, nil, nil, fiber.StatusBadRequest, err
 		}
 		if _, ok := mimeTypes[mtype.String()]; !ok {
-			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
+			return &response, nil, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG/WEBP file")
 		}
-		response.Photo = new(helper.Sprintf("%s%s", uuid.New().String(), mtype.Extension()))
+		mimeType = new(mtype.String())
+		response.Photo = new(helper.Sprintf("%s.webp", uuid.New().String()))
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
-		return &response, photo, fiber.StatusBadRequest, err
+		return &response, photo, mimeType, fiber.StatusBadRequest, err
 	}
-	return &response, photo, fiber.StatusOK, nil
+	return &response, photo, mimeType, fiber.StatusOK, nil
 }

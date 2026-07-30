@@ -196,7 +196,7 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 		"voucherTypes", models.VoucherTypes,
 		"targetAudiences", models.VoucherTargetAudiences,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateVoucher")
@@ -253,7 +253,7 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/voucher_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -345,7 +345,7 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 		"voucherTypes", models.VoucherTypes,
 		"targetAudiences", models.VoucherTargetAudiences,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateVoucher")
@@ -406,7 +406,7 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/voucher_edit", params.Push(
 			"flash", flash.Danger(err.Error()),

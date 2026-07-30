@@ -73,34 +73,45 @@ func FindProductCategories(ctx context.Context, c fiber.Ctx) (*models.ProductCat
 	return response, nil
 }
 
-func ValidateProductCategory(ctx context.Context, c fiber.Ctx) (*models.ProductCategory, *multipart.FileHeader, int, error) {
+func ValidateProductCategory(
+	ctx context.Context,
+	c fiber.Ctx,
+) (
+	*models.ProductCategory,
+	*multipart.FileHeader,
+	*string,
+	int,
+	error,
+) {
 	ctxt := "ProductCategorySanitizer-ValidateProductCategory"
 	var response models.ProductCategory
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
-		return nil, nil, fiberErr.Code, err
+		return nil, nil, nil, fiberErr.Code, err
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
-		return &response, nil, fiber.StatusBadRequest, err
+		return &response, nil, nil, fiber.StatusBadRequest, err
 	}
+	var mimeType *string
 	photo, err := c.FormFile("photo")
 	if err == nil {
 		file, err := photo.Open()
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrOpen")
-			return &response, nil, fiber.StatusBadRequest, err
+			return &response, nil, nil, fiber.StatusBadRequest, err
 		}
 		mtype, err := mimetype.DetectReader(file)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDetectReader")
-			return &response, nil, fiber.StatusBadRequest, err
+			return &response, nil, nil, fiber.StatusBadRequest, err
 		}
 		if _, ok := mimeTypes[mtype.String()]; !ok {
-			return &response, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG file")
+			return &response, nil, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG/WEBP file")
 		}
-		response.Photo = helper.Sprintf("%s%s", uuid.New().String(), mtype.Extension())
+		mimeType = new(mtype.String())
+		response.Photo = helper.Sprintf("%s.webp", uuid.New().String())
 	}
-	return &response, photo, fiber.StatusOK, nil
+	return &response, photo, mimeType, fiber.StatusOK, nil
 }

@@ -151,7 +151,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request, photo, statusCode, err := sanitizers.ValidateProduct(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	params.Push(
 		"request", request,
 		"product", request,
@@ -233,7 +233,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -324,7 +324,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	request, photo, statusCode, err := sanitizers.ValidateProduct(ctx, c)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
@@ -391,7 +391,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if err = helper.SaveFile(c, photo, request.Photo); err != nil {
+	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),

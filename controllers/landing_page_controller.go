@@ -200,7 +200,7 @@ func (q *landingPageController) AdminHeroSliderItemCreate(c fiber.Ctx) (err erro
 		"request", request,
 		"landingPageItem", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHeroSlider)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHeroSlider)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLandingPageItem")
@@ -241,7 +241,7 @@ func (q *landingPageController) AdminHeroSliderItemCreate(c fiber.Ctx) (err erro
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_hero_slider_new", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -341,7 +341,7 @@ func (q *landingPageController) AdminHeroSliderItemUpdate(c fiber.Ctx) (err erro
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHeroSlider)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameHeroSlider)
 	if photo == nil {
 		request.Photo = landingPageItem.Photo
 	}
@@ -382,7 +382,7 @@ func (q *landingPageController) AdminHeroSliderItemUpdate(c fiber.Ctx) (err erro
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_hero_slider_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -562,7 +562,7 @@ func (q *landingPageController) AdminFeatureUpdate(c fiber.Ctx) (err error) {
 	if landingPage == nil {
 		return flash.Danger(models.ErrLandingPageNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/feature")
 	}
-	request, _, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameFeature)
+	request, _, _, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameFeature)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockCustomAttributes")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/feature")
@@ -641,7 +641,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 		"request", request,
 		"landingPageItem", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFeature)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFeature)
 	params.Push(
 		"request", request,
 		"landingPageItem", request,
@@ -685,7 +685,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_feature_new", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -785,7 +785,7 @@ func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) 
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFeature)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFeature)
 	if photo == nil {
 		request.Photo = landingPageItem.Photo
 	}
@@ -830,7 +830,7 @@ func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) 
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_feature_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -1011,7 +1011,7 @@ func (q *landingPageController) AdminWhyUpdate(c fiber.Ctx) (err error) {
 	if landingPage == nil {
 		return flash.Danger(models.ErrLandingPageNotFound.Error()).Redirect(c, sess.Session, "/admin/landing_pages/why")
 	}
-	request, _, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameWhy)
+	request, _, _, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameWhy)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockCustomAttributes")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/landing_pages/why")
@@ -1090,7 +1090,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameWhy)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameWhy)
 	params.Push(
 		"request", request,
 		"landingPageItem", request,
@@ -1134,7 +1134,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_why_new", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -1234,7 +1234,7 @@ func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameWhy)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameWhy)
 	if photo == nil {
 		request.Photo = landingPageItem.Photo
 	}
@@ -1278,7 +1278,7 @@ func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_why_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -1437,7 +1437,7 @@ func (q *landingPageController) AdminCommitmentUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request.CustomAttributes, _, err = sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameCommitment)
+	request.CustomAttributes, _, _, err = sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameCommitment)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBlockCustomAttributes")
@@ -1573,7 +1573,7 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
-	customAttributes, photo, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameFreeShopping)
+	customAttributes, photo, mimetype, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameFreeShopping)
 	if photo == nil {
 		customAttributes["photo"] = landingPage.CustomAttributes["photo"]
 	}
@@ -1617,7 +1617,7 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.CustomAttributes["photo"] != "" {
-		if err = helper.SaveFile(c, photo, request.CustomAttributes["photo"]); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, request.CustomAttributes["photo"]); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_free_shopping_index", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -1724,7 +1724,7 @@ func (q *landingPageController) AdminKitchenHeroUpdate(c fiber.Ctx) (err error) 
 			"flash", flash.Danger(models.ErrLandingPageNotFound.Error()),
 		), "admin/layouts/authenticated")
 	}
-	customAttributes, photo, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameKitchenHero)
+	customAttributes, photo, mimetype, err := sanitizers.ValidateLandingPageCustomAttributes(ctx, c, models.LandingPageNameKitchenHero)
 	if photo == nil {
 		customAttributes["photo"] = landingPage.CustomAttributes["photo"]
 	}
@@ -1767,7 +1767,7 @@ func (q *landingPageController) AdminKitchenHeroUpdate(c fiber.Ctx) (err error) 
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.CustomAttributes["photo"] != "" {
-		if err = helper.SaveFile(c, photo, request.CustomAttributes["photo"]); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, request.CustomAttributes["photo"]); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_kitchen_hero_index", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -1917,7 +1917,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 		"request", request,
 		"landingPageItem", request,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFAQ)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFAQ)
 	params.Push(
 		"request", request,
 		"landingPageItem", request,
@@ -1961,7 +1961,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_faq_new", params.Push(
 				"flash", flash.Danger(err.Error()),
@@ -2073,7 +2073,7 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 		"request", landingPageItem,
 		"landingPageItem", landingPageItem,
 	)
-	request, photo, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFAQ)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateLandingPageItem(ctx, c, models.LandingPageNameFAQ)
 	if photo == nil {
 		request.Photo = landingPageItem.Photo
 	}
@@ -2117,7 +2117,7 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if photo != nil && request.Photo != nil {
-		if err = helper.SaveFile(c, photo, *request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return c.Render("admin/landing_page_faq_edit", params.Push(
 				"flash", flash.Danger(err.Error()),

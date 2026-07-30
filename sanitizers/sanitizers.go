@@ -4,5 +4,6 @@ var (
 	mimeTypes = map[string]struct{}{
 		"image/jpeg": {},
 		"image/png":  {},
+		"image/webp": {},
 	}
 )

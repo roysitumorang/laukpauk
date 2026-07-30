@@ -10,7 +10,7 @@ require (
 	github.com/getsentry/sentry-go v0.48.0
 	github.com/gofiber/contrib/v3/monitor v1.1.1
 	github.com/gofiber/contrib/v3/sentry v1.1.8
-	github.com/gofiber/contrib/v3/swaggo v1.0.8
+	github.com/gofiber/contrib/v3/swaggo v1.0.9
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/storage/valkey v0.3.1
 	github.com/gofiber/template/jet/v3 v3.0.7
@@ -20,6 +20,7 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
+	github.com/kolesa-team/go-webp v1.0.5
 	github.com/nyaruka/phonenumbers v1.8.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/slog-fiber v1.22.2
