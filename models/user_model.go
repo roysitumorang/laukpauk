@@ -21,8 +21,6 @@ type (
 	UserStatus int
 
 	user struct {
-		RowNo                         int64      `json:"-" form:"-"`
-		ID                            uuid.UUID  `json:"id" form:"-"`
 		UserType                      UserType   `json:"-" form:"-"`
 		UserStatus                    UserStatus `json:"-" form:"-"`
 		Name                          string     `json:"name" form:"-"`

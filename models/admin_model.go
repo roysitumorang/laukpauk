@@ -22,6 +22,9 @@ type (
 	AdminType int
 
 	Admin struct {
+		RowNo  int64     `json:"-" form:"-"`
+		ID     uuid.UUID `json:"id" form:"-"`
+		UserID uuid.UUID `json:"-" form:"-"`
 		user
 		AdminType AdminType `json:"-" form:"-"`
 	}
@@ -32,10 +35,10 @@ type (
 )
 
 func NewAdminFilter() *AdminFilter {
-	return new(AdminFilter{
+	return &AdminFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *AdminFilter) WithAdminIDs(adminIDs ...uuid.UUID) *AdminFilter {

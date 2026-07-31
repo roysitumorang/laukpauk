@@ -15,6 +15,9 @@ var (
 
 type (
 	Buyer struct {
+		RowNo  int64     `json:"-" form:"-"`
+		ID     uuid.UUID `json:"id" form:"-"`
+		UserID uuid.UUID `json:"-" form:"-"`
 		user
 		ReferralCode    string     `json:"referral_code" form:"-"`
 		Address         string     `json:"address" form:"-"`

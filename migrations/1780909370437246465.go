@@ -1770,7 +1770,7 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, parent_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, reordered BOOLEAN NOT NULL
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 				, reference_number character varying NOT NULL
 				, status integer NOT NULL
@@ -1779,7 +1779,7 @@ func init() {
 				, buyer_note character varying NOT NULL
 				, unique_code bigint NOT NULL
 				, shopping_cost bigint NOT NULL
-				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, referrer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_code character varying
 				, referral_points bigint NOT NULL
 				, voucher_id UUID REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -1819,9 +1819,9 @@ func init() {
 				, paid_at timestamp with time zone
 				, withdrawal_requested_at timestamp with time zone
 				, withdrawal_reason character varying
-				, withdrawn_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, withdrawn_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, withdrawn_at timestamp with time zone
-				, processed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, processed_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, processed_at timestamp with time zone
 				, revised_shopping_cost bigint NOT NULL
 				, revised_discounted_shopping_cost bigint NOT NULL
@@ -1829,12 +1829,12 @@ func init() {
 				, refund_amount bigint NOT NULL
 				, refunded_at timestamp with time zone
 				, refund_id character varying UNIQUE
-				, shipped_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, shipped_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, shipped_at timestamp with time zone
 				, delivery_actual_cost bigint NOT NULL
 				, complained_at timestamp with time zone
 				, complaint character varying
-				, completed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, completed_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, completed_at timestamp with time zone
 			);`,
 		); err != nil {
