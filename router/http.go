@@ -157,6 +157,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/transactions":            "/transactions/admin",
 				"/admin/transactions/*":          "/transactions/admin/$1",
 				"/admin/transactions/*/*":        "/transactions/admin/$1/$2",
+				"/admin/banners":                 "/banners/admin",
+				"/admin/banners/*":               "/banners/admin/$1",
+				"/admin/banners/*/*":             "/banners/admin/$1/$2",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/fcm_registrations":    "/fcm_registrations/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
@@ -170,6 +173,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/transactions":         "/transactions/v1/buyer",
 				"/v1/buyer/transactions/*":       "/transactions/v1/buyer/$1",
 				"/v1/buyer/transactions/*/*":     "/transactions/v1/buyer/$1/$2",
+				"/v1/buyer/banners":              "/banners/v1/buyer",
+				"/v1/buyer/banners/*":            "/banners/v1/buyer/$1",
+				"/v1/buyer/banners/*/*":          "/banners/v1/buyer/$1/$2",
 				"/v1/buyer/delivery_routes":      "/delivery_routes/v1/buyer",
 				"/v1/buyer/setting":              "/setting/v1/buyer",
 				"/v1/buyer/payment_channels":     "/payment_channels/v1/buyer",
@@ -330,6 +336,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.PaymentChannelService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/payment_channels"))
+	controllers.NewBannerController(
+		q.AdminService,
+		q.BannerService,
+	).Mount(app.Group("/banners"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).

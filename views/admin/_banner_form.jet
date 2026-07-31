@@ -1,0 +1,56 @@
+<form method="POST" action="{{ baseURL }}/admin/banners{{ if !banner.New() }}/{{ banner.ID }}{{ end }}" enctype="multipart/form-data">
+	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+	{{ if !banner.New() }}<input type="hidden" name="id" value="{{ banner.ID }}" />{{ end }}
+	<div class="row">
+		<div class="col-lg-4 text-center">
+			<label for="photo">
+				<img src="{{ if request.Photo }}{{ request.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/assets/img/upload-icon.png{{ end }}"
+					alt="Foto Banner"
+					class="w-100 cp"
+					data-toggle="tooltip"
+					data-placement="left"
+					title="Klik Gambar untuk Memilih Gambar"
+					id="photo_preview" />
+				<input type="file" name="photo" id="photo" accept="image/*" />
+			</label>
+		</div>
+		<div class="col-lg-8">
+			<div class="form-group">
+				<label for="name" class="label-title">Nama Banner</label>
+				<input type="text"
+					name="name"
+					value="{{ request.Name }}"
+					id="name"
+					class="form-control"
+					placeholder="Nama Banner" />
+			</div>
+			<div class="form-group">
+				<label for="description" class="label-title">Keterangan</label>
+				<textarea name="description"
+					class="form-control"
+					id="description"
+					placeholder="Keterangan Banner">{{ request.Description }}</textarea>
+			</div>
+			<hr />
+			<button type="submit" class="btn btn-success mr-1">
+				Simpan{{ if !banner.New() }} Perubahan{{ end }} Data Banner
+			</button>
+			<a href="{{ baseURL }}/admin/banners" class="btn btn-default ml-1">
+				Back to List Banner
+			</a>
+		</div>
+	</div>
+</form>
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("photo").addEventListener("change", (event) => {
+			let file = event.target.files[0]
+			if (!file || !file.type.startsWith("image/")) {
+				return;
+			}
+			let preview = document.getElementById("photo_preview");
+			preview.setAttribute("src", URL.createObjectURL(file));
+			preview.classList.add("img-thumbnail");
+		});
+	});
+</script>

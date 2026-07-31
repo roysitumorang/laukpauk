@@ -56,6 +56,7 @@ type (
 		TransactionCounterService services.TransactionCounterService
 		DeliveryRouteService      services.DeliveryRouteService
 		PaymentChannelService     services.PaymentChannelService
+		BannerService             services.BannerService
 	}
 )
 
@@ -145,6 +146,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
 	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
 	paymentChannelRepository := repositories.NewPaymentChannelRepository(dbRead, dbWrite)
+	bannerRepository := repositories.NewBannerRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -183,6 +185,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
 	paymentChannelService := services.NewPaymentChannelService(paymentChannelRepository)
+	bannerService := services.NewBannerService(bannerRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
@@ -216,6 +219,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		TransactionCounterService: transactionCounterService,
 		DeliveryRouteService:      deliveryRouteService,
 		PaymentChannelService:     paymentChannelService,
+		BannerService:             bannerService,
 	}, nil
 }
 
