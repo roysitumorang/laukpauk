@@ -2474,7 +2474,7 @@ func init() {
 				, updated_at timestamp with time zone NOT NULL
 				, deleted_by UUID REFERENCES users (id)
 				, deleted_at timestamp with time zone
-				, deleted_reason character varying
+				, deletion_reason character varying
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
