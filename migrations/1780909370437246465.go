@@ -198,7 +198,7 @@ func init() {
 				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 				, referral_code character varying NOT NULL
 				, address character varying NOT NULL
-				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, referrer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_points bigint NOT NULL DEFAULT 0
 				, reward_points bigint NOT NULL DEFAULT 0
 				, wallet bigint NOT NULL DEFAULT 0
@@ -1503,8 +1503,8 @@ func init() {
 			ctx,
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-				, deleted_buyer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+				, deleted_buyer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 			);`,

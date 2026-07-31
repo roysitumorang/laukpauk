@@ -23,28 +23,31 @@ type (
 	user struct {
 		UserType                      UserType   `json:"-" form:"-"`
 		UserStatus                    UserStatus `json:"-" form:"-"`
-		Name                          string     `json:"name" form:"-"`
+		Name                          string     `json:"name" form:"name"`
 		ConfirmationToken             *string    `json:"-" form:"-"`
 		ConfirmedAt                   *time.Time `json:"-" form:"-"`
 		UnconfirmedMobilePhone        *string    `json:"-" form:"-"`
 		MobilePhoneConfirmationSentAt *time.Time `json:"-" form:"-"`
 		MobilePhoneConfirmationToken  *string    `json:"-" form:"-"`
 		MobilePhoneConfirmedAt        *time.Time `json:"-" form:"-"`
-		MobilePhone                   *string    `json:"mobile_phone" form:"-"`
+		MobilePhone                   *string    `json:"mobile_phone" form:"mobile_phone"`
 		OtpToken                      *string    `json:"-" form:"-"`
 		OtpCreatedAt                  *time.Time `json:"-" form:"-"`
 		OtpExpiredAt                  *time.Time `json:"-" form:"-"`
-		Username                      string     `json:"username" form:"-"`
+		Username                      string     `json:"username" form:"username"`
 		UnconfirmedEmail              *string    `json:"-" form:"-"`
 		EmailConfirmationSentAt       *time.Time `json:"-" form:"-"`
 		EmailConfirmationToken        *string    `json:"-" form:"-"`
 		EmailConfirmedAt              *time.Time `json:"-" form:"-"`
 		Email                         *string    `json:"-" form:"-"`
+		Base64Password                string     `json:"-" form:"password"`
+		Base64PasswordConfirmation    string     `json:"-" form:"password_confirmation"`
+		PlaintextPassword             string     `json:"-" form:"-"`
 		EncryptedPassword             *string    `json:"-" form:"-"`
 		PasswordResetAt               *time.Time `json:"-" form:"-"`
 		PasswordResetToken            *string    `json:"-" form:"-"`
 		PasswordChangedAt             *time.Time `json:"-" form:"-"`
-		Photo                         string     `json:"-" form:"-"`
+		Photo                         string     `json:"-" form:"photo"`
 		UnreadNotifications           int64      `json:"-" form:"-"`
 		CreatedBy                     *uuid.UUID `json:"-" form:"-"`
 		CreatedAt                     time.Time  `json:"created_at" form:"-"`

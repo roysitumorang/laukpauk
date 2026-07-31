@@ -21,6 +21,11 @@ type (
 			ctx context.Context,
 			request *models.BuyerFilter,
 		) (*models.Buyer, error)
+		CreateBuyer(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.Buyer,
+		) (*models.Buyer, error)
 		UpdateBuyer(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -79,6 +84,19 @@ func (q *buyerService) FindBuyer(
 	response, err := q.buyerRepository.FindBuyer(ctx, request)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+	}
+	return response, err
+}
+
+func (q *buyerService) CreateBuyer(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.Buyer,
+) (*models.Buyer, error) {
+	ctxt := "BuyerService-CreateBuyer"
+	response, err := q.buyerRepository.CreateBuyer(ctx, tx, request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBuyer")
 	}
 	return response, err
 }
