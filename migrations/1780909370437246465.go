@@ -122,7 +122,8 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE admins (
-				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 				, admin_type integer NOT NULL
 			);`,
 		); err != nil {
@@ -193,7 +194,8 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE buyers (
-				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 				, referral_code character varying NOT NULL
 				, address character varying NOT NULL
 				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -1830,6 +1832,8 @@ func init() {
 				, shipped_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, shipped_at timestamp with time zone
 				, delivery_actual_cost bigint NOT NULL
+				, complained_at timestamp with time zone
+				, complaint character varying
 				, completed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, completed_at timestamp with time zone
 			);`,

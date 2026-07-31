@@ -36,6 +36,7 @@ const (
 	TransactionStatusWithdrawn
 	TransactionStatusProcessed
 	TransactionStatusShipped
+	TransactionStatusComplained
 	TransactionStatusCompleted
 )
 
