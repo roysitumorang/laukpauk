@@ -64,11 +64,11 @@ func init() {
 				, password_changed_at timestamp with time zone
 				, photo character varying NOT NULL
 				, unread_notifications bigint NOT NULL DEFAULT 0
-				, created_by UUID REFERENCES users (id)
+				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -122,7 +122,7 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE admins (
-				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
+				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, admin_type integer NOT NULL
 			);`,
 		); err != nil {
@@ -193,10 +193,10 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE buyers (
-				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id)
+				user_id UUID NOT NULL PRIMARY KEY REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_code character varying NOT NULL
 				, address character varying NOT NULL
-				, referrer_id UUID REFERENCES users (id)
+				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_points bigint NOT NULL DEFAULT 0
 				, reward_points bigint NOT NULL DEFAULT 0
 				, wallet bigint NOT NULL DEFAULT 0
@@ -228,11 +228,11 @@ func init() {
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -281,7 +281,7 @@ func init() {
 			`CREATE TABLE products (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, product_category_id UUID REFERENCES product_categories (id)
+				, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_type integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, photo character varying NOT NULL
@@ -289,11 +289,11 @@ func init() {
 				, ready_stock BOOLEAN NOT NULL
 				, pinned BOOLEAN NOT NULL DEFAULT FALSE
 				, hits bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -377,7 +377,7 @@ func init() {
 			`CREATE TABLE product_variants (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, product_id UUID NOT NULL REFERENCES products (id)
+				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, stock_unit character varying NOT NULL COLLATE "natural_sort"
 				, base_price bigint NOT NULL
 				, selling_price bigint NOT NULL
@@ -387,11 +387,11 @@ func init() {
 				, discount_amount bigint NOT NULL
 				, sale_price bigint NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, UNIQUE (product_id, stock_unit)
@@ -448,11 +448,11 @@ func init() {
 			`CREATE TABLE provinces (
 				id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY
 				, name character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -493,13 +493,13 @@ func init() {
 			ctx,
 			`CREATE TABLE regencies (
 				id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY
-				, province_id bigint NOT NULL REFERENCES provinces (id)
+				, province_id bigint NOT NULL REFERENCES provinces (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, name character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -547,13 +547,13 @@ func init() {
 			ctx,
 			`CREATE TABLE districts (
 				id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY
-				, regency_id bigint NOT NULL REFERENCES regencies (id)
+				, regency_id bigint NOT NULL REFERENCES regencies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, name character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -601,13 +601,13 @@ func init() {
 			ctx,
 			`CREATE TABLE subdistricts (
 				id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY
-				, district_id bigint NOT NULL REFERENCES districts (id)
+				, district_id bigint NOT NULL REFERENCES districts (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, name character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -655,7 +655,7 @@ func init() {
 			ctx,
 			`CREATE TABLE fcm_registrations (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id)
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, token character varying NOT NULL UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
@@ -687,9 +687,9 @@ func init() {
 				, photo character varying
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -729,7 +729,7 @@ func init() {
 			ctx,
 			`CREATE TABLE notifications (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id)
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, notification_type character varying NOT NULL
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
@@ -780,9 +780,9 @@ func init() {
 				, maximum_delivery_time interval NOT NULL
 				, transaction_auto_withdrawal_enabled boolean NOT NULL
 				, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -909,13 +909,13 @@ func init() {
 			ctx,
 			`CREATE TABLE sms_messages (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id)
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, mobile_phone character varying NOT NULL
 				, message_type integer NOT NULL
 				, body character varying NOT NULL
 				, delivery_status character varying
 				, message_id bigint
-				, created_by UUID REFERENCES users (id)
+				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, sent_at timestamp with time zone
@@ -975,11 +975,11 @@ func init() {
 				, next_day_window TSTZRANGE NOT NULL
 				, next_two_day BOOLEAN NOT NULL
 				, next_two_day_window TSTZRANGE NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
@@ -1338,11 +1338,11 @@ func init() {
 				, effective_start_date timestamp with time zone NOT NULL
 				, effective_end_date timestamp with time zone NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -1446,8 +1446,8 @@ func init() {
 			ctx,
 			`CREATE TABLE vouchers_buyers (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, voucher_id UUID NOT NULL REFERENCES vouchers (id)
-				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, voucher_id UUID NOT NULL REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, UNIQUE (voucher_id, buyer_id)
 			);`,
@@ -1474,7 +1474,7 @@ func init() {
 			ctx,
 			`CREATE TABLE json_web_tokens (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id)
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, expired_at timestamp with time zone NOT NULL
 			);`,
@@ -1501,8 +1501,8 @@ func init() {
 			ctx,
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID REFERENCES users (id) UNIQUE
-				, deleted_buyer_id UUID REFERENCES users (id)
+				, buyer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+				, deleted_buyer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 			);`,
@@ -1522,8 +1522,8 @@ func init() {
 			ctx,
 			`CREATE TABLE cart_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, cart_id UUID NOT NULL REFERENCES carts (id)
-				, product_variant_id UUID NOT NULL REFERENCES product_variants (id)
+				, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, quantity bigint NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
@@ -1602,7 +1602,7 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`ALTER TABLE buyers
-				ADD COLUMN delivery_route_id UUID REFERENCES delivery_routes (id);`,
+				ADD COLUMN delivery_route_id UUID REFERENCES delivery_routes (id) ON UPDATE CASCADE ON DELETE RESTRICT;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1766,10 +1766,10 @@ func init() {
 			ctx,
 			`CREATE TABLE transactions (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, parent_id UUID REFERENCES transactions (id)
+				, parent_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, reordered BOOLEAN NOT NULL
-				, buyer_id UUID NOT NULL REFERENCES users (id)
-				, cart_id UUID NOT NULL REFERENCES carts (id) UNIQUE
+				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 				, reference_number character varying NOT NULL
 				, status integer NOT NULL
 				, recipient_name character varying NOT NULL
@@ -1777,10 +1777,10 @@ func init() {
 				, buyer_note character varying NOT NULL
 				, unique_code bigint NOT NULL
 				, shopping_cost bigint NOT NULL
-				, referrer_id UUID REFERENCES users (id)
+				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_code character varying
 				, referral_points bigint NOT NULL
-				, voucher_id UUID REFERENCES vouchers (id)
+				, voucher_id UUID REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, voucher_type integer
 				, voucher_code character varying
 				, voucher_discount bigint NOT NULL
@@ -1792,7 +1792,7 @@ func init() {
 				, discounted_shopping_cost bigint NOT NULL
 				, delivery_estimated_cost bigint NOT NULL
 				, discounted_delivery_estimated_cost bigint NOT NULL
-				, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id)
+				, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, delivery_latitude character varying NOT NULL
 				, delivery_longitude character varying NOT NULL
 				, delivery_distance_km bigint NOT NULL
@@ -1801,7 +1801,7 @@ func init() {
 				, delivery_datetime timestamp with time zone NOT NULL
 				, payment_amount bigint NOT NULL
 				, payment_due_date timestamp with time zone
-				, payment_channel_id UUID REFERENCES payment_channels (id)
+				, payment_channel_id UUID REFERENCES payment_channels (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, payment_channel_name character varying
 				, payment_request_id character varying UNIQUE
 				, payment_token_id character varying UNIQUE
@@ -1817,9 +1817,9 @@ func init() {
 				, paid_at timestamp with time zone
 				, withdrawal_requested_at timestamp with time zone
 				, withdrawal_reason character varying
-				, withdrawn_by UUID REFERENCES users (id)
+				, withdrawn_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, withdrawn_at timestamp with time zone
-				, processed_by UUID REFERENCES users (id)
+				, processed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, processed_at timestamp with time zone
 				, revised_shopping_cost bigint NOT NULL
 				, revised_discounted_shopping_cost bigint NOT NULL
@@ -1827,10 +1827,10 @@ func init() {
 				, refund_amount bigint NOT NULL
 				, refunded_at timestamp with time zone
 				, refund_id character varying UNIQUE
-				, shipped_by UUID REFERENCES users (id)
+				, shipped_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, shipped_at timestamp with time zone
 				, delivery_actual_cost bigint NOT NULL
-				, completed_by UUID REFERENCES users (id)
+				, completed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, completed_at timestamp with time zone
 			);`,
 		); err != nil {
@@ -1975,9 +1975,9 @@ func init() {
 			ctx,
 			`CREATE TABLE transaction_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, transaction_id UUID NOT NULL REFERENCES transactions (id)
-				, product_variant_id UUID NOT NULL REFERENCES product_variants (id)
-				, product_id UUID NOT NULL REFERENCES products (id)
+				, transaction_id UUID NOT NULL REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_name character varying NOT NULL
 				, stock_unit character varying NOT NULL
 				, base_price bigint NOT NULL
@@ -2041,11 +2041,11 @@ func init() {
 				, minimum_purchase bigint UNIQUE
 				, deleted_minimum_purchase bigint
 				, earned_points bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2086,7 +2086,7 @@ func init() {
 			ctx,
 			`CREATE TABLE point_earnings (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, start_date timestamp with time zone NOT NULL
 				, end_date timestamp with time zone NOT NULL
 				, amount bigint NOT NULL
@@ -2127,11 +2127,11 @@ func init() {
 				, record_status integer NOT NULL
 				, shopping_cost int8range NOT NULL
 				, disposable_points bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT no_overlapping_shopping_cost EXCLUDE USING gist (
@@ -2293,15 +2293,15 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, point_type integer NOT NULL
-				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
-				, transaction_id UUID REFERENCES transactions (id)
+				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, description character varying NOT NULL
-				, created_by UUID REFERENCES users (id)
+				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id)
+				, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2370,9 +2370,9 @@ func init() {
 			ctx,
 			`CREATE TABLE wallets (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, wallet_transfer_type integer NOT NULL
-				, transaction_id UUID REFERENCES transactions (id)
+				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
 				, created_at timestamp with time zone NOT NULL
 			);`,
@@ -2411,11 +2411,11 @@ func init() {
 				, body character varying NOT NULL
 				, photo character varying NOT NULL
 				, link character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2468,11 +2468,11 @@ func init() {
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
 				, visible boolean NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2533,11 +2533,11 @@ func init() {
 				, slug character varying UNIQUE
 				, deleted_slug character varying
 				, photo character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2588,11 +2588,11 @@ func init() {
 				, record_status integer NOT NULL
 				, name character varying NOT NULL UNIQUE
 				, custom_attributes JSONB NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2634,17 +2634,17 @@ func init() {
 			`CREATE TABLE landing_page_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, landing_page_name character varying NOT NULL REFERENCES landing_pages (name)
+				, landing_page_name character varying NOT NULL REFERENCES landing_pages (name) ON UPDATE CASCADE ON DELETE RESTRICT
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
 				, link_text character varying
 				, link_url character varying
 				, photo character varying
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id)
+				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2711,11 +2711,11 @@ func init() {
 				, content_type character varying NOT NULL
 				, route character varying
 				, ordinal_number bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2749,15 +2749,15 @@ func init() {
 			ctx,
 			`CREATE TABLE content_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, content_id UUID NOT NULL REFERENCES contents (id)
+				, content_id UUID NOT NULL REFERENCES contents (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, item character varying NOT NULL
 				, option character varying
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2791,13 +2791,13 @@ func init() {
 			ctx,
 			`CREATE TABLE withdrawals (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, recipient_name character varying NOT NULL
 				, bank_account character varying NOT NULL
 				, amount bigint NOT NULL
 				, description character varying NOT NULL
 				, status character varying NOT NULL
-				, reviewed_by UUID REFERENCES users (id)
+				, reviewed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, reviewed_at timestamp with time zone
 				, rejection_reason character varying
 				, created_at timestamp with time zone NOT NULL
@@ -2830,11 +2830,11 @@ func init() {
 				, description character varying NOT NULL
 				, instagram_link character varying NOT NULL
 				, facebook_link character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2868,13 +2868,13 @@ func init() {
 			ctx,
 			`CREATE TABLE recipe_instructions (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, recipe_id UUID NOT NULL REFERENCES recipes (id)
+				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, action character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2915,15 +2915,15 @@ func init() {
 			ctx,
 			`CREATE TABLE recipe_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, recipe_id UUID NOT NULL REFERENCES recipes (id)
-				, product_id UUID NOT NULL REFERENCES products (id)
+				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, dose character varying NOT NULL
 				, note character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id)
+				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id)
+				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id)
+				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 				, UNIQUE (recipe_id, product_id)
@@ -2972,7 +2972,7 @@ func init() {
 			ctx,
 			`CREATE TABLE balances (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id)
+				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
 				, description character varying NOT NULL
 				, created_at timestamp with time zone NOT NULL
@@ -3034,8 +3034,8 @@ func init() {
 			ctx,
 			`CREATE TABLE message_receipts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, message_id UUID NOT NULL REFERENCES messages (id)
-				, user_id UUID NOT NULL REFERENCES users (id)
+				, message_id UUID NOT NULL REFERENCES messages (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, read_at timestamp with time zone NOT NULL
 				, UNIQUE (message_id, user_id)
 			);`,
