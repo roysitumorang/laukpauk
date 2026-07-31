@@ -96,7 +96,7 @@ func ValidateLandingPageCustomAttributes(
 				return response, nil, nil, errors.New("photo: invalid JPG/PNG/WEBP file")
 			}
 			mimeType = new(mtype.String())
-			photoFilename = helper.Sprintf("%s.webp", uuid.New().String())
+			photoFilename = helper.Sprintf("%s.webp", uuid.NewV7().String())
 		}
 		response = map[string]string{
 			"subject": subject,
@@ -124,7 +124,7 @@ func ValidateLandingPageCustomAttributes(
 				return response, nil, nil, errors.New("photo: invalid JPG/PNG/WEBP file")
 			}
 			mimeType = new(mtype.String())
-			photoFilename = helper.Sprintf("%s.webp", uuid.New().String())
+			photoFilename = helper.Sprintf("%s.webp", uuid.NewV7().String())
 		}
 		response = map[string]string{
 			"body":  body,

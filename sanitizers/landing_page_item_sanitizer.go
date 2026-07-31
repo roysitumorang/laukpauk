@@ -107,7 +107,7 @@ func ValidateLandingPageItem(
 			return &response, nil, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG/WEBP file")
 		}
 		mimeType = new(mtype.String())
-		response.Photo = new(helper.Sprintf("%s.webp", uuid.New().String()))
+		response.Photo = new(helper.Sprintf("%s.webp", uuid.NewV7().String()))
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")

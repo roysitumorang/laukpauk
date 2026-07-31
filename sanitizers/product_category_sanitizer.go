@@ -111,7 +111,7 @@ func ValidateProductCategory(
 			return &response, nil, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG/WEBP file")
 		}
 		mimeType = new(mtype.String())
-		response.Photo = helper.Sprintf("%s.webp", uuid.New().String())
+		response.Photo = helper.Sprintf("%s.webp", uuid.NewV7().String())
 	}
 	return &response, photo, mimeType, fiber.StatusOK, nil
 }
