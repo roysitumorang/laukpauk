@@ -290,7 +290,7 @@
 								-->
 							</ul>
 						</li>
-						<li class="nav-item has-treeview">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/banners") || HasPrefix(path, "/admin/contents") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-image"></i>
 								<p>
@@ -298,7 +298,7 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview">
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/banners") || HasPrefix(path, "/admin/contents") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/banners" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
