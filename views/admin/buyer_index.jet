@@ -242,7 +242,6 @@
 	<!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
-<!-- /.content-wrapper -->
 <script>
 	document.addEventListener("DOMContentLoaded", () => {
 		document.getElementById("reset").addEventListener("click", (event) => {

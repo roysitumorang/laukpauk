@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -19,6 +20,16 @@ type (
 		FindAdmin(
 			ctx context.Context,
 			request *models.AdminFilter,
+		) (*models.Admin, error)
+		CreateAdmin(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.Admin,
+		) (*models.Admin, error)
+		UpdateAdmin(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.Admin,
 		) (*models.Admin, error)
 	}
 
@@ -73,6 +84,32 @@ func (q *adminService) FindAdmin(
 	response, err := q.adminRepository.FindAdmin(ctx, request)
 	if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+	}
+	return response, err
+}
+
+func (q *adminService) CreateAdmin(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.Admin,
+) (*models.Admin, error) {
+	ctxt := "AdminService-CreateAdmin"
+	response, err := q.adminRepository.CreateAdmin(ctx, tx, request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateAdmin")
+	}
+	return response, err
+}
+
+func (q *adminService) UpdateAdmin(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.Admin,
+) (*models.Admin, error) {
+	ctxt := "AdminService-UpdateAdmin"
+	response, err := q.adminRepository.UpdateAdmin(ctx, tx, request)
+	if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateAdmin")
 	}
 	return response, err
 }

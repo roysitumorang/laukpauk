@@ -163,6 +163,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/buyers":                  "/buyers/admin",
 				"/admin/buyers/*":                "/buyers/admin/$1",
 				"/admin/buyers/*/*":              "/buyers/admin/$1/$2",
+				"/admin/admins":                  "/admins/admin",
+				"/admin/admins/*":                "/admins/admin/$1",
+				"/admin/admins/*/*":              "/admins/admin/$1/$2",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/fcm_registrations":    "/fcm_registrations/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
@@ -347,6 +350,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.AdminService,
 		q.BuyerService,
 	).Mount(app.Group("/buyers"))
+	controllers.NewAdminController(
+		q.AdminService,
+	).Mount(app.Group("/admins"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).

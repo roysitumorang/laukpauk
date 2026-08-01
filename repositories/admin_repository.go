@@ -25,6 +25,11 @@ type (
 			ctx context.Context,
 			request *models.AdminFilter,
 		) (*models.Admin, error)
+		CreateAdmin(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.Admin,
+		) (*models.Admin, error)
 		UpdateAdmin(
 			ctx context.Context,
 			tx pgx.Tx,
@@ -408,6 +413,173 @@ func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *string
 		condition = sb.String()
 	}
 	return
+}
+
+func (q *adminRepository) CreateAdmin(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.Admin,
+) (*models.Admin, error) {
+	ctxt := "AdminRepository-CreateAdmin"
+	var response models.Admin
+	err := tx.QueryRow(
+		ctx,
+		`INSERT INTO users (
+			user_type
+			, user_status
+			, name
+			, confirmation_token
+			, confirmed_at
+			, unconfirmed_mobile_phone
+			, mobile_phone_confirmation_sent_at
+			, mobile_phone_confirmation_token
+			, mobile_phone_confirmed_at
+			, mobile_phone
+			, otp_token
+			, otp_created_at
+			, otp_expired_at
+			, username
+			, unconfirmed_email
+			, email_confirmation_sent_at
+			, email_confirmation_token
+			, email_confirmed_at
+			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
+			, photo
+			, unread_notifications
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+			, $21, $22, $23, $24, $25, $26, $27, $28, $29
+		)
+		RETURNING id
+			, user_type
+			, user_status
+			, name
+			, confirmation_token
+			, confirmed_at
+			, unconfirmed_mobile_phone
+			, mobile_phone_confirmation_sent_at
+			, mobile_phone_confirmation_token
+			, mobile_phone_confirmed_at
+			, mobile_phone
+			, otp_token
+			, otp_created_at
+			, otp_expired_at
+			, username
+			, unconfirmed_email
+			, email_confirmation_sent_at
+			, email_confirmation_token
+			, email_confirmed_at
+			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
+			, photo
+			, unread_notifications
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deactivated_by
+			, deactivated_at
+			, deactivation_reason`,
+		request.UserType,
+		request.UserStatus,
+		request.Name,
+		request.ConfirmationToken,
+		request.ConfirmedAt,
+		request.UnconfirmedMobilePhone,
+		request.MobilePhoneConfirmationSentAt,
+		request.MobilePhoneConfirmationToken,
+		request.MobilePhoneConfirmedAt,
+		request.MobilePhone,
+		request.OtpToken,
+		request.OtpCreatedAt,
+		request.OtpExpiredAt,
+		request.Username,
+		request.UnconfirmedEmail,
+		request.EmailConfirmationSentAt,
+		request.EmailConfirmationToken,
+		request.EmailConfirmedAt,
+		request.Email,
+		request.EncryptedPassword,
+		request.PasswordResetAt,
+		request.PasswordResetToken,
+		request.PasswordChangedAt,
+		request.Photo,
+		request.UnreadNotifications,
+		request.CreatedBy,
+		request.CreatedAt,
+		request.UpdatedBy,
+		request.UpdatedAt,
+	).Scan(
+		&response.UserID,
+		&response.UserType,
+		&response.UserStatus,
+		&response.Name,
+		&response.ConfirmationToken,
+		&response.ConfirmedAt,
+		&response.UnconfirmedMobilePhone,
+		&response.MobilePhoneConfirmationSentAt,
+		&response.MobilePhoneConfirmationToken,
+		&response.MobilePhoneConfirmedAt,
+		&response.MobilePhone,
+		&response.OtpToken,
+		&response.OtpCreatedAt,
+		&response.OtpExpiredAt,
+		&response.Username,
+		&response.UnconfirmedEmail,
+		&response.EmailConfirmationSentAt,
+		&response.EmailConfirmationToken,
+		&response.EmailConfirmedAt,
+		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
+		&response.Photo,
+		&response.UnreadNotifications,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeactivatedBy,
+		&response.DeactivatedAt,
+		&response.DeactivationReason,
+	)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	if err = tx.QueryRow(
+		ctx,
+		`INSERT INTO admins (
+			user_id
+			, admin_type
+		) VALUES ($1, $2)
+		RETURNING id
+			, user_id
+			, admin_type`,
+		response.UserID,
+		request.AdminType,
+	).Scan(
+		&response.ID,
+		&response.UserID,
+		&response.AdminType,
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	return &response, nil
 }
 
 func (q *adminRepository) UpdateAdmin(
