@@ -570,8 +570,8 @@ func (q *buyerController) AdminDelete(c fiber.Ctx) (err error) {
 	if buyer == nil {
 		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/admin/buyers")
 	}
-	buyer.UserStatus = models.UserStatusActive
-	buyer.DeactivatedBy = &currentAdmin.ID
+	buyer.UserStatus = models.UserStatusDeactivated
+	buyer.DeactivatedBy = &currentAdmin.UserID
 	buyer.DeactivatedAt = new(time.Now())
 	buyer.DeactivationReason = nil
 	tx, err := repositories.BeginTx(ctx)
