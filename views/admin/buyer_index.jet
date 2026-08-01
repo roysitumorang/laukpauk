@@ -162,7 +162,7 @@
 									</td>
 									<td>
 										<div class="text-right text-sm">
-											{{ 0 }} x Belanja
+											{{ row.TransactionVolume }} x Belanja
 											<a href="{{ baseURL }}/admin/transactions?buyer_id={{ row.ID }}">
 												<span class="fa fa-shopping-cart ml-2 text-success cp"
 													data-toggle="tooltip"

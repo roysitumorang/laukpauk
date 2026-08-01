@@ -120,6 +120,7 @@ func (q *buyerRepository) FindBuyers(
 		, b.referral_points
 		, b.reward_points
 		, b.wallet
+		, b.transaction_volume
 		, b.delivery_route_id`,
 	)
 	sb.Reset()
@@ -210,6 +211,7 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.ReferralPoints,
 			&buyer.RewardPoints,
 			&buyer.Wallet,
+			&buyer.TransactionVolume,
 			&buyer.DeliveryRouteID,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -273,6 +275,7 @@ func (q *buyerRepository) FindBuyer(
 			, b.referral_points
 			, b.reward_points
 			, b.wallet
+			, b.transaction_volume
 			, b.delivery_route_id
 		FROM users u
 		JOIN buyers b ON u.id = b.user_id %s`,
@@ -320,6 +323,7 @@ func (q *buyerRepository) FindBuyer(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
+		&response.TransactionVolume,
 		&response.DeliveryRouteID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -602,8 +606,9 @@ func (q *buyerRepository) CreateBuyer(
 			, referral_points
 			, reward_points
 			, wallet
+			, transaction_volume
 			, delivery_route_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 			, user_id
 			, referral_code
@@ -612,6 +617,7 @@ func (q *buyerRepository) CreateBuyer(
 			, referral_points
 			, reward_points
 			, wallet
+			, transaction_volume
 			, delivery_route_id`,
 		response.UserID,
 		request.ReferralCode,
@@ -620,6 +626,7 @@ func (q *buyerRepository) CreateBuyer(
 		request.ReferralPoints,
 		request.RewardPoints,
 		request.Wallet,
+		request.TransactionVolume,
 		request.DeliveryRouteID,
 	).Scan(
 		&response.ID,
@@ -630,6 +637,7 @@ func (q *buyerRepository) CreateBuyer(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
+		&response.TransactionVolume,
 		&response.DeliveryRouteID,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -656,6 +664,7 @@ func (q *buyerRepository) UpdateBuyer(
 			, referral_points
 			, reward_points
 			, wallet
+			, transaction_volume
 			, delivery_route_id
 		FROM buyers
 		WHERE id = $1
@@ -670,6 +679,7 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
+		&response.TransactionVolume,
 		&response.DeliveryRouteID,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -730,6 +740,13 @@ func (q *buyerRepository) UpdateBuyer(
 		}
 		_, _ = fmt.Fprintf(sb, " wallet = wallet + $%d", n)
 	}
+	if request.TransactionVolume != 0 {
+		params = append(params, request.TransactionVolume)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " transaction_volume = transaction_volume + $%d", n)
+	}
 	if (response.DeliveryRouteID == nil &&
 		request.DeliveryRouteID != nil) ||
 		(response.DeliveryRouteID != nil &&
@@ -754,6 +771,7 @@ func (q *buyerRepository) UpdateBuyer(
 				, referral_points
 				, reward_points
 				, wallet
+				, transaction_volume
 				, delivery_route_id`,
 			len(params),
 		)
@@ -766,6 +784,7 @@ func (q *buyerRepository) UpdateBuyer(
 			&response.ReferralPoints,
 			&response.RewardPoints,
 			&response.Wallet,
+			&response.TransactionVolume,
 			&response.DeliveryRouteID,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

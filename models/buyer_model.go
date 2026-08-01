@@ -27,16 +27,17 @@ type Buyer struct {
 	ID     uuid.UUID `json:"id" form:"id"`
 	UserID uuid.UUID `json:"-" form:"-"`
 	user
-	ReferralCode    string     `json:"referral_code" form:"-"`
-	Address         string     `json:"address" form:"address"`
-	ReferrerID      *uuid.UUID `json:"referrer_id" form:"referrer_id"`
-	ReferralPoints  int64      `json:"referral_points" form:"-"`
-	RewardPoints    int64      `json:"reward_points" form:"-"`
-	Wallet          int64      `json:"wallet" form:"-"`
-	DeliveryRouteID *uuid.UUID `json:"delivery_route_id" form:"-"`
+	ReferralCode      string     `json:"referral_code" form:"referral_code"`
+	Address           string     `json:"address" form:"address"`
+	ReferrerID        *uuid.UUID `json:"referrer_id" form:"referrer_id"`
+	ReferralPoints    int64      `json:"referral_points" form:"-"`
+	RewardPoints      int64      `json:"reward_points" form:"-"`
+	Wallet            int64      `json:"wallet" form:"-"`
+	TransactionVolume int64      `json:"transaction_volume" form:"-"`
+	DeliveryRouteID   *uuid.UUID `json:"delivery_route_id" form:"-"`
 }
 
-func (q *Buyer) Validate(includePassword bool) error {
+func (q *Buyer) Validate() error {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
@@ -54,7 +55,7 @@ func (q *Buyer) Validate(includePassword bool) error {
 	if q.Address = strings.TrimSpace(q.Address); q.Address == "" {
 		return errors.New("address: is required")
 	}
-	if includePassword {
+	if q.PasswordIncluded {
 		if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
 			return errors.New("password: is required")
 		}
@@ -67,6 +68,9 @@ func (q *Buyer) Validate(includePassword bool) error {
 		if q.PlaintextPassword, err = helper.Base64Decode(q.Base64Password); err != nil {
 			return fmt.Errorf("password: %s", err.Error())
 		}
+	}
+	if q.ReferrerID != nil && q.ReferrerID.Compare(uuid.Nil()) == 0 {
+		q.ReferrerID = nil
 	}
 	return nil
 }

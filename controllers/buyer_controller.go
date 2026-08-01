@@ -195,7 +195,7 @@ func (q *buyerController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	params.Push("buyers", buyers)
-	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c, true)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyer")
@@ -265,16 +265,22 @@ func (q *buyerController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now().In(time.Local)
 	createdBy := currentAdmin.UserID
-	encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
-		return c.Render("admin/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(""),
-		), "admin/layouts/authenticated")
+	if request.PasswordIncluded {
+		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
+			return c.Render("admin/buyer_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(""),
+			), "admin/layouts/authenticated")
+		}
+		request.EncryptedPassword = encryptedPasword
+		request.PasswordChangedAt = &now
 	}
-	request.EncryptedPassword = encryptedPasword
-	request.PasswordChangedAt = &now
+	request.ReferralPoints = 0
+	request.RewardPoints = 0
+	request.Wallet = 0
+	request.TransactionVolume = 0
 	request.CreatedBy = &createdBy
 	request.CreatedAt = now
 	request.UpdatedBy = &createdBy
@@ -439,7 +445,7 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	params.Push("buyers", buyers)
-	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c, true)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c)
 	if photo == nil {
 		request.Photo = buyer.Photo
 	}
@@ -470,20 +476,26 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 	}
-	encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
-		return c.Render("admin/buyer_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
 	now := time.Now().In(time.Local)
+	if request.PasswordIncluded {
+		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
+			return c.Render("admin/buyer_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		buyer.EncryptedPassword = encryptedPasword
+		buyer.PasswordChangedAt = &now
+	}
 	buyer.Name = request.Name
 	buyer.Username = request.Username
-	buyer.EncryptedPassword = encryptedPasword
-	buyer.PasswordChangedAt = &now
 	buyer.Photo = request.Photo
 	buyer.Address = request.Address
+	buyer.ReferralPoints = 0
+	buyer.RewardPoints = 0
+	buyer.Wallet = 0
+	buyer.TransactionVolume = 0
 	buyer.ReferrerID = request.ReferrerID
 	buyer.UpdatedBy = &currentAdmin.UserID
 	buyer.UpdatedAt = now

@@ -202,6 +202,7 @@ func init() {
 				, referral_points bigint NOT NULL DEFAULT 0
 				, reward_points bigint NOT NULL DEFAULT 0
 				, wallet bigint NOT NULL DEFAULT 0
+				, transaction_volume bigint NOT NULL DEFAULT 0
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

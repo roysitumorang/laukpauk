@@ -71,7 +71,7 @@ func FindBuyers(ctx context.Context, c fiber.Ctx) (*models.BuyerFilter, error) {
 	return response, nil
 }
 
-func ValidateBuyer(ctx context.Context, c fiber.Ctx, includePassword bool) (*models.Buyer, *multipart.FileHeader, *string, int, error) {
+func ValidateBuyer(ctx context.Context, c fiber.Ctx) (*models.Buyer, *multipart.FileHeader, *string, int, error) {
 	ctxt := "BuyerSanitizer-ValidateBuyer"
 	var response models.Buyer
 	err := c.Bind().Body(&response)
@@ -79,7 +79,7 @@ func ValidateBuyer(ctx context.Context, c fiber.Ctx, includePassword bool) (*mod
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, nil, nil, fiberErr.Code, err
 	}
-	if err = (&response).Validate(includePassword); err != nil {
+	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, nil, nil, fiber.StatusBadRequest, err
 	}

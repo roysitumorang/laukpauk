@@ -57,21 +57,25 @@
 						class="form-control input"
 						placeholder="Username" />
 				</div>
+				<div class="form-group">
+					<input type="checkbox" name="password_included" id="password_included" class="mr-2"{{ if request.PasswordIncluded }} checked{{ end }} />
+					<label for="password_included" class="label-title cp">Isi Password</label>
+				</div>
 				<div class="form-group col-lg-4">
 					<label for="password" class="label-title">Password</label>
 					<input type="password"
 						id="password"
 						class="form-control input"
-						placeholder="Password" />
-					<input type="hidden" name="password" />
+						placeholder="Password"{{ if !request.PasswordIncluded }} disabled{{ end }} />
+					<input type="hidden" name="password"{{ if !request.PasswordIncluded }} disabled{{ end }} />
 				</div>
 				<div class="form-group col-lg-4">
 					<label for="password_confirmation" class="label-title">Konfirmasi Password</label>
 					<input type="password"
 						id="password_confirmation"
 						class="form-control input"
-						placeholder="Konfirmasi Password" />
-					<input type="hidden" name="password_confirmation" />
+						placeholder="Konfirmasi Password"{{ if !request.PasswordIncluded }} disabled{{ end }} />
+					<input type="hidden" name="password_confirmation"{{ if !request.PasswordIncluded }} disabled{{ end }} />
 				</div>
 			</div>
 			<div class="form-group">
@@ -110,6 +114,15 @@
 			let preview = document.getElementById("photo_preview");
 			preview.setAttribute("src", URL.createObjectURL(file));
 			preview.classList.add("img-thumbnail");
+		});
+		document.getElementById("password_included").addEventListener("change", (event) => {
+			if (event.target.checked) {
+				document.getElementById("password").removeAttribute("disabled");
+				document.getElementById("password_confirmation").removeAttribute("disabled");
+				return;
+			}
+			document.getElementById("password").setAttribute("disabled", "disabled");
+			document.getElementById("password_confirmation").setAttribute("disabled", "disabled");
 		});
 		document.getElementById("password").addEventListener("change", (event) => {
 			document.querySelector('input[name="password"]').value = btoa(event.target.value);
