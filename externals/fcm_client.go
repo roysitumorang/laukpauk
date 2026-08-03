@@ -54,6 +54,15 @@ type (
 		ExpiresIn   int    `json:"expires_in"`
 		TokenType   string `json:"token_type"`
 	}
+
+	FcmCheckTokenRequest struct {
+		ValidateOnly bool                 `json:"validate_only"`
+		Message      FcmCheckTokenMessage `json:"message"`
+	}
+
+	FcmCheckTokenMessage struct {
+		Token string `json:"token"`
+	}
 )
 
 func NewFcmClient(
@@ -124,6 +133,46 @@ func (q *FcmClient) Send(ctx context.Context, token, title, body, image string, 
 		return nil, err
 	}
 	return &response.Name, nil
+}
+
+func (q *FcmClient) CheckStaleToken(ctx context.Context, token string) (bool, error) {
+	ctxt := "FcmClient-CheckStaleToken"
+	bearerToken, err := q.CreateOauth2Token(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrTokenSource")
+		return false, err
+	}
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "Bearer %s", bearerToken.AccessToken)
+	requestBody, err := json.Marshal(FcmCheckTokenRequest{
+		ValidateOnly: true,
+		Message:      FcmCheckTokenMessage{Token: token},
+	})
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrMarshal")
+		return false, err
+	}
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
+	req.SetRequestURI(q.baseURL)
+	req.Header.SetMethod(fasthttp.MethodPost)
+	req.Header.SetContentType("application/json")
+	req.Header.Set("Authorization", sb.String())
+	req.SetBodyRaw(requestBody)
+	if err = q.client.Do(req, resp); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
+		return false, err
+	}
+	return resp.StatusCode() == fasthttp.StatusNotFound, nil
 }
 
 func (q *FcmClient) CreateOauth2Token(ctx context.Context) (*FcmTokenResponse, error) {
