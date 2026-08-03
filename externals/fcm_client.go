@@ -33,8 +33,8 @@ type (
 	}
 
 	FcmRequest struct {
-		Token        string            `json:"token"`
-		Notification FcmNotification   `json:"notification"`
+		Fid          string            `json:"fid"`
+		Notification *FcmNotification  `json:"notification,omitempty"`
 		Data         map[string]string `json:"data"`
 	}
 
@@ -85,7 +85,7 @@ func NewFcmClient(
 	}
 }
 
-func (q *FcmClient) Send(ctx context.Context, token, title, body, image string, data map[string]string) (*string, error) {
+func (q *FcmClient) Send(ctx context.Context, fid, title, body, image string, data map[string]string) (*string, error) {
 	ctxt := "FcmClient-Send"
 	bearerToken, err := q.CreateOauth2Token(ctx)
 	if err != nil {
@@ -100,8 +100,8 @@ func (q *FcmClient) Send(ctx context.Context, token, title, body, image string, 
 	sb.Reset()
 	_, _ = fmt.Fprintf(sb, "Bearer %s", bearerToken.AccessToken)
 	requestBody, err := json.Marshal(FcmRequest{
-		Token: token,
-		Notification: FcmNotification{
+		Fid: fid,
+		Notification: &FcmNotification{
 			Title: title,
 			Body:  body,
 			Image: image,

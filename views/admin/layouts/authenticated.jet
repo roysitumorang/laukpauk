@@ -765,8 +765,8 @@
 	</script>
 	<script type="module">
 		import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-		import { deleteToken, getMessaging, getToken, onMessage, register } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging.js";
-		import { onRegistered } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging-sw.js";
+		import { getMessaging, onMessage, onRegistered } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging.js";
+		import { getInstallations, getId } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-installations.js";
 		const firebaseConfig = {
 			apiKey: "AIzaSyBob-5BSzx71suls2th1WpXpmw5gozG-Mk",
 			authDomain: "laukpauk-53b39.firebaseapp.com",
@@ -777,18 +777,20 @@
 			appId: "1:605038317389:web:767b27e1b3c33226d43104"
 		};
 		const app = initializeApp(firebaseConfig);
-		const messaging = getMessaging(app);
 		const vapidKey = "BMNjy4x4XOVtSplXSxg4Xq8ZAlc-6pTZRI-tAMDcYn5in5jrOd5yAEuOMn6I92QEDsrZYicsXNklWjwAFjl5CLk";
+		const installations = getInstallations(app);
+		const messaging = getMessaging(app);
 		async function requestPermission() {
 			const permission = await Notification.requestPermission();
 			if (permission === "granted") {
 				try {
-					const token = await getToken(messaging, { vapidKey: vapidKey });
-					console.log("FCM Token:", token);
+
+					const fid = await getId(installations);
+					console.log("FCM Token:", fid);
 					const response = await fetch("{{ baseURL }}/admin/fcm_registrations", {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ token: token }),
+						body: JSON.stringify({ token: fid }),
 						credentials: "include"
 					});
 				} catch (error) {
@@ -800,6 +802,15 @@
 		}
 		onMessage(messaging, (payload) => {
 			console.log("Message received in foreground: ", payload);
+		});
+		onRegistered(messaging, (fid) => {
+			console.log("FCM registered with Firebase Installation ID:", fid);
+			const response = fetch("{{ baseURL }}/admin/fcm_registrations", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ token: fid }),
+				credentials: "include"
+			});
 		});
 		requestPermission()
 	</script>
