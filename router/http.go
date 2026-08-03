@@ -169,6 +169,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/admins":                  "/admins/admin",
 				"/admin/admins/*":                "/admins/admin/$1",
 				"/admin/admins/*/*":              "/admins/admin/$1/$2",
+				"/admin/fcm_registrations":       "/fcm_registrations/admin",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/fcm_registrations":    "/fcm_registrations/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
@@ -194,6 +195,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/contact-us":                    "/home/contact-us",
 				"/faq":                           "/home/faq",
 				"/privacy-policy":                "/home/privacy-policy",
+				"/firebase-messaging-sw.js":      "/assets/js/firebase-messaging-sw.js",
 			},
 		}),
 		cors.New(),
@@ -203,7 +205,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			return strings.HasPrefix(c.OriginalURL(), "/v1/")
 		}),
 		skip.New(csrfMiddleware, func(c fiber.Ctx) bool {
-			return strings.HasPrefix(c.OriginalURL(), "/v1/")
+			return c.OriginalURL() == "/admin/fcm_registrations" ||
+				strings.HasPrefix(c.OriginalURL(), "/v1/")
 		}),
 	}
 	if sentryEnabled := os.Getenv("SENTRY_ENABLED") == "1"; sentryEnabled {
@@ -317,6 +320,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/transactions"))
 	controllers.NewFcmRegistrationController(
+		q.AdminService,
 		q.BuyerService,
 		q.FcmRegistrationService,
 		q.JsonWebTokenService,

@@ -31,7 +31,6 @@
 	<script src="{{ baseURL }}/assets/dist/js/pages/dashboard3.js"></script>
 	{{ end }}
 	<script src="{{ baseURL }}/assets/js/flatpickr.min.js"></script>
-	<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
 	<script src="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
 	<script src="{{ baseURL }}/assets/plugins/select2/js/select2.min.js"></script>
 	<script>
@@ -763,6 +762,46 @@
 			});
 			return notifikasiAdmin;
 		}
+	</script>
+	<script type="module">
+		import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+		import { deleteToken, getMessaging, getToken, onMessage, register } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging.js";
+		import { onRegistered } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging-sw.js";
+		const firebaseConfig = {
+			apiKey: "AIzaSyBob-5BSzx71suls2th1WpXpmw5gozG-Mk",
+			authDomain: "laukpauk-53b39.firebaseapp.com",
+			databaseURL: "https://laukpauk-53b39.firebaseio.com",
+			projectId: "laukpauk-53b39",
+			storageBucket: "laukpauk-53b39.firebasestorage.app",
+			messagingSenderId: "605038317389",
+			appId: "1:605038317389:web:767b27e1b3c33226d43104"
+		};
+		const app = initializeApp(firebaseConfig);
+		const messaging = getMessaging(app);
+		const vapidKey = "BMNjy4x4XOVtSplXSxg4Xq8ZAlc-6pTZRI-tAMDcYn5in5jrOd5yAEuOMn6I92QEDsrZYicsXNklWjwAFjl5CLk";
+		async function requestPermission() {
+			const permission = await Notification.requestPermission();
+			if (permission === "granted") {
+				try {
+					const token = await getToken(messaging, { vapidKey: vapidKey });
+					console.log("FCM Token:", token);
+					const response = await fetch("{{ baseURL }}/admin/fcm_registrations", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ token: token }),
+						credentials: "include"
+					});
+				} catch (error) {
+					console.error("Token retrieval failed:", error);
+				}
+			} else {
+				console.warn("Notification permission denied.");
+			}
+		}
+		onMessage(messaging, (payload) => {
+			console.log("Message received in foreground: ", payload);
+		});
+		requestPermission()
 	</script>
 </body>
 </html>

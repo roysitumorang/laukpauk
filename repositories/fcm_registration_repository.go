@@ -131,7 +131,7 @@ func (q *fcmRegistrationRepository) FindFcmRegistrations(
 		var fcmRegistration models.FcmRegistration
 		if err = rows.Scan(
 			&fcmRegistration.ID,
-			&fcmRegistration.BuyerID,
+			&fcmRegistration.UserID,
 			&fcmRegistration.Token,
 			&fcmRegistration.CreatedAt,
 			&fcmRegistration.UpdatedAt,
@@ -171,7 +171,7 @@ func (q *fcmRegistrationRepository) FindFcmRegistration(
 	var response models.FcmRegistration
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.Token,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -213,14 +213,14 @@ func (q *fcmRegistrationRepository) SaveFcmRegistration(
 			, created_at
 			, updated_at
 			, expired_at`,
-		request.BuyerID,
+		request.UserID,
 		request.Token,
 		request.CreatedAt,
 		request.UpdatedAt,
 		request.ExpiredAt,
 	).Scan(
 		&response.ID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.Token,
 		&response.CreatedAt,
 		&response.UpdatedAt,

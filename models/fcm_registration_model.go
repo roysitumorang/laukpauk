@@ -18,7 +18,7 @@ type (
 	FcmRegistration struct {
 		RowNo     int64     `json:"-" form:"-"`
 		ID        uuid.UUID `json:"id" form:"-"`
-		BuyerID   uuid.UUID `json:"buyer_id" form:"-"`
+		UserID    uuid.UUID `json:"user_id" form:"-"`
 		Token     string    `json:"token" form:"-"`
 		CreatedAt time.Time `json:"created_at" form:"-"`
 		UpdatedAt time.Time `json:"updated_at" form:"-"`
