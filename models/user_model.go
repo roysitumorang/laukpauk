@@ -39,7 +39,7 @@ type (
 		EmailConfirmationSentAt       *time.Time `json:"-" form:"-"`
 		EmailConfirmationToken        *string    `json:"-" form:"-"`
 		EmailConfirmedAt              *time.Time `json:"-" form:"-"`
-		Email                         *string    `json:"-" form:"-"`
+		Email                         *string    `json:"email" form:"email"`
 		PasswordIncluded              bool       `json:"-" form:"password_included"`
 		Base64Password                string     `json:"-" form:"password"`
 		Base64PasswordConfirmation    string     `json:"-" form:"password_confirmation"`

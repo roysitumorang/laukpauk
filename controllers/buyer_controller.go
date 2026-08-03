@@ -476,6 +476,48 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 	}
+	if request.MobilePhone != nil &&
+		(buyer.MobilePhone == nil ||
+			*buyer.MobilePhone != *request.MobilePhone) {
+		otherBuyer, err := q.buyerService.FindBuyer(
+			ctx,
+			models.NewBuyerFilter().
+				WithMobilePhone(*request.MobilePhone).
+				WithExcludedBuyerIDs(buyer.ID),
+		)
+		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+			return c.Render("admin/buyer_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if otherBuyer != nil {
+			return c.Render("admin/admin_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniqueBuyerMobilePhoneViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
+	if request.Email != nil &&
+		(buyer.Email == nil ||
+			*buyer.Email != *request.Email) {
+		otherBuyer, err := q.buyerService.FindBuyer(
+			ctx,
+			models.NewBuyerFilter().
+				WithEmail(*request.Email).
+				WithExcludedBuyerIDs(buyer.ID),
+		)
+		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+			return c.Render("admin/buyer_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if otherBuyer != nil {
+			return c.Render("admin/buyer_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniqueBuyerEmailViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
 	now := time.Now().In(time.Local)
 	if request.PasswordIncluded {
 		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)

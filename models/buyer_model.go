@@ -15,6 +15,7 @@ var ErrBuyerNotFound = errors.New("buyer not found")
 var ErrUniqueBuyerUsernameViolation = errors.New("username: already exists")
 var ErrUniqueBuyerMobilePhoneViolation = errors.New("mobile_phone: already exists")
 var ErrUniqueBuyerEmailViolation = errors.New("email: already exists")
+var ErrUniqueBuyerReferralCodeViolation = errors.New("referral_code: already exists")
 var MapBuyerSortings = map[string]struct{}{
 	SortingFieldID:        {},
 	BuyerSortingFieldName: {},

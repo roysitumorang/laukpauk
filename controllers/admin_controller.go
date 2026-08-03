@@ -473,6 +473,48 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 	}
+	if request.MobilePhone != nil &&
+		(admin.MobilePhone == nil ||
+			*admin.MobilePhone != *request.MobilePhone) {
+		otherAdmin, err := q.adminService.FindAdmin(
+			ctx,
+			models.NewAdminFilter().
+				WithMobilePhone(*request.MobilePhone).
+				WithExcludedAdminIDs(admin.ID),
+		)
+		if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+			return c.Render("admin/admin_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if otherAdmin != nil {
+			return c.Render("admin/admin_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniqueAdminMobilePhoneViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
+	if request.Email != nil &&
+		(admin.Email == nil ||
+			*admin.Email != *request.Email) {
+		otherAdmin, err := q.adminService.FindAdmin(
+			ctx,
+			models.NewAdminFilter().
+				WithEmail(*request.Email).
+				WithExcludedAdminIDs(admin.ID),
+		)
+		if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+			return c.Render("admin/admin_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+		if otherAdmin != nil {
+			return c.Render("admin/admin_edit", params.Push(
+				"flash", flash.Danger(models.ErrUniqueAdminEmailViolation.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
 	now := time.Now().In(time.Local)
 	if request.PasswordIncluded {
 		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
@@ -487,6 +529,8 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 	}
 	admin.Name = request.Name
 	admin.Username = request.Username
+	admin.MobilePhone = request.MobilePhone
+	admin.Email = request.Email
 	admin.Photo = request.Photo
 	admin.UpdatedBy = &currentAdmin.UserID
 	admin.UpdatedAt = now

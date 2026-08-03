@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -593,7 +595,19 @@ func (q *buyerRepository) CreateBuyer(
 		&response.DeactivationReason,
 	)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation {
+			switch pgxErr.ConstraintName {
+			case "users_username_key":
+				err = models.ErrUniqueBuyerUsernameViolation
+			case "users_mobile_phone_key":
+				err = models.ErrUniqueBuyerMobilePhoneViolation
+			case "users_email_key":
+				err = models.ErrUniqueBuyerEmailViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	if err = tx.QueryRow(
@@ -640,7 +654,13 @@ func (q *buyerRepository) CreateBuyer(
 		&response.TransactionVolume,
 		&response.DeliveryRouteID,
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "buyers_lower_idx" {
+			err = models.ErrUniqueBuyerReferralCodeViolation
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return &response, nil
@@ -787,7 +807,13 @@ func (q *buyerRepository) UpdateBuyer(
 			&response.TransactionVolume,
 			&response.DeliveryRouteID,
 		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+				pgxErr.Code == pgerrcode.UniqueViolation &&
+				pgxErr.ConstraintName == "buyers_lower_idx" {
+				err = models.ErrUniqueBuyerReferralCodeViolation
+			} else {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			}
 			return nil, err
 		}
 	}
@@ -1225,7 +1251,19 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation {
+			switch pgxErr.ConstraintName {
+			case "users_username_key":
+				err = models.ErrUniqueBuyerUsernameViolation
+			case "users_mobile_phone_key":
+				err = models.ErrUniqueBuyerMobilePhoneViolation
+			case "users_email_key":
+				err = models.ErrUniqueBuyerEmailViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return &response, nil

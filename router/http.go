@@ -25,6 +25,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/compress"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
+	"github.com/gofiber/fiber/v3/middleware/helmet"
 	"github.com/gofiber/fiber/v3/middleware/pprof"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
@@ -65,7 +66,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		return strings.HasPrefix(s, prefix)
 	})
 	sessionMiddleware, sessionStore := session.NewWithStore(session.Config{
-		Storage: q.Storage,
+		Storage:         q.Storage,
+		IdleTimeout:     30 * time.Minute,
+		AbsoluteTimeout: 24 * time.Hour,
 	})
 	sessionStore.RegisterType(&helper.FlashMessage{})
 	sessionStore.RegisterType(uuid.UUID{})
@@ -195,6 +198,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		}),
 		cors.New(),
 		pprof.New(),
+		helmet.New(),
 		skip.New(sessionMiddleware, func(c fiber.Ctx) bool {
 			return strings.HasPrefix(c.OriginalURL(), "/v1/")
 		}),

@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -557,7 +559,19 @@ func (q *adminRepository) CreateAdmin(
 		&response.DeactivationReason,
 	)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation {
+			switch pgxErr.ConstraintName {
+			case "users_username_key":
+				err = models.ErrUniqueAdminUsernameViolation
+			case "users_mobile_phone_key":
+				err = models.ErrUniqueAdminMobilePhoneViolation
+			case "users_email_key":
+				err = models.ErrUniqueAdminEmailViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	if err = tx.QueryRow(
@@ -1045,7 +1059,7 @@ func (q *adminRepository) UpdateAdmin(
 			, deactivation_reason`,
 		len(params),
 	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+	err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserType,
 		&response.UserStatus,
@@ -1079,8 +1093,21 @@ func (q *adminRepository) UpdateAdmin(
 		&response.DeactivatedBy,
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+	)
+	if err != nil {
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation {
+			switch pgxErr.ConstraintName {
+			case "users_username_key":
+				err = models.ErrUniqueAdminUsernameViolation
+			case "users_mobile_phone_key":
+				err = models.ErrUniqueAdminMobilePhoneViolation
+			case "users_email_key":
+				err = models.ErrUniqueAdminEmailViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return &response, nil

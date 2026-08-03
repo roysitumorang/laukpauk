@@ -38,7 +38,7 @@
 					<input type="text"
 						class="form-control input"
 						name="email"
-						value="{{ request.Email }}"
+						value="{{ if request.Email }}{{ request.Email }}{{ end }}"
 						id="email"
 						placeholder="Email"
 						data-toggle="tooltip"
@@ -87,10 +87,10 @@
 			</div>
 			<hr class="mb-4" />
 			<button type="submit" class="btn btn-success mr-1">
-				Simpan{{ if !request.New() }} Perubahan{{ end }} Data User
+				Simpan{{ if !request.New() }} Perubahan{{ end }} Data Admin
 			</button>
 			<a href="{{ baseURL }}/admin/admins" class="btn btn-default ml-1">
-				Back to List User
+				Back to List Admin
 			</a>
 		</div>
 	</div>
