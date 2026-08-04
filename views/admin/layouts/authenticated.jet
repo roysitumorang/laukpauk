@@ -784,13 +784,15 @@
 			const permission = await Notification.requestPermission();
 			if (permission === "granted") {
 				try {
-
 					const fid = await getId(installations);
 					console.log("FCM Token:", fid);
-					const response = await fetch("{{ baseURL }}/admin/fcm_registrations", {
+					const formData = new FormData();
+					formData.append("_csrf", "{{ csrfToken }}");
+					formData.append("fid", fid);
+					const response = await fetch("{{ baseURL }}/admin/notification_targets", {
 						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ token: fid }),
+						headers: { "X-Request-Id": crypto.randomUUID() },
+						body: formData,
 						credentials: "include"
 					});
 				} catch (error) {
@@ -805,10 +807,13 @@
 		});
 		onRegistered(messaging, (fid) => {
 			console.log("FCM registered with Firebase Installation ID:", fid);
-			const response = fetch("{{ baseURL }}/admin/fcm_registrations", {
+			const formData = new FormData();
+			formData.append("_csrf", "{{ csrfToken }}");
+			formData.append("fid", fid);
+			const response = fetch("{{ baseURL }}/admin/notification_targets", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ token: fid }),
+				headers: { "X-Request-Id": crypto.randomUUID() },
+				body: formData,
 				credentials: "include"
 			});
 		});

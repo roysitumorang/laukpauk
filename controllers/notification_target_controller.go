@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -19,29 +18,29 @@ import (
 )
 
 type (
-	fcmRegistrationController struct {
-		adminService           services.AdminService
-		buyerService           services.BuyerService
-		fcmRegistrationService services.FcmRegistrationService
-		jsonWebTokenService    services.JsonWebTokenService
+	notificationTargetController struct {
+		adminService              services.AdminService
+		buyerService              services.BuyerService
+		notificationTargetService services.NotificationTargetService
+		jsonWebTokenService       services.JsonWebTokenService
 	}
 )
 
-func NewFcmRegistrationController(
+func NewNotificationTargetController(
 	adminService services.AdminService,
 	userService services.BuyerService,
-	fcmRegistrationService services.FcmRegistrationService,
+	notificationTargetService services.NotificationTargetService,
 	jsonWebTokenService services.JsonWebTokenService,
-) *fcmRegistrationController {
-	return &fcmRegistrationController{
-		adminService:           adminService,
-		buyerService:           userService,
-		fcmRegistrationService: fcmRegistrationService,
-		jsonWebTokenService:    jsonWebTokenService,
+) *notificationTargetController {
+	return &notificationTargetController{
+		adminService:              adminService,
+		buyerService:              userService,
+		notificationTargetService: notificationTargetService,
+		jsonWebTokenService:       jsonWebTokenService,
 	}
 }
 
-func (q *fcmRegistrationController) Mount(r fiber.Router) {
+func (q *notificationTargetController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/admin", adminSessionAuth).
@@ -50,30 +49,22 @@ func (q *fcmRegistrationController) Mount(r fiber.Router) {
 		Post("", buyerKeyAuth, q.V1BuyerSave)
 }
 
-func (q *fcmRegistrationController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *notificationTargetController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "FcmRegistrationController-AdminCreate"
+	ctxt := "NotificationTargetController-AdminCreate"
 	sess := session.FromContext(c)
 	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
-	request, statusCode, err := sanitizers.ValidateFcmRegistration(ctx, c)
+	request, statusCode, err := sanitizers.ValidateNotificationTarget(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateFcmRegistration")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNotificationTarget")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	now := time.Now()
-	duration, err := time.ParseDuration(os.Getenv("FCM_TOKEN_DURATION"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
 	request.UserID = currentAdmin.UserID
 	request.CreatedAt = now
 	request.UpdatedAt = now
-	request.ExpiredAt = now.Add(duration + time.Nanosecond)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -89,9 +80,9 @@ func (q *fcmRegistrationController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	response, err := q.fcmRegistrationService.SaveFcmRegistration(ctx, tx, request)
+	response, err := q.notificationTargetService.SaveNotificationTarget(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFcmRegistration")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveNotificationTarget")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -107,29 +98,21 @@ func (q *fcmRegistrationController) AdminCreate(c fiber.Ctx) (err error) {
 		WriteResponse(c)
 }
 
-func (q *fcmRegistrationController) V1BuyerSave(c fiber.Ctx) (err error) {
+func (q *notificationTargetController) V1BuyerSave(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "FcmRegistrationController-V1BuyerSave"
+	ctxt := "NotificationTargetController-V1BuyerSave"
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
-	request, statusCode, err := sanitizers.ValidateFcmRegistration(ctx, c)
+	request, statusCode, err := sanitizers.ValidateNotificationTarget(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateFcmRegistration")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNotificationTarget")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	now := time.Now()
-	duration, err := time.ParseDuration(os.Getenv("FCM_TOKEN_DURATION"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
 	request.UserID = currentBuyer.UserID
 	request.CreatedAt = now
 	request.UpdatedAt = now
-	request.ExpiredAt = now.Add(duration + time.Nanosecond)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -145,9 +128,9 @@ func (q *fcmRegistrationController) V1BuyerSave(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	response, err := q.fcmRegistrationService.SaveFcmRegistration(ctx, tx, request)
+	response, err := q.notificationTargetService.SaveNotificationTarget(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFcmRegistration")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveNotificationTarget")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)

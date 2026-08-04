@@ -51,7 +51,7 @@ type (
 		PointSpendingCapService   services.PointSpendingCapService
 		TransactionService        services.TransactionService
 		JsonWebTokenService       services.JsonWebTokenService
-		FcmRegistrationService    services.FcmRegistrationService
+		NotificationTargetService services.NotificationTargetService
 		CartService               services.CartService
 		TransactionCounterService services.TransactionCounterService
 		DeliveryRouteService      services.DeliveryRouteService
@@ -141,7 +141,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointSpendingCapRepository := repositories.NewPointSpendingCapRepository(dbRead, dbWrite)
 	transactionRepository := repositories.NewTransactionRepository(dbRead, dbWrite)
 	jsonWebTokenRepository := repositories.NewJsonWebTokenRepository(dbRead, dbWrite)
-	fcmRegistrationRepository := repositories.NewFcmRegistrationRepository(dbRead, dbWrite)
+	notificationTargetRepository := repositories.NewNotificationTargetRepository(dbRead, dbWrite)
 	cartRepository := repositories.NewCartRepository(dbRead, dbWrite)
 	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
 	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
@@ -180,7 +180,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		xenditClient,
 	)
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
-	fcmRegistrationService := services.NewFcmRegistrationService(fcmRegistrationRepository)
+	notificationTargetService := services.NewNotificationTargetService(notificationTargetRepository)
 	cartService := services.NewCartService(cartRepository)
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
@@ -214,7 +214,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		PointSpendingCapService:   pointSpendingCapService,
 		TransactionService:        transactionService,
 		JsonWebTokenService:       jsonWebTokenService,
-		FcmRegistrationService:    fcmRegistrationService,
+		NotificationTargetService: notificationTargetService,
 		CartService:               cartService,
 		TransactionCounterService: transactionCounterService,
 		DeliveryRouteService:      deliveryRouteService,

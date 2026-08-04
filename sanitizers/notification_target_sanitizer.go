@@ -10,9 +10,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func ValidateFcmRegistration(ctx context.Context, c fiber.Ctx) (*models.FcmRegistration, int, error) {
-	ctxt := "FcmRegistrationSanitizer-ValidateFcmRegistration"
-	var response models.FcmRegistration
+func ValidateNotificationTarget(ctx context.Context, c fiber.Ctx) (*models.NotificationTarget, int, error) {
+	ctxt := "NotificationTargetSanitizer-ValidateNotificationTarget"
+	var response models.NotificationTarget
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

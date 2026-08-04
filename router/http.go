@@ -101,7 +101,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		Session:           sessionStore,
 		// Redaction is enabled by default. Set DisableValueRedaction when you must expose tokens or storage keys in diagnostics.
 		// DisableValueRedaction: true,
-		SingleUseToken: true,
+		SingleUseToken: false,
 	})
 	basicAuth := middlewares.BasicAuthMiddleware()
 	middlewares := []any{
@@ -169,9 +169,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/admins":                  "/admins/admin",
 				"/admin/admins/*":                "/admins/admin/$1",
 				"/admin/admins/*/*":              "/admins/admin/$1/$2",
-				"/admin/fcm_registrations":       "/fcm_registrations/admin",
+				"/admin/notification_targets":    "/notification_targets/admin",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
-				"/v1/buyer/fcm_registrations":    "/fcm_registrations/v1/buyer",
+				"/v1/buyer/notification_targets": "/notification_targets/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
 				"/v1/buyer/products":             "/products/v1/buyer",
 				"/v1/buyer/products/*":           "/products/v1/buyer/$1",
@@ -205,8 +205,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			return strings.HasPrefix(c.OriginalURL(), "/v1/")
 		}),
 		skip.New(csrfMiddleware, func(c fiber.Ctx) bool {
-			return c.OriginalURL() == "/admin/fcm_registrations" ||
-				strings.HasPrefix(c.OriginalURL(), "/v1/")
+			return strings.HasPrefix(c.OriginalURL(), "/v1/")
 		}),
 	}
 	if sentryEnabled := os.Getenv("SENTRY_ENABLED") == "1"; sentryEnabled {
@@ -319,12 +318,12 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TransactionService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/transactions"))
-	controllers.NewFcmRegistrationController(
+	controllers.NewNotificationTargetController(
 		q.AdminService,
 		q.BuyerService,
-		q.FcmRegistrationService,
+		q.NotificationTargetService,
 		q.JsonWebTokenService,
-	).Mount(app.Group("/fcm_registrations"))
+	).Mount(app.Group("/notification_targets"))
 	controllers.NewCartController(
 		q.BuyerService,
 		q.ProductVariantService,
