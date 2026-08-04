@@ -17,38 +17,36 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	ProductCategoryRepository interface {
-		FindProductCategories(
-			ctx context.Context,
-			request *models.ProductCategoryFilter,
-		) ([]*models.ProductCategory, int64, int64, error)
-		FindProductCategory(
-			ctx context.Context,
-			request *models.ProductCategoryFilter,
-		) (*models.ProductCategory, error)
-		CreateProductCategory(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.ProductCategory,
-		) (*models.ProductCategory, error)
-		UpdateProductCategory(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.ProductCategory,
-		) (*models.ProductCategory, error)
-		SaveProductCategory(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.ProductCategory,
-		) (*models.ProductCategory, error)
-	}
+type ProductCategoryRepository interface {
+	FindProductCategories(
+		ctx context.Context,
+		request *models.ProductCategoryFilter,
+	) ([]*models.ProductCategory, int64, int64, error)
+	FindProductCategory(
+		ctx context.Context,
+		request *models.ProductCategoryFilter,
+	) (*models.ProductCategory, error)
+	CreateProductCategory(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.ProductCategory,
+	) (*models.ProductCategory, error)
+	UpdateProductCategory(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.ProductCategory,
+	) (*models.ProductCategory, error)
+	SaveProductCategory(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.ProductCategory,
+	) (*models.ProductCategory, error)
+}
 
-	productCategoryRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type productCategoryRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewProductCategoryRepository(
 	dbRead,
@@ -472,7 +470,7 @@ func (q *productCategoryRepository) SaveProductCategory(
 	ctx context.Context,
 	tx pgx.Tx,
 	request *models.ProductCategory,
-) (response *models.ProductCategory, err error) {
+) (*models.ProductCategory, error) {
 	if request.New() {
 		return q.CreateProductCategory(ctx, tx, request)
 	}

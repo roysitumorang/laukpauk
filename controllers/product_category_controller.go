@@ -224,9 +224,11 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 		productCategory.Photo != request.Photo {
 		if err = os.RemoveAll(helper.PhotoLocation(productCategory.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
+			request.SetPhoto(productCategory.Photo)
 			return c.Render("admin/product_category_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(productCategory.Photo),
+				"request", request,
+				"productCategory", request,
 			), "admin/layouts/authenticated")
 		}
 	}

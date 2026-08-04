@@ -152,6 +152,9 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
+	if photo == nil {
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
+	}
 	params.Push(
 		"request", request,
 		"product", request,
@@ -159,7 +162,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
 		c.Response().SetStatusCode(statusCode)
-		request.SetPhoto("")
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
@@ -167,8 +170,11 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger("product_category_id: not found"),
+			"request", request,
+			"product", request,
 		), "admin/layouts/authenticated")
 	}
 	product, err := q.productService.FindProduct(
@@ -178,8 +184,11 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"product", request,
 		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
@@ -189,13 +198,13 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	request.CreatedAt = now
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = now
-	if photo == nil {
-		request.Photo = os.Getenv("PRODUCT_DEFAULT_PHOTO")
-	}
 	if product != nil {
 		if product.RecordStatus == models.RecordStatusActive {
+			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 			return c.Render("admin/product_new", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
+				"request", request,
+				"product", request,
 			), "admin/layouts/authenticated")
 		}
 		request.ID = product.ID
@@ -205,18 +214,17 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		request.DeletedAt = nil
 		request.DeletionReason = nil
 		if photo == nil {
-			request.Photo = product.Photo
+			request.SetPhoto(product.Photo)
 		}
 	}
-	params.Push(
-		"request", request,
-		"product", request,
-	)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"product", request,
 		), "admin/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
@@ -229,20 +237,42 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.productService.SaveProduct(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProduct")
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"product", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"product", request,
 		), "admin/layouts/authenticated")
+	}
+	if product != nil &&
+		product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
+		product.Photo != request.Photo {
+		if err = os.RemoveAll(helper.PhotoLocation(product.Photo)); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
+			request.SetPhoto(product.Photo)
+			return c.Render("admin/product_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"product", request,
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"product", request,
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("product created successfully").Redirect(c, sess.Session, "/admin/products")
@@ -325,21 +355,23 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
+	if photo == nil {
+		request.SetPhoto(product.Photo)
+	}
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
-	}
-	if photo == nil {
-		request.Photo = product.Photo
 	}
 	params.Push("request", request)
 	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger("product_category_id: not found"),
+			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
 	}
 	if product.Name != request.Name {
@@ -353,11 +385,13 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 			return c.Render("admin/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(product.Photo),
 			), "admin/layouts/authenticated")
 		}
 		if otherProduct != nil {
 			return c.Render("admin/product_edit", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
+				"request", request.SetPhoto(product.Photo),
 			), "admin/layouts/authenticated")
 		}
 	}
@@ -375,6 +409,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
@@ -389,19 +424,23 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
 	}
-	if request.Photo != product.Photo {
+	if product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
+		product.Photo != request.Photo {
 		if err = os.RemoveAll(helper.PhotoLocation(product.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
 			return c.Render("admin/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(product.Photo),
 			), "admin/layouts/authenticated")
 		}
 	}
@@ -409,6 +448,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("product updated successfully").Redirect(c, sess.Session, "/admin/products")
@@ -764,6 +804,7 @@ func (q *productController) prepareProduct(
 	err error,
 ) {
 	product = &models.Product{}
+	product.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 	if withParams {
 		params = models.NewMap().Push(
 			"baseURL", c.BaseURL(),
@@ -917,21 +958,43 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrProductNotFound.Error()).
 			WriteResponse(c)
 	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	response, err := q.productService.IncreaseProductHits(
-		c,
+		ctx,
+		tx,
 		models.NewProductFilter().
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(productID),
 	)
+	if errors.Is(err, models.ErrProductNotFound) || response == nil {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrIncreaseProductHits")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if response == nil {
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrProductNotFound.Error()).
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	variants, _, err := q.productVariantService.FindProductVariants(
