@@ -140,7 +140,7 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrHashPassword")
 			return
 		}
-		var adminID uuid.UUID
+		var adminUserID, adminID uuid.UUID
 		if err = tx.QueryRow(
 			ctx,
 			`INSERT INTO users (
@@ -174,19 +174,20 @@ func init() {
 			"2021-12-16 17:26:51.000 +0700",
 			nil,
 			"2024-12-11 07:41:55.000 +0700",
-		).Scan(&adminID); err != nil {
+		).Scan(&adminUserID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
-		if _, err = tx.Exec(
+		if err = tx.QueryRow(
 			ctx,
 			`INSERT INTO admins (
 				user_id
 				, admin_type
-			) VALUES ($1, $2)`,
-			adminID,
+			) VALUES ($1, $2)
+			RETURNING id`,
+			adminUserID,
 			models.AdminTypeSuperAdmin,
-		); err != nil {
+		).Scan(&adminID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
@@ -231,11 +232,11 @@ func init() {
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -292,11 +293,11 @@ func init() {
 				, ready_stock BOOLEAN NOT NULL
 				, pinned BOOLEAN NOT NULL DEFAULT FALSE
 				, hits bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -390,11 +391,11 @@ func init() {
 				, discount_amount bigint NOT NULL
 				, sale_price bigint NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, UNIQUE (product_id, stock_unit)
@@ -474,9 +475,9 @@ func init() {
 				, photo character varying
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -567,9 +568,9 @@ func init() {
 				, maximum_delivery_time interval NOT NULL
 				, transaction_auto_withdrawal_enabled boolean NOT NULL
 				, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -762,11 +763,11 @@ func init() {
 				, next_day_window TSTZRANGE NOT NULL
 				, next_two_day BOOLEAN NOT NULL
 				, next_two_day_window TSTZRANGE NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
@@ -1125,11 +1126,11 @@ func init() {
 				, effective_start_date timestamp with time zone NOT NULL
 				, effective_end_date timestamp with time zone NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -1830,11 +1831,11 @@ func init() {
 				, minimum_purchase bigint UNIQUE
 				, deleted_minimum_purchase bigint
 				, earned_points bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -1916,11 +1917,11 @@ func init() {
 				, record_status integer NOT NULL
 				, shopping_cost int8range NOT NULL
 				, disposable_points bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT no_overlapping_shopping_cost EXCLUDE USING gist (
@@ -2200,11 +2201,11 @@ func init() {
 				, body character varying NOT NULL
 				, photo character varying NOT NULL
 				, link character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2257,11 +2258,11 @@ func init() {
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
 				, visible boolean NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2322,11 +2323,11 @@ func init() {
 				, slug character varying UNIQUE
 				, deleted_slug character varying
 				, photo character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2377,11 +2378,11 @@ func init() {
 				, record_status integer NOT NULL
 				, name character varying NOT NULL UNIQUE
 				, custom_attributes JSONB NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2429,11 +2430,11 @@ func init() {
 				, link_text character varying
 				, link_url character varying
 				, photo character varying
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2500,11 +2501,11 @@ func init() {
 				, content_type character varying NOT NULL
 				, route character varying
 				, ordinal_number bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2542,11 +2543,11 @@ func init() {
 				, item character varying NOT NULL
 				, option character varying
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2619,11 +2620,11 @@ func init() {
 				, description character varying NOT NULL
 				, instagram_link character varying NOT NULL
 				, facebook_link character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2659,11 +2660,11 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, action character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2708,11 +2709,11 @@ func init() {
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, dose character varying NOT NULL
 				, note character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 				, UNIQUE (recipe_id, product_id)
