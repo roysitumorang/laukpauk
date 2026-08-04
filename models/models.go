@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 	"uuid"
@@ -55,6 +56,7 @@ const (
 )
 
 var (
+	ErrAccessDenied  = errors.New("access denied")
 	MapLimits        = map[int64]struct{}{10: {}, 25: {}, 50: {}, 100: {}}
 	Limits           = []int64{10, 25, 50, 100}
 	PhoneNumberRegex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)

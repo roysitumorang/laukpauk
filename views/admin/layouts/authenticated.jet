@@ -4,6 +4,8 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta http-equiv="x-ua-compatible" content="ie=edge" />
+	<meta name="csrf-token" content="{{ csrfToken }}">
+	<meta name="csrf-header" content="X-Csrf-Token">
 	<title>{{ pageTitle }}</title>
 	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/fontawesome-free/css/all.min.css" />
 	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/ionicons/ionicons.min.css" />
@@ -351,7 +353,7 @@
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-user-circle"></i>
 								<p>
-									User & Administrator
+									User{{ if currentAdmin.SuperAdmin() }} & Administrator{{ end }}
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
@@ -368,6 +370,7 @@
 										<p>User Baru</p>
 									</a>
 								</li>
+								{{ if currentAdmin.SuperAdmin() }}
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/admins" class="nav-link">
 										<i class="fa fa-crown nav-icon"></i>
@@ -380,6 +383,7 @@
 										<p>Administrator Baru</p>
 									</a>
 								</li>
+								{{ end }}
 							</ul>
 						</li>
 						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/product") }} menu-open{{ end }}">
@@ -787,7 +791,7 @@
 					const fid = await getId(installations);
 					console.log("FCM Token:", fid);
 					const formData = new FormData();
-					formData.append("_csrf", "{{ csrfToken }}");
+					formData.append("_csrf", document.querySelector("meta[name='csrf-token']").getAttribute("content"));
 					formData.append("fid", fid);
 					const response = await fetch("{{ baseURL }}/admin/notification_targets", {
 						method: "POST",
@@ -808,7 +812,7 @@
 		onRegistered(messaging, (fid) => {
 			console.log("FCM registered with Firebase Installation ID:", fid);
 			const formData = new FormData();
-			formData.append("_csrf", "{{ csrfToken }}");
+			formData.append("_csrf", document.querySelector("meta[name='csrf-token']").getAttribute("content"));
 			formData.append("fid", fid);
 			const response = fetch("{{ baseURL }}/admin/notification_targets", {
 				method: "POST",

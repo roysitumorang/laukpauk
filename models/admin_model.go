@@ -15,6 +15,7 @@ var ErrAdminNotFound = errors.New("admin not found")
 var ErrUniqueAdminUsernameViolation = errors.New("username: already exists")
 var ErrUniqueAdminMobilePhoneViolation = errors.New("mobile_phone: already exists")
 var ErrUniqueAdminEmailViolation = errors.New("email: already exists")
+var ErrAdminSelfDeletingProhibited = errors.New("self deleting prohibited")
 var MapAdminSortings = map[string]struct{}{
 	SortingFieldID:        {},
 	AdminSortingFieldName: {},
@@ -89,6 +90,10 @@ func (q *Admin) SetPhoto(photo string) *Admin {
 
 func (q *Admin) PhotoPath(baseURLs ...string) string {
 	return helper.PhotoPath(q.Photo, baseURLs...)
+}
+
+func (q *Admin) SuperAdmin() bool {
+	return q.AdminType == AdminTypeSuperAdmin
 }
 
 type AdminFilter struct {

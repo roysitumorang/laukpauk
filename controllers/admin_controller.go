@@ -35,7 +35,7 @@ func NewAdminController(
 }
 
 func (q *adminController) Mount(r fiber.Router) {
-	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
+	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService, models.AdminTypeSuperAdmin)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).
@@ -591,6 +591,9 @@ func (q *adminController) AdminDelete(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return flash.Danger(models.ErrAdminNotFound.Error()).Redirect(c, sess.Session, "/admin/admins")
+	}
+	if adminID.Compare(currentAdmin.ID) == 0 {
+		return flash.Danger(models.ErrAdminSelfDeletingProhibited.Error()).Redirect(c, sess.Session, "/admin/admins")
 	}
 	admin, err := q.adminService.FindAdmin(
 		ctx,

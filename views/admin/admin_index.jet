@@ -182,6 +182,7 @@
 											title="Edit Data Admin">
 											</span>
 										</a>
+										{{ if row.ID.Compare(currentAdmin.ID) != 0 }}
 										<form method="POST" action="{{ baseURL }}/admin/admins/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 											<span class="fa fa-trash text-danger cp ml-2"
@@ -191,6 +192,7 @@
 												onclick="confirm('Are you sure to delete this item ?')&&document.getElementById('delete-{{ row.ID }}').submit()">
 											</span>
 										</form>
+										{{ end }}
 									</td>
 								</tr>
 								{{ end }}
