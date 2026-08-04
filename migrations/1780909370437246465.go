@@ -2756,40 +2756,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// balances
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE balances (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, amount bigint NOT NULL
-				, description character varying NOT NULL
-				, created_at timestamp with time zone NOT NULL
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON balances (buyer_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		// invoices
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE invoices (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, amount bigint NOT NULL
-				, description character varying NOT NULL
-				, created_at timestamp with time zone NOT NULL
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		// messages
 		if _, err = tx.Exec(
 			ctx,
