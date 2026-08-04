@@ -91,14 +91,16 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 			},
 		},
 	)
-	if request, err = sanitizers.FindProductCategories(ctx, c); err != nil {
+	request, err = sanitizers.FindProductCategories(ctx, c)
+	params.Push("request", request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
 		return c.Render("admin/product_category_index", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
 	if rows, pagination, err = q.productCategoryService.FindProductCategories(
-		c,
+		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
@@ -107,7 +109,6 @@ func (q *productCategoryController) AdminIndex(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	return c.Render("admin/product_category_index", params.Push(
-		"request", request,
 		"rows", rows,
 		"pagination", pagination,
 	), "admin/layouts/authenticated")
@@ -126,6 +127,9 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	defer flash.Clear(c, sess.Session)
 	request, params, _ := q.prepareProductCategory(ctx, c, flash, currentAdmin, csrfToken, true)
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
+	if photo == nil {
+		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
+	}
 	params.Push(
 		"request", request,
 		"productCategory", request,
@@ -133,7 +137,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductCategory")
 		c.Response().SetStatusCode(statusCode)
-		request.SetPhoto("")
+		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
@@ -147,8 +151,11 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"productCategory", request,
 		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
@@ -157,28 +164,33 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	request.CreatedAt = now
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = now
-	if photo == nil {
-		request.Photo = os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO")
-	}
 	if productCategory != nil {
 		if productCategory.RecordStatus == models.RecordStatusActive {
+			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 			return c.Render("admin/product_category_new", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductCategoryNameViolation.Error()),
+				"request", request,
+				"productCategory", request,
 			), "admin/layouts/authenticated")
 		}
 		request.ID = productCategory.ID
+		request.CreatedBy = productCategory.CreatedBy
+		request.CreatedAt = productCategory.CreatedAt
 		request.DeletedBy = nil
 		request.DeletedAt = nil
 		request.DeletionReason = nil
 		if photo == nil {
-			request.Photo = productCategory.Photo
+			request.SetPhoto(productCategory.Photo)
 		}
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"productCategory", request,
 		), "admin/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
@@ -191,20 +203,40 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.productCategoryService.SaveProductCategory(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProductCategory")
+		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"productCategory", request,
 		), "admin/layouts/authenticated")
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
+		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"productCategory", request,
 		), "admin/layouts/authenticated")
+	}
+	if productCategory != nil &&
+		productCategory.Photo != os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO") &&
+		productCategory.Photo != request.Photo {
+		if err = os.RemoveAll(helper.PhotoLocation(productCategory.Photo)); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
+			return c.Render("admin/product_category_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(productCategory.Photo),
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return c.Render("admin/product_category_new", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request,
+			"productCategory", request,
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("product category created successfully").Redirect(c, sess.Session, "/admin/product_categories")
@@ -246,12 +278,16 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
+	if photo == nil {
+		request.SetPhoto(productCategory.Photo)
+	}
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductCategory")
 		c.Response().SetStatusCode(statusCode)
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(productCategory.Photo),
 		), "admin/layouts/authenticated")
 	}
 	if productCategory.Name != request.Name {
@@ -265,11 +301,13 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 			return c.Render("admin/product_category_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(productCategory.Photo),
 			), "admin/layouts/authenticated")
 		}
 		if otherProductCategory != nil {
 			return c.Render("admin/product_category_edit", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductCategoryNameViolation.Error()),
+				"request", request.SetPhoto(productCategory.Photo),
 			), "admin/layouts/authenticated")
 		}
 	}
@@ -280,15 +318,13 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	if photo == nil {
-		request.Photo = productCategory.Photo
-	}
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(productCategory.Photo),
 		), "admin/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
@@ -303,19 +339,23 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(productCategory.Photo),
 		), "admin/layouts/authenticated")
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(productCategory.Photo),
 		), "admin/layouts/authenticated")
 	}
-	if request.Photo != productCategory.Photo {
+	if productCategory.Photo != os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO") &&
+		productCategory.Photo != request.Photo {
 		if err = os.RemoveAll(helper.PhotoLocation(productCategory.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
 			return c.Render("admin/product_category_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(productCategory.Photo),
 			), "admin/layouts/authenticated")
 		}
 	}
@@ -323,6 +363,7 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(productCategory.Photo),
 		), "admin/layouts/authenticated")
 	}
 	return flash.Success("product category updated successfully").Redirect(c, sess.Session, "/admin/product_categories")
@@ -404,6 +445,7 @@ func (q *productCategoryController) prepareProductCategory(
 	error,
 ) {
 	productCategory := &models.ProductCategory{}
+	productCategory.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 	var params models.Map
 	if withParams {
 		params = models.NewMap().Push(
@@ -455,7 +497,7 @@ func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	rows, pagination, err := q.productCategoryService.FindProductCategories(
-		c,
+		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive),
 	)
 	if err != nil {

@@ -46,9 +46,9 @@ type (
 func NewProductCategoryService(
 	productCategoryRepository repositories.ProductCategoryRepository,
 ) ProductCategoryService {
-	return new(productCategoryService{
+	return &productCategoryService{
 		productCategoryRepository: productCategoryRepository,
-	})
+	}
 }
 
 func (q *productCategoryService) FindProductCategories(
@@ -123,14 +123,11 @@ func (q *productCategoryService) SaveProductCategory(
 	ctx context.Context,
 	tx pgx.Tx,
 	request *models.ProductCategory,
-) (response *models.ProductCategory, err error) {
+) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryService-SaveProductCategory"
-	if request.New() {
-		if response, err = q.productCategoryRepository.CreateProductCategory(ctx, tx, request); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateProductCategory")
-		}
-	} else if response, err = q.productCategoryRepository.UpdateProductCategory(ctx, tx, request); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
+	response, err := q.productCategoryRepository.SaveProductCategory(ctx, tx, request)
+	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProductCategory")
 	}
 	return response, err
 }

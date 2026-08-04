@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 type (
@@ -32,6 +33,11 @@ type (
 			request *models.ProductCategory,
 		) (*models.ProductCategory, error)
 		UpdateProductCategory(
+			ctx context.Context,
+			tx pgx.Tx,
+			request *models.ProductCategory,
+		) (*models.ProductCategory, error)
+		SaveProductCategory(
 			ctx context.Context,
 			tx pgx.Tx,
 			request *models.ProductCategory,
@@ -59,10 +65,15 @@ func (q *productCategoryRepository) FindProductCategories(
 	request *models.ProductCategoryFilter,
 ) ([]*models.ProductCategory, int64, int64, error) {
 	ctxt := "ProductCategoryRepository-FindProductCategories"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM product_categories %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM product_categories %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -100,7 +111,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -122,7 +133,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -165,11 +176,16 @@ func (q *productCategoryRepository) FindProductCategory(
 	request *models.ProductCategoryFilter,
 ) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryRepository-FindProductCategory"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, record_status
@@ -284,19 +300,134 @@ func (q *productCategoryRepository) UpdateProductCategory(
 ) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryRepository-UpdateProductCategory"
 	var response models.ProductCategory
-	if err := tx.QueryRow(
+	err := tx.QueryRow(
 		ctx,
-		`UPDATE product_categories SET
-			record_status = $1
-			, name = $2
-			, description = $3
-			, photo = $4
-			, updated_by = $5
-			, updated_at = $6
-			, deleted_by = $7
-			, deleted_at = $8
-			, deletion_reason = $9
-		WHERE id = $10
+		`SELECT
+			id
+			, record_status
+			, name
+			, description
+			, photo
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM product_categories
+		WHERE id = $1
+		FOR UPDATE`,
+		request.ID,
+	).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Name,
+		&response.Description,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrProductCategoryNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString("UPDATE product_categories SET")
+	if response.RecordStatus != request.RecordStatus {
+		params = append(params, request.RecordStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+	}
+	if response.Name != request.Name {
+		params = append(params, request.Name)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+	}
+	if response.Description != request.Description {
+		params = append(params, request.Description)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+	}
+	if response.Photo != request.Photo {
+		params = append(params, request.Photo)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+		params = append(params, request.UpdatedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+	}
+	if !response.UpdatedAt.Equal(request.UpdatedAt) {
+		params = append(params, request.UpdatedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+	}
+	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
+		(response.DeletedBy != nil && request.DeletedBy == nil) ||
+		(response.DeletedBy != nil && request.DeletedBy != nil &&
+			response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+		params = append(params, request.DeletedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+	}
+	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
+		(response.DeletedAt != nil && request.DeletedAt == nil) ||
+		(response.DeletedAt != nil && request.DeletedAt != nil &&
+			!response.DeletedAt.Equal(*request.DeletedAt)) {
+		params = append(params, request.DeletedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+	}
+	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
+		(response.DeletionReason != nil && request.DeletionReason == nil) ||
+		(response.DeletionReason != nil && request.DeletionReason != nil &&
+			*response.DeletionReason != *request.DeletionReason) {
+		params = append(params, request.DeletionReason)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		sb,
+		` WHERE id = $%d
 		RETURNING id
 			, record_status
 			, name
@@ -309,17 +440,9 @@ func (q *productCategoryRepository) UpdateProductCategory(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.Name,
-		request.Description,
-		request.Photo,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.DeletedBy,
-		request.DeletedAt,
-		request.DeletionReason,
-		request.ID,
-	).Scan(
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
@@ -343,6 +466,17 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (q *productCategoryRepository) SaveProductCategory(
+	ctx context.Context,
+	tx pgx.Tx,
+	request *models.ProductCategory,
+) (response *models.ProductCategory, err error) {
+	if request.New() {
+		return q.CreateProductCategory(ctx, tx, request)
+	}
+	return q.UpdateProductCategory(ctx, tx, request)
 }
 
 func (q *productCategoryRepository) buildCondition(request *models.ProductCategoryFilter, sb *strings.Builder) (condition string, params []any) {
@@ -414,8 +548,7 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 			if i > 0 {
 				_, _ = sb.WriteString(" AND")
 			}
-			_, _ = sb.WriteString(" ")
-			_, _ = sb.WriteString(cond)
+			_, _ = fmt.Fprintf(sb, " %s", cond)
 		}
 		condition = sb.String()
 	}
