@@ -398,8 +398,13 @@ func init() {
 			`CREATE TABLE product_variants (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
+				, product_category_id UUID NOT NULL REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_category_name character varying NOT NULL COLLATE "natural_sort"
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, stock_unit character varying NOT NULL COLLATE "natural_sort"
+				, product_name character varying NOT NULL COLLATE "natural_sort"
+				, product_ready_stock bool NOT NULL
+				, stock_unit character varying COLLATE "natural_sort"
+				, deleted_stock_unit character varying COLLATE "natural_sort"
 				, base_price bigint NOT NULL
 				, selling_price bigint NOT NULL
 				, discount_type integer NOT NULL
@@ -438,6 +443,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON product_variants (LOWER(stock_unit));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON product_variants (LOWER(deleted_stock_unit));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

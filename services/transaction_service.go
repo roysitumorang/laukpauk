@@ -249,7 +249,9 @@ func (q *transactionService) CreateTransaction(
 			}
 			item.ProductID = productVariant.ProductID
 			item.ProductName = productVariant.ProductName
-			item.StockUnit = productVariant.StockUnit
+			if productVariant.StockUnit != nil {
+				item.StockUnit = *productVariant.StockUnit
+			}
 			item.DiscountMinimumQuantity = productVariant.DiscountMinimumQuantity
 			item.BasePrice = productVariant.BasePrice
 			item.SellingPrice = productVariant.SellingPrice

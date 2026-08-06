@@ -20,14 +20,12 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	productController struct {
-		adminService           services.AdminService
-		productCategoryService services.ProductCategoryService
-		productService         services.ProductService
-		productVariantService  services.ProductVariantService
-	}
-)
+type productController struct {
+	adminService           services.AdminService
+	productCategoryService services.ProductCategoryService
+	productService         services.ProductService
+	productVariantService  services.ProductVariantService
+}
 
 func NewProductController(
 	adminService services.AdminService,
@@ -564,7 +562,13 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
+	request.ProductCategoryID = product.ProductCategoryID
+	request.ProductCategoryName = product.ProductCategoryName
 	request.ProductID = product.ID
+	if product.Name != nil {
+		request.ProductName = *product.Name
+	}
+	request.ProductReadyStock = product.ReadyStock
 	request.CreatedBy = currentAdmin.ID
 	request.CreatedAt = now
 	request.UpdatedBy = currentAdmin.ID
@@ -576,6 +580,7 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 		request.ID = productVariant.ID
+		request.DeletedStockUnit = nil
 		request.CreatedBy = productVariant.ID
 		request.CreatedAt = productVariant.CreatedAt
 		request.DeletedBy = nil
@@ -678,7 +683,12 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 	}
 	request.ID = productVariant.ID
 	request.RecordStatus = productVariant.RecordStatus
-	request.ProductID = productVariant.ProductID
+	request.ProductCategoryID = product.ProductCategoryID
+	request.ProductCategoryName = product.ProductCategoryName
+	if product.Name != nil {
+		request.ProductName = *product.Name
+	}
+	request.ProductReadyStock = productVariant.ProductReadyStock
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
@@ -730,11 +740,14 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	request := productVariant
-	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = new(currentAdmin.ID)
-	request.DeletedAt = new(time.Now())
-	request.DeletionReason = nil
+	if productVariant.StockUnit != nil {
+		productVariant.DeletedStockUnit = new(*productVariant.StockUnit)
+	}
+	productVariant.StockUnit = nil
+	productVariant.RecordStatus = models.RecordStatusDeleted
+	productVariant.DeletedBy = new(currentAdmin.ID)
+	productVariant.DeletedAt = new(time.Now())
+	productVariant.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -748,7 +761,7 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, request); err != nil {
+	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
 	}
