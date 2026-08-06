@@ -144,7 +144,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-AdminCreate"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request, params, mapProductCategoryIDs, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
+	request, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return c.Render("admin/product_new", params.Push(
@@ -169,7 +169,8 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			"product", request,
 		), "admin/layouts/authenticated")
 	}
-	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
+	productCategoryName, ok := mapProductCategoryNames[request.ProductCategoryID]
+	if !ok {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
 			"flash", flash.Danger("product_category_id: not found"),
@@ -193,6 +194,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
+	request.ProductCategoryName = productCategoryName
 	request.Hits = 0
 	request.CreatedBy = currentAdmin.ID
 	request.CreatedAt = now
@@ -208,6 +210,8 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 		request.ID = product.ID
+		request.Name = product.DeletedName
+		request.DeletedName = nil
 		request.CreatedBy = product.CreatedBy
 		request.CreatedAt = product.CreatedAt
 		request.DeletedBy = nil
@@ -291,13 +295,17 @@ func (q *productController) AdminShow(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
 	var productVariants []*models.ProductVariant
+	var productName string
+	if product.Name != nil {
+		productName = *product.Name
+	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
+		"pageTitle", helper.Sprintf("Detail Produk|%s", productName),
 		"product", product,
 		"productVariants", productVariants,
 		"discountTypePercentage", models.DiscountTypePercentage,
@@ -341,7 +349,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-AdminUpdate"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	product, params, mapProductCategoryIDs, err := q.prepareProduct(
+	product, params, mapProductCategoryNames, err := q.prepareProduct(
 		ctx,
 		c,
 		flash,
@@ -368,7 +376,8 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	params.Push("request", request)
-	if _, ok := mapProductCategoryIDs[request.ProductCategoryID]; !ok {
+	productCategoryName, ok := mapProductCategoryNames[request.ProductCategoryID]
+	if !ok {
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger("product_category_id: not found"),
 			"request", request.SetPhoto(product.Photo),
@@ -397,6 +406,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	}
 	request.ID = product.ID
 	request.RecordStatus = product.RecordStatus
+	request.ProductCategoryName = productCategoryName
 	request.Hits = product.Hits
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
@@ -467,6 +477,10 @@ func (q *productController) AdminDelete(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
 	request.RecordStatus = models.RecordStatusDeleted
+	if request.Name != nil {
+		request.DeletedName = new(*request.Name)
+	}
+	request.Name = nil
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
 	request.DeletionReason = nil
@@ -800,7 +814,7 @@ func (q *productController) prepareProduct(
 ) (
 	product *models.Product,
 	params models.Map,
-	mapProductCategoryIDs map[uuid.UUID]struct{},
+	mapProductCategoryNames map[uuid.UUID]string,
 	err error,
 ) {
 	product = &models.Product{}
@@ -822,9 +836,9 @@ func (q *productController) prepareProduct(
 		if product, err = q.prepareProductByID(ctx, c); err != nil {
 			return nil, nil, nil, err
 		}
-		if withParams && params.Size() > 0 && product != nil {
+		if withParams && params.Size() > 0 && product != nil && product.Name != nil {
 			params.Push(
-				"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
+				"pageTitle", helper.Sprintf("Edit Data Produk|%s", *product.Name),
 				"request", product,
 				"product", product,
 			)
@@ -850,12 +864,14 @@ func (q *productController) prepareProduct(
 		if withParams && params.Size() > 0 {
 			params.Push("productCategories", productCategories)
 		}
-		mapProductCategoryIDs = map[uuid.UUID]struct{}{}
+		mapProductCategoryNames = map[uuid.UUID]string{}
 		for _, productCategory := range productCategories {
-			mapProductCategoryIDs[productCategory.ID] = struct{}{}
+			if productCategory.Name != nil {
+				mapProductCategoryNames[productCategory.ID] = *productCategory.Name
+			}
 		}
 	}
-	return product, params, mapProductCategoryIDs, nil
+	return product, params, mapProductCategoryNames, nil
 }
 
 func (q *productController) prepareProductVariant(
@@ -877,14 +893,14 @@ func (q *productController) prepareProductVariant(
 	}
 	productVariant := &models.ProductVariant{}
 	var params models.Map
-	if withParams {
+	if withParams && product.Name != nil {
 		params = models.NewMap().Push(
 			"baseURL", c.BaseURL(),
 			"flash", flash,
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentAdmin", currentAdmin,
-			"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
+			"pageTitle", helper.Sprintf("Detail Produk|%s", *product.Name),
 			"product", product,
 			"productVariant", productVariant,
 			"request", productVariant,

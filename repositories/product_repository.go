@@ -93,8 +93,10 @@ func (q *productRepository) FindProducts(
 		`id
 		, record_status
 		, product_category_id
+		, product_category_name
 		, product_type
 		, name
+		, deleted_name
 		, photo
 		, description
 		, ready_stock
@@ -159,8 +161,10 @@ func (q *productRepository) FindProducts(
 			&product.ID,
 			&product.RecordStatus,
 			&product.ProductCategoryID,
+			&product.ProductCategoryName,
 			&product.ProductType,
 			&product.Name,
+			&product.DeletedName,
 			&product.Photo,
 			&product.Description,
 			&product.ReadyStock,
@@ -203,8 +207,10 @@ func (q *productRepository) FindProduct(
 			id
 			, record_status
 			, product_category_id
+			, product_category_name
 			, product_type
 			, name
+			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -226,8 +232,10 @@ func (q *productRepository) FindProduct(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
+		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -263,6 +271,7 @@ func (q *productRepository) CreateProduct(
 		`INSERT INTO products (
 			record_status
 			, product_category_id
+			, product_category_name
 			, product_type
 			, name
 			, photo
@@ -274,12 +283,14 @@ func (q *productRepository) CreateProduct(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id
 			, record_status
 			, product_category_id
+			, product_category_name
 			, product_type
 			, name
+			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -294,6 +305,7 @@ func (q *productRepository) CreateProduct(
 			, deletion_reason`,
 		request.RecordStatus,
 		request.ProductCategoryID,
+		request.ProductCategoryName,
 		request.ProductType,
 		request.Name,
 		request.Photo,
@@ -309,8 +321,10 @@ func (q *productRepository) CreateProduct(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
+		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -349,8 +363,10 @@ func (q *productRepository) UpdateProduct(
 			id
 			, record_status
 			, product_category_id
+			, product_category_name
 			, product_type
 			, name
+			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -371,8 +387,10 @@ func (q *productRepository) UpdateProduct(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
+		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -416,6 +434,13 @@ func (q *productRepository) UpdateProduct(
 		}
 		_, _ = fmt.Fprintf(sb, " product_category_id = $%d", n)
 	}
+	if response.ProductCategoryName != request.ProductCategoryName {
+		params = append(params, request.ProductCategoryName)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " product_category_name = $%d", n)
+	}
 	if response.ProductType != request.ProductType {
 		params = append(params, request.ProductType)
 		if n = len(params); n > 1 {
@@ -429,6 +454,16 @@ func (q *productRepository) UpdateProduct(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+	}
+	if (response.DeletedName == nil && request.DeletedName != nil) ||
+		(response.DeletedName != nil && request.DeletedName == nil) ||
+		(response.DeletedName != nil && request.DeletedName != nil &&
+			*response.DeletedName != *request.DeletedName) {
+		params = append(params, request.DeletedName)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_name = $%d", n)
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
@@ -512,8 +547,10 @@ func (q *productRepository) UpdateProduct(
 		RETURNING id
 			, record_status
 			, product_category_id
+			, product_category_name
 			, product_type
 			, name
+			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -532,8 +569,10 @@ func (q *productRepository) UpdateProduct(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
+		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -639,7 +678,6 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if len(request.Names) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) IN (")
 		for i, name := range request.Names {
 			params = append(params, strings.ToLower(name))
 			if i > 0 {
@@ -647,7 +685,9 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 			}
 			_, _ = fmt.Fprintf(sb, "$%d", len(params))
 		}
-		_, _ = sb.WriteString(")")
+		placeholders := sb.String()
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "(LOWER(name) IN (%s) OR LOWER(deleted_name) IN (%s))", placeholders, placeholders)
 		conds = append(conds, sb.String())
 	}
 	if request.ReadyStock != nil {
@@ -699,6 +739,7 @@ func (q *productRepository) IncreaseProductHits(
 			id
 			, record_status
 			, product_category_id
+			, product_category_name
 			, product_type
 			, name
 			, photo
@@ -723,6 +764,7 @@ func (q *productRepository) IncreaseProductHits(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
 		&response.Photo,
@@ -753,6 +795,7 @@ func (q *productRepository) IncreaseProductHits(
 		RETURNING id
 			, record_status
 			, product_category_id
+			, product_category_name
 			, product_type
 			, name
 			, photo
@@ -772,6 +815,7 @@ func (q *productRepository) IncreaseProductHits(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
+		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
 		&response.Photo,

@@ -294,8 +294,10 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_category_name character varying NOT NULL COLLATE "natural_sort"
 				, product_type integer NOT NULL
-				, name character varying NOT NULL COLLATE "natural_sort"
+				, name character varying COLLATE "natural_sort"
+				, deleted_name character varying COLLATE "natural_sort"
 				, photo character varying NOT NULL
 				, description character varying NOT NULL
 				, ready_stock BOOLEAN NOT NULL
@@ -337,6 +339,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE UNIQUE INDEX product_categories_unique_idx ON products (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON products (LOWER(deleted_name));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

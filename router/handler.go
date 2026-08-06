@@ -155,7 +155,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	landingPageItemService := services.NewLandingPageItemService(landingPageItemRepository)
 	messageService := services.NewMessageService(messageRepository)
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
-	productService := services.NewProductService(productRepository, productCategoryRepository)
+	productService := services.NewProductService(productRepository)
 	productVariantService := services.NewProductVariantService(productVariantRepository, productRepository)
 	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaClient, zenzivaClient)
 	settingService := services.NewSettingService(settingRepository)
