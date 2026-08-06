@@ -412,6 +412,19 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	params.Push("request", request)
+	productVariants, _, err := q.productVariantService.FindProductVariants(
+		ctx,
+		models.NewProductVariantFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductCategoryIDs(request.ProductCategoryID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+		return c.Render("admin/product_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(product.Photo),
+		), "admin/layouts/authenticated")
+	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -428,12 +441,29 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productService.UpdateProduct(ctx, tx, request); err != nil {
+	response, err := q.productService.UpdateProduct(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
 		return c.Render("admin/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
+	}
+	for _, productVariant := range productVariants {
+		productVariant.ProductCategoryID = response.ProductCategoryID
+		productVariant.ProductCategoryName = response.ProductCategoryName
+		productVariant.ProductID = response.ID
+		if response.Name != nil {
+			productVariant.ProductName = *response.Name
+		}
+		productVariant.ProductReadyStock = response.ReadyStock
+		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
+			return c.Render("admin/product_category_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(product.Photo),
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")

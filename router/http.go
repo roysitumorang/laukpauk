@@ -279,7 +279,12 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BlogService,
 		q.MessageService,
 	).Mount(app.Group("/landing_pages"))
-	controllers.NewProductCategoryController(q.AdminService, q.ProductCategoryService).Mount(app.Group("/product_categories"))
+	controllers.NewProductCategoryController(
+		q.AdminService,
+		q.ProductCategoryService,
+		q.ProductService,
+		q.ProductVariantService,
+	).Mount(app.Group("/product_categories"))
 	controllers.NewProductController(
 		q.AdminService,
 		q.ProductCategoryService,

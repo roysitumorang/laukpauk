@@ -23,15 +23,21 @@ import (
 type productCategoryController struct {
 	adminService           services.AdminService
 	productCategoryService services.ProductCategoryService
+	productService         services.ProductService
+	productVariantService  services.ProductVariantService
 }
 
 func NewProductCategoryController(
 	adminService services.AdminService,
 	productCategoryService services.ProductCategoryService,
+	productService services.ProductService,
+	productVariantService services.ProductVariantService,
 ) *productCategoryController {
 	return &productCategoryController{
 		adminService:           adminService,
 		productCategoryService: productCategoryService,
+		productService:         productService,
+		productVariantService:  productVariantService,
 	}
 }
 
@@ -321,6 +327,32 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 	request.DeletedAt = nil
 	request.DeletionReason = nil
 	params.Push("request", request)
+	products, _, err := q.productService.FindProducts(
+		ctx,
+		models.NewProductFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductCategoryIDs(productCategory.ID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
+		return c.Render("admin/product_category_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(productCategory.Photo),
+		), "admin/layouts/authenticated")
+	}
+	productVariants, _, err := q.productVariantService.FindProductVariants(
+		ctx,
+		models.NewProductVariantFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductCategoryIDs(productCategory.ID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+		return c.Render("admin/product_category_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(productCategory.Photo),
+		), "admin/layouts/authenticated")
+	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -337,12 +369,37 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productCategoryService.UpdateProductCategory(ctx, tx, request); err != nil {
+	response, err := q.productCategoryService.UpdateProductCategory(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
 		return c.Render("admin/product_category_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(productCategory.Photo),
 		), "admin/layouts/authenticated")
+	}
+	for _, product := range products {
+		if response.Name != nil {
+			product.ProductCategoryName = *response.Name
+		}
+		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+			return c.Render("admin/product_category_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(productCategory.Photo),
+			), "admin/layouts/authenticated")
+		}
+	}
+	for _, productVariant := range productVariants {
+		if response.Name != nil {
+			productVariant.ProductCategoryName = *response.Name
+		}
+		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
+			return c.Render("admin/product_category_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(productCategory.Photo),
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
