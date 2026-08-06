@@ -90,7 +90,9 @@ func (q *productService) FindProducts(
 		}
 		mapProductCategoryNames := map[uuid.UUID]string{}
 		for _, productCategory := range productCategories {
-			mapProductCategoryNames[productCategory.ID] = productCategory.Name
+			if productCategory.Name != nil {
+				mapProductCategoryNames[productCategory.ID] = *productCategory.Name
+			}
 		}
 		for i, product := range products {
 			product.ProductCategoryName = mapProductCategoryNames[product.ProductCategoryID]
@@ -136,8 +138,8 @@ func (q *productService) FindProduct(
 		}
 		return nil, err
 	}
-	if productCategory != nil {
-		response.ProductCategoryName = productCategory.Name
+	if productCategory != nil && productCategory.Name != nil {
+		response.ProductCategoryName = *productCategory.Name
 	}
 	return response, err
 }
@@ -164,8 +166,8 @@ func (q *productService) CreateProduct(
 		}
 		return nil, err
 	}
-	if productCategory != nil {
-		response.ProductCategoryName = productCategory.Name
+	if productCategory != nil && productCategory.Name != nil {
+		response.ProductCategoryName = *productCategory.Name
 	}
 	return response, err
 }
@@ -194,8 +196,8 @@ func (q *productService) UpdateProduct(
 		}
 		return nil, err
 	}
-	if productCategory != nil {
-		response.ProductCategoryName = productCategory.Name
+	if productCategory != nil && productCategory.Name != nil {
+		response.ProductCategoryName = *productCategory.Name
 	}
 	return response, err
 }
@@ -224,8 +226,8 @@ func (q *productService) SaveProduct(
 		}
 		return nil, err
 	}
-	if productCategory != nil {
-		response.ProductCategoryName = productCategory.Name
+	if productCategory != nil && productCategory.Name != nil {
+		response.ProductCategoryName = *productCategory.Name
 	}
 	return response, err
 }
@@ -254,8 +256,8 @@ func (q *productService) IncreaseProductHits(
 		}
 		return nil, err
 	}
-	if productCategory != nil {
-		response.ProductCategoryName = productCategory.Name
+	if productCategory != nil && productCategory.Name != nil {
+		response.ProductCategoryName = *productCategory.Name
 	}
 	return response, err
 }

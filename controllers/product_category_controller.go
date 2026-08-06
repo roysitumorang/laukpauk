@@ -20,12 +20,10 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	productCategoryController struct {
-		adminService           services.AdminService
-		productCategoryService services.ProductCategoryService
-	}
-)
+type productCategoryController struct {
+	adminService           services.AdminService
+	productCategoryService services.ProductCategoryService
+}
 
 func NewProductCategoryController(
 	adminService services.AdminService,
@@ -174,6 +172,8 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 		request.ID = productCategory.ID
+		request.Name = productCategory.DeletedName
+		request.DeletedName = nil
 		request.CreatedBy = productCategory.CreatedBy
 		request.CreatedAt = productCategory.CreatedAt
 		request.DeletedBy = nil
@@ -387,11 +387,14 @@ func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
-	request := productCategory
-	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentAdmin.ID
-	request.DeletedAt = new(time.Now())
-	request.DeletionReason = nil
+	productCategory.RecordStatus = models.RecordStatusDeleted
+	if productCategory.Name != nil {
+		productCategory.DeletedName = new(*productCategory.Name)
+	}
+	productCategory.Name = nil
+	productCategory.DeletedBy = &currentAdmin.ID
+	productCategory.DeletedAt = new(time.Now())
+	productCategory.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -405,7 +408,7 @@ func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productCategoryService.UpdateProductCategory(ctx, tx, request); err != nil {
+	if _, err = q.productCategoryService.UpdateProductCategory(ctx, tx, productCategory); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
@@ -477,9 +480,9 @@ func (q *productCategoryController) prepareProductCategory(
 		if productCategory == nil {
 			return nil, nil, models.ErrProductCategoryNotFound
 		}
-		if withParams && params.Size() > 0 {
+		if withParams && params.Size() > 0 && productCategory.Name != nil {
 			params.Push(
-				"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
+				"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", *productCategory.Name),
 				"request", productCategory,
 				"productCategory", productCategory,
 			)
