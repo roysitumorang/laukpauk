@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/coregx/coregex v0.12.22
+	github.com/coregx/coregex v0.12.23
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gabriel-vasile/mimetype v1.4.15
 	github.com/getsentry/sentry-go v0.48.0
@@ -39,7 +39,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/coregx/ahocorasick v0.2.1 // indirect
+	github.com/coregx/ahocorasick v0.3.0 // indirect
 	github.com/ebitengine/purego v0.10.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
@@ -63,8 +63,8 @@ require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.27 // indirect
-	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/pierrec/lz4/v4 v4.1.28 // indirect
+	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.7 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
