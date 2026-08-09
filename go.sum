@@ -90,10 +90,10 @@ github.com/go-openapi/testify/enable/yaml/v2 v2.6.0 h1:gGHwAJ0R/5jU8BEGDbfRNR3hL
 github.com/go-openapi/testify/enable/yaml/v2 v2.6.0/go.mod h1:tY+St1SGq4NFl0QIqdTY4aEdbChAHxhyB77XQi9iJCo=
 github.com/go-openapi/testify/v2 v2.6.0 h1:5PKH2HE7YJ/LuRPQGvSxBRlFXNQhSetBLlGAgUEu3ug=
 github.com/go-openapi/testify/v2 v2.6.0/go.mod h1:SgsVHtfooshd0tublTtJ50FPKhujf47YRqauXXOUxfw=
-github.com/gofiber/contrib/v3/monitor v1.1.1 h1:qIzRT30J3YHlAdUFdoeUhgLvJb1VhbNUNSMABfHb6/E=
-github.com/gofiber/contrib/v3/monitor v1.1.1/go.mod h1:kwa3gKRd1vqN1QcqXXhTRabZNWbO2KiWd+KidUcFXBM=
-github.com/gofiber/contrib/v3/sentry v1.1.8 h1:FMF5JiEgmy89zfDJKu6eMkYoUQWZ/4QJLjLvYXrYVb8=
-github.com/gofiber/contrib/v3/sentry v1.1.8/go.mod h1:7VasZ9oR4eg9F+CFf/n5aCwj2ibemXPlN14Tglttm9U=
+github.com/gofiber/contrib/v3/monitor v1.1.2 h1:LzZxVHe+yMj+zebaDAwPN9PqWvH5tIIxD01y49GgM+k=
+github.com/gofiber/contrib/v3/monitor v1.1.2/go.mod h1:n4bJGAVw2qMhdvs4Rc+9a+ucSq1DPRt5dotK8+1ag6U=
+github.com/gofiber/contrib/v3/sentry v1.1.9 h1:dghWdDTX8TT4LZi8kY5PsP6aZ879On76yFZxRT/sDkQ=
+github.com/gofiber/contrib/v3/sentry v1.1.9/go.mod h1:Nieaf8o9468zdFiRxm88DeHFfhBIUVdM7Zo8ddRzKZs=
 github.com/gofiber/contrib/v3/swaggo v1.0.9 h1:c6llpsXul5bt5xW+2kBKm65eXoIDk3Z4gdPeWR2ueTY=
 github.com/gofiber/contrib/v3/swaggo v1.0.9/go.mod h1:9AUc5Y0QFjIvdKY3BkpNF04ukCiTXIHIc0vXbd53jb8=
 github.com/gofiber/fiber/v3 v3.4.0 h1:F0aND4vwZF7dR7cbvSwFQQEpBU902XHKWxrLsFBkVqw=
