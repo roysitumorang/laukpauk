@@ -452,14 +452,13 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
 		productVariant.ProductCategoryName = response.ProductCategoryName
-		productVariant.ProductID = response.ID
 		if response.Name != nil {
 			productVariant.ProductName = *response.Name
 		}
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-			return c.Render("admin/product_category_edit", params.Push(
+			return c.Render("admin/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(product.Photo),
 			), "admin/layouts/authenticated")
