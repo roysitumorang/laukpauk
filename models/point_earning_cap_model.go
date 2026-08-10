@@ -10,58 +10,68 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	ErrPointEarningCapNotFound                       = errors.New("point earning cap not found")
-	ErrUniquePointEarningCapMinimumPurchaseViolation = errors.New("minimum_purchase: already exists")
+var ErrPointEarningCapNotFound = errors.New("point earning cap not found")
+var ErrUniquePointEarningCapShoppingCostViolation = errors.New("shopping_cost: already exists")
+var MapPointEarningCapSortings = map[string]struct{}{
+	SortingFieldID: {},
+}
 
-	MapPointEarningCapSortings = map[string]struct{}{
-		SortingFieldID: {},
-		PointEarningCapSortingFieldMinimumPurchase: {},
+type PointEarningCap struct {
+	RowNo               int64        `json:"-" form:"-"`
+	ID                  uuid.UUID    `json:"-" form:"id"`
+	RecordStatus        RecordStatus `json:"-" form:"-"`
+	MinimumShoppingCost int64        `json:"-" form:"minimum_shopping_cost"`
+	MaximumShoppingCost int64        `json:"-" form:"maximum_shopping_cost"`
+	EarnedPoints        int64        `json:"-" form:"earned_points"`
+	CreatedBy           uuid.UUID    `json:"-" form:"-"`
+	CreatedAt           time.Time    `json:"-" form:"-"`
+	UpdatedBy           uuid.UUID    `json:"-" form:"-"`
+	UpdatedAt           time.Time    `json:"-" form:"-"`
+	DeletedBy           *uuid.UUID   `json:"-" form:"-"`
+	DeletedAt           *time.Time   `json:"-" form:"-"`
+	DeletionReason      *string      `json:"-" form:"-"`
+}
+
+func (q *PointEarningCap) Validate() error {
+	if q.MinimumShoppingCost < 1 {
+		return errors.New("minimum_shopping_cost: requires a positive integer")
 	}
-)
-
-const (
-	PointEarningCapSortingFieldMinimumPurchase = "minimum_purchase"
-)
-
-type (
-	PointEarningCap struct {
-		RowNo                  int64        `json:"-" form:"-"`
-		ID                     uuid.UUID    `json:"-" form:"id"`
-		RecordStatus           RecordStatus `json:"-" form:"-"`
-		RawMinimumPurchase     int64        `json:"-" form:"minimum_purchase"`
-		MinimumPurchase        *int64       `json:"-" form:"-"`
-		DeletedMinimumPurchase *int64       `json:"-" form:"-"`
-		EarnedPoints           int64        `json:"-" form:"earned_points"`
-		CreatedBy              uuid.UUID    `json:"-" form:"-"`
-		CreatedAt              time.Time    `json:"-" form:"-"`
-		UpdatedBy              uuid.UUID    `json:"-" form:"-"`
-		UpdatedAt              time.Time    `json:"-" form:"-"`
-		DeletedBy              *uuid.UUID   `json:"-" form:"-"`
-		DeletedAt              *time.Time   `json:"-" form:"-"`
-		DeletionReason         *string      `json:"-" form:"-"`
+	if q.MaximumShoppingCost < 1 {
+		return errors.New("maximum_shopping_cost: requires a positive integer")
 	}
-
-	PointEarningCapFilter struct {
-		PointEarningCapIDs,
-		ExcludedPointEarningCapIDs []uuid.UUID
-		RecordStatuses   []RecordStatus
-		MinimumPurchases []int64
-		Keyword,
-		PaginationURL string
-		Sortings    []Sorting
-		MapSortings Map
-		Limit,
-		Page int64
-		UrlValues url.Values
+	if q.MinimumShoppingCost >= q.MaximumShoppingCost {
+		return errors.New("maximum_shopping_cost: should exceed minimum_shopping_cost")
 	}
-)
+	if q.EarnedPoints < 1 {
+		return errors.New("earned_points: requires a positive integer")
+	}
+	return nil
+}
+
+func (q *PointEarningCap) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+type PointEarningCapFilter struct {
+	PointEarningCapIDs,
+	ExcludedPointEarningCapIDs []uuid.UUID
+	RecordStatuses []RecordStatus
+	MinimumShoppingCost,
+	MaximumShoppingCost int64
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
 
 func NewPointEarningCapFilter() *PointEarningCapFilter {
-	return new(PointEarningCapFilter{
+	return &PointEarningCapFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *PointEarningCapFilter) WithPointEarningCapIDs(pointEarningIDs ...uuid.UUID) *PointEarningCapFilter {
@@ -79,8 +89,9 @@ func (q *PointEarningCapFilter) WithRecordStatuses(recordStatuses ...RecordStatu
 	return q
 }
 
-func (q *PointEarningCapFilter) WithMinimumPurchases(minimumPurchases ...int64) *PointEarningCapFilter {
-	q.MinimumPurchases = minimumPurchases
+func (q *PointEarningCapFilter) WithShoppingCost(minimumShoppingCost, maximumShoppingCost int64) *PointEarningCapFilter {
+	q.MinimumShoppingCost = minimumShoppingCost
+	q.MaximumShoppingCost = maximumShoppingCost
 	return q
 }
 
@@ -116,26 +127,4 @@ func (q *PointEarningCapFilter) WithPage(page int64) *PointEarningCapFilter {
 func (q *PointEarningCapFilter) WithUrlValues(urlValues url.Values) *PointEarningCapFilter {
 	q.UrlValues = urlValues
 	return q
-}
-
-func (q *PointEarningCap) Validate() error {
-	if q.RawMinimumPurchase < 1 {
-		return errors.New("minimum_purchase: requires a positive integer")
-	}
-	q.MinimumPurchase = &q.RawMinimumPurchase
-	if q.EarnedPoints < 1 {
-		return errors.New("earned_points: requires a positive integer")
-	}
-	return nil
-}
-
-func (q *PointEarningCap) Populate() *PointEarningCap {
-	if q.MinimumPurchase != nil {
-		q.RawMinimumPurchase = *q.MinimumPurchase
-	}
-	return q
-}
-
-func (q *PointEarningCap) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
 }

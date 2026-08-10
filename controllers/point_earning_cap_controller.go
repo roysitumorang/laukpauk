@@ -83,16 +83,6 @@ func (q *pointEarningCapController) AdminIndex(c fiber.Ctx) (err error) {
 				Direction: models.SortingDirectionAsc,
 				Label:     "Oldest-Newest",
 			},
-			{
-				Field:     models.PointEarningCapSortingFieldMinimumPurchase,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Max-Min",
-			},
-			{
-				Field:     models.PointEarningCapSortingFieldMinimumPurchase,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Min-Max",
-			},
 		},
 	)
 	request, err = sanitizers.FindPointEarningCaps(ctx, c)
@@ -104,7 +94,7 @@ func (q *pointEarningCapController) AdminIndex(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if rows, pagination, err = q.pointEarningCapService.FindPointEarningCaps(
-		c,
+		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCaps")
@@ -180,11 +170,11 @@ func (q *pointEarningCapController) AdminCreate(c fiber.Ctx) (err error) {
 	request.UpdatedBy = createdBy
 	request.UpdatedAt = now
 	params.Push("request", request)
-	if request.MinimumPurchase != nil {
+	if request.MinimumShoppingCost > 0 && request.MaximumShoppingCost > 0 {
 		pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 			ctx,
 			models.NewPointEarningCapFilter().
-				WithMinimumPurchases(*request.MinimumPurchase),
+				WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost),
 		)
 		if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCap")
@@ -195,11 +185,10 @@ func (q *pointEarningCapController) AdminCreate(c fiber.Ctx) (err error) {
 		if pointEarningCap != nil {
 			if pointEarningCap.RecordStatus == models.RecordStatusActive {
 				return c.Render("admin/point_earning_cap_new", params.Push(
-					"flash", flash.Danger(models.ErrUniquePointEarningCapMinimumPurchaseViolation.Error()),
+					"flash", flash.Danger(models.ErrUniquePointEarningCapShoppingCostViolation.Error()),
 				), "admin/layouts/authenticated")
 			}
 			request.ID = pointEarningCap.ID
-			request.DeletedMinimumPurchase = nil
 			request.DeletedBy = nil
 			request.DeletedAt = nil
 			request.DeletionReason = nil
@@ -273,7 +262,7 @@ func (q *pointEarningCapController) AdminEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointEarningCap.MinimumPurchase),
+		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointEarningCap.MinimumShoppingCost),
 		"request", pointEarningCap,
 		"pointEarningCap", pointEarningCap,
 	)
@@ -314,7 +303,7 @@ func (q *pointEarningCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointEarningCap.MinimumPurchase),
+		"pageTitle", helper.Sprintf("Edit Tarif Akumulasi Poin|%d", pointEarningCap.MinimumShoppingCost),
 		"request", pointEarningCap,
 		"pointEarningCap", pointEarningCap,
 	)
@@ -327,13 +316,12 @@ func (q *pointEarningCapController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if pointEarningCap.MinimumPurchase != nil &&
-		request.MinimumPurchase != nil &&
-		*pointEarningCap.MinimumPurchase != *request.MinimumPurchase {
+	if (pointEarningCap.MinimumShoppingCost != request.MinimumShoppingCost) &&
+		(pointEarningCap.MaximumShoppingCost != request.MaximumShoppingCost) {
 		otherPointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 			ctx,
 			models.NewPointEarningCapFilter().
-				WithMinimumPurchases(*request.MinimumPurchase).
+				WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost).
 				WithExcludedPointEarningCapIDs(pointEarningCap.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
@@ -344,12 +332,11 @@ func (q *pointEarningCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 		if otherPointEarningCap != nil {
 			return c.Render("admin/point_earning_cap_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniquePointEarningCapMinimumPurchaseViolation.Error()),
+				"flash", flash.Danger(models.ErrUniquePointEarningCapShoppingCostViolation.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}
 	request.ID = pointEarningCap.ID
-	request.DeletedMinimumPurchase = nil
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	params.Push("request", request)
@@ -412,15 +399,10 @@ func (q *pointEarningCapController) AdminDelete(c fiber.Ctx) (err error) {
 	if pointEarningCap == nil {
 		return flash.Danger(models.ErrPointEarningCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}
-	request := pointEarningCap
-	if request.MinimumPurchase != nil {
-		request.DeletedMinimumPurchase = new(*pointEarningCap.MinimumPurchase)
-	}
-	request.MinimumPurchase = nil
-	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentAdmin.ID
-	request.DeletedAt = new(time.Now())
-	request.DeletionReason = nil
+	pointEarningCap.RecordStatus = models.RecordStatusDeleted
+	pointEarningCap.DeletedBy = &currentAdmin.ID
+	pointEarningCap.DeletedAt = new(time.Now())
+	pointEarningCap.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -434,7 +416,7 @@ func (q *pointEarningCapController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.pointEarningCapService.UpdatePointEarningCap(ctx, tx, request); err != nil {
+	if _, err = q.pointEarningCapService.UpdatePointEarningCap(ctx, tx, pointEarningCap); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointEarningCap")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_earning_caps")
 	}

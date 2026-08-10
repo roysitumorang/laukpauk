@@ -4,19 +4,31 @@
 	<div class="row">
 		<div class="col-lg-12">
 			<div class="row">
-				<div class="col-lg-6">
+				<div class="col-lg-4">
 					<div class="form-group">
-						<label for="minimum_purchase" class="label-nilai">Minimal Pembelian</label>
+						<label for="shopping_cost" class="label-nilai">Minimal Pembelian</label>
 						<div class="input-group">
 							<div class="input-group-prepend">
 								<span class="input-group-text">Rp.</span>
 							</div>
-							<input type="number" name="minimum_purchase" value="{{ request.RawMinimumPurchase }}" class="form-control input" id="minimum_purchase"
+							<input type="number" name="minimum_shopping_cost" value="{{ if request.MinimumShoppingCost }}{{ request.MinimumShoppingCost }}{{ end }}" class="form-control input" id="minimum_shopping_cost"
 								placeholder="Minimal Pembelian" required />
 						</div>
 					</div>
 				</div>
-				<div class="col-lg-6">
+				<div class="col-lg-4">
+					<div class="form-group">
+						<label for="maximum_shopping_cost" class="label-nilai">Maksimal Pembelian</label>
+						<div class="input-group">
+							<div class="input-group-prepend">
+								<span class="input-group-text">Rp.</span>
+							</div>
+							<input type="number" name="maximum_shopping_cost" value="{{ if request.MaximumShoppingCost }}{{ request.MaximumShoppingCost }}{{ end }}" class="form-control input" id="maximum_shopping_cost"
+								placeholder="Maksimal Pembelian" required />
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4">
 					<div class="form-group">
 						<label for="earned_points" class="label-nilai">Poin</label>
 						<div class="input-group">
