@@ -11,37 +11,35 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	PointEarningCapService interface {
-		FindPointEarningCaps(
-			ctx context.Context,
-			request *models.PointEarningCapFilter,
-		) ([]*models.PointEarningCap, *models.Pagination, error)
-		FindPointEarningCap(
-			ctx context.Context,
-			request *models.PointEarningCapFilter,
-		) (*models.PointEarningCap, error)
-		CreatePointEarningCap(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.PointEarningCap,
-		) (*models.PointEarningCap, error)
-		UpdatePointEarningCap(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.PointEarningCap,
-		) (*models.PointEarningCap, error)
-		SavePointEarningCap(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.PointEarningCap,
-		) (*models.PointEarningCap, error)
-	}
+type PointEarningCapService interface {
+	FindPointEarningCaps(
+		ctx context.Context,
+		request *models.PointEarningCapFilter,
+	) ([]*models.PointEarningCap, *models.Pagination, error)
+	FindPointEarningCap(
+		ctx context.Context,
+		request *models.PointEarningCapFilter,
+	) (*models.PointEarningCap, error)
+	CreatePointEarningCap(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.PointEarningCap,
+	) (*models.PointEarningCap, error)
+	UpdatePointEarningCap(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.PointEarningCap,
+	) (*models.PointEarningCap, error)
+	SavePointEarningCap(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.PointEarningCap,
+	) (*models.PointEarningCap, error)
+}
 
-	pointEarningCapService struct {
-		pointEarningCapRepository repositories.PointEarningCapRepository
-	}
-)
+type pointEarningCapService struct {
+	pointEarningCapRepository repositories.PointEarningCapRepository
+}
 
 func NewPointEarningCapService(
 	pointEarningCapRepository repositories.PointEarningCapRepository,
@@ -113,7 +111,7 @@ func (q *pointEarningCapService) UpdatePointEarningCap(
 ) (*models.PointEarningCap, error) {
 	ctxt := "PointEarningCapService-UpdatePointEarningCap"
 	response, err := q.pointEarningCapRepository.UpdatePointEarningCap(ctx, tx, request)
-	if err != nil {
+	if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointEarningCap")
 	}
 	return response, nil
@@ -129,7 +127,7 @@ func (q *pointEarningCapService) SavePointEarningCap(
 		if response, err = q.pointEarningCapRepository.CreatePointEarningCap(ctx, tx, request); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePointEarningCap")
 		}
-	} else if response, err = q.pointEarningCapRepository.UpdatePointEarningCap(ctx, tx, request); err != nil {
+	} else if response, err = q.pointEarningCapRepository.UpdatePointEarningCap(ctx, tx, request); err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointEarningCap")
 	}
 	return response, err

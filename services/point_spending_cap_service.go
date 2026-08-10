@@ -11,37 +11,35 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	PointSpendingCapService interface {
-		FindPointSpendingCaps(
-			ctx context.Context,
-			request *models.PointSpendingCapFilter,
-		) ([]*models.PointSpendingCap, *models.Pagination, error)
-		FindPointSpendingCap(
-			ctx context.Context,
-			request *models.PointSpendingCapFilter,
-		) (*models.PointSpendingCap, error)
-		CreatePointSpendingCap(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.PointSpendingCap,
-		) (*models.PointSpendingCap, error)
-		UpdatePointSpendingCap(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.PointSpendingCap,
-		) (*models.PointSpendingCap, error)
-		SavePointSpendingCap(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.PointSpendingCap,
-		) (*models.PointSpendingCap, error)
-	}
+type PointSpendingCapService interface {
+	FindPointSpendingCaps(
+		ctx context.Context,
+		request *models.PointSpendingCapFilter,
+	) ([]*models.PointSpendingCap, *models.Pagination, error)
+	FindPointSpendingCap(
+		ctx context.Context,
+		request *models.PointSpendingCapFilter,
+	) (*models.PointSpendingCap, error)
+	CreatePointSpendingCap(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.PointSpendingCap,
+	) (*models.PointSpendingCap, error)
+	UpdatePointSpendingCap(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.PointSpendingCap,
+	) (*models.PointSpendingCap, error)
+	SavePointSpendingCap(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.PointSpendingCap,
+	) (*models.PointSpendingCap, error)
+}
 
-	pointSpendingCapService struct {
-		pointSpendingCapRepository repositories.PointSpendingCapRepository
-	}
-)
+type pointSpendingCapService struct {
+	pointSpendingCapRepository repositories.PointSpendingCapRepository
+}
 
 func NewPointSpendingCapService(
 	pointSpendingCapRepository repositories.PointSpendingCapRepository,
@@ -113,7 +111,7 @@ func (q *pointSpendingCapService) UpdatePointSpendingCap(
 ) (*models.PointSpendingCap, error) {
 	ctxt := "PointSpendingCapService-UpdatePointSpendingCap"
 	response, err := q.pointSpendingCapRepository.UpdatePointSpendingCap(ctx, tx, request)
-	if err != nil {
+	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointSpendingCap")
 	}
 	return response, nil
@@ -129,7 +127,7 @@ func (q *pointSpendingCapService) SavePointSpendingCap(
 		if response, err = q.pointSpendingCapRepository.CreatePointSpendingCap(ctx, tx, request); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePointSpendingCap")
 		}
-	} else if response, err = q.pointSpendingCapRepository.UpdatePointSpendingCap(ctx, tx, request); err != nil {
+	} else if response, err = q.pointSpendingCapRepository.UpdatePointSpendingCap(ctx, tx, request); err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointSpendingCap")
 	}
 	return response, err

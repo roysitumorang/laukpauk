@@ -2047,8 +2047,7 @@ func init() {
 			`CREATE TABLE point_spending_caps (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, shopping_cost int8range
-				, deleted_shopping_cost int8range
+				, shopping_cost int8range NOT NULL
 				, disposable_points bigint NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
@@ -2074,28 +2073,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON point_spending_caps (LOWER(shopping_cost));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON point_spending_caps (UPPER(shopping_cost));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON point_spending_caps (LOWER(deleted_shopping_cost));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON point_spending_caps (UPPER(deleted_shopping_cost));`,
+			`CREATE INDEX ON point_spending_caps (shopping_cost);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -2152,7 +2130,7 @@ func init() {
 			}, {
 				models.RecordStatusActive,
 				400_000,
-				nil,
+				99_999_999,
 				15_000,
 				adminID,
 				now,

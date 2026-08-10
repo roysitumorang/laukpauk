@@ -11,7 +11,7 @@ import (
 )
 
 var ErrPointEarningCapNotFound = errors.New("point earning cap not found")
-var ErrUniquePointEarningCapShoppingCostViolation = errors.New("shopping_cost: already exists")
+var ErrPointEarningCapShoppingCostOverlapping = errors.New("shopping_cost: already exists")
 var MapPointEarningCapSortings = map[string]struct{}{
 	SortingFieldID: {},
 }

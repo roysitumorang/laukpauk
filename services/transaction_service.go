@@ -310,7 +310,7 @@ func (q *transactionService) CreateTransaction(
 			ctx,
 			models.NewPointSpendingCapFilter().
 				WithRecordStatuses(models.RecordStatusActive).
-				WithShoppingCosts(request.ShoppingCost),
+				WithShoppingCost(request.ShoppingCost, request.ShoppingCost),
 		)
 		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")

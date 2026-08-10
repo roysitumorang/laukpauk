@@ -19,12 +19,10 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	pointEarningCapController struct {
-		adminService           services.AdminService
-		pointEarningCapService services.PointEarningCapService
-	}
-)
+type pointEarningCapController struct {
+	adminService           services.AdminService
+	pointEarningCapService services.PointEarningCapService
+}
 
 func NewPointEarningCapController(
 	adminService services.AdminService,
@@ -185,7 +183,7 @@ func (q *pointEarningCapController) AdminCreate(c fiber.Ctx) (err error) {
 		if pointEarningCap != nil {
 			if pointEarningCap.RecordStatus == models.RecordStatusActive {
 				return c.Render("admin/point_earning_cap_new", params.Push(
-					"flash", flash.Danger(models.ErrUniquePointEarningCapShoppingCostViolation.Error()),
+					"flash", flash.Danger(models.ErrPointEarningCapShoppingCostOverlapping.Error()),
 				), "admin/layouts/authenticated")
 			}
 			request.ID = pointEarningCap.ID
@@ -332,7 +330,7 @@ func (q *pointEarningCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 		if otherPointEarningCap != nil {
 			return c.Render("admin/point_earning_cap_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniquePointEarningCapShoppingCostViolation.Error()),
+				"flash", flash.Danger(models.ErrPointEarningCapShoppingCostOverlapping.Error()),
 			), "admin/layouts/authenticated")
 		}
 	}

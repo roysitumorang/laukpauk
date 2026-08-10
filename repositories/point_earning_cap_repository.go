@@ -277,7 +277,7 @@ func (q *pointEarningCapRepository) CreatePointEarningCap(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
 			pgxErr.ConstraintName == "point_earning_caps_no_overlapping_shopping_cost" {
-			err = models.ErrUniquePointEarningCapShoppingCostViolation
+			err = models.ErrPointEarningCapShoppingCostOverlapping
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -446,7 +446,7 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
 			pgxErr.ConstraintName == "point_earning_caps_no_overlapping_shopping_cost" {
-			err = models.ErrUniquePointEarningCapShoppingCostViolation
+			err = models.ErrPointEarningCapShoppingCostOverlapping
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}

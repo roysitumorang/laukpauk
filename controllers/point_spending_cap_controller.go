@@ -19,12 +19,10 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	pointSpendingCapController struct {
-		adminService            services.AdminService
-		pointSpendingCapService services.PointSpendingCapService
-	}
-)
+type pointSpendingCapController struct {
+	adminService            services.AdminService
+	pointSpendingCapService services.PointSpendingCapService
+}
 
 func NewPointSpendingCapController(
 	adminService services.AdminService,
@@ -82,16 +80,6 @@ func (q *pointSpendingCapController) AdminIndex(c fiber.Ctx) (err error) {
 				Field:     models.SortingFieldID,
 				Direction: models.SortingDirectionAsc,
 				Label:     "Oldest-Newest",
-			},
-			{
-				Field:     models.PointSpendingCapSortingFieldMinimumShoppingCost,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Max-Min",
-			},
-			{
-				Field:     models.PointSpendingCapSortingFieldMinimumShoppingCost,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Min-Max",
 			},
 		},
 	)
@@ -183,7 +171,7 @@ func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
-			WithShoppingCosts(request.MinimumShoppingCost, request.MaximumShoppingCost),
+			WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost),
 	)
 	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
@@ -327,11 +315,11 @@ func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if pointSpendingCap.MinimumShoppingCost != request.MinimumShoppingCost ||
-		pointSpendingCap.MinimumShoppingCost != request.MaximumShoppingCost {
+		pointSpendingCap.MaximumShoppingCost != request.MaximumShoppingCost {
 		otherPointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 			ctx,
 			models.NewPointSpendingCapFilter().
-				WithShoppingCosts(request.MinimumShoppingCost, request.MaximumShoppingCost).
+				WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost).
 				WithExcludedPointSpendingCapIDs(pointSpendingCap.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
