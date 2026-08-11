@@ -11,39 +11,37 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	VoucherService interface {
-		FindVouchers(
-			ctx context.Context,
-			request *models.VoucherFilter,
-		) ([]*models.Voucher, *models.Pagination, error)
-		FindVoucher(
-			ctx context.Context,
-			request *models.VoucherFilter,
-		) (*models.Voucher, error)
-		CreateVoucher(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Voucher,
-		) (*models.Voucher, error)
-		UpdateVoucher(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Voucher,
-		) (*models.Voucher, error)
-	}
+type VoucherService interface {
+	FindVouchers(
+		ctx context.Context,
+		request *models.VoucherFilter,
+	) ([]*models.Voucher, *models.Pagination, error)
+	FindVoucher(
+		ctx context.Context,
+		request *models.VoucherFilter,
+	) (*models.Voucher, error)
+	CreateVoucher(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Voucher,
+	) (*models.Voucher, error)
+	UpdateVoucher(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Voucher,
+	) (*models.Voucher, error)
+}
 
-	voucherService struct {
-		voucherRepository repositories.VoucherRepository
-	}
-)
+type voucherService struct {
+	voucherRepository repositories.VoucherRepository
+}
 
 func NewVoucherService(
 	voucherRepository repositories.VoucherRepository,
 ) VoucherService {
-	return new(voucherService{
+	return &voucherService{
 		voucherRepository: voucherRepository,
-	})
+	}
 }
 
 func (q *voucherService) FindVouchers(
@@ -82,7 +80,10 @@ func (q *voucherService) FindVoucher(
 ) (*models.Voucher, error) {
 	ctxt := "VoucherService-FindVoucher"
 	response, err := q.voucherRepository.FindVoucher(ctx, request)
-	if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
+	if errors.Is(err, models.ErrVoucherNotFound) {
+		return nil, err
+	}
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 	}
 	return response, err
@@ -97,7 +98,6 @@ func (q *voucherService) CreateVoucher(
 	response, err := q.voucherRepository.CreateVoucher(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateVoucher")
-		return nil, err
 	}
 	return response, nil
 }
@@ -108,9 +108,11 @@ func (q *voucherService) UpdateVoucher(
 ) (*models.Voucher, error) {
 	ctxt := "VoucherService-UpdateVoucher"
 	response, err := q.voucherRepository.UpdateVoucher(ctx, tx, request)
+	if errors.Is(err, models.ErrVoucherNotFound) {
+		return nil, err
+	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateVoucher")
-		return nil, err
 	}
 	return response, nil
 }

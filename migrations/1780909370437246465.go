@@ -1263,7 +1263,7 @@ func init() {
 			`CREATE TABLE vouchers_buyers (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, voucher_id UUID NOT NULL REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, UNIQUE (voucher_id, buyer_id)
 			);`,

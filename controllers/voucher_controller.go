@@ -20,14 +20,12 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	voucherController struct {
-		adminService        services.AdminService
-		voucherService      services.VoucherService
-		buyerService        services.BuyerService
-		jsonWebTokenService services.JsonWebTokenService
-	}
-)
+type voucherController struct {
+	adminService        services.AdminService
+	voucherService      services.VoucherService
+	buyerService        services.BuyerService
+	jsonWebTokenService services.JsonWebTokenService
+}
 
 func NewVoucherController(
 	adminService services.AdminService,
