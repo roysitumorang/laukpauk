@@ -25,11 +25,8 @@ func FindProducts(ctx context.Context, c fiber.Ctx) (*models.ProductFilter, erro
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
 		return nil, err
 	}
-	var sb strings.Builder
-	_, _ = sb.WriteString(c.BaseURL())
-	_, _ = sb.WriteString(originalURL.Path)
 	urlValues := originalURL.Query()
-	response.WithPaginationURL(sb.String())
+	response.WithPaginationURL(helper.Sprintf("%s%s", c.BaseURL(), originalURL.Path))
 	if keyword := strings.TrimSpace(c.Query("q")); keyword != "" {
 		urlValues.Set("q", keyword)
 		response.WithKeyword(keyword)

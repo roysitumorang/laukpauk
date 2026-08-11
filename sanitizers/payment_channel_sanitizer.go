@@ -2,7 +2,6 @@ package sanitizers
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/url"
 	"strconv"
@@ -22,10 +21,8 @@ func FindPaymentChannels(ctx context.Context, c fiber.Ctx) (*models.PaymentChann
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
 		return response, err
 	}
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, "%s%s", c.BaseURL(), originalURL.Path)
 	urlValues := originalURL.Query()
-	response.WithPaginationURL(sb.String())
+	response.WithPaginationURL(helper.Sprintf("%s%s", c.BaseURL(), originalURL.Path))
 	if keyword := strings.TrimSpace(c.Query("q")); keyword != "" {
 		urlValues.Set("q", keyword)
 		response.WithKeyword(keyword)
