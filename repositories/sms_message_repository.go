@@ -269,14 +269,95 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 ) (*models.SmsMessage, error) {
 	ctxt := "SmsMessageRepository-UpdateSmsMessage"
 	var response models.SmsMessage
-	if err := tx.QueryRow(
+	err := tx.QueryRow(
 		ctx,
-		`UPDATE sms_messages SET
-			delivery_status = $1
-			, message_id = $2
-			, updated_at = $3
-			, sent_at = $4
-		WHERE id = $5
+		`SELECT
+			id
+			, user_id
+			, mobile_phone
+			, body
+			, delivery_status
+			, message_id
+			, created_by
+			, created_at
+			, updated_at
+			, sent_at
+		FROM sms_messages
+		WHERE id = $1
+		FOR NO KEY UPDATE`,
+		request.ID,
+	).Scan(
+		&response.ID,
+		&response.UserID,
+		&response.MobilePhone,
+		&response.Body,
+		&response.DeliveryStatus,
+		&response.MessageID,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+		&response.SentAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrSmsMessageNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString("UPDATE sms_messages SET")
+	if (response.DeliveryStatus == nil && request.DeliveryStatus != nil) ||
+		(response.DeliveryStatus != nil && request.DeliveryStatus == nil) ||
+		(response.DeliveryStatus != nil && request.DeliveryStatus != nil &&
+			*response.DeliveryStatus != *request.DeliveryStatus) {
+		params = append(params, request.DeliveryStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " delivery_status = $%d", n)
+	}
+	if (response.MessageID == nil && request.MessageID != nil) ||
+		(response.MessageID != nil && request.MessageID == nil) ||
+		(response.MessageID != nil && request.MessageID != nil &&
+			*response.MessageID != *request.MessageID) {
+		params = append(params, request.MessageID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " message_id = $%d", n)
+	}
+	if !response.UpdatedAt.Equal(request.UpdatedAt) {
+		params = append(params, request.UpdatedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+	}
+	if (response.SentAt == nil && request.SentAt != nil) ||
+		(response.SentAt != nil && request.SentAt == nil) ||
+		(response.SentAt != nil && request.SentAt != nil &&
+			!response.SentAt.Equal(*request.SentAt)) {
+		params = append(params, request.SentAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " sent_at = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		sb,
+		` WHERE id = $%d
 		RETURNING id
 			, user_id
 			, mobile_phone
@@ -287,12 +368,9 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 			, created_at
 			, updated_at
 			, sent_at`,
-		request.DeliveryStatus,
-		request.MessageID,
-		request.UpdatedAt,
-		request.SentAt,
-		request.ID,
-	).Scan(
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.MobilePhone,
