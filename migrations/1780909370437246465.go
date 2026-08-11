@@ -2163,15 +2163,15 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, point_type integer NOT NULL
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
 				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, description character varying NOT NULL
-				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2240,7 +2240,7 @@ func init() {
 			ctx,
 			`CREATE TABLE wallets (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, wallet_transfer_type integer NOT NULL
 				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL

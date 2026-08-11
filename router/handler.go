@@ -160,7 +160,11 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaClient, zenzivaClient)
 	settingService := services.NewSettingService(settingRepository)
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
-	pointService := services.NewPointService(pointRepository)
+	pointService := services.NewPointService(
+		pointRepository,
+		buyerRepository,
+		transactionRepository,
+	)
 	voucherService := services.NewVoucherService(voucherRepository)
 	pointEarningCapService := services.NewPointEarningCapService(pointEarningCapRepository)
 	pointSpendingCapService := services.NewPointSpendingCapService(pointSpendingCapRepository)

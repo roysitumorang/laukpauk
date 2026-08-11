@@ -12,44 +12,43 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	PointRepository interface {
-		FindPoints(
-			ctx context.Context,
-			request *models.PointFilter,
-		) ([]*models.Point, int64, int64, error)
-		FindPoint(
-			ctx context.Context,
-			request *models.PointFilter,
-		) (*models.Point, error)
-		CreatePoint(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Point,
-		) (*models.Point, error)
-		UpdatePoint(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Point,
-		) (*models.Point, error)
-	}
+type PointRepository interface {
+	FindPoints(
+		ctx context.Context,
+		request *models.PointFilter,
+	) ([]*models.Point, int64, int64, error)
+	FindPoint(
+		ctx context.Context,
+		request *models.PointFilter,
+	) (*models.Point, error)
+	CreatePoint(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Point,
+	) (*models.Point, error)
+	UpdatePoint(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Point,
+	) (*models.Point, error)
+}
 
-	pointRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type pointRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewPointRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) PointRepository {
-	return new(pointRepository{
+	return &pointRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *pointRepository) FindPoints(
@@ -57,18 +56,15 @@ func (q *pointRepository) FindPoints(
 	request *models.PointFilter,
 ) ([]*models.Point, int64, int64, error) {
 	ctxt := "PointRepository-FindPoints"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(
-		&sb,
-		`SELECT COUNT(1)
-		FROM points p
-		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id
-		LEFT JOIN transactions t ON p.transaction_id = t.id %s`,
-		condition,
-	)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM points %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -82,25 +78,20 @@ func (q *pointRepository) FindPoints(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`p.id
-		, p.record_status
-		, p.point_type
-		, p.buyer_id
-		, u.name
-		, u.username
-		, u.mobile_phone
-		, b.referral_code
-		, p.amount
-		, p.transaction_id
-		, t.reference_number
-		, p.description
-		, p.created_by
-		, p.created_at
-		, p.updated_by
-		, p.updated_at
-		, p.deleted_by
-		, p.deleted_at
-		, p.deletion_reason`,
+		`id
+		, record_status
+		, point_type
+		, buyer_id
+		, amount
+		, transaction_id
+		, description
+		, created_by
+		, created_at
+		, updated_by
+		, updated_at
+		, deleted_by
+		, deleted_at
+		, deletion_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -113,7 +104,7 @@ func (q *pointRepository) FindPoints(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " p.%s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -135,7 +126,7 @@ func (q *pointRepository) FindPoints(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -154,13 +145,8 @@ func (q *pointRepository) FindPoints(
 			&point.RecordStatus,
 			&point.PointType,
 			&point.BuyerID,
-			&point.BuyerName,
-			&point.BuyerUsername,
-			&point.BuyerMobilePhone,
-			&point.BuyerReferralCode,
 			&point.Amount,
 			&point.TransactionID,
-			&point.TransactionReferenceNumber,
 			&point.Description,
 			&point.CreatedBy,
 			&point.CreatedAt,
@@ -185,35 +171,32 @@ func (q *pointRepository) FindPoint(
 	request *models.PointFilter,
 ) (*models.Point, error) {
 	ctxt := "PointRepository-FindPoint"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
-			p.id
-			, p.record_status
-			, p.point_type
-			, p.buyer_id
-			, u.name
-			, u.username
-			, u.mobile_phone
-			, b.referral_code
-			, p.amount
-			, p.transaction_id
-			, t.reference_number
-			, p.description
-			, p.created_by
-			, p.created_at
-			, p.updated_by
-			, p.updated_at
-			, p.deleted_by
-			, p.deleted_at
-			, p.deletion_reason
-		FROM points p
-		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id
-		LEFT JOIN transactions t ON p.transaction_id = t.id %s`,
+			id
+			, record_status
+			, point_type
+			, buyer_id
+			, amount
+			, transaction_id
+			, description
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM points %s`,
 		condition,
 	)
 	query := sb.String()
@@ -223,13 +206,8 @@ func (q *pointRepository) FindPoint(
 		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
-		&response.BuyerName,
-		&response.BuyerUsername,
-		&response.BuyerMobilePhone,
-		&response.BuyerReferralCode,
 		&response.Amount,
 		&response.TransactionID,
-		&response.TransactionReferenceNumber,
 		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -258,45 +236,32 @@ func (q *pointRepository) CreatePoint(
 	var response models.Point
 	err := tx.QueryRow(
 		ctx,
-		`WITH p AS (
-			INSERT INTO points (
-				record_status
-				, point_type
-				, buyer_id
-				, amount
-				, transaction_id
-				, description
-				, created_by
-				, created_at
-				, updated_by
-				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-			RETURNING *
-		)
-		SELECT
-			p.id
-			, p.record_status
-			, p.point_type
-			, p.buyer_id
-			, u.name
-			, u.username
-			, u.mobile_phone
-			, b.referral_code
-			, p.amount
-			, p.transaction_id
-			, t.reference_number
-			, p.description
-			, p.created_by
-			, p.created_at
-			, p.updated_by
-			, p.updated_at
-			, p.deleted_by
-			, p.deleted_at
-			, p.deletion_reason
-		FROM p
-		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id
-		LEFT JOIN transactions t ON p.transaction_id = t.id`,
+		`INSERT INTO points (
+			record_status
+			, point_type
+			, buyer_id
+			, amount
+			, transaction_id
+			, description
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id
+			, record_status
+			, point_type
+			, buyer_id
+			, amount
+			, transaction_id
+			, description
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason`,
 		request.RecordStatus,
 		request.PointType,
 		request.BuyerID,
@@ -312,13 +277,8 @@ func (q *pointRepository) CreatePoint(
 		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
-		&response.BuyerName,
-		&response.BuyerUsername,
-		&response.BuyerMobilePhone,
-		&response.BuyerReferralCode,
 		&response.Amount,
 		&response.TransactionID,
-		&response.TransactionReferenceNumber,
 		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -344,64 +304,32 @@ func (q *pointRepository) UpdatePoint(
 	var response models.Point
 	err := tx.QueryRow(
 		ctx,
-		`WITH p AS (
-			UPDATE points SET
-				record_status = $1
-				, amount = $2
-				, description = $3
-				, updated_by = $4
-				, updated_at = $5
-				, deleted_by = $6
-				, deleted_at = $7
-				, deletion_reason = $8
-			WHERE id = $9
-			RETURNING *
-		)
-		SELECT
-			p.id
-			, p.record_status
-			, p.point_type
-			, p.buyer_id
-			, u.name
-			, u.username
-			, u.mobile_phone
-			, b.referral_code
-			, p.amount
-			, p.transaction_id
-			, t.reference_number
-			, p.description
-			, p.created_by
-			, p.created_at
-			, p.updated_by
-			, p.updated_at
-			, p.deleted_by
-			, p.deleted_at
-			, p.deletion_reason
-		FROM p
-		JOIN users u ON p.buyer_id = u.id
-		JOIN buyers b ON u.id = b.user_id
-		LEFT JOIN transactions t ON p.transaction_id = t.id`,
-		request.RecordStatus,
-		request.Amount,
-		request.Description,
-		request.UpdatedBy,
-		request.UpdatedAt,
-		request.DeletedBy,
-		request.DeletedAt,
-		request.DeletionReason,
+		`SELECT
+			id
+			, record_status
+			, point_type
+			, buyer_id
+			, amount
+			, transaction_id
+			, description
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason
+		FROM points
+		WHERE id = $1
+		FOR NO KEY UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
-		&response.BuyerName,
-		&response.BuyerUsername,
-		&response.BuyerMobilePhone,
-		&response.BuyerReferralCode,
 		&response.Amount,
 		&response.TransactionID,
-		&response.TransactionReferenceNumber,
 		&response.Description,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -411,7 +339,122 @@ func (q *pointRepository) UpdatePoint(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if err != nil {
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString("UPDATE points SET")
+	if response.RecordStatus != request.RecordStatus {
+		params = append(params, request.RecordStatus)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+	}
+	if response.Amount != request.Amount {
+		params = append(params, request.Amount)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " amount = $%d", n)
+	}
+	if response.Description != request.Description {
+		params = append(params, request.Description)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	if (response.UpdatedBy == nil && request.UpdatedBy != nil) ||
+		(response.UpdatedBy != nil && request.UpdatedBy == nil) ||
+		(response.UpdatedBy != nil && request.UpdatedBy != nil &&
+			response.UpdatedBy.Compare(*request.UpdatedBy) != 0) {
+		params = append(params, request.DeletedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+	}
+	if !response.UpdatedAt.Equal(request.UpdatedAt) {
+		params = append(params, request.UpdatedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+	}
+	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
+		(response.DeletedBy != nil && request.DeletedBy == nil) ||
+		(response.DeletedBy != nil && request.DeletedBy != nil &&
+			response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+		params = append(params, request.DeletedBy)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+	}
+	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
+		(response.DeletedAt != nil && request.DeletedAt == nil) ||
+		(response.DeletedAt != nil && request.DeletedAt != nil &&
+			!response.DeletedAt.Equal(*request.DeletedAt)) {
+		params = append(params, request.DeletedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+	}
+	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
+		(response.DeletionReason != nil && request.DeletionReason == nil) ||
+		(response.DeletionReason != nil && request.DeletionReason != nil &&
+			*response.DeletionReason != *request.DeletionReason) {
+		params = append(params, request.DeletionReason)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		sb,
+		` WHERE id = $%d
+		RETURNING id
+			, record_status
+			, point_type
+			, buyer_id
+			, amount
+			, transaction_id
+			, description
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deleted_by
+			, deleted_at
+			, deletion_reason`,
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.PointType,
+		&response.BuyerID,
+		&response.Amount,
+		&response.TransactionID,
+		&response.Description,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
+	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
@@ -422,7 +465,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 	var conds []string
 	if len(request.PointIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("p.id IN (")
+		_, _ = sb.WriteString("id IN (")
 		for i, pointID := range request.PointIDs {
 			params = append(params, pointID)
 			if i > 0 {
@@ -435,7 +478,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 	}
 	if len(request.RecordStatuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("p.record_status IN (")
+		_, _ = sb.WriteString("record_status IN (")
 		for i, recordStatus := range request.RecordStatuses {
 			params = append(params, recordStatus)
 			if i > 0 {
@@ -448,7 +491,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 	}
 	if len(request.BuyerIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("p.buyer_id IN (")
+		_, _ = sb.WriteString("buyer_id IN (")
 		for i, buyerID := range request.BuyerIDs {
 			params = append(params, buyerID)
 			if i > 0 {
@@ -461,7 +504,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 	}
 	if len(request.TransactionIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("p.transaction_id IN (")
+		_, _ = sb.WriteString("transaction_id IN (")
 		for i, transactionID := range request.TransactionIDs {
 			params = append(params, transactionID)
 			if i > 0 {
@@ -474,7 +517,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 	}
 	if len(request.PointTypes) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("p.point_type IN (")
+		_, _ = sb.WriteString("point_type IN (")
 		for i, pointType := range request.PointTypes {
 			params = append(params, pointType)
 			if i > 0 {
@@ -493,10 +536,17 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
-			`(LOWER(u.name) LIKE $%d
-				OR u.username LIKE $%d
-				OR u.mobile_phone LIKE $%d
-				OR LOWER(p.description) LIKE $%d)`,
+			`(EXISTS(
+				SELECT 1
+				FROM buyers b
+				JOIN users u ON b.user_id = u.id
+				WHERE b.id = points.buyer_id
+					AND (
+						LOWER(u.name) LIKE $%d
+						OR u.username LIKE $%d
+						OR u.mobile_phone LIKE $%d
+					)
+			) OR LOWER(points.description) LIKE $%d)`,
 			n, n, n, n,
 		)
 		conds = append(conds, sb.String())
