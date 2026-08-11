@@ -64,9 +64,6 @@ func (q *messageRepository) CreateMessage(
 		&response.Body,
 		&response.CreatedAt,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
