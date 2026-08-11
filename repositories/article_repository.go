@@ -15,33 +15,31 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	ArticleRepository interface {
-		FindArticles(
-			ctx context.Context,
-			request *models.ArticleFilter,
-		) ([]*models.Article, int64, int64, error)
-		FindArticle(
-			ctx context.Context,
-			request *models.ArticleFilter,
-		) (*models.Article, error)
-		CreateArticle(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Article,
-		) (*models.Article, error)
-		UpdateArticle(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Article,
-		) (*models.Article, error)
-	}
+type ArticleRepository interface {
+	FindArticles(
+		ctx context.Context,
+		request *models.ArticleFilter,
+	) ([]*models.Article, int64, int64, error)
+	FindArticle(
+		ctx context.Context,
+		request *models.ArticleFilter,
+	) (*models.Article, error)
+	CreateArticle(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Article,
+	) (*models.Article, error)
+	UpdateArticle(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Article,
+	) (*models.Article, error)
+}
 
-	articleRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type articleRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewArticleRepository(
 	dbRead,

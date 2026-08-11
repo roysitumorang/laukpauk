@@ -15,35 +15,34 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	TransactionRepository interface {
-		FindTransactions(
-			ctx context.Context,
-			request *models.TransactionFilter,
-		) ([]*models.Transaction, int64, int64, error)
-		FindTransaction(
-			ctx context.Context,
-			request *models.TransactionFilter,
-		) (*models.Transaction, error)
-		CreateTransaction(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Transaction,
-		) (*models.Transaction, error)
-		UpdateTransaction(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Transaction,
-		) (*models.Transaction, error)
-	}
+type TransactionRepository interface {
+	FindTransactions(
+		ctx context.Context,
+		request *models.TransactionFilter,
+	) ([]*models.Transaction, int64, int64, error)
+	FindTransaction(
+		ctx context.Context,
+		request *models.TransactionFilter,
+	) (*models.Transaction, error)
+	CreateTransaction(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Transaction,
+	) (*models.Transaction, error)
+	UpdateTransaction(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Transaction,
+	) (*models.Transaction, error)
+}
 
-	transactionRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type transactionRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewTransactionRepository(
 	dbRead,
@@ -60,10 +59,15 @@ func (q *transactionRepository) FindTransactions(
 	request *models.TransactionFilter,
 ) ([]*models.Transaction, int64, int64, error) {
 	ctxt := "TransactionRepository-FindTransactions"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM transactions %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM transactions %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -156,7 +160,7 @@ func (q *transactionRepository) FindTransactions(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -178,7 +182,7 @@ func (q *transactionRepository) FindTransactions(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -299,7 +303,7 @@ func (q *transactionRepository) FindTransactions(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, "$%d", n)
+		_, _ = fmt.Fprintf(sb, "$%d", n)
 		mapTransactionIDs[transaction.ID] = n - 1
 	}
 	_, _ = sb.WriteString(") ORDER BY id")
@@ -351,11 +355,16 @@ func (q *transactionRepository) FindTransaction(
 	request *models.TransactionFilter,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionRepository-FindTransaction"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, parent_id
@@ -821,10 +830,13 @@ func (q *transactionRepository) CreateTransaction(
 	if len(request.Items) == 0 {
 		return &response, nil
 	}
-	var (
-		params []any
-		sb     strings.Builder
-	)
+	var params []any
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
 	_, _ = sb.WriteString(
 		`INSERT INTO transaction_items (
 			transaction_id
@@ -870,7 +882,7 @@ func (q *transactionRepository) CreateTransaction(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(
-			&sb,
+			sb,
 			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
 			n-15, n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
 		)
@@ -1098,241 +1110,244 @@ func (q *transactionRepository) UpdateTransaction(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	var (
-		params []any
-		sb     strings.Builder
-		n      int
-	)
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
 	_, _ = sb.WriteString("UPDATE transactions SET")
 	if response.Status < request.Status {
 		params = append(params, request.Status)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " status = $%d", n)
+		_, _ = fmt.Fprintf(sb, " status = $%d", n)
 	}
 	if response.PaymentDueDate == nil && request.PaymentDueDate != nil {
 		params = append(params, request.PaymentDueDate)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_due_date = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_due_date = $%d", n)
 	}
 	if response.PaymentStatus == nil && request.PaymentStatus != nil {
 		params = append(params, request.PaymentStatus)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_status = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_status = $%d", n)
 	}
 	if response.PaymentFailureCode == nil && request.PaymentFailureCode != nil {
 		params = append(params, request.PaymentFailureCode)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_failure_code = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_failure_code = $%d", n)
 	}
 	if response.PaymentCapturedAt == nil && request.PaymentCapturedAt != nil {
 		params = append(params, request.PaymentCapturedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_captured_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_captured_at = $%d", n)
 	}
 	if response.PaymentChannelID == nil && request.PaymentChannelID != nil {
 		params = append(params, request.PaymentChannelID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_channel_id = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_channel_id = $%d", n)
 	}
 	if response.PaymentChannelName == nil && request.PaymentChannelName != nil {
 		params = append(params, request.PaymentChannelName)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_channel_name = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_channel_name = $%d", n)
 	}
 	if response.PaymentRequestID == nil && request.PaymentRequestID != nil {
 		params = append(params, request.PaymentRequestID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_request_id = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_request_id = $%d", n)
 	}
 	if response.PaymentTokenID == nil && request.PaymentTokenID != nil {
 		params = append(params, request.PaymentTokenID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_token_id = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_token_id = $%d", n)
 	}
 	if response.PaymentVirtualAccountNumber == nil && request.PaymentVirtualAccountNumber != nil {
 		params = append(params, request.PaymentVirtualAccountNumber)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_virtual_account_number = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_virtual_account_number = $%d", n)
 	}
 	if response.PaymentVirtualAccountExpiredAt == nil && request.PaymentVirtualAccountExpiredAt != nil {
 		params = append(params, request.PaymentVirtualAccountExpiredAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_virtual_account_expired_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_virtual_account_expired_at = $%d", n)
 	}
 	if response.CancelledAt == nil && request.CancelledAt != nil {
 		params = append(params, request.CancelledAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " cancelled_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " cancelled_at = $%d", n)
 	}
 	if response.PaymentID == nil && request.PaymentID != nil {
 		params = append(params, request.PaymentID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " payment_id = $%d", n)
+		_, _ = fmt.Fprintf(sb, " payment_id = $%d", n)
 	}
 	if response.PaidAt == nil && request.PaidAt != nil {
 		params = append(params, request.PaidAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " paid_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " paid_at = $%d", n)
 	}
 	if response.WithdrawalRequestedAt == nil && request.WithdrawalRequestedAt != nil {
 		params = append(params, request.WithdrawalRequestedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " withdrawal_requested_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " withdrawal_requested_at = $%d", n)
 	}
 	if response.WithdrawalReason == nil && request.WithdrawalReason != nil {
 		params = append(params, request.WithdrawalReason)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " withdrawal_reason = $%d", n)
+		_, _ = fmt.Fprintf(sb, " withdrawal_reason = $%d", n)
 	}
 	if response.WithdrawnBy == nil && request.WithdrawnBy != nil {
 		params = append(params, request.WithdrawnBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " withdrawn_by = $%d", n)
+		_, _ = fmt.Fprintf(sb, " withdrawn_by = $%d", n)
 	}
 	if response.WithdrawnAt == nil && request.WithdrawnAt != nil {
 		params = append(params, request.WithdrawnAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " withdrawn_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " withdrawn_at = $%d", n)
 	}
 	if response.ProcessedBy == nil && request.ProcessedBy != nil {
 		params = append(params, request.ProcessedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " processed_by = $%d", n)
+		_, _ = fmt.Fprintf(sb, " processed_by = $%d", n)
 	}
 	if response.ProcessedAt == nil && request.ProcessedAt != nil {
 		params = append(params, request.ProcessedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " processed_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " processed_at = $%d", n)
 	}
 	if response.RevisedShoppingCost != request.RevisedShoppingCost {
 		params = append(params, request.RevisedShoppingCost)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " revised_shopping_cost = $%d", n)
+		_, _ = fmt.Fprintf(sb, " revised_shopping_cost = $%d", n)
 	}
 	if response.RevisedDiscountedShoppingCost != request.RevisedDiscountedShoppingCost {
 		params = append(params, request.RevisedDiscountedShoppingCost)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " revised_discounted_shopping_cost = $%d", n)
+		_, _ = fmt.Fprintf(sb, " revised_discounted_shopping_cost = $%d", n)
 	}
 	if response.RevisedPaymentAmount != request.RevisedPaymentAmount {
 		params = append(params, request.RevisedPaymentAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " revised_payment_amount = $%d", n)
+		_, _ = fmt.Fprintf(sb, " revised_payment_amount = $%d", n)
 	}
 	if response.RefundAmount != request.RefundAmount {
 		params = append(params, request.RefundAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " refund_amount = $%d", n)
+		_, _ = fmt.Fprintf(sb, " refund_amount = $%d", n)
 	}
 	if response.RefundedAt == nil && request.RefundedAt != nil {
 		params = append(params, request.RefundedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " refunded_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " refunded_at = $%d", n)
 	}
 	if response.RefundID == nil && request.RefundID != nil {
 		params = append(params, request.RefundID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " refund_id = $%d", n)
+		_, _ = fmt.Fprintf(sb, " refund_id = $%d", n)
 	}
 	if response.ShippedBy == nil && request.ShippedBy != nil {
 		params = append(params, request.ShippedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " shipped_by = $%d", n)
+		_, _ = fmt.Fprintf(sb, " shipped_by = $%d", n)
 	}
 	if response.ShippedAt == nil && request.ShippedAt != nil {
 		params = append(params, request.ShippedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " shipped_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " shipped_at = $%d", n)
 	}
 	if response.DeliveryActualCost != request.DeliveryActualCost {
 		params = append(params, request.DeliveryActualCost)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " delivery_actual_cost = $%d", n)
+		_, _ = fmt.Fprintf(sb, " delivery_actual_cost = $%d", n)
 	}
 	if response.CompletedBy == nil && request.CompletedBy != nil {
 		params = append(params, request.CompletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " completed_by = $%d", n)
+		_, _ = fmt.Fprintf(sb, " completed_by = $%d", n)
 	}
 	if response.CompletedAt == nil && request.CompletedAt != nil {
 		params = append(params, request.CompletedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " completed_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " completed_at = $%d", n)
 	}
 	if response.CompletedAt == nil && request.CompletedAt != nil {
 		params = append(params, request.CompletedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " completed_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " completed_at = $%d", n)
 	}
 	if len(params) > 0 {
 		params = append(params, request.UpdatedAt, request.ID)
 		n = len(params)
 		_, _ = fmt.Fprintf(
-			&sb,
+			sb,
 			`, updated_at = $%d
 			WHERE id = $%d
 			RETURNING id
@@ -1531,28 +1546,28 @@ func (q *transactionRepository) UpdateTransaction(
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " revised_quantity = $%d", n)
+			_, _ = fmt.Fprintf(sb, " revised_quantity = $%d", n)
 		}
 		if itemResponse.RevisedSubtotal != itemRequest.RevisedSubtotal {
 			params = append(params, itemRequest.RevisedSubtotal)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " revised_subtotal = $%d", n)
+			_, _ = fmt.Fprintf(sb, " revised_subtotal = $%d", n)
 		}
 		if itemResponse.RevisionNote != itemRequest.RevisionNote {
 			params = append(params, itemRequest.RevisionNote)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " revision_note = $%d", n)
+			_, _ = fmt.Fprintf(sb, " revision_note = $%d", n)
 		}
 		if itemResponse.OutOfStock != itemRequest.OutOfStock {
 			params = append(params, itemRequest.OutOfStock)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " out_of_stock = $%d", n)
+			_, _ = fmt.Fprintf(sb, " out_of_stock = $%d", n)
 		}
 		if len(params) == 0 {
 			response.Items[i] = &itemResponse
@@ -1560,7 +1575,7 @@ func (q *transactionRepository) UpdateTransaction(
 		}
 		params = append(params, itemRequest.ID)
 		_, _ = fmt.Fprintf(
-			&sb,
+			sb,
 			` WHERE id = $%d
 			RETURNING id
 				, transaction_id

@@ -17,33 +17,31 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	BlogRepository interface {
-		FindBlogs(
-			ctx context.Context,
-			request *models.BlogFilter,
-		) ([]*models.Blog, int64, int64, error)
-		FindBlog(
-			ctx context.Context,
-			request *models.BlogFilter,
-		) (*models.Blog, error)
-		CreateBlog(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Blog,
-		) (*models.Blog, error)
-		UpdateBlog(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Blog,
-		) (*models.Blog, error)
-	}
+type BlogRepository interface {
+	FindBlogs(
+		ctx context.Context,
+		request *models.BlogFilter,
+	) ([]*models.Blog, int64, int64, error)
+	FindBlog(
+		ctx context.Context,
+		request *models.BlogFilter,
+	) (*models.Blog, error)
+	CreateBlog(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Blog,
+	) (*models.Blog, error)
+	UpdateBlog(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Blog,
+	) (*models.Blog, error)
+}
 
-	blogRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type blogRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewBlogRepository(
 	dbRead,

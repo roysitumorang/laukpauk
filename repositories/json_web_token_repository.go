@@ -13,44 +13,43 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	JsonWebTokenRepository interface {
-		FindJsonWebTokens(
-			ctx context.Context,
-			request *models.JsonWebTokenFilter,
-		) ([]*models.JsonWebToken, int64, int64, error)
-		FindJsonWebToken(
-			ctx context.Context,
-			request *models.JsonWebTokenFilter,
-		) (*models.JsonWebToken, error)
-		CreateJsonWebToken(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.JsonWebToken,
-		) (*models.JsonWebToken, error)
-		DeleteJsonWebToken(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.JsonWebTokenFilter,
-		) (int64, error)
-	}
+type JsonWebTokenRepository interface {
+	FindJsonWebTokens(
+		ctx context.Context,
+		request *models.JsonWebTokenFilter,
+	) ([]*models.JsonWebToken, int64, int64, error)
+	FindJsonWebToken(
+		ctx context.Context,
+		request *models.JsonWebTokenFilter,
+	) (*models.JsonWebToken, error)
+	CreateJsonWebToken(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.JsonWebToken,
+	) (*models.JsonWebToken, error)
+	DeleteJsonWebToken(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.JsonWebTokenFilter,
+	) (int64, error)
+}
 
-	jsonWebTokenRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type jsonWebTokenRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewJsonWebTokenRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) JsonWebTokenRepository {
-	return new(jsonWebTokenRepository{
+	return &jsonWebTokenRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *jsonWebTokenRepository) FindJsonWebTokens(
@@ -58,10 +57,15 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 	request *models.JsonWebTokenFilter,
 ) ([]*models.JsonWebToken, int64, int64, error) {
 	ctxt := "JsonWebTokenRepository-FindJsonWebTokens"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM json_web_tokens %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM json_web_tokens %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -91,7 +95,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -113,7 +117,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -148,11 +152,16 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 	request *models.JsonWebTokenFilter,
 ) (*models.JsonWebToken, error) {
 	ctxt := "JsonWebTokenRepository-FindJsonWebToken"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, user_id
@@ -218,13 +227,18 @@ func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	request *models.JsonWebTokenFilter,
 ) (int64, error) {
 	ctxt := "JsonWebTokenRepository-DeleteJsonWebToken"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	if len(params) == 0 {
 		return 0, nil
 	}
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "DELETE FROM json_web_tokens %s", condition)
+	_, _ = fmt.Fprintf(sb, "DELETE FROM json_web_tokens %s", condition)
 	result, err := tx.Exec(ctx, sb.String(), params...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

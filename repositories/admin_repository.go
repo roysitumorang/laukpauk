@@ -17,33 +17,31 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	AdminRepository interface {
-		FindAdmins(
-			ctx context.Context,
-			request *models.AdminFilter,
-		) ([]*models.Admin, int64, int64, error)
-		FindAdmin(
-			ctx context.Context,
-			request *models.AdminFilter,
-		) (*models.Admin, error)
-		CreateAdmin(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Admin,
-		) (*models.Admin, error)
-		UpdateAdmin(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Admin,
-		) (*models.Admin, error)
-	}
+type AdminRepository interface {
+	FindAdmins(
+		ctx context.Context,
+		request *models.AdminFilter,
+	) ([]*models.Admin, int64, int64, error)
+	FindAdmin(
+		ctx context.Context,
+		request *models.AdminFilter,
+	) (*models.Admin, error)
+	CreateAdmin(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Admin,
+	) (*models.Admin, error)
+	UpdateAdmin(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Admin,
+	) (*models.Admin, error)
+}
 
-	adminRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type adminRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewAdminRepository(
 	dbRead,

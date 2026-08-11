@@ -2,8 +2,6 @@ package middlewares
 
 import (
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 	"uuid"
 
@@ -20,8 +18,6 @@ func BuyerKeyAuthMiddleware(
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) fiber.Handler {
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, "header: %s", fiber.HeaderAuthorization)
 	return keyauth.New(keyauth.Config{
 		SuccessHandler: func(c fiber.Ctx) error {
 			return c.Next()

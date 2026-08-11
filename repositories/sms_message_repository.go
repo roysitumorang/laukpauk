@@ -12,44 +12,43 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	SmsMessageRepository interface {
-		FindSmsMessages(
-			ctx context.Context,
-			request *models.SmsMessageFilter,
-		) ([]*models.SmsMessage, int64, int64, error)
-		FindSmsMessage(
-			ctx context.Context,
-			request *models.SmsMessageFilter,
-		) (*models.SmsMessage, error)
-		CreateSmsMessage(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.SmsMessage,
-		) (*models.SmsMessage, error)
-		UpdateSmsMessage(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.SmsMessage,
-		) (*models.SmsMessage, error)
-	}
+type SmsMessageRepository interface {
+	FindSmsMessages(
+		ctx context.Context,
+		request *models.SmsMessageFilter,
+	) ([]*models.SmsMessage, int64, int64, error)
+	FindSmsMessage(
+		ctx context.Context,
+		request *models.SmsMessageFilter,
+	) (*models.SmsMessage, error)
+	CreateSmsMessage(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.SmsMessage,
+	) (*models.SmsMessage, error)
+	UpdateSmsMessage(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.SmsMessage,
+	) (*models.SmsMessage, error)
+}
 
-	smsMessageRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type smsMessageRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewSmsMessageRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) SmsMessageRepository {
-	return new(smsMessageRepository{
+	return &smsMessageRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *smsMessageRepository) FindSmsMessages(
@@ -57,10 +56,15 @@ func (q *smsMessageRepository) FindSmsMessages(
 	request *models.SmsMessageFilter,
 ) ([]*models.SmsMessage, int64, int64, error) {
 	ctxt := "SmsMessageRepository-FindSmsMessages"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM sms_messages %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM sms_messages %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -96,7 +100,7 @@ func (q *smsMessageRepository) FindSmsMessages(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -118,7 +122,7 @@ func (q *smsMessageRepository) FindSmsMessages(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -159,11 +163,16 @@ func (q *smsMessageRepository) FindSmsMessage(
 	request *models.SmsMessageFilter,
 ) (*models.SmsMessage, error) {
 	ctxt := "SmsMessageRepository-FindSmsMessage"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, user_id
@@ -199,7 +208,7 @@ func (q *smsMessageRepository) FindSmsMessage(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *smsMessageRepository) CreateSmsMessage(
@@ -247,13 +256,10 @@ func (q *smsMessageRepository) CreateSmsMessage(
 		&response.UpdatedAt,
 		&response.SentAt,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *smsMessageRepository) UpdateSmsMessage(
@@ -298,13 +304,10 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 		&response.UpdatedAt,
 		&response.SentAt,
 	); err != nil {
-		if errRollback := tx.Rollback(ctx); errRollback != nil {
-			helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrRollback")
-		}
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }
 
 func (q *smsMessageRepository) buildCondition(request *models.SmsMessageFilter, sb *strings.Builder) (condition string, params []any) {

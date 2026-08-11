@@ -10,29 +10,27 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-type (
-	MessageRepository interface {
-		CreateMessage(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Message,
-		) (*models.Message, error)
-	}
+type MessageRepository interface {
+	CreateMessage(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Message,
+	) (*models.Message, error)
+}
 
-	messageRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type messageRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewMessageRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
 ) MessageRepository {
-	return new(messageRepository{
+	return &messageRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
-	})
+	}
 }
 
 func (q *messageRepository) CreateMessage(
@@ -72,5 +70,5 @@ func (q *messageRepository) CreateMessage(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return new(response), nil
+	return &response, nil
 }

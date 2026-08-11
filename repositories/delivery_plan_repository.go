@@ -14,35 +14,34 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	DeliveryPlanRepository interface {
-		FindDeliveryPlans(
-			ctx context.Context,
-			request *models.DeliveryPlanFilter,
-		) ([]*models.DeliveryPlan, int64, int64, error)
-		FindDeliveryPlan(
-			ctx context.Context,
-			request *models.DeliveryPlanFilter,
-		) (*models.DeliveryPlan, error)
-		CreateDeliveryPlan(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.DeliveryPlan,
-		) (*models.DeliveryPlan, error)
-		UpdateDeliveryPlan(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.DeliveryPlan,
-		) (*models.DeliveryPlan, error)
-	}
+type DeliveryPlanRepository interface {
+	FindDeliveryPlans(
+		ctx context.Context,
+		request *models.DeliveryPlanFilter,
+	) ([]*models.DeliveryPlan, int64, int64, error)
+	FindDeliveryPlan(
+		ctx context.Context,
+		request *models.DeliveryPlanFilter,
+	) (*models.DeliveryPlan, error)
+	CreateDeliveryPlan(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.DeliveryPlan,
+	) (*models.DeliveryPlan, error)
+	UpdateDeliveryPlan(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.DeliveryPlan,
+	) (*models.DeliveryPlan, error)
+}
 
-	deliveryPlanRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type deliveryPlanRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewDeliveryPlanRepository(
 	dbRead,
@@ -59,10 +58,15 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 	request *models.DeliveryPlanFilter,
 ) ([]*models.DeliveryPlan, int64, int64, error) {
 	ctxt := "DeliveryPlanRepository-FindDeliveryPlans"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM delivery_plans %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM delivery_plans %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -111,7 +115,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -133,7 +137,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -191,11 +195,16 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 	request *models.DeliveryPlanFilter,
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-FindDeliveryPlan"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, record_status
@@ -278,9 +287,14 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	if request.NextTwoDay {
 		nextTwoDayInterval = ", '[]'"
 	}
-	var sb strings.Builder
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`INSERT INTO delivery_plans (
 			record_status
 			, name
@@ -467,39 +481,42 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	var (
-		params []any
-		sb     strings.Builder
-		n      int
-	)
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
 	_, _ = sb.WriteString("UPDATE delivery_plans SET")
 	if response.RecordStatus != request.RecordStatus {
 		params = append(params, request.RecordStatus)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " record_status = $%d", n)
+		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " name = $%d", n)
+		_, _ = fmt.Fprintf(sb, " name = $%d", n)
 	}
 	if response.Weekday != request.Weekday {
 		params = append(params, request.Weekday)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " weekday = $%d", n)
+		_, _ = fmt.Fprintf(sb, " weekday = $%d", n)
 	}
 	if response.Weekday != request.Weekday {
 		params = append(params, request.Weekday)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " weekday = $%d", n)
+		_, _ = fmt.Fprintf(sb, " weekday = $%d", n)
 	}
 	if !response.TransactionWindowMin.Equal(request.TransactionWindowMin) ||
 		!response.TransactionWindowMax.Equal(request.TransactionWindowMax) {
@@ -507,21 +524,21 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " transaction_window = tstzrange($%d, $%d, '[]')", n-1, n)
+		_, _ = fmt.Fprintf(sb, " transaction_window = tstzrange($%d, $%d, '[]')", n-1, n)
 	}
 	if response.DeliveryTimeInterval != request.DeliveryTimeInterval {
 		params = append(params, request.DeliveryTimeInterval)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " delivery_time_interval = $%d", n)
+		_, _ = fmt.Fprintf(sb, " delivery_time_interval = $%d", n)
 	}
 	if response.SameDay != request.SameDay {
 		params = append(params, request.SameDay)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " same_day = $%d", n)
+		_, _ = fmt.Fprintf(sb, " same_day = $%d", n)
 	}
 	if (response.SameDayWindowMin != nil && request.SameDayWindowMin == nil) ||
 		(response.SameDayWindowMin == nil && request.SameDayWindowMin != nil) ||
@@ -535,7 +552,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " same_day_window = tstzrange($%d, $%d", n-1, n)
+		_, _ = fmt.Fprintf(sb, " same_day_window = tstzrange($%d, $%d", n-1, n)
 		if request.SameDay {
 			_, _ = sb.WriteString(", '[]'")
 		}
@@ -546,7 +563,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " next_day = $%d", n)
+		_, _ = fmt.Fprintf(sb, " next_day = $%d", n)
 	}
 	if (response.NextDayWindowMin != nil && request.NextDayWindowMin == nil) ||
 		(response.NextDayWindowMin == nil && request.NextDayWindowMin != nil) ||
@@ -560,7 +577,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " next_day_window = tstzrange($%d, $%d", n-1, n)
+		_, _ = fmt.Fprintf(sb, " next_day_window = tstzrange($%d, $%d", n-1, n)
 		if request.NextDay {
 			_, _ = sb.WriteString(", '[]'")
 		}
@@ -571,7 +588,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " next_two_day = $%d", n)
+		_, _ = fmt.Fprintf(sb, " next_two_day = $%d", n)
 	}
 	if (response.NextTwoDayWindowMin != nil && request.NextTwoDayWindowMin == nil) ||
 		(response.NextTwoDayWindowMin == nil && request.NextTwoDayWindowMin != nil) ||
@@ -585,7 +602,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " next_two_day_window = tstzrange($%d, $%d", n-1, n)
+		_, _ = fmt.Fprintf(sb, " next_two_day_window = tstzrange($%d, $%d", n-1, n)
 		if request.NextTwoDay {
 			_, _ = sb.WriteString(", '[]'")
 		}
@@ -597,15 +614,15 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	if request.RecordStatus == models.RecordStatusDeleted {
 		params = append(params, request.DeletedBy, request.DeletedAt, request.DeletionReason)
 		n := len(params)
-		_, _ = fmt.Fprintf(&sb, ", deleted_by = $%d, deleted_at = $%d, deletion_reason = $%d", n-2, n-1, n)
+		_, _ = fmt.Fprintf(sb, ", deleted_by = $%d, deleted_at = $%d, deletion_reason = $%d", n-2, n-1, n)
 	} else {
 		params = append(params, request.UpdatedBy, request.UpdatedAt)
 		n := len(params)
-		_, _ = fmt.Fprintf(&sb, ", updated_by = $%d, updated_at = $%d", n-1, n)
+		_, _ = fmt.Fprintf(sb, ", updated_by = $%d, updated_at = $%d", n-1, n)
 	}
 	params = append(params, request.ID)
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		` WHERE id = $%d
 		RETURNING id
 			, record_status

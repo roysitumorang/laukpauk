@@ -16,28 +16,26 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	LandingPageRepository interface {
-		FindLandingPages(
-			ctx context.Context,
-			request *models.LandingPageFilter,
-		) ([]*models.LandingPage, int64, int64, error)
-		FindLandingPage(
-			ctx context.Context,
-			request *models.LandingPageFilter,
-		) (*models.LandingPage, error)
-		UpdateLandingPage(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.LandingPage,
-		) (*models.LandingPage, error)
-	}
+type LandingPageRepository interface {
+	FindLandingPages(
+		ctx context.Context,
+		request *models.LandingPageFilter,
+	) ([]*models.LandingPage, int64, int64, error)
+	FindLandingPage(
+		ctx context.Context,
+		request *models.LandingPageFilter,
+	) (*models.LandingPage, error)
+	UpdateLandingPage(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.LandingPage,
+	) (*models.LandingPage, error)
+}
 
-	landingPageRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type landingPageRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewLandingPageRepository(
 	dbRead,

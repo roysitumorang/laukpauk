@@ -12,25 +12,24 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	PaymentChannelRepository interface {
-		FindPaymentChannels(
-			ctx context.Context,
-			request *models.PaymentChannelFilter,
-		) ([]*models.PaymentChannel, int64, int64, error)
-		FindPaymentChannel(
-			ctx context.Context,
-			request *models.PaymentChannelFilter,
-		) (*models.PaymentChannel, error)
-	}
+type PaymentChannelRepository interface {
+	FindPaymentChannels(
+		ctx context.Context,
+		request *models.PaymentChannelFilter,
+	) ([]*models.PaymentChannel, int64, int64, error)
+	FindPaymentChannel(
+		ctx context.Context,
+		request *models.PaymentChannelFilter,
+	) (*models.PaymentChannel, error)
+}
 
-	paymentChannelRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type paymentChannelRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewPaymentChannelRepository(
 	dbRead,
@@ -47,10 +46,15 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 	request *models.PaymentChannelFilter,
 ) ([]*models.PaymentChannel, int64, int64, error) {
 	ctxt := "PaymentChannelRepository-FindPaymentChannels"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM payment_channels %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM payment_channels %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -93,7 +97,7 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		if item.Field == models.PaymentChannelSortingFieldName {
 			field = "LOWER(name)"
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -115,7 +119,7 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -159,11 +163,16 @@ func (q *paymentChannelRepository) FindPaymentChannel(
 	request *models.PaymentChannelFilter,
 ) (*models.PaymentChannel, error) {
 	ctxt := "PaymentChannelRepository-FindPaymentChannel"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, business_id

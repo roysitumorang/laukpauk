@@ -9,9 +9,7 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	dbWrite *pgxpool.Pool
-)
+var dbWrite *pgxpool.Pool
 
 func SetDbWrite(db *pgxpool.Pool) {
 	dbWrite = db

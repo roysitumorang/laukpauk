@@ -15,33 +15,31 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	LandingPageItemRepository interface {
-		FindLandingPageItems(
-			ctx context.Context,
-			request *models.LandingPageItemFilter,
-		) ([]*models.LandingPageItem, int64, int64, error)
-		FindLandingPageItem(
-			ctx context.Context,
-			request *models.LandingPageItemFilter,
-		) (*models.LandingPageItem, error)
-		CreateLandingPageItem(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.LandingPageItem,
-		) (*models.LandingPageItem, error)
-		UpdateLandingPageItem(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.LandingPageItem,
-		) (*models.LandingPageItem, error)
-	}
+type LandingPageItemRepository interface {
+	FindLandingPageItems(
+		ctx context.Context,
+		request *models.LandingPageItemFilter,
+	) ([]*models.LandingPageItem, int64, int64, error)
+	FindLandingPageItem(
+		ctx context.Context,
+		request *models.LandingPageItemFilter,
+	) (*models.LandingPageItem, error)
+	CreateLandingPageItem(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.LandingPageItem,
+	) (*models.LandingPageItem, error)
+	UpdateLandingPageItem(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.LandingPageItem,
+	) (*models.LandingPageItem, error)
+}
 
-	landingPageItemRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type landingPageItemRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewLandingPageItemRepository(
 	dbRead,

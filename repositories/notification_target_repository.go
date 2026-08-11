@@ -16,33 +16,31 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	NotificationTargetRepository interface {
-		FindNotificationTargets(
-			ctx context.Context,
-			request *models.NotificationTargetFilter,
-		) ([]*models.NotificationTarget, int64, int64, error)
-		FindNotificationTarget(
-			ctx context.Context,
-			request *models.NotificationTargetFilter,
-		) (*models.NotificationTarget, error)
-		SaveNotificationTarget(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.NotificationTarget,
-		) (*models.NotificationTarget, error)
-		DeleteNotificationTarget(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.NotificationTargetFilter,
-		) (int64, error)
-	}
+type NotificationTargetRepository interface {
+	FindNotificationTargets(
+		ctx context.Context,
+		request *models.NotificationTargetFilter,
+	) ([]*models.NotificationTarget, int64, int64, error)
+	FindNotificationTarget(
+		ctx context.Context,
+		request *models.NotificationTargetFilter,
+	) (*models.NotificationTarget, error)
+	SaveNotificationTarget(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.NotificationTarget,
+	) (*models.NotificationTarget, error)
+	DeleteNotificationTarget(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.NotificationTargetFilter,
+	) (int64, error)
+}
 
-	notificationTargetRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type notificationTargetRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewNotificationTargetRepository(
 	dbRead,

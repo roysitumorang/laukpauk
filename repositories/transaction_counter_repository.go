@@ -9,19 +9,17 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-type (
-	TransactionCounterRepository interface {
-		SaveTransactionCounter(
-			ctx context.Context,
-			request *models.TransactionCounter,
-		) (*models.TransactionCounter, error)
-	}
+type TransactionCounterRepository interface {
+	SaveTransactionCounter(
+		ctx context.Context,
+		request *models.TransactionCounter,
+	) (*models.TransactionCounter, error)
+}
 
-	transactionCounterRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type transactionCounterRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewTransactionCounterRepository(
 	dbRead,

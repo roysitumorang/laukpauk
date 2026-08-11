@@ -13,30 +13,29 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	CartRepository interface {
-		FindCarts(
-			ctx context.Context,
-			request *models.CartFilter,
-		) ([]*models.Cart, int64, int64, error)
-		FindCart(
-			ctx context.Context,
-			request *models.CartFilter,
-		) (*models.Cart, error)
-		SaveCart(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Cart,
-		) (*models.Cart, error)
-	}
+type CartRepository interface {
+	FindCarts(
+		ctx context.Context,
+		request *models.CartFilter,
+	) ([]*models.Cart, int64, int64, error)
+	FindCart(
+		ctx context.Context,
+		request *models.CartFilter,
+	) (*models.Cart, error)
+	SaveCart(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Cart,
+	) (*models.Cart, error)
+}
 
-	cartRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type cartRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewCartRepository(
 	dbRead,
@@ -53,10 +52,15 @@ func (q *cartRepository) FindCarts(
 	request *models.CartFilter,
 ) ([]*models.Cart, int64, int64, error) {
 	ctxt := "CartRepository-FindCarts"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM carts %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM carts %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -87,7 +91,7 @@ func (q *cartRepository) FindCarts(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -109,7 +113,7 @@ func (q *cartRepository) FindCarts(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -120,11 +124,9 @@ func (q *cartRepository) FindCarts(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var (
-		response []*models.Cart
-		n        int
-	)
-	params = []any{}
+	var response []*models.Cart
+	var n int
+	params = params[:0]
 	sb.Reset()
 	_, _ = sb.WriteString(
 		`SELECT
@@ -158,7 +160,7 @@ func (q *cartRepository) FindCarts(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, "$%d", n)
+		_, _ = fmt.Fprintf(sb, "$%d", n)
 	}
 	if len(params) == 0 {
 		return response, total, pages, nil
@@ -200,11 +202,16 @@ func (q *cartRepository) FindCart(
 	request *models.CartFilter,
 ) (*models.Cart, error) {
 	ctxt := "CartRepository-FindCart"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, buyer_id
@@ -361,11 +368,14 @@ func (q *cartRepository) SaveCart(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	var (
-		sb strings.Builder
-		n  int
-	)
 	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
 	_, _ = sb.WriteString(
 		`INSERT INTO cart_items (
 			cart_id
@@ -388,7 +398,7 @@ func (q *cartRepository) SaveCart(
 			if n = len(params); n > 5 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
+			_, _ = fmt.Fprintf(sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
 		}
 	}
 	if len(params) > 0 {
@@ -440,7 +450,7 @@ func (q *cartRepository) SaveCart(
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(&sb, "$%d", i+2)
+			_, _ = fmt.Fprintf(sb, "$%d", i+2)
 		}
 		_, _ = sb.WriteString(")")
 	}

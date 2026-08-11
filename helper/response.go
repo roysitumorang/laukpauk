@@ -3,11 +3,11 @@ package helper
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/roysitumorang/laukpauk/config"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 type (
@@ -53,8 +53,13 @@ func (r *Response) WriteResponse(c fiber.Ctx) error {
 	if r.StatusCode == fiber.StatusNoContent {
 		return c.SendStatus(r.StatusCode)
 	}
-	var sb strings.Builder
-	_, _ = fmt.Fprintf(&sb, "%s %s", c.Method(), c.FullURL())
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "%s %s", c.Method(), c.FullURL())
 	r.RequestURL = sb.String()
 	r.RequestID = ByteSlice2String(c.Response().Header.Peek(fiber.HeaderXRequestID))
 	r.Latency = time.Since(c.RequestCtx().Time()).String()

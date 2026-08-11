@@ -15,33 +15,31 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	BannerRepository interface {
-		FindBanners(
-			ctx context.Context,
-			request *models.BannerFilter,
-		) ([]*models.Banner, int64, int64, error)
-		FindBanner(
-			ctx context.Context,
-			request *models.BannerFilter,
-		) (*models.Banner, error)
-		CreateBanner(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Banner,
-		) (*models.Banner, error)
-		UpdateBanner(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Banner,
-		) (*models.Banner, error)
-	}
+type BannerRepository interface {
+	FindBanners(
+		ctx context.Context,
+		request *models.BannerFilter,
+	) ([]*models.Banner, int64, int64, error)
+	FindBanner(
+		ctx context.Context,
+		request *models.BannerFilter,
+	) (*models.Banner, error)
+	CreateBanner(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Banner,
+	) (*models.Banner, error)
+	UpdateBanner(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Banner,
+	) (*models.Banner, error)
+}
 
-	bannerRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type bannerRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewBannerRepository(
 	dbRead,

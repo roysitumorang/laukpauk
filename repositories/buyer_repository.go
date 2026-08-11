@@ -17,33 +17,31 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	BuyerRepository interface {
-		FindBuyers(
-			ctx context.Context,
-			request *models.BuyerFilter,
-		) ([]*models.Buyer, int64, int64, error)
-		FindBuyer(
-			ctx context.Context,
-			request *models.BuyerFilter,
-		) (*models.Buyer, error)
-		CreateBuyer(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Buyer,
-		) (*models.Buyer, error)
-		UpdateBuyer(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Buyer,
-		) (*models.Buyer, error)
-	}
+type BuyerRepository interface {
+	FindBuyers(
+		ctx context.Context,
+		request *models.BuyerFilter,
+	) ([]*models.Buyer, int64, int64, error)
+	FindBuyer(
+		ctx context.Context,
+		request *models.BuyerFilter,
+	) (*models.Buyer, error)
+	CreateBuyer(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Buyer,
+	) (*models.Buyer, error)
+	UpdateBuyer(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Buyer,
+	) (*models.Buyer, error)
+}
 
-	buyerRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type buyerRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewBuyerRepository(
 	dbRead,
@@ -231,11 +229,16 @@ func (q *buyerRepository) FindBuyer(
 	request *models.BuyerFilter,
 ) (*models.Buyer, error) {
 	ctxt := "BuyerRepository-FindBuyer"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			b.id
 			, b.user_id

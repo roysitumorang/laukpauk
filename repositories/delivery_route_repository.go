@@ -12,30 +12,29 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type (
-	DeliveryRouteRepository interface {
-		FindDeliveryRoutes(
-			ctx context.Context,
-			request *models.DeliveryRouteFilter,
-		) ([]*models.DeliveryRoute, int64, int64, error)
-		FindDeliveryRoute(
-			ctx context.Context,
-			request *models.DeliveryRouteFilter,
-		) (*models.DeliveryRoute, error)
-		SaveDeliveryRoute(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.DeliveryRoute,
-		) (*models.DeliveryRoute, error)
-	}
+type DeliveryRouteRepository interface {
+	FindDeliveryRoutes(
+		ctx context.Context,
+		request *models.DeliveryRouteFilter,
+	) ([]*models.DeliveryRoute, int64, int64, error)
+	FindDeliveryRoute(
+		ctx context.Context,
+		request *models.DeliveryRouteFilter,
+	) (*models.DeliveryRoute, error)
+	SaveDeliveryRoute(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.DeliveryRoute,
+	) (*models.DeliveryRoute, error)
+}
 
-	deliveryRouteRepository struct {
-		dbRead,
-		dbWrite *pgxpool.Pool
-	}
-)
+type deliveryRouteRepository struct {
+	dbRead,
+	dbWrite *pgxpool.Pool
+}
 
 func NewDeliveryRouteRepository(
 	dbRead,
@@ -52,10 +51,15 @@ func (q *deliveryRouteRepository) FindDeliveryRoutes(
 	request *models.DeliveryRouteFilter,
 ) ([]*models.DeliveryRoute, int64, int64, error) {
 	ctxt := "DeliveryRouteRepository-FindDeliveryRoutes"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = fmt.Fprintf(&sb, "SELECT COUNT(1) FROM delivery_routes %s", condition)
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM delivery_routes %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -90,7 +94,7 @@ func (q *deliveryRouteRepository) FindDeliveryRoutes(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(&sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -112,7 +116,7 @@ func (q *deliveryRouteRepository) FindDeliveryRoutes(
 		}
 		pages, _, _ = pagesDecimal.Ceil(0).Int64(0)
 		offset = request.Page * request.Limit
-		_, _ = fmt.Fprintf(&sb, " LIMIT %d OFFSET %d", request.Limit, offset)
+		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -152,11 +156,16 @@ func (q *deliveryRouteRepository) FindDeliveryRoute(
 	request *models.DeliveryRouteFilter,
 ) (*models.DeliveryRoute, error) {
 	ctxt := "DeliveryRouteRepository-FindDeliveryRoute"
-	var sb strings.Builder
-	condition, params := q.buildCondition(request, &sb)
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
-		&sb,
+		sb,
 		`SELECT
 			id
 			, origin_longitude
