@@ -26,7 +26,7 @@ require (
 	github.com/samber/slog-fiber v1.22.2
 	github.com/sqids/sqids-go v0.4.1
 	github.com/swaggo/swag v1.16.6
-	github.com/twmb/franz-go v1.21.5
+	github.com/twmb/franz-go v1.21.6
 	github.com/urfave/cli/v3 v3.10.1
 	github.com/valyala/fasthttp v1.73.0
 	golang.org/x/crypto v0.55.0
@@ -78,7 +78,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.39.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
