@@ -986,23 +986,26 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	rows, pagination, err := q.productService.FindProducts(
-		c,
-		request.WithRecordStatuses(models.RecordStatusActive),
+	infiniteScroll, err := q.productService.InfiniteScrollProducts(
+		ctx,
+		request.WithRecordStatuses(models.RecordStatusActive).
+			WithReadyStock(new(true)),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrInfiniteScrollProducts")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	pagination.Rows = make([]any, len(rows))
-	for i, row := range rows {
-		row.Photo = row.PhotoPath(c.BaseURL())
-		pagination.Rows[i] = row
+	for i := range infiniteScroll.Rows {
+		row, ok := infiniteScroll.Rows[i].(*models.Product)
+		if ok {
+			row.Photo = row.PhotoPath(c.BaseURL())
+		}
+		infiniteScroll.Rows[i] = row
 	}
 	return helper.NewResponse(fiber.StatusOK).
-		SetData(pagination).
+		SetData(infiniteScroll).
 		WriteResponse(c)
 }
 

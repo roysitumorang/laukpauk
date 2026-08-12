@@ -27,6 +27,10 @@ func FindProducts(ctx context.Context, c fiber.Ctx) (*models.ProductFilter, erro
 	}
 	urlValues := originalURL.Query()
 	response.WithPaginationURL(helper.Sprintf("%s%s", c.BaseURL(), originalURL.Path))
+	if nextRowNo, err := strconv.ParseInt(c.Query("next_row_no"), 10, 64); err == nil && nextRowNo > 0 {
+		urlValues.Set("next_row_no", strconv.FormatInt(nextRowNo, 10))
+		response.WithNextRowNo(&nextRowNo)
+	}
 	if keyword := strings.TrimSpace(c.Query("q")); keyword != "" {
 		urlValues.Set("q", keyword)
 		response.WithKeyword(keyword)

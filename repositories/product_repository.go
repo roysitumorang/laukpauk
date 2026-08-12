@@ -22,6 +22,10 @@ type ProductRepository interface {
 		ctx context.Context,
 		request *models.ProductFilter,
 	) ([]*models.Product, int64, int64, error)
+	InfiniteScrollProducts(
+		ctx context.Context,
+		request *models.ProductFilter,
+	) ([]*models.Product, int64, error)
 	FindProduct(
 		ctx context.Context,
 		request *models.ProductFilter,
@@ -186,6 +190,123 @@ func (q *productRepository) FindProducts(
 		response = append(response, (&product).Populate())
 	}
 	return response, total, pages, nil
+}
+
+func (q *productRepository) InfiniteScrollProducts(
+	ctx context.Context,
+	request *models.ProductFilter,
+) ([]*models.Product, int64, error) {
+	ctxt := "ProductRepository-InfiniteScrollProducts"
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	condition, params := q.buildCondition(request, sb)
+	sb.Reset()
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM products %s", condition)
+	query := sb.String()
+	var total int64
+	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		return nil, 0, err
+	}
+	if total == 0 ||
+		(request.NextRowNo != nil &&
+			(*request.NextRowNo < 0 || *request.NextRowNo > total)) {
+		return nil, 0, err
+	}
+	sb.Reset()
+	_, _ = sb.WriteString("WITH p AS (SELECT ROW_NUMBER() OVER (ORDER BY")
+	sortBy := request.Sortings
+	if len(sortBy) == 0 {
+		sortBy = append(sortBy, models.DefaultSortBy)
+	}
+	for i, item := range sortBy {
+		if i > 0 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+	}
+	_, _ = fmt.Fprintf(
+		sb,
+		`) AS rn
+		, id
+		, record_status
+		, product_category_id
+		, product_category_name
+		, product_type
+		, name
+		, deleted_name
+		, photo
+		, description
+		, ready_stock
+		, pinned
+		, hits
+		, created_by
+		, created_at
+		, updated_by
+		, updated_at
+		, deleted_by
+		, deleted_at
+		, deletion_reason
+		FROM products %s)
+		SELECT *
+		FROM p`,
+		condition,
+	)
+	if request.NextRowNo != nil {
+		params = append(params, request.NextRowNo)
+		_, _ = fmt.Fprintf(sb, " WHERE rn >= $%d", len(params))
+	}
+	params = append(params, request.Limit)
+	_, _ = fmt.Fprintf(sb, " FETCH FIRST $%d ROWS ONLY", len(params))
+	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, 0, err
+	}
+	defer rows.Close()
+	var response []*models.Product
+	for rows.Next() {
+		var product models.Product
+		if err = rows.Scan(
+			&product.RowNo,
+			&product.ID,
+			&product.RecordStatus,
+			&product.ProductCategoryID,
+			&product.ProductCategoryName,
+			&product.ProductType,
+			&product.Name,
+			&product.DeletedName,
+			&product.Photo,
+			&product.Description,
+			&product.ReadyStock,
+			&product.Pinned,
+			&product.Hits,
+			&product.CreatedBy,
+			&product.CreatedAt,
+			&product.UpdatedBy,
+			&product.UpdatedAt,
+			&product.DeletedBy,
+			&product.DeletedAt,
+			&product.DeletionReason,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, 0, err
+		}
+		response = append(response, (&product).Populate())
+	}
+	var nextRowNo int64
+	if request.Limit > 0 && len(response) == int(request.Limit) {
+		nextRowNo = response[len(response)-1].RowNo + 1
+	}
+	return response, nextRowNo, nil
 }
 
 func (q *productRepository) FindProduct(

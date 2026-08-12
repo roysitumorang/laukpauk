@@ -16,6 +16,10 @@ type ProductService interface {
 		ctx context.Context,
 		request *models.ProductFilter,
 	) ([]*models.Product, *models.Pagination, error)
+	InfiniteScrollProducts(
+		ctx context.Context,
+		request *models.ProductFilter,
+	) (*models.InfiniteScroll, error)
 	FindProduct(
 		ctx context.Context,
 		request *models.ProductFilter,
@@ -82,6 +86,34 @@ func (q *productService) FindProducts(
 		return nil, nil, err
 	}
 	return rows, pagination, nil
+}
+
+func (q *productService) InfiniteScrollProducts(
+	ctx context.Context,
+	request *models.ProductFilter,
+) (*models.InfiniteScroll, error) {
+	ctxt := "ProductService-InfiniteScrollProducts"
+	products, nextRowNo, err := q.productRepository.InfiniteScrollProducts(ctx, request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrInfiniteScrollProducts")
+		return nil, err
+	}
+	rows := make([]any, len(products))
+	for i := range products {
+		rows[i] = products[i]
+	}
+	infiniteScroll, err := models.NewInfiniteScroll(
+		request.Limit,
+		nextRowNo,
+		request.PaginationURL,
+		request.UrlValues,
+		rows,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewInfiniteScroll")
+		return nil, err
+	}
+	return infiniteScroll, nil
 }
 
 func (q *productService) FindProduct(

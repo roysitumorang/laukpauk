@@ -113,6 +113,7 @@ func (q *Product) Populate() *Product {
 }
 
 type ProductFilter struct {
+	NextRowNo *int64
 	ProductCategoryIDs,
 	ProductIDs,
 	ExcludedProductIDs []uuid.UUID
@@ -134,6 +135,11 @@ func NewProductFilter() *ProductFilter {
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
 	}
+}
+
+func (q *ProductFilter) WithNextRowNo(nextRowNo *int64) *ProductFilter {
+	q.NextRowNo = nextRowNo
+	return q
 }
 
 func (q *ProductFilter) WithProductCategoryIDs(productCategoryIDs ...uuid.UUID) *ProductFilter {
