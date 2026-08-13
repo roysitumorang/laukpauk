@@ -395,7 +395,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		}
 	}
 	listenerPort := helper.Sprintf(":%d", port)
-	err := app.Listen(listenerPort)
+	err := app.Listen(listenerPort, fiber.ListenConfig{
+		EnablePrefork: true,
+	})
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrListen")
 	}
