@@ -101,6 +101,7 @@ func (q *productRepository) FindProducts(
 		, ready_stock
 		, pinned
 		, hits
+		, lowest_selling_price
 		, created_by
 		, created_at
 		, updated_by
@@ -169,6 +170,7 @@ func (q *productRepository) FindProducts(
 			&product.ReadyStock,
 			&product.Pinned,
 			&product.Hits,
+			&product.LowestSellingPrice,
 			&product.CreatedBy,
 			&product.CreatedAt,
 			&product.UpdatedBy,
@@ -240,6 +242,7 @@ func (q *productRepository) InfiniteScrollProducts(
 		, ready_stock
 		, pinned
 		, hits
+		, lowest_selling_price
 		, created_by
 		, created_at
 		, updated_by
@@ -284,6 +287,7 @@ func (q *productRepository) InfiniteScrollProducts(
 			&product.ReadyStock,
 			&product.Pinned,
 			&product.Hits,
+			&product.LowestSellingPrice,
 			&product.CreatedBy,
 			&product.CreatedAt,
 			&product.UpdatedBy,
@@ -332,6 +336,7 @@ func (q *productRepository) FindProduct(
 			, ready_stock
 			, pinned
 			, hits
+			, lowest_selling_price
 			, created_by
 			, created_at
 			, updated_by
@@ -356,6 +361,7 @@ func (q *productRepository) FindProduct(
 		&response.ReadyStock,
 		&response.Pinned,
 		&response.Hits,
+		&response.LowestSellingPrice,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -394,11 +400,12 @@ func (q *productRepository) CreateProduct(
 			, ready_stock
 			, pinned
 			, hits
+			, lowest_selling_price
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id
 			, record_status
 			, product_category_id
@@ -411,6 +418,7 @@ func (q *productRepository) CreateProduct(
 			, ready_stock
 			, pinned
 			, hits
+			, lowest_selling_price
 			, created_by
 			, created_at
 			, updated_by
@@ -428,6 +436,7 @@ func (q *productRepository) CreateProduct(
 		request.ReadyStock,
 		request.Pinned,
 		request.Hits,
+		request.LowestSellingPrice,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -445,6 +454,7 @@ func (q *productRepository) CreateProduct(
 		&response.ReadyStock,
 		&response.Pinned,
 		&response.Hits,
+		&response.LowestSellingPrice,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -487,6 +497,7 @@ func (q *productRepository) UpdateProduct(
 			, ready_stock
 			, pinned
 			, hits
+			, lowest_selling_price
 			, created_by
 			, created_at
 			, updated_by
@@ -511,6 +522,7 @@ func (q *productRepository) UpdateProduct(
 		&response.ReadyStock,
 		&response.Pinned,
 		&response.Hits,
+		&response.LowestSellingPrice,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -615,6 +627,13 @@ func (q *productRepository) UpdateProduct(
 		}
 		_, _ = fmt.Fprintf(sb, " hits = $%d", n)
 	}
+	if response.LowestSellingPrice != request.LowestSellingPrice {
+		params = append(params, request.LowestSellingPrice)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " lowest_selling_price = $%d", n)
+	}
 	if len(params) == 0 {
 		return &response, nil
 	}
@@ -678,6 +697,7 @@ func (q *productRepository) UpdateProduct(
 			, ready_stock
 			, pinned
 			, hits
+			, lowest_selling_price
 			, created_by
 			, created_at
 			, updated_by
@@ -700,6 +720,7 @@ func (q *productRepository) UpdateProduct(
 		&response.ReadyStock,
 		&response.Pinned,
 		&response.Hits,
+		&response.LowestSellingPrice,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,

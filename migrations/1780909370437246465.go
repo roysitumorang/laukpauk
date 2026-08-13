@@ -302,6 +302,7 @@ func init() {
 				, ready_stock BOOLEAN NOT NULL
 				, pinned BOOLEAN NOT NULL DEFAULT FALSE
 				, hits bigint NOT NULL
+				, lowest_selling_price bigint NOT NULL DEFAULT 0
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT

@@ -643,6 +643,15 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
+	if request.SellingPrice < product.LowestSellingPrice {
+		product.LowestSellingPrice = request.SellingPrice
+		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+			return c.Render("admin/product_variant_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
+	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("admin/product_variant_new", params.Push(
@@ -749,6 +758,15 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 		return c.Render("admin/product_variant_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
+	}
+	if request.SellingPrice < product.LowestSellingPrice {
+		product.LowestSellingPrice = request.SellingPrice
+		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+			return c.Render("admin/product_variant_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")

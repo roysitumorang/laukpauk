@@ -58,6 +58,7 @@ type Product struct {
 	ReadyStock          bool              `json:"ready_stock" form:"ready_stock"`
 	Pinned              bool              `json:"-" form:"pinned"`
 	Hits                int64             `json:"-" form:"-"`
+	LowestSellingPrice  int64             `json:"lowest_selling_price" form:"-"`
 	CreatedBy           uuid.UUID         `json:"-" form:"-"`
 	CreatedAt           time.Time         `json:"-" form:"-"`
 	UpdatedBy           uuid.UUID         `json:"-" form:"-"`
