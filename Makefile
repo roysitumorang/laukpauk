@@ -16,7 +16,7 @@ build:
 
 release:
 	@go mod tidy
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -ldflags \
+	@CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -ldflags \
 		"-X github.com/roysitumorang/laukpauk/config.AppName=$(PROJECTNAME) \
 		-X github.com/roysitumorang/laukpauk/config.Commit=$(shell git rev-list -1 HEAD) \
 		-X github.com/roysitumorang/laukpauk/config.Build=$(shell date +%FT%T%:z)"
