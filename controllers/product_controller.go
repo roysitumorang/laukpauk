@@ -729,6 +729,7 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 	request.RecordStatus = productVariant.RecordStatus
 	request.ProductCategoryID = product.ProductCategoryID
 	request.ProductCategoryName = product.ProductCategoryName
+	request.ProductID = product.ID
 	if product.Name != nil {
 		request.ProductName = *product.Name
 	}

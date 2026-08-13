@@ -231,9 +231,8 @@ func (q *productVariantRepository) FindProductVariant(
 		FROM product_variants %s`,
 		condition,
 	)
-	query := sb.String()
 	var response models.ProductVariant
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
@@ -726,6 +725,19 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 		_, _ = sb.WriteString("id IN (")
 		for i, productVariantID := range request.ProductVariantIDs {
 			params = append(params, productVariantID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ExcludedProductVariantIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedProductVariantID := range request.ExcludedProductVariantIDs {
+			params = append(params, excludedProductVariantID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
