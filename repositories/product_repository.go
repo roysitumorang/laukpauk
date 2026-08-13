@@ -45,11 +45,6 @@ type ProductRepository interface {
 		tx pgx.Tx,
 		request *models.Product,
 	) (*models.Product, error)
-	IncreaseProductHits(
-		ctx context.Context,
-		tx pgx.Tx,
-		request *models.ProductFilter,
-	) (*models.Product, error)
 }
 
 type productRepository struct {
@@ -613,6 +608,13 @@ func (q *productRepository) UpdateProduct(
 		}
 		_, _ = fmt.Fprintf(sb, " pinned = $%d", n)
 	}
+	if response.Hits != request.Hits {
+		params = append(params, request.Hits)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " hits = $%d", n)
+	}
 	if len(params) == 0 {
 		return &response, nil
 	}
@@ -837,122 +839,4 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 		condition = sb.String()
 	}
 	return
-}
-
-func (q *productRepository) IncreaseProductHits(
-	ctx context.Context,
-	tx pgx.Tx,
-	request *models.ProductFilter,
-) (*models.Product, error) {
-	ctxt := "ProductRepository-IncreaseProductHits"
-	sb := pools.BuilderPool.Get()
-	defer func() {
-		sb.Reset()
-		pools.BuilderPool.Put(sb)
-	}()
-	sb.Reset()
-	condition, params := q.buildCondition(request, sb)
-	sb.Reset()
-	_, _ = fmt.Fprintf(
-		sb,
-		`SELECT
-			id
-			, record_status
-			, product_category_id
-			, product_category_name
-			, product_type
-			, name
-			, photo
-			, description
-			, ready_stock
-			, pinned
-			, hits
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason
-		FROM products
-		%s
-		FOR NO KEY UPDATE`,
-		condition,
-	)
-	var response models.Product
-	err := tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.ProductType,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.ReadyStock,
-		&response.Pinned,
-		&response.Hits,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrProductNotFound
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	if err = tx.QueryRow(
-		ctx,
-		`UPDATE products p SET
-			hits = hits + 1
-		WHERE id = $1
-		RETURNING id
-			, record_status
-			, product_category_id
-			, product_category_name
-			, product_type
-			, name
-			, photo
-			, description
-			, ready_stock
-			, pinned
-			, hits
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at
-			, deleted_by
-			, deleted_at
-			, deletion_reason`,
-		response.ID,
-	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.ProductType,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.ReadyStock,
-		&response.Pinned,
-		&response.Hits,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	return (&response).Populate(), nil
 }

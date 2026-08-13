@@ -39,11 +39,6 @@ type ProductService interface {
 		tx pgx.Tx,
 		request *models.Product,
 	) (*models.Product, error)
-	IncreaseProductHits(
-		ctx context.Context,
-		tx pgx.Tx,
-		request *models.ProductFilter,
-	) (*models.Product, error)
 }
 
 type productService struct {
@@ -163,19 +158,6 @@ func (q *productService) SaveProduct(
 	response, err := q.productRepository.SaveProduct(ctx, tx, request)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProduct")
-	}
-	return response, err
-}
-
-func (q *productService) IncreaseProductHits(
-	ctx context.Context,
-	tx pgx.Tx,
-	request *models.ProductFilter,
-) (*models.Product, error) {
-	ctxt := "ProductService-IncreaseProductHits"
-	response, err := q.productRepository.IncreaseProductHits(ctx, tx, request)
-	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrIncreaseProductHits")
 	}
 	return response, err
 }

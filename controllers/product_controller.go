@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"context"
+	"encoding/gob"
 	"errors"
 	"log/slog"
 	"os"
+	"sync/atomic"
 	"time"
 	"uuid"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
 	"github.com/roysitumorang/laukpauk/services"
@@ -25,6 +28,7 @@ type productController struct {
 	productCategoryService services.ProductCategoryService
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
+	storage                fiber.Storage
 }
 
 func NewProductController(
@@ -32,12 +36,14 @@ func NewProductController(
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
+	storage fiber.Storage,
 ) *productController {
 	return &productController{
 		adminService:           adminService,
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
+		storage:                storage,
 	}
 }
 
@@ -1019,60 +1025,159 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrProductNotFound.Error()).
 			WriteResponse(c)
 	}
-	tx, err := repositories.BeginTx(ctx)
+	productCache, err := q.storage.GetWithContext(ctx, c.Path())
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGetWithContext")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
+	buffer := pools.BufferPool.Get()
+	defer func() {
+		buffer.Reset()
+		pools.BufferPool.Put(buffer)
+	}()
+	response := &models.Product{}
+	if productCache == nil {
+		if response, err = q.productService.FindProduct(
+			ctx,
+			models.NewProductFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductIDs(productID),
+		); errors.Is(err, models.ErrProductNotFound) || response == nil {
+			return helper.NewResponse(fiber.StatusNotFound).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
-	}(ctx)
-	response, err := q.productService.IncreaseProductHits(
-		ctx,
-		tx,
-		models.NewProductFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(productID),
-	)
-	if errors.Is(err, models.ErrProductNotFound) || response == nil {
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(err.Error()).
-			WriteResponse(c)
+		variants, _, err := q.productVariantService.FindProductVariants(
+			ctx,
+			models.NewProductVariantFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductIDs(response.ID),
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		response.Photo = response.PhotoPath(c.BaseURL())
+		response.Variants = make([]*models.ProductVariant, len(variants))
+		copy(response.Variants, variants)
+	} else {
+		_, _ = buffer.Write(productCache)
+		if err = gob.NewDecoder(buffer).Decode(&response); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecode")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
 	}
+	hitsKey := helper.Sprintf("%s-hits", c.Path())
+	hitsCache, err := q.storage.GetWithContext(ctx, hitsKey)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrIncreaseProductHits")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGetWithContext")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+	if hitsCache != nil {
+		buffer.Reset()
+		_, _ = buffer.Write(hitsCache)
+		if err = gob.NewDecoder(buffer).Decode(&response.Hits); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecode")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+	}
+	var counter atomic.Int64
+	counter.Store(response.Hits)
+	counter.Add(1)
+	if response.Hits = counter.Load(); response.Hits%10 == 0 {
+		tx, err := repositories.BeginTx(ctx)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		defer func(ctx context.Context) {
+			if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+				err = nil
+			}
+			if err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+			}
+		}(ctx)
+		response, err = q.productService.UpdateProduct(ctx, tx, response)
+		if errors.Is(err, models.ErrProductNotFound) || response == nil {
+			return helper.NewResponse(fiber.StatusNotFound).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrIncreaseProductHits")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if err = tx.Commit(ctx); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		variants, _, err := q.productVariantService.FindProductVariants(
+			ctx,
+			models.NewProductVariantFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductIDs(response.ID),
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		response.Photo = response.PhotoPath(c.BaseURL())
+		response.Variants = make([]*models.ProductVariant, len(variants))
+		copy(response.Variants, variants)
+	}
+	buffer.Reset()
+	if err = gob.NewEncoder(buffer).Encode(response); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrEncode")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	variants, _, err := q.productVariantService.FindProductVariants(
-		ctx,
-		models.NewProductVariantFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithProductIDs(response.ID),
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+	productCache = buffer.Bytes()
+	if err = q.storage.SetWithContext(ctx, c.Path(), productCache, 0); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSetWithContext")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	response.Photo = response.PhotoPath(c.BaseURL())
-	response.Variants = make([]*models.ProductVariant, len(variants))
-	copy(response.Variants, variants)
+	buffer.Reset()
+	if err = gob.NewEncoder(buffer).Encode(response.Hits); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrEncode")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	hitsCache = buffer.Bytes()
+	if err = q.storage.SetWithContext(ctx, hitsKey, hitsCache, 0); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSetWithContext")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)

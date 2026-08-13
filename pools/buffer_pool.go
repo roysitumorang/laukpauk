@@ -21,8 +21,8 @@ func (q *bufferPool) Get() *bytes.Buffer {
 	return q.pool.Get().(*bytes.Buffer)
 }
 
-func (q *bufferPool) Put(builder *bytes.Buffer) {
-	q.pool.Put(builder)
+func (q *bufferPool) Put(buffer *bytes.Buffer) {
+	q.pool.Put(buffer)
 }
 
 func (q *bufferPool) Reset() {
