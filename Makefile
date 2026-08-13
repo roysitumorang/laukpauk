@@ -34,3 +34,6 @@ doc:
 upgrade-dependencies:
 	@echo Upgrading dependencies
 	@go get -u ./... && go mod tidy
+
+profile:
+	@rm -f default.go && curl "http://localhost:$(PORT_HTTP)/debug/pprof/profile?seconds=30" > default.pgo

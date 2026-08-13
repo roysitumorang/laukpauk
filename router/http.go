@@ -22,6 +22,7 @@ import (
 	"github.com/gofiber/contrib/v3/swaggo"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/extractors"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/compress"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
@@ -238,6 +239,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	}
 	app.Use(middlewares...)
 	if debug {
+		app.Get("/debug/pprof/*", adaptor.HTTPHandler(http.DefaultServeMux))
 		app.Get("/swagger/*", swaggo.HandlerDefault)
 	}
 	app.Get("/ping", func(c fiber.Ctx) error {
@@ -378,7 +380,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).
-				SetMessage(http.StatusText(fiber.StatusNotFound)).
+				SetMessage(utils.StatusMessage(fiber.StatusNotFound)).
 				WriteResponse(c)
 		}
 		c.Response().SetStatusCode(fiber.StatusNotFound)

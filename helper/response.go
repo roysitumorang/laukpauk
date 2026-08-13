@@ -2,10 +2,10 @@ package helper
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/utils/v2"
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/pools"
 )
@@ -27,7 +27,7 @@ type (
 func NewResponse(statusCode int) *Response {
 	return &Response{
 		StatusCode: statusCode,
-		Status:     http.StatusText(statusCode),
+		Status:     utils.StatusMessage(statusCode),
 		Timestamp:  time.Now(),
 		App:        config.AppName,
 	}
