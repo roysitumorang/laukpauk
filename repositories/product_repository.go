@@ -347,9 +347,8 @@ func (q *productRepository) FindProduct(
 		FROM products %s`,
 		condition,
 	)
-	query := sb.String()
 	var response models.Product
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
@@ -931,7 +930,7 @@ func (q *productRepository) IncreaseProductHits(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		condition,
+		response.ID,
 	).Scan(
 		&response.ID,
 		&response.RecordStatus,
