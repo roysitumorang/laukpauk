@@ -42,6 +42,7 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 	slogfiber "github.com/samber/slog-fiber"
 )
 
@@ -77,7 +78,16 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
 		JSONEncoder: func(v any) ([]byte, error) {
-			return json.Marshal(v)
+			buffer := pools.BufferPool.Get()
+			defer func() {
+				buffer.Reset()
+				pools.BufferPool.Put(buffer)
+			}()
+			buffer.Reset()
+			if err := json.MarshalWrite(buffer, v); err != nil {
+				return nil, err
+			}
+			return buffer.Bytes(), nil
 		},
 		JSONDecoder: func(data []byte, v any) error {
 			return json.Unmarshal(data, v)
