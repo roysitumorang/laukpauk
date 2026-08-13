@@ -1100,7 +1100,26 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 	var counter atomic.Int64
 	counter.Store(response.Hits)
 	counter.Add(1)
-	if response.Hits = counter.Load(); response.Hits%10 == 0 {
+	if hits := counter.Load(); hits%10 != 0 {
+		response.Hits = hits
+	} else {
+		product, err := q.productService.FindProduct(
+			ctx,
+			models.NewProductFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductIDs(productID),
+		)
+		if errors.Is(err, models.ErrProductNotFound) || product == nil {
+			return helper.NewResponse(fiber.StatusNotFound).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -1116,7 +1135,8 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 			}
 		}(ctx)
-		response, err = q.productService.UpdateProduct(ctx, tx, response)
+		product.Hits = hits
+		response, err = q.productService.UpdateProduct(ctx, tx, product)
 		if errors.Is(err, models.ErrProductNotFound) || response == nil {
 			return helper.NewResponse(fiber.StatusNotFound).
 				SetMessage(err.Error()).
