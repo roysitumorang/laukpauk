@@ -11,7 +11,7 @@ require (
 	github.com/gofiber/contrib/v3/monitor v1.1.2
 	github.com/gofiber/contrib/v3/sentry v1.1.9
 	github.com/gofiber/contrib/v3/swaggo v1.0.9
-	github.com/gofiber/fiber/v3 v3.4.0
+	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.3.1
 	github.com/gofiber/template/jet/v3 v3.0.7
 	github.com/gofiber/utils/v2 v2.4.1
@@ -77,10 +77,10 @@ require (
 	go.opentelemetry.io/otel v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/mod v0.39.0 // indirect
+	golang.org/x/mod v0.40.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
-	golang.org/x/tools v0.48.0 // indirect
+	golang.org/x/tools v0.49.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
