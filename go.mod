@@ -12,7 +12,7 @@ require (
 	github.com/gofiber/contrib/v3/sentry v1.1.9
 	github.com/gofiber/contrib/v3/swaggo v1.0.9
 	github.com/gofiber/fiber/v3 v3.5.0
-	github.com/gofiber/storage/valkey v0.3.1
+	github.com/gofiber/storage/valkey v0.3.2
 	github.com/gofiber/template/jet/v3 v3.0.7
 	github.com/gofiber/utils/v2 v2.4.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -63,7 +63,7 @@ require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.28 // indirect
+	github.com/pierrec/lz4/v4 v4.1.29 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.7 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
