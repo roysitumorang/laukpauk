@@ -88,31 +88,31 @@ func main() {
 						))
 						// run every minute
 						entryID, err := c.AddFunc("* * * * *", func() {
-							smsMessages, _, err := service.SmsMessageService.FindSmsMessages(
+							textMessages, _, err := service.TextMessageService.FindTextMessages(
 								ctx,
-								models.NewSmsMessageFilter().
+								models.NewTextMessageFilter().
 									WithDeliveryStatusBlank(),
 							)
 							if err != nil {
-								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSmsMessages")
+								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTextMessages")
 								return
 							}
-							n := len(smsMessages)
+							n := len(textMessages)
 							if n == 0 {
 								return
 							}
 							messages := make([]models.TopicMessage, n)
-							for i, smsMessage := range smsMessages {
+							for i, textMessage := range textMessages {
 								messages[i] = models.TopicMessage{
-									Topic: models.TopicSms,
-									Event: models.TopicSmsEventCheckReport,
-									ID:    smsMessage.ID,
+									Topic: models.TopicTextMessage,
+									Event: models.TopicTextMessageEventCheckReport,
+									ID:    textMessage.ID,
 								}
 							}
 							if err = service.KafkaClient.Publish(
 								ctx,
 								models.TopicRequest{
-									Topic:    models.TopicSms,
+									Topic:    models.TopicTextMessage,
 									Messages: messages,
 								},
 							); err != nil {

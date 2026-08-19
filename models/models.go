@@ -134,10 +134,10 @@ var PhoneNumberRegex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
 var UsernameRegex = regexp.MustCompile("[^a-z0-9]+")
 var SlugRegex = regexp.MustCompile("^[a-z0-9-]+$")
 var SliceTopics = []string{
-	TopicSms.String(),
+	TopicTextMessage.String(),
 }
 var MapTopics = map[Topic]struct{}{
-	TopicSms: {},
+	TopicTextMessage: {},
 }
 var DefaultSortBy = Sorting{
 	Field:     SortingFieldID,

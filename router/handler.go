@@ -42,7 +42,7 @@ type (
 		ProductCategoryService    services.ProductCategoryService
 		ProductService            services.ProductService
 		ProductVariantService     services.ProductVariantService
-		SmsMessageService         services.SmsMessageService
+		TextMessageService        services.TextMessageService
 		SettingService            services.SettingService
 		DeliveryPlanService       services.DeliveryPlanService
 		PointService              services.PointService
@@ -132,7 +132,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productCategoryRepository := repositories.NewProductCategoryRepository(dbRead, dbWrite)
 	productRepository := repositories.NewProductRepository(dbRead, dbWrite)
 	productVariantRepository := repositories.NewProductVariantRepository(dbRead, dbWrite)
-	smsMessageRepository := repositories.NewSmsMessageRepository(dbRead, dbWrite)
+	textMessageRepository := repositories.NewTextMessageRepository(dbRead, dbWrite)
 	settingRepository := repositories.NewSettingRepository(dbRead, dbWrite)
 	deliveryPlanRepository := repositories.NewDeliveryPlanRepository(dbRead, dbWrite)
 	pointRepository := repositories.NewPointRepository(dbRead, dbWrite)
@@ -157,7 +157,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	productService := services.NewProductService(productRepository)
 	productVariantService := services.NewProductVariantService(productVariantRepository, productRepository)
-	smsMessageService := services.NewSmsMessageService(smsMessageRepository, kafkaClient, zenzivaClient)
+	textMessageService := services.NewTextMessageService(textMessageRepository, kafkaClient, zenzivaClient)
 	settingService := services.NewSettingService(settingRepository)
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
 	pointService := services.NewPointService(
@@ -209,7 +209,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		ProductCategoryService:    productCategoryService,
 		ProductService:            productService,
 		ProductVariantService:     productVariantService,
-		SmsMessageService:         smsMessageService,
+		TextMessageService:        textMessageService,
 		SettingService:            settingService,
 		DeliveryPlanService:       deliveryPlanService,
 		PointService:              pointService,

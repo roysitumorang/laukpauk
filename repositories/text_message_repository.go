@@ -15,47 +15,47 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type SmsMessageRepository interface {
-	FindSmsMessages(
+type TextMessageRepository interface {
+	FindTextMessages(
 		ctx context.Context,
-		request *models.SmsMessageFilter,
-	) ([]*models.SmsMessage, int64, int64, error)
-	FindSmsMessage(
+		request *models.TextMessageFilter,
+	) ([]*models.TextMessage, int64, int64, error)
+	FindTextMessage(
 		ctx context.Context,
-		request *models.SmsMessageFilter,
-	) (*models.SmsMessage, error)
-	CreateSmsMessage(
-		ctx context.Context,
-		tx pgx.Tx,
-		request *models.SmsMessage,
-	) (*models.SmsMessage, error)
-	UpdateSmsMessage(
+		request *models.TextMessageFilter,
+	) (*models.TextMessage, error)
+	CreateTextMessage(
 		ctx context.Context,
 		tx pgx.Tx,
-		request *models.SmsMessage,
-	) (*models.SmsMessage, error)
+		request *models.TextMessage,
+	) (*models.TextMessage, error)
+	UpdateTextMessage(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.TextMessage,
+	) (*models.TextMessage, error)
 }
 
-type smsMessageRepository struct {
+type textMessageRepository struct {
 	dbRead,
 	dbWrite *pgxpool.Pool
 }
 
-func NewSmsMessageRepository(
+func NewTextMessageRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) SmsMessageRepository {
-	return &smsMessageRepository{
+) TextMessageRepository {
+	return &textMessageRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	}
 }
 
-func (q *smsMessageRepository) FindSmsMessages(
+func (q *textMessageRepository) FindTextMessages(
 	ctx context.Context,
-	request *models.SmsMessageFilter,
-) ([]*models.SmsMessage, int64, int64, error) {
-	ctxt := "SmsMessageRepository-FindSmsMessages"
+	request *models.TextMessageFilter,
+) ([]*models.TextMessage, int64, int64, error) {
+	ctxt := "TextMessageRepository-FindTextMessages"
 	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
@@ -64,7 +64,7 @@ func (q *smsMessageRepository) FindSmsMessages(
 	sb.Reset()
 	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM sms_messages %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM text_messages %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -79,7 +79,7 @@ func (q *smsMessageRepository) FindSmsMessages(
 		query,
 		"COUNT(1)",
 		`id
-		, user_id
+		, buyer_id
 		, mobile_phone
 		, body
 		, delivery_status
@@ -133,36 +133,36 @@ func (q *smsMessageRepository) FindSmsMessages(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.SmsMessage
+	var response []*models.TextMessage
 	for rows.Next() {
-		var smsMessage models.SmsMessage
+		var textMessage models.TextMessage
 		if err = rows.Scan(
-			&smsMessage.ID,
-			&smsMessage.UserID,
-			&smsMessage.MobilePhone,
-			&smsMessage.Body,
-			&smsMessage.DeliveryStatus,
-			&smsMessage.MessageID,
-			&smsMessage.CreatedBy,
-			&smsMessage.CreatedAt,
-			&smsMessage.UpdatedAt,
-			&smsMessage.SentAt,
+			&textMessage.ID,
+			&textMessage.BuyerID,
+			&textMessage.MobilePhone,
+			&textMessage.Body,
+			&textMessage.DeliveryStatus,
+			&textMessage.MessageID,
+			&textMessage.CreatedBy,
+			&textMessage.CreatedAt,
+			&textMessage.UpdatedAt,
+			&textMessage.SentAt,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		offset++
-		smsMessage.RowNo = offset
-		response = append(response, &smsMessage)
+		textMessage.RowNo = offset
+		response = append(response, &textMessage)
 	}
 	return response, total, pages, nil
 }
 
-func (q *smsMessageRepository) FindSmsMessage(
+func (q *textMessageRepository) FindTextMessage(
 	ctx context.Context,
-	request *models.SmsMessageFilter,
-) (*models.SmsMessage, error) {
-	ctxt := "SmsMessageRepository-FindSmsMessage"
+	request *models.TextMessageFilter,
+) (*models.TextMessage, error) {
+	ctxt := "TextMessageRepository-FindTextMessage"
 	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
@@ -175,7 +175,7 @@ func (q *smsMessageRepository) FindSmsMessage(
 		sb,
 		`SELECT
 			id
-			, user_id
+			, buyer_id
 			, mobile_phone
 			, body
 			, delivery_status
@@ -184,14 +184,13 @@ func (q *smsMessageRepository) FindSmsMessage(
 			, created_at
 			, updated_at
 			, sent_at
-		FROM sms_messages %s`,
+		FROM text_messages %s`,
 		condition,
 	)
-	query := sb.String()
-	var response models.SmsMessage
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	var response models.TextMessage
+	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.UserID,
+		&response.BuyerID,
 		&response.MobilePhone,
 		&response.Body,
 		&response.DeliveryStatus,
@@ -202,7 +201,7 @@ func (q *smsMessageRepository) FindSmsMessage(
 		&response.SentAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrSmsMessageNotFound
+		return nil, models.ErrTextMessageNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -211,17 +210,17 @@ func (q *smsMessageRepository) FindSmsMessage(
 	return &response, nil
 }
 
-func (q *smsMessageRepository) CreateSmsMessage(
+func (q *textMessageRepository) CreateTextMessage(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.SmsMessage,
-) (*models.SmsMessage, error) {
-	ctxt := "SmsMessageRepository-CreateSmsMessage"
-	var response models.SmsMessage
+	request *models.TextMessage,
+) (*models.TextMessage, error) {
+	ctxt := "TextMessageRepository-CreateTextMessage"
+	var response models.TextMessage
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO sms_messages (
-			user_id
+		`INSERT INTO text_messages (
+			buyer_id
 			, mobile_phone
 			, body
 			, created_by
@@ -229,7 +228,7 @@ func (q *smsMessageRepository) CreateSmsMessage(
 			, updated_at
 		) VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
-			, user_id
+			, buyer_id
 			, mobile_phone
 			, body
 			, delivery_status
@@ -238,7 +237,7 @@ func (q *smsMessageRepository) CreateSmsMessage(
 			, created_at
 			, updated_at
 			, sent_at`,
-		request.UserID,
+		request.BuyerID,
 		request.MobilePhone,
 		request.Body,
 		request.CreatedBy,
@@ -246,7 +245,7 @@ func (q *smsMessageRepository) CreateSmsMessage(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.UserID,
+		&response.BuyerID,
 		&response.MobilePhone,
 		&response.Body,
 		&response.DeliveryStatus,
@@ -262,18 +261,18 @@ func (q *smsMessageRepository) CreateSmsMessage(
 	return &response, nil
 }
 
-func (q *smsMessageRepository) UpdateSmsMessage(
+func (q *textMessageRepository) UpdateTextMessage(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.SmsMessage,
-) (*models.SmsMessage, error) {
-	ctxt := "SmsMessageRepository-UpdateSmsMessage"
-	var response models.SmsMessage
+	request *models.TextMessage,
+) (*models.TextMessage, error) {
+	ctxt := "TextMessageRepository-UpdateTextMessage"
+	var response models.TextMessage
 	err := tx.QueryRow(
 		ctx,
 		`SELECT
 			id
-			, user_id
+			, buyer_id
 			, mobile_phone
 			, body
 			, delivery_status
@@ -282,13 +281,13 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 			, created_at
 			, updated_at
 			, sent_at
-		FROM sms_messages
+		FROM text_messages
 		WHERE id = $1
 		FOR NO KEY UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.UserID,
+		&response.BuyerID,
 		&response.MobilePhone,
 		&response.Body,
 		&response.DeliveryStatus,
@@ -299,7 +298,7 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 		&response.SentAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrSmsMessageNotFound
+		return nil, models.ErrTextMessageNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -313,7 +312,7 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 		pools.BuilderPool.Put(sb)
 	}()
 	sb.Reset()
-	_, _ = sb.WriteString("UPDATE sms_messages SET")
+	_, _ = sb.WriteString("UPDATE text_messages SET")
 	if (response.DeliveryStatus == nil && request.DeliveryStatus != nil) ||
 		(response.DeliveryStatus != nil && request.DeliveryStatus == nil) ||
 		(response.DeliveryStatus != nil && request.DeliveryStatus != nil &&
@@ -359,7 +358,7 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, user_id
+			, buyer_id
 			, mobile_phone
 			, body
 			, delivery_status
@@ -372,7 +371,7 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.UserID,
+		&response.BuyerID,
 		&response.MobilePhone,
 		&response.Body,
 		&response.DeliveryStatus,
@@ -388,13 +387,13 @@ func (q *smsMessageRepository) UpdateSmsMessage(
 	return &response, nil
 }
 
-func (q *smsMessageRepository) buildCondition(request *models.SmsMessageFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.SmsMessageIDs) > 0 {
+	if len(request.TextMessageIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
-		for i, smsMessageID := range request.SmsMessageIDs {
-			params = append(params, smsMessageID)
+		for i, textMessageID := range request.TextMessageIDs {
+			params = append(params, textMessageID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -403,11 +402,11 @@ func (q *smsMessageRepository) buildCondition(request *models.SmsMessageFilter, 
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.UserIDs) > 0 {
+	if len(request.BuyerIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("user_id IN (")
-		for i, userID := range request.UserIDs {
-			params = append(params, userID)
+		_, _ = sb.WriteString("buyer_id IN (")
+		for i, buyerID := range request.BuyerIDs {
+			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

@@ -101,7 +101,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			}
 			return helper.NewResponse(statusCode).SetMessage(err.Error()).WriteResponse(ctx)
 		},
-		SkipUnmatchedRoutes: true,
 	})
 	csrfMiddleware := csrf.New(csrf.Config{
 		CookieName:        "__Host-csrf_",

@@ -152,11 +152,10 @@
 				<!-- Sidebar user panel (optional) -->
 				<div class="user-panel mt-3 pb-3 mb-3 d-flex">
 					<div class="image">
-						<a href="{{ baseURL }}/images/admin/{{ currentAdmin.Photo }}" target="_blank">
-						<img src="{{ baseURL }}/images/admin/compress/{{ currentAdmin.Photo }}"
+						<a href="{{ currentAdmin.PhotoPath(baseURL) }}" target="_blank">
+						<img src="{{ currentAdmin.PhotoPath(baseURL) }}"
 							class="img-circle elevation-2"
 							alt="{{ currentAdmin.Name }}"
-							onError="this.src='{{ baseURL }}/assets/img/no-image.png'"
 							style="width:3.2rem;" />
 						</a>
 					</div>
