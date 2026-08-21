@@ -497,7 +497,7 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/text_messages") || HasPrefix(path, "/admin/notifications") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-wifi"></i>
 								<p>
@@ -505,7 +505,7 @@
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview">
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/text_messages") || HasPrefix(path, "/admin/notifications") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/text_messages" class="nav-link">
 										<i class="fa fa-envelope nav-icon"></i>
@@ -513,7 +513,7 @@
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/sms/new" class="nav-link">
+									<a href="{{ baseURL }}/admin/text_messages/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
 										<p>SMS Baru</p>
 									</a>
