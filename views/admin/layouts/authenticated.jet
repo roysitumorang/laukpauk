@@ -507,7 +507,7 @@
 							</a>
 							<ul class="nav nav-treeview">
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/sms" class="nav-link">
+									<a href="{{ baseURL }}/admin/text_messages" class="nav-link">
 										<i class="fa fa-envelope nav-icon"></i>
 										<p>Riwayat SMS</p>
 									</a>

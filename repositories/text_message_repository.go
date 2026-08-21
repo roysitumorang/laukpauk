@@ -81,6 +81,7 @@ func (q *textMessageRepository) FindTextMessages(
 		`id
 		, buyer_id
 		, mobile_phone
+		, message_type
 		, body
 		, delivery_status
 		, message_id
@@ -140,6 +141,7 @@ func (q *textMessageRepository) FindTextMessages(
 			&textMessage.ID,
 			&textMessage.BuyerID,
 			&textMessage.MobilePhone,
+			&textMessage.MessageType,
 			&textMessage.Body,
 			&textMessage.DeliveryStatus,
 			&textMessage.MessageID,
@@ -177,6 +179,7 @@ func (q *textMessageRepository) FindTextMessage(
 			id
 			, buyer_id
 			, mobile_phone
+			, message_type
 			, body
 			, delivery_status
 			, message_id
@@ -192,6 +195,7 @@ func (q *textMessageRepository) FindTextMessage(
 		&response.ID,
 		&response.BuyerID,
 		&response.MobilePhone,
+		&response.MessageType,
 		&response.Body,
 		&response.DeliveryStatus,
 		&response.MessageID,
@@ -222,14 +226,16 @@ func (q *textMessageRepository) CreateTextMessage(
 		`INSERT INTO text_messages (
 			buyer_id
 			, mobile_phone
+			, message_type
 			, body
 			, created_by
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
 			, buyer_id
 			, mobile_phone
+			, message_type
 			, body
 			, delivery_status
 			, message_id
@@ -239,6 +245,7 @@ func (q *textMessageRepository) CreateTextMessage(
 			, sent_at`,
 		request.BuyerID,
 		request.MobilePhone,
+		request.MessageType,
 		request.Body,
 		request.CreatedBy,
 		request.CreatedAt,
@@ -247,6 +254,7 @@ func (q *textMessageRepository) CreateTextMessage(
 		&response.ID,
 		&response.BuyerID,
 		&response.MobilePhone,
+		&response.MessageType,
 		&response.Body,
 		&response.DeliveryStatus,
 		&response.MessageID,
@@ -274,6 +282,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 			id
 			, buyer_id
 			, mobile_phone
+			, message_type
 			, body
 			, delivery_status
 			, message_id
@@ -289,6 +298,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		&response.ID,
 		&response.BuyerID,
 		&response.MobilePhone,
+		&response.MessageType,
 		&response.Body,
 		&response.DeliveryStatus,
 		&response.MessageID,
@@ -360,6 +370,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		RETURNING id
 			, buyer_id
 			, mobile_phone
+			, message_type
 			, body
 			, delivery_status
 			, message_id
@@ -373,6 +384,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		&response.ID,
 		&response.BuyerID,
 		&response.MobilePhone,
+		&response.MessageType,
 		&response.Body,
 		&response.DeliveryStatus,
 		&response.MessageID,
@@ -442,6 +454,30 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			_, _ = fmt.Fprintf(sb, "$%d", len(params))
 		}
 		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if request.Keyword != "" {
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		params = append(params, sb.String())
+		n := len(params)
+		sb.Reset()
+		_, _ = fmt.Fprintf(
+			sb,
+			`EXISTS(
+				SELECT 1
+				FROM buyers
+				JOIN users ON buyers.user_id = users.id
+				WHERE buyers.id = text_messages.buyer_id
+					AND (
+						LOWER(users.name) LIKE $%d
+						OR users.username LIKE $%d
+						OR users.email LIKE $%d
+						OR users.mobile_phone LIKE $%d
+					)
+			)`,
+			n, n, n, n,
+		)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

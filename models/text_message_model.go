@@ -11,6 +11,9 @@ import (
 )
 
 var ErrTextMessageNotFound = errors.New("sms message not found")
+var MapTextMessageSortings = map[string]struct{}{
+	SortingFieldID: {},
+}
 
 const (
 	TextMessageTypeSms TextMessageType = iota
@@ -23,38 +26,47 @@ const (
 	TopicTextMessageEventCheckReport TopicEvent = "check_report"
 )
 
-type (
-	TextMessageType int
+type TextMessageType int
 
-	TextMessage struct {
-		RowNo          int64           `json:"-" form:"-"`
-		ID             uuid.UUID       `json:"-" form:"-"`
-		BuyerID        uuid.UUID       `json:"-" form:"-"`
-		MobilePhone    string          `json:"-" form:"-"`
-		MessageType    TextMessageType `json:"-" form:"-"`
-		Body           string          `json:"-" form:"-"`
-		DeliveryStatus *string         `json:"-" form:"-"`
-		MessageID      *int64          `json:"-" form:"-"`
-		CreatedBy      *uuid.UUID      `json:"-" form:"-"`
-		CreatedAt      time.Time       `json:"-" form:"-"`
-		UpdatedAt      time.Time       `json:"-" form:"-"`
-		SentAt         *time.Time      `json:"-" form:"-"`
-	}
+type TextMessage struct {
+	RowNo          int64           `json:"-" form:"-"`
+	ID             uuid.UUID       `json:"-" form:"-"`
+	BuyerID        uuid.UUID       `json:"-" form:"buyer_id"`
+	MobilePhone    string          `json:"-" form:"-"`
+	MessageType    TextMessageType `json:"-" form:"-"`
+	Body           string          `json:"-" form:"body"`
+	DeliveryStatus *string         `json:"-" form:"-"`
+	MessageID      *int64          `json:"-" form:"-"`
+	CreatedBy      *uuid.UUID      `json:"-" form:"-"`
+	CreatedAt      time.Time       `json:"-" form:"-"`
+	UpdatedAt      time.Time       `json:"-" form:"-"`
+	SentAt         *time.Time      `json:"-" form:"-"`
+}
 
-	TextMessageFilter struct {
-		TextMessageIDs,
-		BuyerIDs []uuid.UUID
-		DeliveryStatusBlank bool
-		DeliveryStatuses    []string
-		MessageIDs          []int64
-		PaginationURL       string
-		Sortings            []Sorting
-		MapSortings         Map
-		Limit,
-		Page int64
-		UrlValues url.Values
+func (q *TextMessage) Validate() error {
+	if q.BuyerID.Compare(uuid.Nil()) == 0 {
+		return errors.New("buyer_id: is required")
 	}
-)
+	if q.Body = strings.TrimSpace(q.Body); q.Body == "" {
+		return errors.New("body: is required")
+	}
+	return nil
+}
+
+type TextMessageFilter struct {
+	TextMessageIDs,
+	BuyerIDs []uuid.UUID
+	DeliveryStatusBlank bool
+	DeliveryStatuses    []string
+	MessageIDs          []int64
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
 
 func NewTextMessageFilter() *TextMessageFilter {
 	return &TextMessageFilter{
@@ -85,6 +97,11 @@ func (q *TextMessageFilter) WithDeliveryStatuses(deliveryStatuses ...string) *Te
 
 func (q *TextMessageFilter) WithMessageIDs(messageIDs ...int64) *TextMessageFilter {
 	q.MessageIDs = messageIDs
+	return q
+}
+
+func (q *TextMessageFilter) WithKeyword(keyword string) *TextMessageFilter {
+	q.Keyword = keyword
 	return q
 }
 
