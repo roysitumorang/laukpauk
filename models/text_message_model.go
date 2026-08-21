@@ -56,6 +56,7 @@ func (q *TextMessage) Validate() error {
 type TextMessageFilter struct {
 	TextMessageIDs,
 	BuyerIDs []uuid.UUID
+	MessageTypes        []TextMessageType
 	DeliveryStatusBlank bool
 	DeliveryStatuses    []string
 	MessageIDs          []int64
@@ -82,6 +83,11 @@ func (q *TextMessageFilter) WithTextMessageIDs(textMessageIDs ...uuid.UUID) *Tex
 
 func (q *TextMessageFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *TextMessageFilter {
 	q.BuyerIDs = buyerIDs
+	return q
+}
+
+func (q *TextMessageFilter) WithMessageTypes(messageTypes ...TextMessageType) *TextMessageFilter {
+	q.MessageTypes = messageTypes
 	return q
 }
 

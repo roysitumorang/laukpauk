@@ -427,6 +427,19 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.MessageTypes) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("message_type IN (")
+		for i, messageType := range request.MessageTypes {
+			params = append(params, messageType)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if request.DeliveryStatusBlank {
 		conds = append(conds, "delivery_status IS NULL")
 	}

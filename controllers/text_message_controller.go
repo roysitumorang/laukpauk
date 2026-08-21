@@ -95,7 +95,7 @@ func (q *textMessageController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.textMessageService.FindTextMessages(
 		c,
-		request,
+		request.WithMessageTypes(models.TextMessageTypeSms),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTextMessages")
 		return c.Render("/admin/text_message_index", params.Push(
