@@ -129,7 +129,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-AdminCreate"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request, params, _ := q.prepareProductCategory(ctx, c, flash, currentAdmin, csrfToken, true)
+	_, params, _ := q.prepareProductCategory(ctx, c, flash, currentAdmin, csrfToken, true)
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	if photo == nil {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))

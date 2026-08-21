@@ -339,6 +339,13 @@ func (q *pointRepository) UpdatePoint(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrPointNotFound
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
 	var params []any
 	var n int
 	sb := pools.BuilderPool.Get()

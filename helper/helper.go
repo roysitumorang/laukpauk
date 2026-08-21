@@ -337,7 +337,9 @@ func Jpeg2Webp(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer input.Close()
+	defer func() {
+		_ = input.Close()
+	}()
 	image, err := jpeg.Decode(input)
 	if err != nil {
 		return err
@@ -346,7 +348,9 @@ func Jpeg2Webp(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer output.Close()
+	defer func() {
+		_ = output.Close()
+	}()
 	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 80)
 	if err != nil {
 		return err
@@ -359,7 +363,9 @@ func Png2Webp(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer input.Close()
+	defer func() {
+		_ = input.Close()
+	}()
 	image, err := png.Decode(input)
 	if err != nil {
 		return err
@@ -368,7 +374,9 @@ func Png2Webp(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer output.Close()
+	defer func() {
+		_ = output.Close()
+	}()
 	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 80)
 	if err != nil {
 		return err

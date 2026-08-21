@@ -148,7 +148,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-AdminCreate"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
+	_, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return c.Render("admin/product_new", params.Push(

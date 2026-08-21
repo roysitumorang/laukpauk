@@ -287,8 +287,6 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 		_, _ = fmt.Fprintf(sb, "$%d", len(params))
 		conds = append(conds, sb.String())
 	}
-	if request.Keyword != "" {
-	}
 	if len(conds) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("WHERE")

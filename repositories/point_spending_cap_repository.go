@@ -503,8 +503,6 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 		_, _ = fmt.Fprintf(sb, "shopping_cost && int8range($%d, $%d, '[]')", n-1, n)
 		conds = append(conds, sb.String())
 	}
-	if request.Keyword != "" {
-	}
 	if len(conds) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("WHERE")

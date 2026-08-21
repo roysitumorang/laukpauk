@@ -382,10 +382,7 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 		q.RawSameDayWindowMax = q.SameDayWindowMax.In(time.Local).Format(time.TimeOnly)
 		sameDayWindowMin := *q.SameDayWindowMin
 		sameDayWindowMax := *q.SameDayWindowMax
-		for {
-			if sameDayWindowMin.After(sameDayWindowMax) {
-				break
-			}
+		for !sameDayWindowMin.After(sameDayWindowMax) {
 			q.DeliveryTimes = append(q.DeliveryTimes, sameDayWindowMin)
 			sameDayWindowMin = sameDayWindowMin.Add(q.DeliveryTimeInterval)
 		}
@@ -395,10 +392,7 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 		q.RawNextDayWindowMax = q.NextDayWindowMax.In(time.Local).Format(time.TimeOnly)
 		nextDayWindowMin := *q.NextDayWindowMin
 		nextDayWindowMax := *q.NextDayWindowMax
-		for {
-			if nextDayWindowMin.After(nextDayWindowMax) {
-				break
-			}
+		for !nextDayWindowMin.After(nextDayWindowMax) {
 			q.DeliveryTimes = append(q.DeliveryTimes, nextDayWindowMin)
 			nextDayWindowMin = nextDayWindowMin.Add(q.DeliveryTimeInterval)
 		}
@@ -408,10 +402,7 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 		q.RawNextTwoDayWindowMax = q.NextTwoDayWindowMax.In(time.Local).Format(time.TimeOnly)
 		nextTwoDayWindowMin := *q.NextTwoDayWindowMin
 		nextTwoDayWindowMax := *q.NextTwoDayWindowMax
-		for {
-			if nextTwoDayWindowMin.After(nextTwoDayWindowMax) {
-				break
-			}
+		for !nextTwoDayWindowMin.After(nextTwoDayWindowMax) {
 			q.DeliveryTimes = append(q.DeliveryTimes, nextTwoDayWindowMin)
 			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(q.DeliveryTimeInterval)
 		}
