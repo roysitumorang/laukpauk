@@ -127,18 +127,17 @@
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
 									<td class="text-left">
 										<div class="row">
-											{{ if row.Photo }}
-											<div class="col-lg-4 text-center">
+											<div class="col-lg-1 text-center">
+												{{ if row.Photo }}
 												<a href="{{ row.PhotoPath(baseURL) }}" target="_blank">
 													<img src="{{ row.PhotoPath(baseURL) }}"
-													class="img-circle cp" style="width:50px; height:50px;" />
+														class="img-circle cp"
+														style="width:50px; height:50px;" />
 												</a>
-											</div>
-											{{ else }}
-											<div class="col-lg-1 text-center">
+												{{ else }}
 												<i class="text-muted">Tanpa Gambar</i>
+												{{ end }}
 											</div>
-											{{ end }}
 											<div class="col-lg-11">
 												<h6 class="text-info mb-1">
 													<b>{{ row.Subject }}</b>
