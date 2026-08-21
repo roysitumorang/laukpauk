@@ -28,6 +28,17 @@ const (
 
 type TextMessageType int
 
+func (q TextMessageType) Int() int {
+	return int(q)
+}
+
+func (q TextMessageType) String() string {
+	if q == TextMessageTypeOtp {
+		return "otp"
+	}
+	return "sms"
+}
+
 type TextMessage struct {
 	RowNo          int64           `json:"-" form:"-"`
 	ID             uuid.UUID       `json:"-" form:"-"`
@@ -138,15 +149,4 @@ func (q *TextMessageFilter) WithPage(page int64) *TextMessageFilter {
 func (q *TextMessageFilter) WithUrlValues(urlValues url.Values) *TextMessageFilter {
 	q.UrlValues = urlValues
 	return q
-}
-
-func (q TextMessageType) Int() int {
-	return int(q)
-}
-
-func (q TextMessageType) String() string {
-	if q == TextMessageTypeOtp {
-		return "otp"
-	}
-	return "sms"
 }

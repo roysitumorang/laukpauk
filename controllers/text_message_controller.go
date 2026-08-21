@@ -94,7 +94,7 @@ func (q *textMessageController) AdminIndex(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	if rows, pagination, err = q.textMessageService.FindTextMessages(
-		c,
+		ctx,
 		request.WithMessageTypes(models.TextMessageTypeSms),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTextMessages")

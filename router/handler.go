@@ -57,6 +57,7 @@ type (
 		DeliveryRouteService      services.DeliveryRouteService
 		PaymentChannelService     services.PaymentChannelService
 		BannerService             services.BannerService
+		NotificationService       services.NotificationService
 	}
 )
 
@@ -147,6 +148,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
 	paymentChannelRepository := repositories.NewPaymentChannelRepository(dbRead, dbWrite)
 	bannerRepository := repositories.NewBannerRepository(dbRead, dbWrite)
+	notificationRepository := repositories.NewNotificationRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -190,6 +192,12 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
 	paymentChannelService := services.NewPaymentChannelService(paymentChannelRepository)
 	bannerService := services.NewBannerService(bannerRepository)
+	notificationService := services.NewNotificationService(
+		notificationRepository,
+		notificationTargetRepository,
+		kafkaClient,
+		fcmClient,
+	)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
@@ -224,6 +232,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		DeliveryRouteService:      deliveryRouteService,
 		PaymentChannelService:     paymentChannelService,
 		BannerService:             bannerService,
+		NotificationService:       notificationService,
 	}, nil
 }
 

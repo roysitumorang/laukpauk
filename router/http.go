@@ -183,6 +183,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/notification_targets":    "/notification_targets/admin",
 				"/admin/text_messages":           "/text_messages/admin",
 				"/admin/text_messages/*":         "/text_messages/admin/$1",
+				"/admin/notifications":           "/notifications/admin",
+				"/admin/notifications/*":         "/notifications/admin/$1",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/notification_targets": "/notification_targets/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
@@ -385,6 +387,11 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BuyerService,
 		q.TextMessageService,
 	).Mount(app.Group("/text_messages"))
+	controllers.NewNotificationController(
+		q.AdminService,
+		q.BuyerService,
+		q.NotificationService,
+	).Mount(app.Group("/notifications"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).
