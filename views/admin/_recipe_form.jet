@@ -1,0 +1,86 @@
+{{ range type, message := flash.Data }}
+<div class="alert alert-{{ type }}">
+	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+</div>
+{{ end }}
+<form method="POST" action="{{ baseURL }}/admin/recipes{{ if !recipe.New() }}/{{ recipe.ID }}{{ end }}" enctype="multipart/form-data">
+	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+	{{ if !recipe.New() }}
+	<input type="hidden" name="id" value="{{ recipe.ID }}" />
+	{{ end }}
+	<div class="row">
+		<div class="col-lg-4 text-center">
+			<label for="photo">
+				<img src="{{ if request.Photo }}{{ request.PhotoPath(baseURL) }}{{ else }}{{ baseURL }}/assets/img/upload-icon.png{{ end }}"
+					alt="Foto Produk"
+					data-toggle="tooltip"
+					class="w-100 cp"
+					data-placement="left"
+					title="Klik Gambar untuk Memilih/Mengganti Gambar Produk"
+					id="photo_preview" />
+				<input type="file" name="photo" id="photo" accept="image/*" />
+			</label>
+		</div>
+		<div class="col-lg-8">
+			<div class="form-group">
+				<label for="name" class="label-title">Nama Resep</label>
+				<input type="text"
+					name="name"
+					value="{{ if request.Name }}{{ request.Name }}{{ end }}"
+					id="name"
+					class="form-control"
+					placeholder="Nama Resep" />
+			</div>
+			<div class="form-group">
+				<label for="instagram_link" class="label-title">Instagram Link</label>
+				<input type="text"
+					name="instagram_link"
+					value="{{ request.InstagramLink }}"
+					id="instagram_link"
+					class="form-control"
+					placeholder="Link Instagram" />
+			</div>
+			<div class="form-group">
+				<label for="facebook_link" class="label-title">Facebook Link</label>
+				<input type="text"
+					name="facebook_link"
+					value="{{ request.FacebookLink }}"
+					id="facebook_link"
+					class="form-control"
+					placeholder="Link Facebook" />
+			</div>
+			<div class="form-group">
+				<label for="description" class="label-title">Keterangan</label>
+				<textarea name="description"
+					class="form-control"
+					id="description"
+					placeholder="Keterangan">{{ request.Description }}</textarea>
+			</div>
+			<hr class="mb-4" />
+			<button type="submit" class="btn btn-success mr-1">
+				Simpan{{ if !recipe.New() }} Perubahan{{ end }} Data Resep
+			</button>
+			<a href="{{ baseURL }}/admin/recipes" class="btn btn-default ml-1">
+				Back to List Resep
+			</a>
+			{{ if !recipe.New() }}
+			<a href="{{ baseURL }}/admin/recipes/{{ recipe.ID }}" class="btn btn-default ml-1">
+				Back to Detail Resep
+			</a>
+			{{ end }}
+		</div>
+	</div>
+</form>
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+		document.getElementById("photo").addEventListener("change", (event) => {
+			let file = event.target.files[0];
+			if (!file || !file.type.startsWith("image/")) {
+				return;
+			}
+			let preview = document.getElementById("photo_preview");
+			preview.setAttribute("src", URL.createObjectURL(file));
+			preview.classList.add("img-thumbnail");
+		});
+	});
+</script>

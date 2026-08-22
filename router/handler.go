@@ -58,6 +58,9 @@ type (
 		PaymentChannelService     services.PaymentChannelService
 		BannerService             services.BannerService
 		NotificationService       services.NotificationService
+		RecipeService             services.RecipeService
+		RecipeGuideService        services.RecipeGuideService
+		RecipeItemService         services.RecipeItemService
 	}
 )
 
@@ -149,6 +152,9 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	paymentChannelRepository := repositories.NewPaymentChannelRepository(dbRead, dbWrite)
 	bannerRepository := repositories.NewBannerRepository(dbRead, dbWrite)
 	notificationRepository := repositories.NewNotificationRepository(dbRead, dbWrite)
+	recipeRepository := repositories.NewRecipeRepository(dbRead, dbWrite)
+	recipeGuideRepository := repositories.NewRecipeGuideRepository(dbRead, dbWrite)
+	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -198,6 +204,9 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		kafkaClient,
 		fcmClient,
 	)
+	recipeService := services.NewRecipeService(recipeRepository)
+	recipeGuideService := services.NewRecipeGuideService(recipeGuideRepository)
+	recipeItemService := services.NewRecipeItemService(recipeItemRepository, productRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
@@ -233,6 +242,9 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		PaymentChannelService:     paymentChannelService,
 		BannerService:             bannerService,
 		NotificationService:       notificationService,
+		RecipeService:             recipeService,
+		RecipeGuideService:        recipeGuideService,
+		RecipeItemService:         recipeItemService,
 	}, nil
 }
 

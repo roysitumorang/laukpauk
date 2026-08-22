@@ -616,7 +616,7 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 		}
 		request.ID = productVariant.ID
 		request.DeletedStockUnit = nil
-		request.CreatedBy = productVariant.ID
+		request.CreatedBy = productVariant.CreatedBy
 		request.CreatedAt = productVariant.CreatedAt
 		request.DeletedBy = nil
 		request.DeletedAt = nil

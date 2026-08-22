@@ -2713,8 +2713,10 @@ func init() {
 			ctx,
 			`CREATE TABLE recipes (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
+				, name character varying
+				, deleted_name character varying
 				, photo character varying NOT NULL
-				, name character varying NOT NULL
 				, description character varying NOT NULL
 				, instagram_link character varying NOT NULL
 				, facebook_link character varying NOT NULL
@@ -2722,10 +2724,31 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipes (record_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE UNIQUE INDEX ON recipes (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipes (LOWER(deleted_name));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -2746,25 +2769,26 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipes (deactivated_by);`,
+			`CREATE INDEX ON recipes (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// recipe_instructions
+		// recipe_guides
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE TABLE recipe_instructions (
+			`CREATE TABLE recipe_guides (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, action character varying NOT NULL
+				, instruction character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -2772,28 +2796,35 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_instructions (recipe_id);`,
+			`CREATE INDEX ON recipe_guides (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_instructions (created_by);`,
+			`CREATE INDEX ON recipe_guides (recipe_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_instructions (updated_by);`,
+			`CREATE INDEX ON recipe_guides (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_instructions (deactivated_by);`,
+			`CREATE INDEX ON recipe_guides (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipe_guides (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -2803,19 +2834,28 @@ func init() {
 			ctx,
 			`CREATE TABLE recipe_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, record_status integer NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_id UUID REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_product_id UUID REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, dose character varying NOT NULL
 				, note character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
+				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_at timestamp with time zone
+				, deletion_reason character varying
 				, UNIQUE (recipe_id, product_id)
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipe_items (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -2836,21 +2876,28 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_instructions (created_by);`,
+			`CREATE INDEX ON recipe_items (deleted_product_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_instructions (updated_by);`,
+			`CREATE INDEX ON recipe_items (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_instructions (deactivated_by);`,
+			`CREATE INDEX ON recipe_items (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipe_items (deleted_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
