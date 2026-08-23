@@ -51,8 +51,7 @@ type Product struct {
 	ProductCategoryName string            `json:"category_name" form:"-"`
 	ProductType         ProductType       `json:"product_type" form:"product_type"`
 	ProductTypeName     string            `json:"product_type_name" form:"-"`
-	Name                *string           `json:"name" form:"name"`
-	DeletedName         *string           `json:"-" form:"-"`
+	Name                string            `json:"name" form:"name"`
 	Photo               string            `json:"photo" form:"photo"`
 	Description         string            `json:"description" form:"description"`
 	ReadyStock          bool              `json:"ready_stock" form:"ready_stock"`
@@ -73,12 +72,7 @@ func (q *Product) Validate() error {
 	if q.ProductCategoryID.Compare(uuid.Nil()) == 0 {
 		return errors.New("product_category_id: is required")
 	}
-	if q.Name != nil {
-		if *q.Name = strings.TrimSpace(*q.Name); *q.Name == "" {
-			q.Name = nil
-		}
-	}
-	if q.Name == nil {
+	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
 	if _, ok := MapProductTypes[q.ProductType]; !ok {
@@ -168,13 +162,8 @@ func (q *ProductFilter) WithProductTypes(productTypes ...ProductType) *ProductFi
 	return q
 }
 
-func (q *ProductFilter) WithNames(names ...*string) *ProductFilter {
-	q.Names = []string{}
-	for _, name := range names {
-		if name != nil {
-			q.Names = append(q.Names, *name)
-		}
-	}
+func (q *ProductFilter) WithNames(names ...string) *ProductFilter {
+	q.Names = names
 	return q
 }
 

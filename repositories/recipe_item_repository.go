@@ -87,7 +87,6 @@ func (q *recipeItemRepository) FindRecipeItems(
 		, record_status
 		, recipe_id
 		, product_id
-		, deleted_product_id
 		, product_name
 		, product_photo
 		, dose
@@ -152,7 +151,6 @@ func (q *recipeItemRepository) FindRecipeItems(
 			&recipeItem.RecordStatus,
 			&recipeItem.RecipeID,
 			&recipeItem.ProductID,
-			&recipeItem.DeletedProductID,
 			&recipeItem.ProductName,
 			&recipeItem.ProductPhoto,
 			&recipeItem.Dose,
@@ -195,7 +193,6 @@ func (q *recipeItemRepository) FindRecipeItem(
 			, record_status
 			, recipe_id
 			, product_id
-			, deleted_product_id
 			, product_name
 			, product_photo
 			, dose
@@ -216,7 +213,6 @@ func (q *recipeItemRepository) FindRecipeItem(
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
-		&response.DeletedProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
 		&response.Dose,
@@ -265,7 +261,6 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			, record_status
 			, recipe_id
 			, product_id
-			, deleted_product_id
 			, product_name
 			, product_photo
 			, dose
@@ -293,7 +288,6 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
-		&response.DeletedProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
 		&response.Dose,
@@ -326,7 +320,6 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, record_status
 			, recipe_id
 			, product_id
-			, deleted_product_id
 			, product_name
 			, product_photo
 			, dose
@@ -347,7 +340,6 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
-		&response.DeletedProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
 		&response.Dose,
@@ -383,25 +375,12 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		}
 		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
 	}
-	if (response.ProductID == nil && request.ProductID != nil) ||
-		(response.ProductID != nil && request.ProductID == nil) ||
-		(response.ProductID != nil && request.ProductID != nil &&
-			response.ProductID.Compare(*request.ProductID) != 0) {
+	if response.ProductID.Compare(request.ProductID) != 0 {
 		params = append(params, request.ProductID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " product_id = $%d", n)
-	}
-	if (response.DeletedProductID == nil && request.DeletedProductID != nil) ||
-		(response.DeletedProductID != nil && request.DeletedProductID == nil) ||
-		(response.DeletedProductID != nil && request.DeletedProductID != nil &&
-			response.DeletedProductID.Compare(*request.DeletedProductID) != 0) {
-		params = append(params, request.DeletedProductID)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " deleted_product_id = $%d", n)
 	}
 	if response.ProductName != request.ProductName {
 		params = append(params, request.ProductName)
@@ -486,7 +465,6 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, record_status
 			, recipe_id
 			, product_id
-			, deleted_product_id
 			, product_name
 			, product_photo
 			, dose
@@ -505,7 +483,6 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
-		&response.DeletedProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
 		&response.Dose,
@@ -561,7 +538,7 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 		}
 		placeholder := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(product_id IN (%s) OR deleted_product_id IN (%s))", placeholder, placeholder)
+		_, _ = fmt.Fprintf(sb, "product_id IN (%s)", placeholder)
 		conds = append(conds, sb.String())
 	}
 	if len(request.RecipeItemIDs) > 0 {

@@ -219,8 +219,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 		request.ID = product.ID
-		request.Name = product.DeletedName
-		request.DeletedName = nil
+		request.Name = product.Name
 		request.CreatedBy = product.CreatedBy
 		request.CreatedAt = product.CreatedAt
 		request.DeletedBy = nil
@@ -288,9 +287,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
 		productVariant.ProductCategoryName = response.ProductCategoryName
-		if response.Name != nil {
-			productVariant.ProductName = *response.Name
-		}
+		productVariant.ProductName = response.Name
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
@@ -303,9 +300,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	for _, recipeItem := range recipeItems {
-		if response.Name != nil {
-			recipeItem.ProductName = *response.Name
-		}
+		recipeItem.ProductName = response.Name
 		recipeItem.ProductPhoto = response.Photo
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
@@ -364,17 +359,13 @@ func (q *productController) AdminShow(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
 	var productVariants []*models.ProductVariant
-	var productName string
-	if product.Name != nil {
-		productName = *product.Name
-	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
-		"pageTitle", helper.Sprintf("Detail Produk|%s", productName),
+		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 		"product", product,
 		"productVariants", productVariants,
 		"discountTypePercentage", models.DiscountTypePercentage,
@@ -535,9 +526,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
 		productVariant.ProductCategoryName = response.ProductCategoryName
-		if response.Name != nil {
-			productVariant.ProductName = *response.Name
-		}
+		productVariant.ProductName = response.Name
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
@@ -548,9 +537,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	for _, recipeItem := range recipeItems {
-		if response.Name != nil {
-			recipeItem.ProductName = *response.Name
-		}
+		recipeItem.ProductName = response.Name
 		recipeItem.ProductPhoto = response.Photo
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
@@ -600,10 +587,6 @@ func (q *productController) AdminDelete(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
 	request.RecordStatus = models.RecordStatusDeleted
-	if request.Name != nil {
-		request.DeletedName = new(*request.Name)
-	}
-	request.Name = nil
 	request.DeletedBy = &currentAdmin.ID
 	request.DeletedAt = new(time.Now())
 	request.DeletionReason = nil
@@ -690,9 +673,7 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 	request.ProductCategoryID = product.ProductCategoryID
 	request.ProductCategoryName = product.ProductCategoryName
 	request.ProductID = product.ID
-	if product.Name != nil {
-		request.ProductName = *product.Name
-	}
+	request.ProductName = product.Name
 	request.ProductReadyStock = product.ReadyStock
 	request.CreatedBy = currentAdmin.ID
 	request.CreatedAt = now
@@ -705,7 +686,7 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 		request.ID = productVariant.ID
-		request.DeletedStockUnit = nil
+		request.StockUnit = productVariant.StockUnit
 		request.CreatedBy = productVariant.CreatedBy
 		request.CreatedAt = productVariant.CreatedAt
 		request.DeletedBy = nil
@@ -820,9 +801,7 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 	request.ProductCategoryID = product.ProductCategoryID
 	request.ProductCategoryName = product.ProductCategoryName
 	request.ProductID = product.ID
-	if product.Name != nil {
-		request.ProductName = *product.Name
-	}
+	request.ProductName = product.Name
 	request.ProductReadyStock = productVariant.ProductReadyStock
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
@@ -884,10 +863,6 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
 	}
-	if productVariant.StockUnit != nil {
-		productVariant.DeletedStockUnit = new(*productVariant.StockUnit)
-	}
-	productVariant.StockUnit = nil
 	productVariant.RecordStatus = models.RecordStatusDeleted
 	productVariant.DeletedBy = new(currentAdmin.ID)
 	productVariant.DeletedAt = new(time.Now())
@@ -993,9 +968,9 @@ func (q *productController) prepareProduct(
 		if product, err = q.prepareProductByID(ctx, c); err != nil {
 			return nil, nil, nil, err
 		}
-		if withParams && params.Size() > 0 && product != nil && product.Name != nil {
+		if withParams && params.Size() > 0 && product != nil {
 			params.Push(
-				"pageTitle", helper.Sprintf("Edit Data Produk|%s", *product.Name),
+				"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
 				"request", product,
 				"product", product,
 			)
@@ -1023,9 +998,7 @@ func (q *productController) prepareProduct(
 		}
 		mapProductCategoryNames = map[uuid.UUID]string{}
 		for _, productCategory := range productCategories {
-			if productCategory.Name != nil {
-				mapProductCategoryNames[productCategory.ID] = *productCategory.Name
-			}
+			mapProductCategoryNames[productCategory.ID] = productCategory.Name
 		}
 	}
 	return product, params, mapProductCategoryNames, nil
@@ -1050,14 +1023,14 @@ func (q *productController) prepareProductVariant(
 	}
 	productVariant := &models.ProductVariant{}
 	var params models.Map
-	if withParams && product.Name != nil {
+	if withParams {
 		params = models.NewMap().Push(
 			"baseURL", c.BaseURL(),
 			"flash", flash,
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentAdmin", currentAdmin,
-			"pageTitle", helper.Sprintf("Detail Produk|%s", *product.Name),
+			"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 			"product", product,
 			"productVariant", productVariant,
 			"request", productVariant,

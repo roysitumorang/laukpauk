@@ -88,7 +88,6 @@ func (q *productCategoryRepository) FindProductCategories(
 		`id
 		, record_status
 		, name
-		, deleted_name
 		, description
 		, photo
 		, created_by
@@ -150,7 +149,6 @@ func (q *productCategoryRepository) FindProductCategories(
 			&productCategory.ID,
 			&productCategory.RecordStatus,
 			&productCategory.Name,
-			&productCategory.DeletedName,
 			&productCategory.Description,
 			&productCategory.Photo,
 			&productCategory.CreatedBy,
@@ -190,7 +188,6 @@ func (q *productCategoryRepository) FindProductCategory(
 			id
 			, record_status
 			, name
-			, deleted_name
 			, description
 			, photo
 			, created_by
@@ -209,7 +206,6 @@ func (q *productCategoryRepository) FindProductCategory(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
-		&response.DeletedName,
 		&response.Description,
 		&response.Photo,
 		&response.CreatedBy,
@@ -252,7 +248,6 @@ func (q *productCategoryRepository) CreateProductCategory(
 		RETURNING id
 			, record_status
 			, name
-			, deleted_name
 			, description
 			, photo
 			, created_by
@@ -274,7 +269,6 @@ func (q *productCategoryRepository) CreateProductCategory(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
-		&response.DeletedName,
 		&response.Description,
 		&response.Photo,
 		&response.CreatedBy,
@@ -310,7 +304,6 @@ func (q *productCategoryRepository) UpdateProductCategory(
 			id
 			, record_status
 			, name
-			, deleted_name
 			, description
 			, photo
 			, created_by
@@ -328,7 +321,6 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
-		&response.DeletedName,
 		&response.Description,
 		&response.Photo,
 		&response.CreatedBy,
@@ -362,25 +354,12 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		}
 		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
 	}
-	if (response.Name != nil && request.Name == nil) ||
-		(response.Name == nil && request.Name != nil) ||
-		(response.Name != nil && request.Name != nil &&
-			*response.Name != *request.Name) {
+	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " name = $%d", n)
-	}
-	if (response.DeletedName != nil && request.DeletedName == nil) ||
-		(response.DeletedName == nil && request.DeletedName != nil) ||
-		(response.DeletedName != nil && request.DeletedName != nil &&
-			*response.DeletedName != *request.DeletedName) {
-		params = append(params, request.DeletedName)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " deleted_name = $%d", n)
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
@@ -450,7 +429,6 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		RETURNING id
 			, record_status
 			, name
-			, deleted_name
 			, description
 			, photo
 			, created_by
@@ -466,7 +444,6 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
-		&response.DeletedName,
 		&response.Description,
 		&response.Photo,
 		&response.CreatedBy,
@@ -552,7 +529,7 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(LOWER(name) IN (%s) OR LOWER(deleted_name) IN (%s))", placeholders, placeholders)
+		_, _ = fmt.Fprintf(sb, "LOWER(name) IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {

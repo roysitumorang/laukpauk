@@ -228,8 +228,7 @@ func init() {
 			`CREATE TABLE product_categories (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
-				, name character varying COLLATE "natural_sort"
-				, deleted_name character varying COLLATE "natural_sort"
+				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -253,14 +252,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX product_categories_unique_name_idx ON product_categories (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON product_categories (LOWER(deleted_name));`,
+			`CREATE UNIQUE INDEX product_categories_unique_name_idx ON product_categories (LOWER(name)) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -295,8 +287,7 @@ func init() {
 				, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
 				, product_type integer NOT NULL
-				, name character varying COLLATE "natural_sort"
-				, deleted_name character varying COLLATE "natural_sort"
+				, name character varying NOT NULL COLLATE "natural_sort"
 				, photo character varying NOT NULL
 				, description character varying NOT NULL
 				, ready_stock BOOLEAN NOT NULL
@@ -338,14 +329,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX product_categories_unique_idx ON products (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON products (LOWER(deleted_name));`,
+			`CREATE UNIQUE INDEX product_categories_unique_idx ON products (LOWER(name)) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -403,8 +387,7 @@ func init() {
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_name character varying NOT NULL COLLATE "natural_sort"
 				, product_ready_stock bool NOT NULL
-				, stock_unit character varying COLLATE "natural_sort"
-				, deleted_stock_unit character varying COLLATE "natural_sort"
+				, stock_unit character varying NOT NULL COLLATE "natural_sort"
 				, base_price bigint NOT NULL
 				, selling_price bigint NOT NULL
 				, discount_type integer NOT NULL
@@ -420,7 +403,6 @@ func init() {
 				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
-				, UNIQUE (product_id, stock_unit)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -449,7 +431,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON product_variants (LOWER(deleted_stock_unit));`,
+			`CREATE UNIQUE INDEX ON product_variants (product_id, LOWER(stock_unit)) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -2836,8 +2818,7 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, product_id UUID REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, deleted_product_id UUID REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_name character varying NOT NULL
 				, product_photo character varying NOT NULL
 				, dose character varying NOT NULL
@@ -2849,7 +2830,6 @@ func init() {
 				, deleted_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
-				, UNIQUE (recipe_id, product_id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -2878,7 +2858,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipe_items (deleted_product_id);`,
+			`CREATE UNIQUE INDEX ON recipe_items (recipe_id, product_id) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

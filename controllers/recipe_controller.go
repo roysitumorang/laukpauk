@@ -718,28 +718,24 @@ func (q *recipeController) AdminCreateItem(c fiber.Ctx) (err error) {
 		mapProducts[product.ID] = product
 	}
 	var recipeItem *models.RecipeItem
-	if request.ProductID != nil {
-		product, ok := mapProducts[*request.ProductID]
-		if !ok {
-			return c.Render("admin/recipe_item_new", params.Push(
-				"flash", flash.Danger("product_id: not found"),
-			), "admin/layouts/authenticated")
-		}
-		if product.Name != nil {
-			request.ProductName = *product.Name
-		}
-		request.ProductPhoto = product.Photo
-		if recipeItem, err = q.recipeItemService.FindRecipeItem(
-			ctx,
-			models.NewRecipeItemFilter().
-				WithRecipeIDs(recipe.ID).
-				WithProductIDs(*request.ProductID),
-		); err != nil && !errors.Is(err, models.ErrRecipeItemNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItem")
-			return c.Render("admin/recipe_item_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
-		}
+	product, ok := mapProducts[request.ProductID]
+	if !ok {
+		return c.Render("admin/recipe_item_new", params.Push(
+			"flash", flash.Danger("product_id: not found"),
+		), "admin/layouts/authenticated")
+	}
+	request.ProductName = product.Name
+	request.ProductPhoto = product.Photo
+	if recipeItem, err = q.recipeItemService.FindRecipeItem(
+		ctx,
+		models.NewRecipeItemFilter().
+			WithRecipeIDs(recipe.ID).
+			WithProductIDs(request.ProductID),
+	); err != nil && !errors.Is(err, models.ErrRecipeItemNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItem")
+		return c.Render("admin/recipe_item_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
@@ -755,7 +751,6 @@ func (q *recipeController) AdminCreateItem(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 		request.ID = recipeItem.ID
-		request.DeletedProductID = nil
 		request.CreatedBy = recipeItem.CreatedBy
 		request.CreatedAt = recipeItem.CreatedAt
 		request.DeletedBy = nil
@@ -840,15 +835,12 @@ func (q *recipeController) AdminUpdateItem(c fiber.Ctx) (err error) {
 	for _, product := range products {
 		mapProducts[product.ID] = product
 	}
-	if recipeItem.ProductID != nil {
-		if product, ok := mapProducts[*recipeItem.ProductID]; ok {
-			if product.Name != nil {
-				request.ProductName = *product.Name
-			}
-			request.ProductPhoto = product.Photo
-		}
+	if product, ok := mapProducts[recipeItem.ProductID]; ok {
+		request.ProductName = product.Name
+		request.ProductPhoto = product.Photo
 	}
 	request.ID = recipeItem.ID
+	request.ProductID = recipeItem.ProductID
 	request.RecordStatus = recipeItem.RecordStatus
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
@@ -902,10 +894,6 @@ func (q *recipeController) AdminDeleteItem(c fiber.Ctx) (err error) {
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/recipes")
 	}
 	recipeItem.RecordStatus = models.RecordStatusDeleted
-	if recipeItem.ProductID != nil {
-		recipeItem.DeletedProductID = new(*recipeItem.ProductID)
-	}
-	recipeItem.ProductID = nil
 	recipeItem.DeletedBy = new(currentAdmin.ID)
 	recipeItem.DeletedAt = new(time.Now())
 	recipeItem.DeletionReason = nil
@@ -1205,9 +1193,7 @@ func (q *recipeController) prepareRecipeItem(
 			return nil, nil, nil, nil, err
 		}
 		for _, recipeItem := range recipeItems {
-			if recipeItem.ProductID != nil {
-				productIDs = append(productIDs, *recipeItem.ProductID)
-			}
+			productIDs = append(productIDs, recipeItem.ProductID)
 		}
 		params.Push(
 			"recipeGuides", recipeGuides,
@@ -1236,8 +1222,7 @@ func (q *recipeController) prepareRecipeItem(
 		copy(oldProductIDs, productIDs)
 		productIDs = productIDs[:0]
 		for _, oldProductID := range oldProductIDs {
-			if recipeItem.ProductID != nil &&
-				recipeItem.ProductID.Compare(oldProductID) != 0 {
+			if recipeItem.ProductID.Compare(oldProductID) != 0 {
 				productIDs = append(productIDs, oldProductID)
 			}
 		}

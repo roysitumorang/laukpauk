@@ -24,8 +24,7 @@ type ProductCategory struct {
 	RowNo          int64        `json:"-" form:"-"`
 	ID             uuid.UUID    `json:"id" form:"id"`
 	RecordStatus   RecordStatus `json:"-" form:"-"`
-	Name           *string      `json:"name" form:"name"`
-	DeletedName    *string      `json:"-" form:"-"`
+	Name           string       `json:"name" form:"name"`
 	Description    string       `json:"description" form:"description"`
 	Photo          string       `json:"photo" form:"photo"`
 	CreatedBy      uuid.UUID    `json:"-" form:"-"`
@@ -38,12 +37,7 @@ type ProductCategory struct {
 }
 
 func (q *ProductCategory) Validate() error {
-	if q.Name != nil {
-		if *q.Name = strings.TrimSpace(*q.Name); *q.Name == "" {
-			q.Name = nil
-		}
-	}
-	if q.Name == nil {
+	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
 	return nil
@@ -98,13 +92,8 @@ func (q *ProductCategoryFilter) WithRecordStatuses(recordStatuses ...RecordStatu
 	return q
 }
 
-func (q *ProductCategoryFilter) WithNames(names ...*string) *ProductCategoryFilter {
-	q.Names = []string{}
-	for _, name := range names {
-		if name != nil {
-			q.Names = append(q.Names, *name)
-		}
-	}
+func (q *ProductCategoryFilter) WithNames(names ...string) *ProductCategoryFilter {
+	q.Names = names
 	return q
 }
 

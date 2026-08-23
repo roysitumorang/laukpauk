@@ -23,8 +23,7 @@ type ProductVariant struct {
 	ProductID               uuid.UUID    `json:"-" form:"-"`
 	ProductName             string       `json:"-" form:"-"`
 	ProductReadyStock       bool         `json:"-" form:"-"`
-	StockUnit               *string      `json:"stock_unit" form:"stock_unit"`
-	DeletedStockUnit        *string      `json:"-" form:"-"`
+	StockUnit               string       `json:"stock_unit" form:"stock_unit"`
 	BasePrice               int64        `json:"-" form:"base_price"`
 	SellingPrice            int64        `json:"selling_price" form:"selling_price"`
 	DiscountType            DiscountType `json:"discount_type" form:"discount_type"`
@@ -44,12 +43,7 @@ type ProductVariant struct {
 }
 
 func (q *ProductVariant) Validate() error {
-	if q.StockUnit != nil {
-		if *q.StockUnit = strings.TrimSpace(*q.StockUnit); *q.StockUnit == "" {
-			q.StockUnit = nil
-		}
-	}
-	if q.StockUnit == nil {
+	if q.StockUnit = strings.TrimSpace(q.StockUnit); q.StockUnit == "" {
 		return errors.New("stock_unit: is required")
 	}
 	if q.BasePrice < 1 {
@@ -157,13 +151,8 @@ func (q *ProductVariantFilter) WithRecordStatuses(recordStatuses ...RecordStatus
 	return q
 }
 
-func (q *ProductVariantFilter) WithStockUnits(stockUnits ...*string) *ProductVariantFilter {
-	q.StockUnits = []string{}
-	for _, stockUnit := range stockUnits {
-		if stockUnit != nil {
-			q.StockUnits = append(q.StockUnits, *stockUnit)
-		}
-	}
+func (q *ProductVariantFilter) WithStockUnits(stockUnits ...string) *ProductVariantFilter {
+	q.StockUnits = stockUnits
 	return q
 }
 

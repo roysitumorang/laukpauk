@@ -178,8 +178,7 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 		request.ID = productCategory.ID
-		request.Name = productCategory.DeletedName
-		request.DeletedName = nil
+		request.Name = productCategory.Name
 		request.CreatedBy = productCategory.CreatedBy
 		request.CreatedAt = productCategory.CreatedAt
 		request.DeletedBy = nil
@@ -378,9 +377,7 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	for _, product := range products {
-		if response.Name != nil {
-			product.ProductCategoryName = *response.Name
-		}
+		product.ProductCategoryName = response.Name
 		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
 			return c.Render("admin/product_category_edit", params.Push(
@@ -390,9 +387,7 @@ func (q *productCategoryController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	for _, productVariant := range productVariants {
-		if response.Name != nil {
-			productVariant.ProductCategoryName = *response.Name
-		}
+		productVariant.ProductCategoryName = response.Name
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
 			return c.Render("admin/product_category_edit", params.Push(
@@ -445,10 +440,6 @@ func (q *productCategoryController) AdminDelete(c fiber.Ctx) (err error) {
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/product_categories")
 	}
 	productCategory.RecordStatus = models.RecordStatusDeleted
-	if productCategory.Name != nil {
-		productCategory.DeletedName = new(*productCategory.Name)
-	}
-	productCategory.Name = nil
 	productCategory.DeletedBy = &currentAdmin.ID
 	productCategory.DeletedAt = new(time.Now())
 	productCategory.DeletionReason = nil
@@ -537,9 +528,9 @@ func (q *productCategoryController) prepareProductCategory(
 		if productCategory == nil {
 			return nil, nil, models.ErrProductCategoryNotFound
 		}
-		if withParams && params.Size() > 0 && productCategory.Name != nil {
+		if withParams && params.Size() > 0 {
 			params.Push(
-				"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", *productCategory.Name),
+				"pageTitle", helper.Sprintf("Edit Data Kategori Produk|%s", productCategory.Name),
 				"request", productCategory,
 				"productCategory", productCategory,
 			)

@@ -95,7 +95,6 @@ func (q *productRepository) FindProducts(
 		, product_category_name
 		, product_type
 		, name
-		, deleted_name
 		, photo
 		, description
 		, ready_stock
@@ -164,7 +163,6 @@ func (q *productRepository) FindProducts(
 			&product.ProductCategoryName,
 			&product.ProductType,
 			&product.Name,
-			&product.DeletedName,
 			&product.Photo,
 			&product.Description,
 			&product.ReadyStock,
@@ -236,7 +234,6 @@ func (q *productRepository) InfiniteScrollProducts(
 		, product_category_name
 		, product_type
 		, name
-		, deleted_name
 		, photo
 		, description
 		, ready_stock
@@ -281,7 +278,6 @@ func (q *productRepository) InfiniteScrollProducts(
 			&product.ProductCategoryName,
 			&product.ProductType,
 			&product.Name,
-			&product.DeletedName,
 			&product.Photo,
 			&product.Description,
 			&product.ReadyStock,
@@ -330,7 +326,6 @@ func (q *productRepository) FindProduct(
 			, product_category_name
 			, product_type
 			, name
-			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -355,7 +350,6 @@ func (q *productRepository) FindProduct(
 		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
-		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -412,7 +406,6 @@ func (q *productRepository) CreateProduct(
 			, product_category_name
 			, product_type
 			, name
-			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -448,7 +441,6 @@ func (q *productRepository) CreateProduct(
 		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
-		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -491,7 +483,6 @@ func (q *productRepository) UpdateProduct(
 			, product_category_name
 			, product_type
 			, name
-			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -516,7 +507,6 @@ func (q *productRepository) UpdateProduct(
 		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
-		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -581,16 +571,6 @@ func (q *productRepository) UpdateProduct(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " name = $%d", n)
-	}
-	if (response.DeletedName == nil && request.DeletedName != nil) ||
-		(response.DeletedName != nil && request.DeletedName == nil) ||
-		(response.DeletedName != nil && request.DeletedName != nil &&
-			*response.DeletedName != *request.DeletedName) {
-		params = append(params, request.DeletedName)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " deleted_name = $%d", n)
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
@@ -691,7 +671,6 @@ func (q *productRepository) UpdateProduct(
 			, product_category_name
 			, product_type
 			, name
-			, deleted_name
 			, photo
 			, description
 			, ready_stock
@@ -714,7 +693,6 @@ func (q *productRepository) UpdateProduct(
 		&response.ProductCategoryName,
 		&response.ProductType,
 		&response.Name,
-		&response.DeletedName,
 		&response.Photo,
 		&response.Description,
 		&response.ReadyStock,
@@ -830,7 +808,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(LOWER(name) IN (%s) OR LOWER(deleted_name) IN (%s))", placeholders, placeholders)
+		_, _ = fmt.Fprintf(sb, "LOWER(name) IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if request.ReadyStock != nil {

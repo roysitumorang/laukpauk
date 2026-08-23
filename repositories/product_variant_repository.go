@@ -88,7 +88,6 @@ func (q *productVariantRepository) FindProductVariants(
 		, product_name
 		, product_ready_stock
 		, stock_unit
-		, deleted_stock_unit
 		, base_price
 		, selling_price
 		, discount_type
@@ -161,7 +160,6 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ProductName,
 			&productVariant.ProductReadyStock,
 			&productVariant.StockUnit,
-			&productVariant.DeletedStockUnit,
 			&productVariant.BasePrice,
 			&productVariant.SellingPrice,
 			&productVariant.DiscountType,
@@ -212,7 +210,6 @@ func (q *productVariantRepository) FindProductVariant(
 			, product_name
 			, product_ready_stock
 			, stock_unit
-			, deleted_stock_unit
 			, base_price
 			, selling_price
 			, discount_type
@@ -241,7 +238,6 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.ProductName,
 		&response.ProductReadyStock,
 		&response.StockUnit,
-		&response.DeletedStockUnit,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,
@@ -306,7 +302,6 @@ func (q *productVariantRepository) CreateProductVariant(
 			, product_name
 			, product_ready_stock
 			, stock_unit
-			, deleted_stock_unit
 			, base_price
 			, selling_price
 			, discount_type
@@ -350,7 +345,6 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ProductName,
 		&response.ProductReadyStock,
 		&response.StockUnit,
-		&response.DeletedStockUnit,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,
@@ -397,7 +391,6 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, product_name
 			, product_ready_stock
 			, stock_unit
-			, deleted_stock_unit
 			, base_price
 			, selling_price
 			, discount_type
@@ -426,7 +419,6 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductName,
 		&response.ProductReadyStock,
 		&response.StockUnit,
-		&response.DeletedStockUnit,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,
@@ -501,25 +493,12 @@ func (q *productVariantRepository) UpdateProductVariant(
 		}
 		_, _ = fmt.Fprintf(sb, " product_ready_stock = $%d", n)
 	}
-	if (response.StockUnit != nil && request.StockUnit == nil) ||
-		(response.StockUnit == nil && request.StockUnit != nil) ||
-		(response.StockUnit != nil && request.StockUnit != nil &&
-			*response.StockUnit != *request.StockUnit) {
+	if response.StockUnit != request.StockUnit {
 		params = append(params, request.StockUnit)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " stock_unit = $%d", n)
-	}
-	if (response.DeletedStockUnit != nil && request.DeletedStockUnit == nil) ||
-		(response.DeletedStockUnit == nil && request.DeletedStockUnit != nil) ||
-		(response.DeletedStockUnit != nil && request.DeletedStockUnit != nil &&
-			*response.DeletedStockUnit != *request.DeletedStockUnit) {
-		params = append(params, request.DeletedStockUnit)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " deleted_stock_unit = $%d", n)
 	}
 	if response.BasePrice != request.BasePrice {
 		params = append(params, request.BasePrice)
@@ -636,7 +615,6 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, product_name
 			, product_ready_stock
 			, stock_unit
-			, deleted_stock_unit
 			, base_price
 			, selling_price
 			, discount_type
@@ -663,7 +641,6 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductName,
 		&response.ProductReadyStock,
 		&response.StockUnit,
-		&response.DeletedStockUnit,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,
@@ -770,7 +747,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(LOWER(stock_unit) IN (%s) OR LOWER(deleted_stock_unit) IN (%s))", placeholders, placeholders)
+		_, _ = fmt.Fprintf(sb, "LOWER(stock_unit) IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

@@ -17,27 +17,26 @@ var MapRecipeItemSortings = map[string]struct{}{
 }
 
 type RecipeItem struct {
-	RowNo            int64        `json:"-" form:"-"`
-	ID               uuid.UUID    `json:"-" form:"id"`
-	RecordStatus     RecordStatus `json:"-" form:"-"`
-	RecipeID         uuid.UUID    `json:"-" form:"-"`
-	ProductID        *uuid.UUID   `json:"-" form:"product_id"`
-	DeletedProductID *uuid.UUID   `json:"-" form:"-"`
-	ProductName      string       `json:"-" form:"-"`
-	ProductPhoto     string       `json:"-" form:"-"`
-	Dose             string       `json:"-" form:"dose"`
-	Note             string       `json:"-" form:"note"`
-	CreatedBy        uuid.UUID    `json:"-" form:"-"`
-	CreatedAt        time.Time    `json:"-" form:"-"`
-	UpdatedBy        uuid.UUID    `json:"-" form:"-"`
-	UpdatedAt        time.Time    `json:"-" form:"-"`
-	DeletedBy        *uuid.UUID   `json:"-" form:"-"`
-	DeletedAt        *time.Time   `json:"-" form:"-"`
-	DeletionReason   *string      `json:"-" form:"-"`
+	RowNo          int64        `json:"-" form:"-"`
+	ID             uuid.UUID    `json:"-" form:"id"`
+	RecordStatus   RecordStatus `json:"-" form:"-"`
+	RecipeID       uuid.UUID    `json:"-" form:"-"`
+	ProductID      uuid.UUID    `json:"-" form:"product_id"`
+	ProductName    string       `json:"-" form:"-"`
+	ProductPhoto   string       `json:"-" form:"-"`
+	Dose           string       `json:"-" form:"dose"`
+	Note           string       `json:"-" form:"note"`
+	CreatedBy      uuid.UUID    `json:"-" form:"-"`
+	CreatedAt      time.Time    `json:"-" form:"-"`
+	UpdatedBy      uuid.UUID    `json:"-" form:"-"`
+	UpdatedAt      time.Time    `json:"-" form:"-"`
+	DeletedBy      *uuid.UUID   `json:"-" form:"-"`
+	DeletedAt      *time.Time   `json:"-" form:"-"`
+	DeletionReason *string      `json:"-" form:"-"`
 }
 
 func (q *RecipeItem) Validate() error {
-	if q.ProductID == nil || q.ProductID.Compare(uuid.Nil()) == 0 {
+	if q.ProductID.Compare(uuid.Nil()) == 0 {
 		return errors.New("product_id: is required")
 	}
 	if q.Dose = strings.TrimSpace(q.Dose); q.Dose == "" {
