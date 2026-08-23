@@ -17,22 +17,23 @@ var MapRecipeItemSortings = map[string]struct{}{
 }
 
 type RecipeItem struct {
-	RowNo          int64        `json:"-" form:"-"`
-	ID             uuid.UUID    `json:"-" form:"id"`
-	RecordStatus   RecordStatus `json:"-" form:"-"`
-	RecipeID       uuid.UUID    `json:"-" form:"-"`
-	ProductID      uuid.UUID    `json:"-" form:"product_id"`
-	ProductName    string       `json:"-" form:"-"`
-	ProductPhoto   string       `json:"-" form:"-"`
-	Dose           string       `json:"-" form:"dose"`
-	Note           string       `json:"-" form:"note"`
-	CreatedBy      uuid.UUID    `json:"-" form:"-"`
-	CreatedAt      time.Time    `json:"-" form:"-"`
-	UpdatedBy      uuid.UUID    `json:"-" form:"-"`
-	UpdatedAt      time.Time    `json:"-" form:"-"`
-	DeletedBy      *uuid.UUID   `json:"-" form:"-"`
-	DeletedAt      *time.Time   `json:"-" form:"-"`
-	DeletionReason *string      `json:"-" form:"-"`
+	RowNo             int64        `json:"-" form:"-"`
+	ID                uuid.UUID    `json:"-" form:"id"`
+	RecordStatus      RecordStatus `json:"-" form:"-"`
+	RecipeID          uuid.UUID    `json:"-" form:"-"`
+	ProductID         uuid.UUID    `json:"-" form:"product_id"`
+	ProductName       string       `json:"-" form:"-"`
+	ProductPhoto      string       `json:"-" form:"-"`
+	ProductReadyStock bool         `json:"-" form:"-"`
+	Dose              string       `json:"-" form:"dose"`
+	Note              string       `json:"-" form:"note"`
+	CreatedBy         uuid.UUID    `json:"-" form:"-"`
+	CreatedAt         time.Time    `json:"-" form:"-"`
+	UpdatedBy         uuid.UUID    `json:"-" form:"-"`
+	UpdatedAt         time.Time    `json:"-" form:"-"`
+	DeletedBy         *uuid.UUID   `json:"-" form:"-"`
+	DeletedAt         *time.Time   `json:"-" form:"-"`
+	DeletionReason    *string      `json:"-" form:"-"`
 }
 
 func (q *RecipeItem) Validate() error {
@@ -59,10 +60,11 @@ type RecipeItemFilter struct {
 	ProductIDs,
 	RecipeItemIDs,
 	ExcludedRecipeItemIDs []uuid.UUID
-	RecordStatuses []RecordStatus
-	PaginationURL  string
-	Sortings       []Sorting
-	MapSortings    Map
+	ProductReadyStock *bool
+	RecordStatuses    []RecordStatus
+	PaginationURL     string
+	Sortings          []Sorting
+	MapSortings       Map
 	Limit,
 	Page int64
 	UrlValues url.Values
@@ -92,6 +94,11 @@ func (q *RecipeItemFilter) WithRecipeItemIDs(recipeGuideIDs ...uuid.UUID) *Recip
 
 func (q *RecipeItemFilter) WithExcludedRecipeItemIDs(excludedRecipeItemIDs ...uuid.UUID) *RecipeItemFilter {
 	q.ExcludedRecipeItemIDs = excludedRecipeItemIDs
+	return q
+}
+
+func (q *RecipeItemFilter) WithProductReadyStock(productReadyStock *bool) *RecipeItemFilter {
+	q.ProductReadyStock = productReadyStock
 	return q
 }
 

@@ -302,6 +302,7 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	for _, recipeItem := range recipeItems {
 		recipeItem.ProductName = response.Name
 		recipeItem.ProductPhoto = response.Photo
+		recipeItem.ProductReadyStock = response.ReadyStock
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
@@ -539,6 +540,7 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	for _, recipeItem := range recipeItems {
 		recipeItem.ProductName = response.Name
 		recipeItem.ProductPhoto = response.Photo
+		recipeItem.ProductReadyStock = response.ReadyStock
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 			return c.Render("admin/product_edit", params.Push(

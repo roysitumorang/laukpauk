@@ -89,6 +89,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 		, product_id
 		, product_name
 		, product_photo
+		, product_ready_stock
 		, dose
 		, note
 		, created_by
@@ -153,6 +154,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 			&recipeItem.ProductID,
 			&recipeItem.ProductName,
 			&recipeItem.ProductPhoto,
+			&recipeItem.ProductReadyStock,
 			&recipeItem.Dose,
 			&recipeItem.Note,
 			&recipeItem.CreatedBy,
@@ -195,6 +197,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 			, product_id
 			, product_name
 			, product_photo
+			, product_ready_stock
 			, dose
 			, note
 			, created_by
@@ -215,6 +218,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 		&response.ProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
+		&response.ProductReadyStock,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,
@@ -250,19 +254,21 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			, product_id
 			, product_name
 			, product_photo
+			, product_ready_stock
 			, dose
 			, note
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id
 			, record_status
 			, recipe_id
 			, product_id
 			, product_name
 			, product_photo
+			, product_ready_stock
 			, dose
 			, note
 			, created_by
@@ -277,6 +283,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		request.ProductID,
 		request.ProductName,
 		request.ProductPhoto,
+		request.ProductReadyStock,
 		request.Dose,
 		request.Note,
 		request.CreatedBy,
@@ -290,6 +297,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		&response.ProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
+		&response.ProductReadyStock,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,
@@ -322,6 +330,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, product_id
 			, product_name
 			, product_photo
+			, product_ready_stock
 			, dose
 			, note
 			, created_by
@@ -342,6 +351,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.ProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
+		&response.ProductReadyStock,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,
@@ -395,6 +405,13 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " product_photo = $%d", n)
+	}
+	if response.ProductReadyStock != request.ProductReadyStock {
+		params = append(params, request.ProductReadyStock)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " product_ready_stock = $%d", n)
 	}
 	if response.Dose != request.Dose {
 		params = append(params, request.Dose)
@@ -467,6 +484,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, product_id
 			, product_name
 			, product_photo
+			, product_ready_stock
 			, dose
 			, note
 			, created_by
@@ -485,6 +503,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.ProductID,
 		&response.ProductName,
 		&response.ProductPhoto,
+		&response.ProductReadyStock,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,
@@ -566,6 +585,13 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
+	}
+	if request.ProductReadyStock != nil {
+		if *request.ProductReadyStock {
+			conds = append(conds, "product_ready_stock")
+		} else {
+			conds = append(conds, "NOT product_ready_stock")
+		}
 	}
 	if len(request.RecordStatuses) > 0 {
 		sb.Reset()

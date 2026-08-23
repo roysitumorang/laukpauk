@@ -2821,6 +2821,7 @@ func init() {
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_name character varying NOT NULL
 				, product_photo character varying NOT NULL
+				, product_ready_stock BOOLEAN NOT NULL
 				, dose character varying NOT NULL
 				, note character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -2859,6 +2860,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE UNIQUE INDEX ON recipe_items (recipe_id, product_id) WHERE record_status = 0;`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipe_items (product_ready_stock);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
