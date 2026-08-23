@@ -168,6 +168,8 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 	request.CreatedAt = now
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = now
+	var products []*models.Product
+	var productVariants []*models.ProductVariant
 	if productCategory != nil {
 		if productCategory.RecordStatus == models.RecordStatusActive {
 			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
@@ -186,6 +188,34 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 		request.DeletionReason = nil
 		if photo == nil {
 			request.SetPhoto(productCategory.Photo)
+		}
+		if products, _, err = q.productService.FindProducts(
+			ctx,
+			models.NewProductFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductCategoryIDs(productCategory.ID),
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
+			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
+			return c.Render("admin/product_category_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"productCategory", request,
+			), "admin/layouts/authenticated")
+		}
+		if productVariants, _, err = q.productVariantService.FindProductVariants(
+			ctx,
+			models.NewProductVariantFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductCategoryIDs(productCategory.ID),
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
+			return c.Render("admin/product_category_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"productCategory", request,
+			), "admin/layouts/authenticated")
 		}
 	}
 	tx, err := repositories.BeginTx(ctx)
@@ -206,7 +236,8 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productCategoryService.SaveProductCategory(ctx, tx, request); err != nil {
+	response, err := q.productCategoryService.SaveProductCategory(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProductCategory")
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return c.Render("admin/product_category_new", params.Push(
@@ -214,6 +245,30 @@ func (q *productCategoryController) AdminCreate(c fiber.Ctx) (err error) {
 			"request", request,
 			"productCategory", request,
 		), "admin/layouts/authenticated")
+	}
+	for _, product := range products {
+		product.ProductCategoryName = response.Name
+		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
+			return c.Render("admin/product_category_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"productCategory", request,
+			), "admin/layouts/authenticated")
+		}
+	}
+	for _, productVariant := range productVariants {
+		productVariant.ProductCategoryName = response.Name
+		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
+			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
+			return c.Render("admin/product_category_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"productCategory", request,
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
