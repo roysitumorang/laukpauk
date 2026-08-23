@@ -23,8 +23,8 @@ type RecipeItem struct {
 	RecipeID         uuid.UUID    `json:"-" form:"-"`
 	ProductID        *uuid.UUID   `json:"-" form:"product_id"`
 	DeletedProductID *uuid.UUID   `json:"-" form:"-"`
-	ProductName      string       `json:"-" form:"product_name"`
-	ProductPhoto     string       `json:"-" form:"product_photo"`
+	ProductName      string       `json:"-" form:"-"`
+	ProductPhoto     string       `json:"-" form:"-"`
 	Dose             string       `json:"-" form:"dose"`
 	Note             string       `json:"-" form:"note"`
 	CreatedBy        uuid.UUID    `json:"-" form:"-"`

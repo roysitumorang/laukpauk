@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -40,16 +39,13 @@ type RecipeItemService interface {
 
 type recipeItemService struct {
 	recipeItemRepository repositories.RecipeItemRepository
-	productRepository    repositories.ProductRepository
 }
 
 func NewRecipeItemService(
 	recipeItemRepository repositories.RecipeItemRepository,
-	productRepository repositories.ProductRepository,
 ) RecipeItemService {
 	return &recipeItemService{
 		recipeItemRepository: recipeItemRepository,
-		productRepository:    productRepository,
 	}
 }
 
@@ -67,37 +63,6 @@ func (q *recipeItemService) FindRecipeItems(
 	rows := make([]*models.RecipeItem, n)
 	if n > 0 {
 		copy(rows, recipeItems)
-		var productIDs []uuid.UUID
-		for _, row := range rows {
-			if row.ProductID != nil {
-				productIDs = append(productIDs, *row.ProductID)
-			}
-		}
-		products, _, _, err := q.productRepository.FindProducts(
-			ctx,
-			models.NewProductFilter().
-				WithProductIDs(productIDs...),
-		)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
-			return nil, nil, err
-		}
-		mapProducts := make(map[uuid.UUID]*models.Product, len(products))
-		for _, product := range products {
-			mapProducts[product.ID] = product
-		}
-		for i, row := range rows {
-			if row.ProductID == nil {
-				continue
-			}
-			if product, ok := mapProducts[*row.ProductID]; ok {
-				if product.Name != nil {
-					row.ProductName = *product.Name
-				}
-				row.ProductPhoto = product.Photo
-			}
-			rows[i] = row
-		}
 	}
 	pagination, err := models.NewPagination(
 		total,

@@ -2838,6 +2838,8 @@ func init() {
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_id UUID REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_product_id UUID REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_name character varying NOT NULL
+				, product_photo character varying NOT NULL
 				, dose character varying NOT NULL
 				, note character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT

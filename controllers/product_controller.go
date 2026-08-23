@@ -28,6 +28,7 @@ type productController struct {
 	productCategoryService services.ProductCategoryService
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
+	recipeItemService      services.RecipeItemService
 	storage                fiber.Storage
 }
 
@@ -36,6 +37,7 @@ func NewProductController(
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
+	recipeItemService services.RecipeItemService,
 	storage fiber.Storage,
 ) *productController {
 	return &productController{
@@ -43,6 +45,7 @@ func NewProductController(
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
+		recipeItemService:      recipeItemService,
 		storage:                storage,
 	}
 }
@@ -204,6 +207,8 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	request.CreatedAt = now
 	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = now
+	var productVariants []*models.ProductVariant
+	var recipeItems []*models.RecipeItem
 	if product != nil {
 		if product.RecordStatus == models.RecordStatusActive {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
@@ -224,6 +229,33 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		if photo == nil {
 			request.SetPhoto(product.Photo)
 		}
+		if productVariants, _, err = q.productVariantService.FindProductVariants(
+			ctx,
+			models.NewProductVariantFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithProductCategoryIDs(request.ProductCategoryID),
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
+			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
+			return c.Render("admin/product_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"product", request,
+			), "admin/layouts/authenticated")
+		}
+		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
+			ctx,
+			models.NewRecipeItemFilter().
+				WithProductIDs(product.ID),
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
+			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
+			return c.Render("admin/product_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"product", request,
+			), "admin/layouts/authenticated")
+		}
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -243,7 +275,8 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productService.SaveProduct(ctx, tx, request); err != nil {
+	response, err := q.productService.SaveProduct(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProduct")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return c.Render("admin/product_new", params.Push(
@@ -251,6 +284,38 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 			"request", request,
 			"product", request,
 		), "admin/layouts/authenticated")
+	}
+	for _, productVariant := range productVariants {
+		productVariant.ProductCategoryID = response.ProductCategoryID
+		productVariant.ProductCategoryName = response.ProductCategoryName
+		if response.Name != nil {
+			productVariant.ProductName = *response.Name
+		}
+		productVariant.ProductReadyStock = response.ReadyStock
+		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
+			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
+			return c.Render("admin/product_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"product", request,
+			), "admin/layouts/authenticated")
+		}
+	}
+	for _, recipeItem := range recipeItems {
+		if response.Name != nil {
+			recipeItem.ProductName = *response.Name
+		}
+		recipeItem.ProductPhoto = response.Photo
+		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
+			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
+			return c.Render("admin/product_new", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request,
+				"product", request,
+			), "admin/layouts/authenticated")
+		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
@@ -431,6 +496,18 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 			"request", request.SetPhoto(product.Photo),
 		), "admin/layouts/authenticated")
 	}
+	recipeItems, _, err := q.recipeItemService.FindRecipeItems(
+		ctx,
+		models.NewRecipeItemFilter().
+			WithProductIDs(product.ID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
+		return c.Render("admin/product_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(product.Photo),
+		), "admin/layouts/authenticated")
+	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -464,6 +541,19 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
+			return c.Render("admin/product_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+				"request", request.SetPhoto(product.Photo),
+			), "admin/layouts/authenticated")
+		}
+	}
+	for _, recipeItem := range recipeItems {
+		if response.Name != nil {
+			recipeItem.ProductName = *response.Name
+		}
+		recipeItem.ProductPhoto = response.Photo
+		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 			return c.Render("admin/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(product.Photo),

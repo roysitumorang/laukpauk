@@ -309,6 +309,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,
+		q.RecipeItemService,
 		q.Storage,
 	).Mount(app.Group("/products"))
 	controllers.NewDeliveryPlanController(

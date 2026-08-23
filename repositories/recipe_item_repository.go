@@ -88,6 +88,8 @@ func (q *recipeItemRepository) FindRecipeItems(
 		, recipe_id
 		, product_id
 		, deleted_product_id
+		, product_name
+		, product_photo
 		, dose
 		, note
 		, created_by
@@ -151,6 +153,8 @@ func (q *recipeItemRepository) FindRecipeItems(
 			&recipeItem.RecipeID,
 			&recipeItem.ProductID,
 			&recipeItem.DeletedProductID,
+			&recipeItem.ProductName,
+			&recipeItem.ProductPhoto,
 			&recipeItem.Dose,
 			&recipeItem.Note,
 			&recipeItem.CreatedBy,
@@ -192,6 +196,8 @@ func (q *recipeItemRepository) FindRecipeItem(
 			, recipe_id
 			, product_id
 			, deleted_product_id
+			, product_name
+			, product_photo
 			, dose
 			, note
 			, created_by
@@ -211,6 +217,8 @@ func (q *recipeItemRepository) FindRecipeItem(
 		&response.RecipeID,
 		&response.ProductID,
 		&response.DeletedProductID,
+		&response.ProductName,
+		&response.ProductPhoto,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,
@@ -244,18 +252,22 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			record_status
 			, recipe_id
 			, product_id
+			, product_name
+			, product_photo
 			, dose
 			, note
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id
 			, record_status
 			, recipe_id
 			, product_id
 			, deleted_product_id
+			, product_name
+			, product_photo
 			, dose
 			, note
 			, created_by
@@ -268,6 +280,8 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		request.RecordStatus,
 		request.RecipeID,
 		request.ProductID,
+		request.ProductName,
+		request.ProductPhoto,
 		request.Dose,
 		request.Note,
 		request.CreatedBy,
@@ -280,6 +294,8 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		&response.RecipeID,
 		&response.ProductID,
 		&response.DeletedProductID,
+		&response.ProductName,
+		&response.ProductPhoto,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,
@@ -311,6 +327,8 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, recipe_id
 			, product_id
 			, deleted_product_id
+			, product_name
+			, product_photo
 			, dose
 			, note
 			, created_by
@@ -330,6 +348,8 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.RecipeID,
 		&response.ProductID,
 		&response.DeletedProductID,
+		&response.ProductName,
+		&response.ProductPhoto,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,
@@ -382,6 +402,20 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " deleted_product_id = $%d", n)
+	}
+	if response.ProductName != request.ProductName {
+		params = append(params, request.ProductName)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " product_name = $%d", n)
+	}
+	if response.ProductPhoto != request.ProductPhoto {
+		params = append(params, request.ProductPhoto)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " product_photo = $%d", n)
 	}
 	if response.Dose != request.Dose {
 		params = append(params, request.Dose)
@@ -453,6 +487,8 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, recipe_id
 			, product_id
 			, deleted_product_id
+			, product_name
+			, product_photo
 			, dose
 			, note
 			, created_by
@@ -470,6 +506,8 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.RecipeID,
 		&response.ProductID,
 		&response.DeletedProductID,
+		&response.ProductName,
+		&response.ProductPhoto,
 		&response.Dose,
 		&response.Note,
 		&response.CreatedBy,

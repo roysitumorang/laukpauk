@@ -713,17 +713,22 @@ func (q *recipeController) AdminCreateItem(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	mapProductIDs := map[uuid.UUID]struct{}{}
-	for i := range products {
-		mapProductIDs[products[i].ID] = struct{}{}
+	mapProducts := make(map[uuid.UUID]*models.Product, len(products))
+	for _, product := range products {
+		mapProducts[product.ID] = product
 	}
 	var recipeItem *models.RecipeItem
 	if request.ProductID != nil {
-		if _, ok := mapProductIDs[*request.ProductID]; !ok {
+		product, ok := mapProducts[*request.ProductID]
+		if !ok {
 			return c.Render("admin/recipe_item_new", params.Push(
 				"flash", flash.Danger("product_id: not found"),
 			), "admin/layouts/authenticated")
 		}
+		if product.Name != nil {
+			request.ProductName = *product.Name
+		}
+		request.ProductPhoto = product.Photo
 		if recipeItem, err = q.recipeItemService.FindRecipeItem(
 			ctx,
 			models.NewRecipeItemFilter().
@@ -810,7 +815,7 @@ func (q *recipeController) AdminUpdateItem(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-AdminUpdateItem"
 	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	recipe, recipeItem, _, params, err := q.prepareRecipeItem(
+	recipe, recipeItem, products, params, err := q.prepareRecipeItem(
 		ctx,
 		c,
 		flash,
@@ -830,6 +835,18 @@ func (q *recipeController) AdminUpdateItem(c fiber.Ctx) (err error) {
 		return c.Render("admin/recipe_item_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
+	}
+	mapProducts := make(map[uuid.UUID]*models.Product, len(products))
+	for _, product := range products {
+		mapProducts[product.ID] = product
+	}
+	if recipeItem.ProductID != nil {
+		if product, ok := mapProducts[*recipeItem.ProductID]; ok {
+			if product.Name != nil {
+				request.ProductName = *product.Name
+			}
+			request.ProductPhoto = product.Photo
+		}
 	}
 	request.ID = recipeItem.ID
 	request.RecordStatus = recipeItem.RecordStatus

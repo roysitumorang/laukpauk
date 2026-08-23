@@ -206,7 +206,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	)
 	recipeService := services.NewRecipeService(recipeRepository)
 	recipeGuideService := services.NewRecipeGuideService(recipeGuideRepository)
-	recipeItemService := services.NewRecipeItemService(recipeItemRepository, productRepository)
+	recipeItemService := services.NewRecipeItemService(recipeItemRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
