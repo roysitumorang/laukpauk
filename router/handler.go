@@ -31,6 +31,7 @@ type (
 		ZenzivaClient             *externals.ZenzivaClient
 		RoutesApiClient           *externals.RoutesApiClient
 		XenditClient              *externals.XenditClient
+		TelegramBotClient         *externals.TelegramBotClient
 		Storage                   fiber.Storage
 		AdminService              services.AdminService
 		BuyerService              services.BuyerService
@@ -120,6 +121,10 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	xenditClient := externals.NewXenditClient(
 		os.Getenv("XENDIT_BASE_URL"),
 		os.Getenv("XENDIT_API_KEY"),
+		externalApiCallTimeoutDuration,
+	)
+	telegramBotClient := externals.NewTelegramBotClient(
+		os.Getenv("TELEGRAM_BOT_TOKEN"),
 		externalApiCallTimeoutDuration,
 	)
 	storage := valkey.New(valkey.Config{
@@ -215,6 +220,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		ZenzivaClient:             zenzivaClient,
 		RoutesApiClient:           routesApiClient,
 		XenditClient:              xenditClient,
+		TelegramBotClient:         telegramBotClient,
 		Storage:                   storage,
 		AdminService:              adminService,
 		BuyerService:              buyerService,

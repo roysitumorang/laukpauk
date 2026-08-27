@@ -8,9 +8,9 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gabriel-vasile/mimetype v1.4.15
 	github.com/getsentry/sentry-go v0.49.0
-	github.com/gofiber/contrib/v3/monitor v1.1.2
-	github.com/gofiber/contrib/v3/sentry v1.1.9
-	github.com/gofiber/contrib/v3/swaggo v1.0.9
+	github.com/gofiber/contrib/v3/monitor v1.2.0
+	github.com/gofiber/contrib/v3/sentry v1.1.10
+	github.com/gofiber/contrib/v3/swaggo v1.0.10
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.3.2
 	github.com/gofiber/template/jet/v3 v3.0.8
@@ -37,7 +37,7 @@ require (
 	github.com/CloudyKit/fastprinter v0.0.0-20251202014920-1725d2651bd4 // indirect
 	github.com/CloudyKit/jet/v6 v6.3.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/andybalholm/brotli v1.2.2 // indirect
+	github.com/andybalholm/brotli v1.2.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coregx/ahocorasick v0.3.0 // indirect
 	github.com/ebitengine/purego v0.10.2 // indirect
