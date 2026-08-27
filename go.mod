@@ -7,13 +7,13 @@ require (
 	github.com/coregx/coregex v0.12.23
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gabriel-vasile/mimetype v1.4.15
-	github.com/getsentry/sentry-go v0.48.0
+	github.com/getsentry/sentry-go v0.49.0
 	github.com/gofiber/contrib/v3/monitor v1.1.2
 	github.com/gofiber/contrib/v3/sentry v1.1.9
 	github.com/gofiber/contrib/v3/swaggo v1.0.9
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.3.2
-	github.com/gofiber/template/jet/v3 v3.0.7
+	github.com/gofiber/template/jet/v3 v3.0.8
 	github.com/gofiber/utils/v2 v2.4.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
