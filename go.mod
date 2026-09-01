@@ -12,7 +12,7 @@ require (
 	github.com/gofiber/contrib/v3/sentry v1.1.10
 	github.com/gofiber/contrib/v3/swaggo v1.0.10
 	github.com/gofiber/fiber/v3 v3.5.0
-	github.com/gofiber/storage/valkey v0.3.2
+	github.com/gofiber/storage/valkey v0.4.0
 	github.com/gofiber/template/jet/v3 v3.0.8
 	github.com/gofiber/utils/v2 v2.4.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -52,7 +52,7 @@ require (
 	github.com/go-openapi/swag/stringutils v0.29.1 // indirect
 	github.com/go-openapi/swag/typeutils v0.29.1 // indirect
 	github.com/go-openapi/swag/yamlutils v0.29.1 // indirect
-	github.com/gofiber/schema v1.8.4 // indirect
+	github.com/gofiber/schema v1.8.5 // indirect
 	github.com/gofiber/template/v2 v2.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
