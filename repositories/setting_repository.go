@@ -5,9 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"slices"
-	"time"
-	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,13 +21,6 @@ type SettingRepository interface {
 		ctx context.Context,
 		tx pgx.Tx,
 		request *models.Setting,
-	) (*models.Setting, error)
-	AddReferralPointsExpense(
-		ctx context.Context,
-		tx pgx.Tx,
-		addition int64,
-		updatedBy uuid.UUID,
-		updatedAt time.Time,
 	) (*models.Setting, error)
 }
 
@@ -59,26 +49,10 @@ func (q *settingRepository) FindSetting(
 		`SELECT
 			id
 			, maintenance_mode
-			, vacation_mode
-			, vacation_start_date
-			, vacation_end_date
-			, voucher_enabled
-			, referral_points_enabled
-			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
-			, referral_points_slots
-			, referral_points_expense
-			, reward_points_accumulation_window_in_days
-			, delivery_origin_longitude
-			, delivery_origin_latitude
-			, delivery_cost_per_km
-			, delivery_max_distance_km
-			, whatsapp_phone_number
-			, payment_terms
-			, maximum_delivery_time
-			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, subscription_trial_period
+			, monthly_billing_amount
+			, annual_billing_amount
+			, billing_grace_period
 			, created_by
 			, created_at
 			, updated_by
@@ -87,26 +61,10 @@ func (q *settingRepository) FindSetting(
 	).Scan(
 		&response.ID,
 		&response.MaintenanceMode,
-		&response.VacationMode,
-		&response.VacationStartDate,
-		&response.VacationEndDate,
-		&response.VoucherEnabled,
-		&response.ReferralPointsEnabled,
-		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
-		&response.ReferralPointsSlots,
-		&response.ReferralPointsExpense,
-		&response.RewardPointsAccumulationWindowInDays,
-		&response.DeliveryOriginLongitude,
-		&response.DeliveryOriginLatitude,
-		&response.DeliveryCostPerKM,
-		&response.DeliveryMaxDistanceKM,
-		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
-		&response.TransactionAutoWithdrawalEnabled,
-		&response.TransactionAutoWithdrawalWindowMin,
-		&response.TransactionAutoWithdrawalWindowMax,
+		&response.SubscriptionTrialPeriod,
+		&response.MonthlyBillingAmount,
+		&response.AnnualBillingAmount,
+		&response.BillingGracePeriod,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -134,26 +92,10 @@ func (q *settingRepository) UpdateSetting(
 		`SELECT
 			id
 			, maintenance_mode
-			, vacation_mode
-			, vacation_start_date
-			, vacation_end_date
-			, voucher_enabled
-			, referral_points_enabled
-			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
-			, referral_points_slots
-			, referral_points_expense
-			, reward_points_accumulation_window_in_days
-			, delivery_origin_longitude
-			, delivery_origin_latitude
-			, delivery_cost_per_km
-			, delivery_max_distance_km
-			, whatsapp_phone_number
-			, payment_terms
-			, maximum_delivery_time
-			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, subscription_trial_period
+			, monthly_billing_amount
+			, annual_billing_amount
+			, billing_grace_period
 			, created_by
 			, created_at
 			, updated_by
@@ -164,26 +106,10 @@ func (q *settingRepository) UpdateSetting(
 	).Scan(
 		&response.ID,
 		&response.MaintenanceMode,
-		&response.VacationMode,
-		&response.VacationStartDate,
-		&response.VacationEndDate,
-		&response.VoucherEnabled,
-		&response.ReferralPointsEnabled,
-		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
-		&response.ReferralPointsSlots,
-		&response.ReferralPointsExpense,
-		&response.RewardPointsAccumulationWindowInDays,
-		&response.DeliveryOriginLongitude,
-		&response.DeliveryOriginLatitude,
-		&response.DeliveryCostPerKM,
-		&response.DeliveryMaxDistanceKM,
-		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
-		&response.TransactionAutoWithdrawalEnabled,
-		&response.TransactionAutoWithdrawalWindowMin,
-		&response.TransactionAutoWithdrawalWindowMax,
+		&response.SubscriptionTrialPeriod,
+		&response.MonthlyBillingAmount,
+		&response.AnnualBillingAmount,
+		&response.BillingGracePeriod,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -209,171 +135,33 @@ func (q *settingRepository) UpdateSetting(
 		}
 		_, _ = fmt.Fprintf(sb, " maintenance_mode = $%d", n)
 	}
-	if response.VacationMode != request.VacationMode {
-		params = append(params, request.VacationMode)
+	if response.SubscriptionTrialPeriod != request.SubscriptionTrialPeriod {
+		params = append(params, request.SubscriptionTrialPeriod)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " vacation_mode = $%d", n)
+		_, _ = fmt.Fprintf(sb, " subscription_trial_period = $%d", n)
 	}
-	if (response.VacationStartDate == nil &&
-		request.VacationStartDate != nil) ||
-		(response.VacationStartDate != nil &&
-			request.VacationStartDate == nil) ||
-		(response.VacationStartDate != nil &&
-			request.VacationStartDate != nil &&
-			!response.VacationStartDate.Equal(*request.VacationStartDate)) {
-		params = append(params, request.VacationStartDate)
+	if response.MonthlyBillingAmount != request.MonthlyBillingAmount {
+		params = append(params, request.MonthlyBillingAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " vacation_start_date = $%d", n)
+		_, _ = fmt.Fprintf(sb, " monthly_billing_amount = $%d", n)
 	}
-	if (response.VacationEndDate == nil &&
-		request.VacationEndDate != nil) ||
-		(response.VacationEndDate != nil &&
-			request.VacationEndDate == nil) ||
-		(response.VacationEndDate != nil &&
-			request.VacationEndDate != nil &&
-			!response.VacationEndDate.Equal(*request.VacationEndDate)) {
-		params = append(params, request.VacationEndDate)
+	if response.AnnualBillingAmount != request.AnnualBillingAmount {
+		params = append(params, request.AnnualBillingAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " vacation_end_date = $%d", n)
+		_, _ = fmt.Fprintf(sb, " annual_billing_amount = $%d", n)
 	}
-	if response.VoucherEnabled != request.VoucherEnabled {
-		params = append(params, request.VoucherEnabled)
+	if response.BillingGracePeriod != request.BillingGracePeriod {
+		params = append(params, request.BillingGracePeriod)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " voucher_enabled = $%d", n)
-	}
-	if response.ReferralPointsEnabled != request.ReferralPointsEnabled {
-		params = append(params, request.ReferralPointsEnabled)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " referral_points_enabled = $%d", n)
-	}
-	if response.ReferralPointsMinimumShoppingCost != request.ReferralPointsMinimumShoppingCost {
-		params = append(params, request.ReferralPointsMinimumShoppingCost)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " referral_points_minimum_shopping_cost = $%d", n)
-	}
-	if response.ReferralPointsPerReferee != request.ReferralPointsPerReferee {
-		params = append(params, request.ReferralPointsPerReferee)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " referral_points_per_referee = $%d", n)
-	}
-	if slices.Compare(response.ReferralPointsSlots, request.ReferralPointsSlots) != 0 {
-		params = append(params, request.ReferralPointsSlots)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " referral_points_slots = $%d", n)
-	}
-	if response.RewardPointsAccumulationWindowInDays != request.RewardPointsAccumulationWindowInDays {
-		params = append(params, request.RewardPointsAccumulationWindowInDays)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " reward_points_accumulation_window_in_days = $%d", n)
-	}
-	if response.DeliveryOriginLongitude != request.DeliveryOriginLongitude {
-		params = append(params, request.DeliveryOriginLongitude)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " delivery_origin_longitude = $%d", n)
-	}
-	if response.DeliveryOriginLatitude != request.DeliveryOriginLatitude {
-		params = append(params, request.DeliveryOriginLatitude)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " delivery_origin_latitude = $%d", n)
-	}
-	if response.DeliveryCostPerKM != request.DeliveryCostPerKM {
-		params = append(params, request.DeliveryCostPerKM)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " delivery_cost_per_km = $%d", n)
-	}
-	if response.DeliveryMaxDistanceKM != request.DeliveryMaxDistanceKM {
-		params = append(params, request.DeliveryMaxDistanceKM)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " delivery_max_distance_km = $%d", n)
-	}
-	if response.WhatsappPhoneNumber != request.WhatsappPhoneNumber {
-		params = append(params, request.WhatsappPhoneNumber)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " whatsapp_phone_number = $%d", n)
-	}
-	if response.PaymentTerms != request.PaymentTerms {
-		params = append(params, request.PaymentTerms)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " payment_terms = $%d", n)
-	}
-	if response.MaximumDeliveryTime != request.MaximumDeliveryTime {
-		params = append(params, request.MaximumDeliveryTime)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " maximum_delivery_time = $%d", n)
-	}
-	if response.TransactionAutoWithdrawalEnabled != request.TransactionAutoWithdrawalEnabled {
-		params = append(params, request.TransactionAutoWithdrawalEnabled)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_enabled = $%d", n)
-	}
-	if response.TransactionAutoWithdrawalEnabled != request.TransactionAutoWithdrawalEnabled {
-		params = append(params, request.TransactionAutoWithdrawalEnabled)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_enabled = $%d", n)
-	}
-	var requestWindowMin,
-		responseWindowMin,
-		requestWindowMax,
-		responseWindowMax time.Time
-	if request.TransactionAutoWithdrawalWindowMin != nil {
-		requestWindowMin = *request.TransactionAutoWithdrawalWindowMin
-	}
-	if response.TransactionAutoWithdrawalWindowMin != nil {
-		responseWindowMin = *response.TransactionAutoWithdrawalWindowMin
-	}
-	if request.TransactionAutoWithdrawalWindowMax != nil {
-		requestWindowMax = *request.TransactionAutoWithdrawalWindowMax
-	}
-	if response.TransactionAutoWithdrawalWindowMax != nil {
-		responseWindowMax = *response.TransactionAutoWithdrawalWindowMax
-	}
-	if !responseWindowMin.Equal(requestWindowMin) ||
-		!responseWindowMax.Equal(requestWindowMax) {
-		params = append(
-			params,
-			request.TransactionAutoWithdrawalWindowMin,
-			request.TransactionAutoWithdrawalWindowMax,
-		)
-		if n = len(params); n > 2 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_window = tstzrange($%d, $%d, '[]')", n-1, n)
+		_, _ = fmt.Fprintf(sb, " billing_grace_period = $%d", n)
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -387,26 +175,10 @@ func (q *settingRepository) UpdateSetting(
 		WHERE id = $%d
 		RETURNING id
 			, maintenance_mode
-			, vacation_mode
-			, vacation_start_date
-			, vacation_end_date
-			, voucher_enabled
-			, referral_points_enabled
-			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
-			, referral_points_slots
-			, referral_points_expense
-			, reward_points_accumulation_window_in_days
-			, delivery_origin_longitude
-			, delivery_origin_latitude
-			, delivery_cost_per_km
-			, delivery_max_distance_km
-			, whatsapp_phone_number
-			, payment_terms
-			, maximum_delivery_time
-			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, subscription_trial_period
+			, monthly_billing_amount
+			, annual_billing_amount
+			, billing_grace_period
 			, created_by
 			, created_at
 			, updated_by
@@ -416,113 +188,10 @@ func (q *settingRepository) UpdateSetting(
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.MaintenanceMode,
-		&response.VacationMode,
-		&response.VacationStartDate,
-		&response.VacationEndDate,
-		&response.VoucherEnabled,
-		&response.ReferralPointsEnabled,
-		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
-		&response.ReferralPointsSlots,
-		&response.ReferralPointsExpense,
-		&response.RewardPointsAccumulationWindowInDays,
-		&response.DeliveryOriginLongitude,
-		&response.DeliveryOriginLatitude,
-		&response.DeliveryCostPerKM,
-		&response.DeliveryMaxDistanceKM,
-		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
-		&response.TransactionAutoWithdrawalEnabled,
-		&response.TransactionAutoWithdrawalWindowMin,
-		&response.TransactionAutoWithdrawalWindowMax,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	return (&response).Populate(), nil
-}
-
-func (q *settingRepository) AddReferralPointsExpense(
-	ctx context.Context,
-	tx pgx.Tx,
-	addition int64,
-	updatedBy uuid.UUID,
-	updatedAt time.Time,
-) (*models.Setting, error) {
-	ctxt := "SettingRepository-AddReferralPointsExpense"
-	var response models.Setting
-	err := tx.QueryRow(
-		ctx,
-		`SELECT id FROM setting WHERE id = 1 FOR NO KEY UPDATE`,
-	).Scan(&response.ID)
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	if err = tx.QueryRow(
-		ctx,
-		`UPDATE setting SET
-			referral_points_expense = referral_points_expense + $1
-			, updated_by = $2
-			, updated_at = $3
-		WHERE id = 1
-		RETURNING id
-			, maintenance_mode
-			, vacation_mode
-			, vacation_start_date
-			, vacation_end_date
-			, voucher_enabled
-			, referral_points_enabled
-			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
-			, referral_points_slots
-			, referral_points_expense
-			, reward_points_accumulation_window_in_days
-			, delivery_origin_longitude
-			, delivery_origin_latitude
-			, delivery_cost_per_km
-			, delivery_max_distance_km
-			, whatsapp_phone_number
-			, payment_terms
-			, maximum_delivery_time
-			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
-			, created_by
-			, created_at
-			, updated_by
-			, updated_at`,
-		addition,
-		updatedBy,
-		updatedAt,
-	).Scan(
-		&response.ID,
-		&response.MaintenanceMode,
-		&response.VacationMode,
-		&response.VacationStartDate,
-		&response.VacationEndDate,
-		&response.VoucherEnabled,
-		&response.ReferralPointsEnabled,
-		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
-		&response.ReferralPointsSlots,
-		&response.ReferralPointsExpense,
-		&response.RewardPointsAccumulationWindowInDays,
-		&response.DeliveryOriginLongitude,
-		&response.DeliveryOriginLatitude,
-		&response.DeliveryCostPerKM,
-		&response.DeliveryMaxDistanceKM,
-		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
-		&response.TransactionAutoWithdrawalEnabled,
-		&response.TransactionAutoWithdrawalWindowMin,
-		&response.TransactionAutoWithdrawalWindowMax,
+		&response.SubscriptionTrialPeriod,
+		&response.MonthlyBillingAmount,
+		&response.AnnualBillingAmount,
+		&response.BillingGracePeriod,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,

@@ -62,6 +62,7 @@ type (
 		RecipeService             services.RecipeService
 		RecipeGuideService        services.RecipeGuideService
 		RecipeItemService         services.RecipeItemService
+		CompanyService            services.CompanyService
 	}
 )
 
@@ -160,6 +161,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeRepository := repositories.NewRecipeRepository(dbRead, dbWrite)
 	recipeGuideRepository := repositories.NewRecipeGuideRepository(dbRead, dbWrite)
 	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
+	companyRepository := repositories.NewCompanyRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -188,7 +190,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		cartRepository,
 		deliveryPlanRepository,
 		deliveryRouteRepository,
-		settingRepository,
+		companyRepository,
 		voucherRepository,
 		pointSpendingCapRepository,
 		pointRepository,
@@ -212,6 +214,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeService := services.NewRecipeService(recipeRepository)
 	recipeGuideService := services.NewRecipeGuideService(recipeGuideRepository)
 	recipeItemService := services.NewRecipeItemService(recipeItemRepository)
+	companyService := services.NewCompanyService(companyRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
@@ -251,6 +254,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		RecipeService:             recipeService,
 		RecipeGuideService:        recipeGuideService,
 		RecipeItemService:         recipeItemService,
+		CompanyService:            companyService,
 	}, nil
 }
 

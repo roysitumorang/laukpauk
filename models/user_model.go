@@ -8,6 +8,7 @@ import (
 
 const (
 	UserTypeAdmin UserType = iota
+	UserTypeSeller
 	UserTypeBuyer
 )
 
@@ -21,6 +22,7 @@ type (
 	UserStatus int
 
 	user struct {
+		CompanyID                     *uuid.UUID `json:"-" form:"-"`
 		UserType                      UserType   `json:"-" form:"-"`
 		UserStatus                    UserStatus `json:"-" form:"-"`
 		Name                          string     `json:"name" form:"name"`
@@ -60,6 +62,7 @@ type (
 	}
 
 	userFilter struct {
+		CompanyIDs,
 		UserIDs,
 		ExcludedUserIDs []uuid.UUID
 		UserStatuses []UserStatus

@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"time"
-	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -22,13 +20,6 @@ type (
 			ctx context.Context,
 			tx pgx.Tx,
 			request *models.Setting,
-		) (*models.Setting, error)
-		AddReferralPointsExpense(
-			ctx context.Context,
-			tx pgx.Tx,
-			addition int64,
-			updatedBy uuid.UUID,
-			updatedAt time.Time,
 		) (*models.Setting, error)
 	}
 
@@ -65,27 +56,6 @@ func (q *settingService) UpdateSetting(
 	response, err := q.settingRepository.UpdateSetting(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSetting")
-	}
-	return response, err
-}
-
-func (q *settingService) AddReferralPointsExpense(
-	ctx context.Context,
-	tx pgx.Tx,
-	addition int64,
-	updatedBy uuid.UUID,
-	updatedAt time.Time,
-) (*models.Setting, error) {
-	ctxt := "SettingService-AddReferralPointsExpense"
-	response, err := q.settingRepository.AddReferralPointsExpense(
-		ctx,
-		tx,
-		addition,
-		updatedBy,
-		updatedAt,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddReferralPointsExpense")
 	}
 	return response, err
 }

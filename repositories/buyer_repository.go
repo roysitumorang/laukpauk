@@ -82,6 +82,7 @@ func (q *buyerRepository) FindBuyers(
 		"COUNT(1)",
 		`b.id
 		, b.user_id
+		, u.company_id
 		, u.user_type
 		, u.user_status
 		, u.name
@@ -173,6 +174,7 @@ func (q *buyerRepository) FindBuyers(
 		if err = rows.Scan(
 			&buyer.ID,
 			&buyer.UserID,
+			&buyer.CompanyID,
 			&buyer.UserType,
 			&buyer.UserStatus,
 			&buyer.Name,
@@ -242,6 +244,7 @@ func (q *buyerRepository) FindBuyer(
 		`SELECT
 			b.id
 			, b.user_id
+			, u.company_id
 			, u.user_type
 			, u.user_status
 			, u.name
@@ -290,6 +293,7 @@ func (q *buyerRepository) FindBuyer(
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
+		&response.CompanyID,
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
@@ -343,6 +347,19 @@ func (q *buyerRepository) FindBuyer(
 
 func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("u.company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if len(request.UserIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("b.id IN (")
@@ -466,7 +483,8 @@ func (q *buyerRepository) CreateBuyer(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO users (
-			user_type
+			company_id
+			, user_type
 			, user_status
 			, name
 			, confirmation_token
@@ -498,9 +516,10 @@ func (q *buyerRepository) CreateBuyer(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27, $28, $29
+			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 		)
 		RETURNING id
+			, company_id
 			, user_type
 			, user_status
 			, name
@@ -533,6 +552,7 @@ func (q *buyerRepository) CreateBuyer(
 			, deactivated_by
 			, deactivated_at
 			, deactivation_reason`,
+		request.CompanyID,
 		request.UserType,
 		request.UserStatus,
 		request.Name,
@@ -564,6 +584,7 @@ func (q *buyerRepository) CreateBuyer(
 		request.UpdatedAt,
 	).Scan(
 		&response.UserID,
+		&response.CompanyID,
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
@@ -824,6 +845,7 @@ func (q *buyerRepository) UpdateBuyer(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, user_type
 			, user_status
 			, name
@@ -862,6 +884,7 @@ func (q *buyerRepository) UpdateBuyer(
 		response.UserID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
@@ -1185,6 +1208,7 @@ func (q *buyerRepository) UpdateBuyer(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
+			, company_id
 			, user_type
 			, user_status
 			, name
@@ -1221,6 +1245,7 @@ func (q *buyerRepository) UpdateBuyer(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,

@@ -61,7 +61,7 @@ type (
 		cartRepository               repositories.CartRepository
 		deliveryPlanRepository       repositories.DeliveryPlanRepository
 		deliveryRouteRepository      repositories.DeliveryRouteRepository
-		settingRepository            repositories.SettingRepository
+		companyRepository            repositories.CompanyRepository
 		voucherRepository            repositories.VoucherRepository
 		pointSpendingCapRepository   repositories.PointSpendingCapRepository
 		pointRepository              repositories.PointRepository
@@ -78,7 +78,7 @@ func NewTransactionService(
 	cartRepository repositories.CartRepository,
 	deliveryPlanRepository repositories.DeliveryPlanRepository,
 	deliveryRouteRepository repositories.DeliveryRouteRepository,
-	settingRepository repositories.SettingRepository,
+	companyRepository repositories.CompanyRepository,
 	voucherRepository repositories.VoucherRepository,
 	pointSpendingCapRepository repositories.PointSpendingCapRepository,
 	pointRepository repositories.PointRepository,
@@ -93,7 +93,7 @@ func NewTransactionService(
 		cartRepository:               cartRepository,
 		deliveryPlanRepository:       deliveryPlanRepository,
 		deliveryRouteRepository:      deliveryRouteRepository,
-		settingRepository:            settingRepository,
+		companyRepository:            companyRepository,
 		voucherRepository:            voucherRepository,
 		pointSpendingCapRepository:   pointSpendingCapRepository,
 		pointRepository:              pointRepository,
@@ -182,13 +182,17 @@ func (q *transactionService) CreateTransaction(
 	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
 	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
-	setting, err := q.settingRepository.FindSetting(ctx)
-	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+	company, err := q.companyRepository.FindCompany(
+		ctx,
+		models.NewCompanyFilter().
+			WithCompanyIDs(request.CompanyID),
+	)
+	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompany")
 		return nil, err
 	}
-	if setting == nil {
-		return nil, models.ErrSettingNotFound
+	if company == nil {
+		return nil, models.ErrCompanyNotFound
 	}
 	now := time.Now().In(time.Local)
 	deliveryPlan, err := q.deliveryPlanRepository.FindDeliveryPlan(
@@ -207,7 +211,7 @@ func (q *transactionService) CreateTransaction(
 	if _, ok := deliveryPlan.MapDeliveryTimes[request.DeliveryDatetime.UnixNano()]; !ok {
 		return nil, errors.New("delivery_time: not found")
 	}
-	request.DeliveryEstimatedCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
+	request.DeliveryEstimatedCost = request.DeliveryDistanceKM * company.DeliveryCostPerKM
 	if n := len(request.Items); n > 0 {
 		mapCartItemIDs := map[uuid.UUID]struct{}{}
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
@@ -257,10 +261,10 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	request.CalculateShoppingCost()
-	if setting.ReferralPointsEnabled {
+	if company.ReferralPointsEnabled {
 		if request.ReferralCode != nil {
-			if request.ShoppingCost < setting.ReferralPointsMinimumShoppingCost {
-				return nil, fmt.Errorf("referral_code: requires shopping cost minimum %s", humanize.Comma(setting.ReferralPointsMinimumShoppingCost))
+			if request.ShoppingCost < company.ReferralPointsMinimumShoppingCost {
+				return nil, fmt.Errorf("referral_code: requires shopping cost minimum %s", humanize.Comma(company.ReferralPointsMinimumShoppingCost))
 			}
 			referrer, err := q.buyerRepository.FindBuyer(
 				ctx,
@@ -292,11 +296,11 @@ func (q *transactionService) CreateTransaction(
 			}
 			if (buyer.ReferrerID != nil &&
 				buyer.ReferrerID.Compare(referrer.ID) != 0) ||
-				int(total) >= len(setting.ReferralPointsSlots) {
+				int(total) >= len(company.ReferralPointsSlots) {
 				return nil, errors.New("referral_code: is invalid")
 			}
 			request.ReferrerID = &referrer.ID
-			request.ReferralPoints = setting.ReferralPointsSlots[total]
+			request.ReferralPoints = company.ReferralPointsSlots[total]
 		} else {
 			request.ReferrerID = nil
 			request.ReferralPoints = 0
@@ -317,7 +321,7 @@ func (q *transactionService) CreateTransaction(
 		if pointSpendingCap != nil {
 			request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
 		}
-	} else if setting.VoucherEnabled {
+	} else if company.VoucherEnabled {
 		if request.VoucherCode != nil {
 			voucher, err := q.voucherRepository.FindVoucher(
 				ctx,
@@ -449,7 +453,7 @@ func (q *transactionService) CreateTransaction(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePaymentRequest")
 			return nil, err
 		}
-		duration := setting.PaymentTerms
+		duration := company.PaymentTerms
 		if virtualAccountExpiredAt != nil {
 			duration = virtualAccountExpiredAt.Sub(response.CreatedAt) - time.Second
 		}
@@ -546,13 +550,17 @@ func (q *transactionService) RequestWithdrawal(
 	request *models.Transaction,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionService-RequestWithdrawal"
-	setting, err := q.settingRepository.FindSetting(ctx)
-	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
+	setting, err := q.companyRepository.FindCompany(
+		ctx,
+		models.NewCompanyFilter().
+			WithCompanyIDs(request.CompanyID),
+	)
+	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
 		return nil, err
 	}
 	if setting == nil {
-		return nil, models.ErrSettingNotFound
+		return nil, models.ErrCompanyNotFound
 	}
 	now := time.Now().In(time.Local)
 	if setting.TransactionAutoWithdrawalEnabled &&
@@ -699,20 +707,10 @@ func (q *transactionService) CompleteTransaction(
 
 func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error {
 	ctxt := "TransactionService-AutoCompleteTransactions"
-	setting, err := q.settingRepository.FindSetting(ctx)
-	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return err
-	}
-	if setting == nil {
-		return models.ErrSettingNotFound
-	}
-	now := time.Now().In(time.Local)
 	transactions, _, _, err := q.transactionRepository.FindTransactions(
 		ctx,
 		models.NewTransactionFilter().
-			WithTransactionStatuses(models.TransactionStatusShipped).
-			WithShippedAt(now.Add(-setting.MaximumDeliveryTime)),
+			WithTransactionStatuses(models.TransactionStatusShipped),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
@@ -721,9 +719,15 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 	if len(transactions) == 0 {
 		return nil
 	}
-	var buyerIDs []uuid.UUID
+	now := time.Now().In(time.Local)
+	var companyIDs, buyerIDs []uuid.UUID
+	mapCompanyIDs := map[uuid.UUID]struct{}{}
 	mapBuyerIDs := map[uuid.UUID]struct{}{}
 	for _, transaction := range transactions {
+		if _, ok := mapCompanyIDs[transaction.CompanyID]; !ok {
+			companyIDs = append(buyerIDs, transaction.CompanyID)
+			mapCompanyIDs[transaction.CompanyID] = struct{}{}
+		}
 		if _, ok := mapBuyerIDs[transaction.BuyerID]; !ok {
 			buyerIDs = append(buyerIDs, transaction.BuyerID)
 			mapBuyerIDs[transaction.BuyerID] = struct{}{}
@@ -734,6 +738,19 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 				mapBuyerIDs[*transaction.ReferrerID] = struct{}{}
 			}
 		}
+	}
+	companies, _, _, err := q.companyRepository.FindCompanies(
+		ctx,
+		models.NewCompanyFilter().
+			WithCompanyIDs(companyIDs...),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompanies")
+		return err
+	}
+	mapCompanies := make(map[uuid.UUID]*models.Company, len(companies))
+	for _, company := range companies {
+		mapCompanies[company.ID] = company
 	}
 	buyers, _, _, err := q.buyerRepository.FindBuyers(
 		ctx,
@@ -762,6 +779,10 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		}
 	}(ctx)
 	for _, transaction := range transactions {
+		company, ok := mapCompanies[transaction.CompanyID]
+		if !ok || !transaction.ShippedAt.Before(now.Add(-company.MaximumDeliveryTime)) {
+			continue
+		}
 		transaction.Status = models.TransactionStatusCompleted
 		transaction.CompletedAt = &now
 		response, err := q.transactionRepository.UpdateTransaction(ctx, tx, transaction)

@@ -47,6 +47,7 @@ type (
 		RowNo                           int64              `json:"-" form:"-"`
 		ID                              uuid.UUID          `json:"id" form:"id"`
 		ParentID                        *uuid.UUID         `json:"parent_id" form:"parent_id"`
+		CompanyID                       uuid.UUID          `json:"-" form:"-"`
 		Reordered                       bool               `json:"reordered" form:"reordered"`
 		BuyerID                         uuid.UUID          `json:"buyer_id" form:"buyer_id"`
 		CartID                          *uuid.UUID         `json:"cart_id" form:"cart_id"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 	"uuid"
 
@@ -33,11 +34,69 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// companies
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE companies (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, name character varying NOT NULL COLLATE "natural_sort"
+				, billed BOOLEAN NOT NULL
+				, billing_interval integer
+				, subscription_status integer NOT NULL
+				, subscription_start_date timestamp with time zone
+				, subscription_end_date timestamp with time zone
+				, telegram_bot_token character varying NOT NULL UNIQUE
+				, vacation_mode BOOLEAN NOT NULL
+				, vacation_start_date timestamp with time zone
+				, vacation_end_date timestamp with time zone
+				, voucher_enabled BOOLEAN NOT NULL
+				, referral_points_enabled BOOLEAN NOT NULL
+				, referral_points_minimum_shopping_cost bigint NOT NULL
+				, referral_points_per_referee bigint NOT NULL
+				, referral_points_slots bigint[] NOT NULL
+				, referral_points_expense bigint NOT NULL
+				, reward_points_accumulation_window_in_days smallint NOT NULL
+				, delivery_origin_longitude character varying NOT NULL
+				, delivery_origin_latitude character varying NOT NULL
+				, delivery_cost_per_km bigint NOT NULL
+				, delivery_max_distance_km bigint NOT NULL
+				, whatsapp_phone_number character varying NOT NULL
+				, payment_terms interval NOT NULL
+				, maximum_delivery_time interval NOT NULL
+				, transaction_auto_withdrawal_enabled boolean NOT NULL
+				, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (subscription_status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (subscription_end_date);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// users
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE users (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, user_type integer NOT NULL
 				, user_status integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
@@ -47,16 +106,16 @@ func init() {
 				, mobile_phone_confirmation_sent_at timestamp with time zone
 				, mobile_phone_confirmation_token character varying
 				, mobile_phone_confirmed_at timestamp with time zone
-				, mobile_phone character varying UNIQUE
+				, mobile_phone character varying
 				, otp_token character varying
 				, otp_created_at timestamp with time zone
 				, otp_expired_at timestamp with time zone
-				, username character varying NOT NULL UNIQUE
+				, username character varying NOT NULL
 				, unconfirmed_email character varying
 				, email_confirmation_sent_at timestamp with time zone
 				, email_confirmation_token character varying
 				, email_confirmed_at timestamp with time zone
-				, email character varying UNIQUE
+				, email character varying
 				, encrypted_password character varying
 				, password_reset_at timestamp with time zone
 				, password_reset_token character varying
@@ -70,7 +129,17 @@ func init() {
 				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
+				, UNIQUE (mobile_phone, company_id)
+				, UNIQUE (username, company_id)
+				, UNIQUE (email, company_id)
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON users (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -188,6 +257,219 @@ func init() {
 			models.AdminTypeSuperAdmin,
 		).Scan(&adminID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`ALTER TABLE companies
+				ADD COLUMN created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN created_at timestamp with time zone NOT NULL
+				, ADD COLUMN updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN updated_at timestamp with time zone NOT NULL
+				, ADD COLUMN deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN deactivated_at timestamp with time zone
+				, ADD COLUMN deactivation_reason character varying`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (deactivated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		longitude, err := decimal.Parse("98.64455685385735")
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
+			return
+		}
+		latitude, err := decimal.Parse("3.5394011973709434")
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
+			return
+		}
+		now := time.Now().In(time.Local)
+		company := models.Company{
+			Name:                                 "Laukpauk",
+			Billed:                               false,
+			SubscriptionStatus:                   models.SubscriptionStatusActive,
+			TelegramBotToken:                     "7895135905:AAGh8uCKeDniAQdJ0sh2PZh1YO2afkAto5Y",
+			VoucherEnabled:                       true,
+			ReferralPointsEnabled:                true,
+			ReferralPointsMinimumShoppingCost:    60_000,
+			ReferralPointsPerReferee:             25_000,
+			ReferralPointsSlots:                  []int64{10_000, 15_000},
+			RewardPointsAccumulationWindowInDays: 30,
+			DeliveryOriginLongitude:              longitude,
+			DeliveryOriginLatitude:               latitude,
+			DeliveryCostPerKM:                    3_000,
+			DeliveryMaxDistanceKM:                15,
+			WhatsappPhoneNumber:                  "628116099887",
+			PaymentTerms:                         24 * time.Hour,
+			MaximumDeliveryTime:                  4 * time.Hour,
+			TransactionAutoWithdrawalEnabled:     true,
+			TransactionAutoWithdrawalWindowMin: new(time.Date(
+				now.Year(),
+				now.Month(),
+				now.Day(),
+				10,
+				0,
+				0,
+				0,
+				now.Location(),
+			)),
+			TransactionAutoWithdrawalWindowMax: new(time.Date(
+				now.Year(),
+				now.Month(),
+				now.Day(),
+				21,
+				59,
+				59,
+				0,
+				now.Location(),
+			)),
+		}
+		var companyID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`INSERT INTO companies (
+				name
+				, billed
+				, subscription_status
+				, telegram_bot_token
+				, vacation_mode
+				, vacation_start_date
+				, vacation_end_date
+				, voucher_enabled
+				, referral_points_enabled
+				, referral_points_minimum_shopping_cost
+				, referral_points_per_referee
+				, referral_points_slots
+				, referral_points_expense
+				, reward_points_accumulation_window_in_days
+				, delivery_origin_longitude
+				, delivery_origin_latitude
+				, delivery_cost_per_km
+				, delivery_max_distance_km
+				, whatsapp_phone_number
+				, payment_terms
+				, maximum_delivery_time
+				, transaction_auto_withdrawal_enabled
+				, transaction_auto_withdrawal_window
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			) VALUES (
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+				, $11, $12, $13, $14, $15, $16, $17, $18, $19
+				, $20, $21, $22, tstzrange($23, $24, '[]'), $25, $26, $27, $28
+			)
+			RETURNING id`,
+			company.Name,
+			company.Billed,
+			company.SubscriptionStatus,
+			company.TelegramBotToken,
+			company.VacationMode,
+			company.VacationStartDate,
+			company.VacationEndDate,
+			company.VoucherEnabled,
+			company.ReferralPointsEnabled,
+			company.ReferralPointsMinimumShoppingCost,
+			company.ReferralPointsPerReferee,
+			company.ReferralPointsSlots,
+			company.ReferralPointsExpense,
+			company.RewardPointsAccumulationWindowInDays,
+			company.DeliveryOriginLongitude,
+			company.DeliveryOriginLatitude,
+			company.DeliveryCostPerKM,
+			company.DeliveryMaxDistanceKM,
+			company.WhatsappPhoneNumber,
+			company.PaymentTerms,
+			company.MaximumDeliveryTime,
+			company.TransactionAutoWithdrawalEnabled,
+			company.TransactionAutoWithdrawalWindowMin,
+			company.TransactionAutoWithdrawalWindowMax,
+			adminUserID,
+			now,
+			adminUserID,
+			now,
+		).Scan(&companyID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// sellers
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE sellers (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+				, seller_type integer NOT NULL
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		var sellerUserID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`INSERT INTO users (
+				company_id
+				, user_type
+				, user_status
+				, name
+				, confirmed_at
+				, mobile_phone
+				, username
+				, photo
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			RETURNING id`,
+			companyID,
+			models.UserTypeSeller,
+			models.UserStatusActive,
+			company.Name,
+			now,
+			company.WhatsappPhoneNumber,
+			strings.ToLower(company.Name),
+			"seller-default.png",
+			adminUserID,
+			now,
+			adminUserID,
+			now,
+		).Scan(&sellerUserID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO sellers (
+				user_id
+				, seller_type
+			) VALUES ($1, $2)`,
+			sellerUserID,
+			models.SellerTypeOwner,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		// buyers
@@ -577,25 +859,10 @@ func init() {
 			`CREATE TABLE setting (
 				id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY CHECK (id = 1)
 				, maintenance_mode BOOLEAN NOT NULL
-				, vacation_mode BOOLEAN NOT NULL
-				, vacation_start_date timestamp with time zone
-				, vacation_end_date timestamp with time zone
-				, voucher_enabled BOOLEAN NOT NULL
-				, referral_points_enabled BOOLEAN NOT NULL
-				, referral_points_minimum_shopping_cost bigint NOT NULL
-				, referral_points_per_referee bigint NOT NULL
-				, referral_points_slots bigint[] NOT NULL
-				, referral_points_expense bigint NOT NULL
-				, reward_points_accumulation_window_in_days smallint NOT NULL
-				, delivery_origin_longitude character varying NOT NULL
-				, delivery_origin_latitude character varying NOT NULL
-				, delivery_cost_per_km bigint NOT NULL
-				, delivery_max_distance_km bigint NOT NULL
-				, whatsapp_phone_number character varying NOT NULL
-				, payment_terms interval NOT NULL
-				, maximum_delivery_time interval NOT NULL
-				, transaction_auto_withdrawal_enabled boolean NOT NULL
-				, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
+				, subscription_trial_period integer NOT NULL
+				, monthly_billing_amount bigint NOT NULL
+				, annual_billing_amount bigint NOT NULL
+				, billing_grace_period integer NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -612,106 +879,30 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		longitude, err := decimal.Parse("98.64455685385735")
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
-			return
-		}
-		latitude, err := decimal.Parse("3.5394011973709434")
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
-			return
-		}
-		now := time.Now().In(time.Local)
 		setting := models.Setting{
-			VoucherEnabled:                       true,
-			ReferralPointsEnabled:                true,
-			ReferralPointsMinimumShoppingCost:    60_000,
-			ReferralPointsPerReferee:             25_000,
-			ReferralPointsSlots:                  []int64{10_000, 15_000},
-			RewardPointsAccumulationWindowInDays: 30,
-			DeliveryOriginLongitude:              longitude,
-			DeliveryOriginLatitude:               latitude,
-			DeliveryCostPerKM:                    3_000,
-			DeliveryMaxDistanceKM:                15,
-			WhatsappPhoneNumber:                  "628116099887",
-			PaymentTerms:                         24 * time.Hour,
-			MaximumDeliveryTime:                  4 * time.Hour,
-			TransactionAutoWithdrawalEnabled:     true,
-			TransactionAutoWithdrawalWindowMin: new(time.Date(
-				now.Year(),
-				now.Month(),
-				now.Day(),
-				10,
-				0,
-				0,
-				0,
-				now.Location(),
-			)),
-			TransactionAutoWithdrawalWindowMax: new(time.Date(
-				now.Year(),
-				now.Month(),
-				now.Day(),
-				21,
-				59,
-				59,
-				0,
-				now.Location(),
-			)),
+			SubscriptionTrialPeriod: 7,
+			MonthlyBillingAmount:    50_000,
+			AnnualBillingAmount:     500_000,
+			BillingGracePeriod:      7,
 		}
 		if _, err = tx.Exec(
 			ctx,
 			`INSERT INTO setting (
 				maintenance_mode
-				, vacation_mode
-				, vacation_start_date
-				, vacation_end_date
-				, voucher_enabled
-				, referral_points_enabled
-				, referral_points_minimum_shopping_cost
-				, referral_points_per_referee
-				, referral_points_slots
-				, referral_points_expense
-				, reward_points_accumulation_window_in_days
-				, delivery_origin_longitude
-				, delivery_origin_latitude
-				, delivery_cost_per_km
-				, delivery_max_distance_km
-				, whatsapp_phone_number
-				, payment_terms
-				, maximum_delivery_time
-				, transaction_auto_withdrawal_enabled
-				, transaction_auto_withdrawal_window
+				, subscription_trial_period
+				, monthly_billing_amount
+				, annual_billing_amount
+				, billing_grace_period
 				, created_by
 				, created_at
 				, updated_by
 				, updated_at
-			) VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-				, $11, $12, $13, $14, $15, $16, $17, $18, $19
-				, tstzrange($20, $21, '[]'), $22, $23, $24, $25
-			)`,
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
 			setting.MaintenanceMode,
-			setting.VacationMode,
-			setting.VacationStartDate,
-			setting.VacationEndDate,
-			setting.VoucherEnabled,
-			setting.ReferralPointsEnabled,
-			setting.ReferralPointsMinimumShoppingCost,
-			setting.ReferralPointsPerReferee,
-			setting.ReferralPointsSlots,
-			setting.ReferralPointsExpense,
-			setting.RewardPointsAccumulationWindowInDays,
-			setting.DeliveryOriginLongitude,
-			setting.DeliveryOriginLatitude,
-			setting.DeliveryCostPerKM,
-			setting.DeliveryMaxDistanceKM,
-			setting.WhatsappPhoneNumber,
-			setting.PaymentTerms,
-			setting.MaximumDeliveryTime,
-			setting.TransactionAutoWithdrawalEnabled,
-			setting.TransactionAutoWithdrawalWindowMin,
-			setting.TransactionAutoWithdrawalWindowMax,
+			setting.SubscriptionTrialPeriod,
+			setting.MonthlyBillingAmount,
+			setting.AnnualBillingAmount,
+			setting.BillingGracePeriod,
 			adminID,
 			now,
 			adminID,
@@ -1583,6 +1774,7 @@ func init() {
 			`CREATE TABLE transactions (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, parent_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, reordered BOOLEAN NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
@@ -1665,6 +1857,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (reordered);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON transactions (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
