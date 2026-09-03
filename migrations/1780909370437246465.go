@@ -262,37 +262,14 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
+		// sellers
 		if _, err = tx.Exec(
 			ctx,
-			`ALTER TABLE companies
-				ADD COLUMN created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN created_at timestamp with time zone NOT NULL
-				, ADD COLUMN updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN updated_at timestamp with time zone NOT NULL
-				, ADD COLUMN deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN deactivated_at timestamp with time zone
-				, ADD COLUMN deactivation_reason character varying`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (updated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (deactivated_by);`,
+			`CREATE TABLE sellers (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+				, seller_type integer NOT NULL
+			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -348,6 +325,88 @@ func init() {
 				now.Location(),
 			)),
 		}
+		var sellerUserID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`INSERT INTO users (
+				user_type
+				, user_status
+				, name
+				, confirmed_at
+				, mobile_phone
+				, username
+				, photo
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			RETURNING id`,
+			models.UserTypeSeller,
+			models.UserStatusActive,
+			company.Name,
+			now,
+			company.WhatsappPhoneNumber,
+			strings.ToLower(company.Name),
+			"seller-default.png",
+			adminUserID,
+			now,
+			adminUserID,
+			now,
+		).Scan(&sellerUserID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
+		var sellerID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`INSERT INTO sellers (
+				user_id
+				, seller_type
+			) VALUES ($1, $2)
+			RETURNING id`,
+			sellerUserID,
+			models.SellerTypeOwner,
+		).Scan(&sellerID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`ALTER TABLE companies
+				ADD COLUMN owner_id UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+				, ADD COLUMN created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN created_at timestamp with time zone NOT NULL
+				, ADD COLUMN updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN updated_at timestamp with time zone NOT NULL
+				, ADD COLUMN deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN deactivated_at timestamp with time zone
+				, ADD COLUMN deactivation_reason character varying`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (deactivated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		var companyID uuid.UUID
 		if err = tx.QueryRow(
 			ctx,
@@ -375,6 +434,7 @@ func init() {
 				, maximum_delivery_time
 				, transaction_auto_withdrawal_enabled
 				, transaction_auto_withdrawal_window
+				, owner_id
 				, created_by
 				, created_at
 				, updated_by
@@ -382,7 +442,7 @@ func init() {
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19
-				, $20, $21, $22, tstzrange($23, $24, '[]'), $25, $26, $27, $28
+				, $20, $21, $22, tstzrange($23, $24, '[]'), $25, $26, $27, $28, $29
 			)
 			RETURNING id`,
 			company.Name,
@@ -409,68 +469,22 @@ func init() {
 			company.TransactionAutoWithdrawalEnabled,
 			company.TransactionAutoWithdrawalWindowMin,
 			company.TransactionAutoWithdrawalWindowMax,
+			sellerID,
 			adminUserID,
 			now,
 			adminUserID,
 			now,
 		).Scan(&companyID); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		// sellers
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE sellers (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-				, seller_type integer NOT NULL
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		var sellerUserID uuid.UUID
-		if err = tx.QueryRow(
-			ctx,
-			`INSERT INTO users (
-				company_id
-				, user_type
-				, user_status
-				, name
-				, confirmed_at
-				, mobile_phone
-				, username
-				, photo
-				, created_by
-				, created_at
-				, updated_by
-				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-			RETURNING id`,
-			companyID,
-			models.UserTypeSeller,
-			models.UserStatusActive,
-			company.Name,
-			now,
-			company.WhatsappPhoneNumber,
-			strings.ToLower(company.Name),
-			"seller-default.png",
-			adminUserID,
-			now,
-			adminUserID,
-			now,
-		).Scan(&sellerUserID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`INSERT INTO sellers (
-				user_id
-				, seller_type
-			) VALUES ($1, $2)`,
+			`UPDATE users SET
+				company_id = $1
+			WHERE id = $2`,
+			companyID,
 			sellerUserID,
-			models.SellerTypeOwner,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

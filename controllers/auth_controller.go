@@ -194,7 +194,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			WithUserStatuses(models.UserStatusActive),
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)

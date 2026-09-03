@@ -116,6 +116,7 @@ func (q *companyRepository) FindCompanies(
 		, transaction_auto_withdrawal_enabled
 		, lower(transaction_auto_withdrawal_window)
 		, upper(transaction_auto_withdrawal_window)
+		, owner_id
 		, created_by
 		, created_at
 		, updated_by
@@ -204,6 +205,7 @@ func (q *companyRepository) FindCompanies(
 			&company.TransactionAutoWithdrawalEnabled,
 			&company.TransactionAutoWithdrawalWindowMin,
 			&company.TransactionAutoWithdrawalWindowMax,
+			&company.OwnerID,
 			&company.CreatedBy,
 			&company.CreatedAt,
 			&company.UpdatedBy,
@@ -265,6 +267,7 @@ func (q *companyRepository) FindCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, owner_id
 			, created_by
 			, created_at
 			, updated_by
@@ -306,6 +309,7 @@ func (q *companyRepository) FindCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -360,6 +364,7 @@ func (q *companyRepository) CreateCompany(
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
 			, transaction_auto_withdrawal_window
+			, owner_id
 			, created_by
 			, created_at
 			, updated_by
@@ -368,7 +373,7 @@ func (q *companyRepository) CreateCompany(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, tstzrange($26, $27, '[]'), $28, $29, $30
-			, $31
+			, $31, $32
 		)
 		RETURNING id
 			, name
@@ -398,6 +403,7 @@ func (q *companyRepository) CreateCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, owner_id
 			, created_by
 			, created_at
 			, updated_by
@@ -432,6 +438,7 @@ func (q *companyRepository) CreateCompany(
 		request.TransactionAutoWithdrawalEnabled,
 		request.TransactionAutoWithdrawalWindowMin,
 		request.TransactionAutoWithdrawalWindowMax,
+		request.OwnerID,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -465,6 +472,7 @@ func (q *companyRepository) CreateCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -517,6 +525,7 @@ func (q *companyRepository) UpdateCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, owner_id
 			, created_by
 			, created_at
 			, updated_by
@@ -557,6 +566,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -788,6 +798,13 @@ func (q *companyRepository) UpdateCompany(
 		}
 		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_window = tstzrange($%d, $%d, '[]')", n-1, n)
 	}
+	if response.OwnerID.Compare(request.OwnerID) != 0 {
+		params = append(params, request.OwnerID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " owner_id = $%d", n)
+	}
 	if len(params) == 0 {
 		return &response, nil
 	}
@@ -826,6 +843,7 @@ func (q *companyRepository) UpdateCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, owner_id
 			, created_by
 			, created_at
 			, updated_by
@@ -864,6 +882,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -919,6 +938,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, owner_id
 			, created_by
 			, created_at
 			, updated_by
@@ -959,6 +979,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -980,7 +1001,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			referral_points_expense = referral_points_expense + $1
 			, updated_by = $2
 			, updated_at = $3
-		WHERE id = 1
+		WHERE id = $4
 		RETURNING id
 			, name
 			, billed
@@ -1009,6 +1030,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, owner_id
 			, created_by
 			, created_at
 			, updated_by
@@ -1019,6 +1041,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		addition,
 		updatedBy,
 		updatedAt,
+		companyID,
 	).Scan(
 		&response.ID,
 		&response.Name,
@@ -1048,6 +1071,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
