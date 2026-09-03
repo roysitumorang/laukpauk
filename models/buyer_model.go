@@ -15,6 +15,8 @@ var ErrBuyerNotFound = errors.New("buyer not found")
 var ErrUniqueBuyerUsernameViolation = errors.New("username: already exists")
 var ErrUniqueBuyerMobilePhoneViolation = errors.New("mobile_phone: already exists")
 var ErrUniqueBuyerEmailViolation = errors.New("email: already exists")
+var ErrUniqueTelegramChatIdViolation = errors.New("telegram_chat_id: already exists")
+var ErrUniqueTelegramUsernameViolation = errors.New("telegram_username: already exists")
 var ErrUniqueBuyerReferralCodeViolation = errors.New("referral_code: already exists")
 var MapBuyerSortings = map[string]struct{}{
 	SortingFieldID:        {},
@@ -111,6 +113,11 @@ func (q *BuyerFilter) WithExcludedBuyerIDs(excludedBuyerIDs ...uuid.UUID) *Buyer
 	return q
 }
 
+func (q *BuyerFilter) WithTelegramChatIDs(telegramChatIDs ...int64) *BuyerFilter {
+	q.TelegramChatIDs = telegramChatIDs
+	return q
+}
+
 func (q *BuyerFilter) WithUserStatuses(userStatuses ...UserStatus) *BuyerFilter {
 	q.UserStatuses = userStatuses
 	return q
@@ -128,6 +135,11 @@ func (q *BuyerFilter) WithKeyword(keyword string) *BuyerFilter {
 
 func (q *BuyerFilter) WithUsername(username string) *BuyerFilter {
 	q.Username = username
+	return q
+}
+
+func (q *BuyerFilter) WithTelegramUsername(telegramUsername string) *BuyerFilter {
+	q.TelegramUsername = telegramUsername
 	return q
 }
 

@@ -122,6 +122,8 @@ func init() {
 				, password_changed_at timestamp with time zone
 				, photo character varying NOT NULL
 				, unread_notifications bigint NOT NULL DEFAULT 0
+				, telegram_chat_id bigint UNIQUE
+				, telegram_username character varying
 				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -132,6 +134,7 @@ func init() {
 				, UNIQUE (mobile_phone, company_id)
 				, UNIQUE (username, company_id)
 				, UNIQUE (email, company_id)
+				, UNIQUE (telegram_username, company_id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

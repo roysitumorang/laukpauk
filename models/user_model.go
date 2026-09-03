@@ -52,6 +52,8 @@ type (
 		PasswordChangedAt             *time.Time `json:"-" form:"-"`
 		Photo                         string     `json:"-" form:"photo"`
 		UnreadNotifications           int64      `json:"-" form:"-"`
+		TelegramChatID                *int64     `json:"telegram_chat_id" form:"telegram_chat_id"`
+		TelegramUsername              *string    `json:"telegram_username" form:"telegram_username"`
 		CreatedBy                     *uuid.UUID `json:"-" form:"-"`
 		CreatedAt                     time.Time  `json:"created_at" form:"-"`
 		UpdatedBy                     *uuid.UUID `json:"-" form:"-"`
@@ -65,10 +67,12 @@ type (
 		CompanyIDs,
 		UserIDs,
 		ExcludedUserIDs []uuid.UUID
-		UserStatuses []UserStatus
+		TelegramChatIDs []int64
+		UserStatuses    []UserStatus
 		Login,
 		Keyword,
 		Username,
+		TelegramUsername,
 		Email,
 		MobilePhone,
 		PasswordResetToken,

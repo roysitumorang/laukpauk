@@ -108,6 +108,8 @@ func (q *buyerRepository) FindBuyers(
 		, u.password_changed_at
 		, u.photo
 		, u.unread_notifications
+		, u.telegram_chat_id
+		, u.telegram_username
 		, u.created_by
 		, u.created_at
 		, u.updated_by
@@ -200,6 +202,8 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.PasswordChangedAt,
 			&buyer.Photo,
 			&buyer.UnreadNotifications,
+			&buyer.TelegramChatID,
+			&buyer.TelegramUsername,
 			&buyer.CreatedBy,
 			&buyer.CreatedAt,
 			&buyer.UpdatedBy,
@@ -270,6 +274,8 @@ func (q *buyerRepository) FindBuyer(
 			, u.password_changed_at
 			, u.photo
 			, u.unread_notifications
+			, u.telegram_chat_id
+			, u.telegram_username
 			, u.created_by
 			, u.created_at
 			, u.updated_by
@@ -319,6 +325,8 @@ func (q *buyerRepository) FindBuyer(
 		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
+		&response.TelegramChatID,
+		&response.TelegramUsername,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -386,6 +394,19 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.TelegramChatIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("u.telegram_chat_id IN (")
+		for i, telegramChatID := range request.TelegramChatIDs {
+			params = append(params, telegramChatID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if len(request.UserStatuses) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("u.user_status IN (")
@@ -426,6 +447,12 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		params = append(params, strings.ToLower(request.Username))
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "u.username = $%d", len(params))
+		conds = append(conds, sb.String())
+	}
+	if request.TelegramUsername != "" {
+		params = append(params, request.TelegramUsername)
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "u.telegram_username = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.Email != "" {
@@ -509,6 +536,8 @@ func (q *buyerRepository) CreateBuyer(
 			, password_changed_at
 			, photo
 			, unread_notifications
+			, telegram_chat_id
+			, telegram_username
 			, created_by
 			, created_at
 			, updated_by
@@ -517,6 +546,7 @@ func (q *buyerRepository) CreateBuyer(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+			, $31, $32
 		)
 		RETURNING id
 			, company_id
@@ -545,6 +575,8 @@ func (q *buyerRepository) CreateBuyer(
 			, password_changed_at
 			, photo
 			, unread_notifications
+			, telegram_chat_id
+			, telegram_username
 			, created_by
 			, created_at
 			, updated_by
@@ -578,6 +610,8 @@ func (q *buyerRepository) CreateBuyer(
 		request.PasswordChangedAt,
 		request.Photo,
 		request.UnreadNotifications,
+		request.TelegramChatID,
+		request.TelegramUsername,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -610,6 +644,8 @@ func (q *buyerRepository) CreateBuyer(
 		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
+		&response.TelegramChatID,
+		&response.TelegramUsername,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -622,12 +658,16 @@ func (q *buyerRepository) CreateBuyer(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_key":
+			case "users_username_company_id_key":
 				err = models.ErrUniqueBuyerUsernameViolation
-			case "users_mobile_phone_key":
+			case "users_mobile_phone_company_id_key":
 				err = models.ErrUniqueBuyerMobilePhoneViolation
-			case "users_email_key":
+			case "users_email_company_id_key":
 				err = models.ErrUniqueBuyerEmailViolation
+			case "users_telegram_chat_id_key":
+				err = models.ErrUniqueTelegramChatIdViolation
+			case "users_telegram_username_company_id_key":
+				err = models.ErrUniqueTelegramUsernameViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -871,6 +911,8 @@ func (q *buyerRepository) UpdateBuyer(
 			, password_changed_at
 			, photo
 			, unread_notifications
+			, telegram_chat_id
+			, telegram_username
 			, created_by
 			, created_at
 			, updated_by
@@ -910,6 +952,8 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
+		&response.TelegramChatID,
+		&response.TelegramUsername,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -1153,6 +1197,26 @@ func (q *buyerRepository) UpdateBuyer(
 		}
 		_, _ = fmt.Fprintf(sb, " unread_notifications = unread_notifications + $%d", n)
 	}
+	if (response.TelegramChatID != nil && request.TelegramChatID == nil) ||
+		(response.TelegramChatID == nil && request.TelegramChatID != nil) ||
+		(response.TelegramChatID != nil && request.TelegramChatID != nil &&
+			*response.TelegramChatID != *request.TelegramChatID) {
+		params = append(params, request.TelegramChatID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " telegram_chat_id = $%d", n)
+	}
+	if (response.TelegramUsername != nil && request.TelegramUsername == nil) ||
+		(response.TelegramUsername == nil && request.TelegramUsername != nil) ||
+		(response.TelegramUsername != nil && request.TelegramUsername != nil &&
+			*response.TelegramUsername != *request.TelegramUsername) {
+		params = append(params, request.TelegramUsername)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " telegram_username = $%d", n)
+	}
 	if len(params) == 0 {
 		return &response, nil
 	}
@@ -1234,6 +1298,8 @@ func (q *buyerRepository) UpdateBuyer(
 			, password_changed_at
 			, photo
 			, unread_notifications
+			, telegram_chat_id
+			, telegram_username
 			, created_by
 			, created_at
 			, updated_by
@@ -1271,6 +1337,8 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
+		&response.TelegramChatID,
+		&response.TelegramUsername,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -1282,12 +1350,16 @@ func (q *buyerRepository) UpdateBuyer(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_key":
+			case "users_username_company_id_key":
 				err = models.ErrUniqueBuyerUsernameViolation
-			case "users_mobile_phone_key":
+			case "users_mobile_phone_company_id_key":
 				err = models.ErrUniqueBuyerMobilePhoneViolation
-			case "users_email_key":
+			case "users_email_company_id_key":
 				err = models.ErrUniqueBuyerEmailViolation
+			case "users_telegram_chat_id_key":
+				err = models.ErrUniqueTelegramChatIdViolation
+			case "users_telegram_username_company_id_key":
+				err = models.ErrUniqueTelegramUsernameViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
