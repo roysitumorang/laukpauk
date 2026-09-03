@@ -113,6 +113,11 @@ func (q *BuyerFilter) WithExcludedBuyerIDs(excludedBuyerIDs ...uuid.UUID) *Buyer
 	return q
 }
 
+func (q *BuyerFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *BuyerFilter {
+	q.CompanyIDs = companyIDs
+	return q
+}
+
 func (q *BuyerFilter) WithTelegramChatIDs(telegramChatIDs ...int64) *BuyerFilter {
 	q.TelegramChatIDs = telegramChatIDs
 	return q
