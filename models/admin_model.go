@@ -24,16 +24,16 @@ var MapAdminSortings = map[string]struct{}{
 const AdminSortingFieldName = "name"
 
 const (
-	AdminTypeAdmin AdminType = iota
-	AdminTypeSuperAdmin
+	AdminLevelSuperAdmin AdminLevel = iota
+	AdminLevelAdmin
 )
 
-type AdminType int
+type AdminLevel int
 
-var AdminTypes = []AdminType{AdminTypeAdmin, AdminTypeSuperAdmin}
-var MapAdminTypes = map[AdminType]struct{}{
-	AdminTypeAdmin:      {},
-	AdminTypeSuperAdmin: {},
+var AdminLevels = []AdminLevel{AdminLevelAdmin, AdminLevelSuperAdmin}
+var MapAdminLevels = map[AdminLevel]struct{}{
+	AdminLevelAdmin:      {},
+	AdminLevelSuperAdmin: {},
 }
 
 type Admin struct {
@@ -41,7 +41,7 @@ type Admin struct {
 	ID     uuid.UUID `json:"id" form:"-"`
 	UserID uuid.UUID `json:"-" form:"-"`
 	user
-	AdminType AdminType `json:"-" form:"admin_type"`
+	AdminLevel AdminLevel `json:"-" form:"admin_level"`
 }
 
 func (q *Admin) Validate() error {
@@ -73,8 +73,8 @@ func (q *Admin) Validate() error {
 			return fmt.Errorf("password: %s", err.Error())
 		}
 	}
-	if _, ok := MapAdminTypes[q.AdminType]; !ok {
-		return errors.New("admin_type: not found")
+	if _, ok := MapAdminLevels[q.AdminLevel]; !ok {
+		return errors.New("admin_level: not found")
 	}
 	return nil
 }
@@ -93,7 +93,7 @@ func (q *Admin) PhotoPath(baseURLs ...string) string {
 }
 
 func (q *Admin) SuperAdmin() bool {
-	return q.AdminType == AdminTypeSuperAdmin
+	return q.AdminLevel == AdminLevelSuperAdmin
 }
 
 type AdminFilter struct {
@@ -181,17 +181,17 @@ func (q *AdminFilter) WithUrlValues(urlValues url.Values) *AdminFilter {
 	return q
 }
 
-func (q AdminType) Equal(v AdminType) bool {
+func (q AdminLevel) Equal(v AdminLevel) bool {
 	return q.Int() == v.Int()
 }
 
-func (q AdminType) String() string {
-	if q == AdminTypeSuperAdmin {
+func (q AdminLevel) String() string {
+	if q == AdminLevelSuperAdmin {
 		return "super admin"
 	}
 	return "admin"
 }
 
-func (q AdminType) Int() int {
+func (q AdminLevel) Int() int {
 	return int(q)
 }

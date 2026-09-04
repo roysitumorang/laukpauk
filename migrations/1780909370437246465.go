@@ -195,7 +195,7 @@ func init() {
 			`CREATE TABLE admins (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-				, admin_type integer NOT NULL
+				, admin_level integer NOT NULL
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -253,11 +253,11 @@ func init() {
 			ctx,
 			`INSERT INTO admins (
 				user_id
-				, admin_type
+				, admin_level
 			) VALUES ($1, $2)
 			RETURNING id`,
 			adminUserID,
-			models.AdminTypeSuperAdmin,
+			models.AdminLevelSuperAdmin,
 		).Scan(&adminID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return

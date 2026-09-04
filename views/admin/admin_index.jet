@@ -141,7 +141,7 @@
 													<span class="ml-2 fa fa-star text-warning cp"
 														data-toggle="tooltip"
 														data-placement="top"
-														title="{{ row.AdminType.String() }}"></span>
+														title="{{ row.AdminLevel.String() }}"></span>
 												</h6>
 												<p class="text-sm text-info mb-1 cp"
 													style="font-size:.775rem !important;"

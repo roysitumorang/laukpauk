@@ -16,10 +16,10 @@
 		</div>
 		<div class="col-lg-8">
 			<div class="form-group">
-				<label for="admin_type" class="label-title">Tipe Admin</label>
-				<select name="admin_type" id="admin_type" class="form-control" required>
-					{{ range _, adminType := adminTypes }}
-					<option value="{{ adminType.Int() }}"{{ if request.AdminType.Equal(adminType) }} selected{{ end }}>{{ adminType.String() }}</option>
+				<label for="admin_level" class="label-title">Tipe Admin</label>
+				<select name="admin_level" id="admin_level" class="form-control" required>
+					{{ range _, adminLevel := adminLevels }}
+					<option value="{{ adminLevel.Int() }}"{{ if request.AdminLevel.Equal(adminLevel) }} selected{{ end }}>{{ adminLevel.String() }}</option>
 					{{ end }}
 				</select>
 			</div>

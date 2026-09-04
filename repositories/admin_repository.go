@@ -114,7 +114,7 @@ func (q *adminRepository) FindAdmins(
 		, u.deactivated_by
 		, u.deactivated_at
 		, u.deactivation_reason
-		, a.admin_type`,
+		, a.admin_level`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -198,7 +198,7 @@ func (q *adminRepository) FindAdmins(
 			&admin.DeactivatedBy,
 			&admin.DeactivatedAt,
 			&admin.DeactivationReason,
-			&admin.AdminType,
+			&admin.AdminLevel,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -260,7 +260,7 @@ func (q *adminRepository) FindAdmin(
 			, u.deactivated_by
 			, u.deactivated_at
 			, u.deactivation_reason
-			, a.admin_type
+			, a.admin_level
 		FROM users u
 		JOIN admins a ON u.id = a.user_id %s`,
 		condition,
@@ -301,7 +301,7 @@ func (q *adminRepository) FindAdmin(
 		&response.DeactivatedBy,
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
-		&response.AdminType,
+		&response.AdminLevel,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrAdminNotFound
@@ -576,17 +576,17 @@ func (q *adminRepository) CreateAdmin(
 		ctx,
 		`INSERT INTO admins (
 			user_id
-			, admin_type
+			, admin_level
 		) VALUES ($1, $2)
 		RETURNING id
 			, user_id
-			, admin_type`,
+			, admin_level`,
 		response.UserID,
-		request.AdminType,
+		request.AdminLevel,
 	).Scan(
 		&response.ID,
 		&response.UserID,
-		&response.AdminType,
+		&response.AdminLevel,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -606,7 +606,7 @@ func (q *adminRepository) UpdateAdmin(
 		`SELECT
 			id
 			, user_id
-			, admin_type
+			, admin_level
 		FROM admins
 		WHERE id = $1
 		FOR UPDATE`,
@@ -614,7 +614,7 @@ func (q *adminRepository) UpdateAdmin(
 	).Scan(
 		&response.ID,
 		&response.UserID,
-		&response.AdminType,
+		&response.AdminLevel,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrBuyerNotFound
@@ -632,12 +632,12 @@ func (q *adminRepository) UpdateAdmin(
 	var params []any
 	var n int
 	_, _ = sb.WriteString("UPDATE admins SET")
-	if response.AdminType != request.AdminType {
-		params = append(params, request.AdminType)
+	if response.AdminLevel != request.AdminLevel {
+		params = append(params, request.AdminLevel)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " admin_type = $%d", n)
+		_, _ = fmt.Fprintf(sb, " admin_level = $%d", n)
 	}
 	if len(params) > 0 {
 		params = append(params, request.ID)
@@ -646,13 +646,13 @@ func (q *adminRepository) UpdateAdmin(
 			` WHERE id = $%d
 			RETURNING id
 				, user_id
-				, admin_type`,
+				, admin_level`,
 			len(params),
 		)
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&response.ID,
 			&response.UserID,
-			&response.AdminType,
+			&response.AdminLevel,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err

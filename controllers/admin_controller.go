@@ -35,7 +35,7 @@ func NewAdminController(
 }
 
 func (q *adminController) Mount(r fiber.Router) {
-	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService, models.AdminTypeSuperAdmin)
+	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService, models.AdminLevelSuperAdmin)
 	r.Group("/admin", adminSessionAuth).
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).
@@ -138,7 +138,7 @@ func (q *adminController) AdminNew(c fiber.Ctx) (err error) {
 		"request", request,
 		"admin", request,
 		"admins", admins,
-		"adminTypes", models.AdminTypes,
+		"adminLevels", models.AdminLevels,
 	)
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,
@@ -178,7 +178,7 @@ func (q *adminController) AdminCreate(c fiber.Ctx) (err error) {
 		"request", request,
 		"admin", request,
 		"admins", admins,
-		"adminTypes", models.AdminTypes,
+		"adminLevels", models.AdminLevels,
 	)
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,
@@ -368,7 +368,7 @@ func (q *adminController) AdminEdit(c fiber.Ctx) (err error) {
 		"request", admin,
 		"admin", admin,
 		"admins", admins,
-		"adminTypes", models.AdminTypes,
+		"adminLevels", models.AdminLevels,
 	)
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,
@@ -426,7 +426,7 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 		"request", admin,
 		"admin", admin,
 		"admins", admins,
-		"adminTypes", models.AdminTypes,
+		"adminLevels", models.AdminLevels,
 	)
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,

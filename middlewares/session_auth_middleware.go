@@ -12,7 +12,7 @@ import (
 
 func AdminSessionAuthMiddleware(
 	adminService services.AdminService,
-	adminTypes ...models.AdminType,
+	adminLevels ...models.AdminLevel,
 ) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		ctx := c.Context()
@@ -42,7 +42,7 @@ func AdminSessionAuthMiddleware(
 		}
 		sess.Set(models.CurrentAdmin, currentAdmin)
 		_ = sess.Session.SaveWithContext(ctx)
-		if len(adminTypes) > 0 && currentAdmin.AdminType != adminTypes[0] {
+		if len(adminLevels) > 0 && currentAdmin.AdminLevel != adminLevels[0] {
 			return flash.Danger(models.ErrAccessDenied.Error()).Redirect(c, sess.Session, "/admin")
 		}
 		return c.Next()
