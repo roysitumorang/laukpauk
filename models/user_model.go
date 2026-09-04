@@ -26,8 +26,6 @@ type (
 		UserType                      UserType   `json:"-" form:"-"`
 		UserStatus                    UserStatus `json:"-" form:"-"`
 		Name                          string     `json:"name" form:"name"`
-		ConfirmationToken             *string    `json:"-" form:"-"`
-		ConfirmedAt                   *time.Time `json:"-" form:"-"`
 		UnconfirmedMobilePhone        *string    `json:"-" form:"-"`
 		MobilePhoneConfirmationSentAt *time.Time `json:"-" form:"-"`
 		MobilePhoneConfirmationToken  *string    `json:"-" form:"-"`

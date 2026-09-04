@@ -85,8 +85,6 @@ func (q *adminRepository) FindAdmins(
 		, u.user_type
 		, u.user_status
 		, u.name
-		, u.confirmation_token
-		, u.confirmed_at
 		, u.unconfirmed_mobile_phone
 		, u.mobile_phone_confirmation_sent_at
 		, u.mobile_phone_confirmation_token
@@ -169,8 +167,6 @@ func (q *adminRepository) FindAdmins(
 			&admin.UserType,
 			&admin.UserStatus,
 			&admin.Name,
-			&admin.ConfirmationToken,
-			&admin.ConfirmedAt,
 			&admin.UnconfirmedMobilePhone,
 			&admin.MobilePhoneConfirmationSentAt,
 			&admin.MobilePhoneConfirmationToken,
@@ -231,8 +227,6 @@ func (q *adminRepository) FindAdmin(
 			, u.user_type
 			, u.user_status
 			, u.name
-			, u.confirmation_token
-			, u.confirmed_at
 			, u.unconfirmed_mobile_phone
 			, u.mobile_phone_confirmation_sent_at
 			, u.mobile_phone_confirmation_token
@@ -272,8 +266,6 @@ func (q *adminRepository) FindAdmin(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
@@ -428,8 +420,6 @@ func (q *adminRepository) CreateAdmin(
 			user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -457,14 +447,12 @@ func (q *adminRepository) CreateAdmin(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27, $28, $29
+			, $21, $22, $23, $24, $25, $26, $27
 		)
 		RETURNING id
 			, user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -495,8 +483,6 @@ func (q *adminRepository) CreateAdmin(
 		request.UserType,
 		request.UserStatus,
 		request.Name,
-		request.ConfirmationToken,
-		request.ConfirmedAt,
 		request.UnconfirmedMobilePhone,
 		request.MobilePhoneConfirmationSentAt,
 		request.MobilePhoneConfirmationToken,
@@ -526,8 +512,6 @@ func (q *adminRepository) CreateAdmin(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
@@ -665,8 +649,6 @@ func (q *adminRepository) UpdateAdmin(
 			, user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -703,8 +685,6 @@ func (q *adminRepository) UpdateAdmin(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
@@ -756,26 +736,6 @@ func (q *adminRepository) UpdateAdmin(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " name = $%d", n)
-	}
-	if (response.ConfirmationToken != nil && request.ConfirmationToken == nil) ||
-		(response.ConfirmationToken == nil && request.ConfirmationToken != nil) ||
-		(response.ConfirmationToken != nil && request.ConfirmationToken != nil &&
-			*response.ConfirmationToken != *request.ConfirmationToken) {
-		params = append(params, request.ConfirmationToken)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " confirmation_token = $%d", n)
-	}
-	if (response.ConfirmedAt != nil && request.ConfirmedAt == nil) ||
-		(response.ConfirmedAt == nil && request.ConfirmedAt != nil) ||
-		(response.ConfirmedAt != nil && request.ConfirmedAt != nil &&
-			!response.ConfirmedAt.Equal(*request.ConfirmedAt)) {
-		params = append(params, request.ConfirmedAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " confirmed_at = $%d", n)
 	}
 	if (response.UnconfirmedMobilePhone != nil && request.UnconfirmedMobilePhone == nil) ||
 		(response.UnconfirmedMobilePhone == nil && request.UnconfirmedMobilePhone != nil) ||
@@ -1026,8 +986,6 @@ func (q *adminRepository) UpdateAdmin(
 			, user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -1062,8 +1020,6 @@ func (q *adminRepository) UpdateAdmin(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,

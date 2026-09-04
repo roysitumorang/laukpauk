@@ -86,8 +86,6 @@ func (q *buyerRepository) FindBuyers(
 		, u.user_type
 		, u.user_status
 		, u.name
-		, u.confirmation_token
-		, u.confirmed_at
 		, u.unconfirmed_mobile_phone
 		, u.mobile_phone_confirmation_sent_at
 		, u.mobile_phone_confirmation_token
@@ -180,8 +178,6 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.UserType,
 			&buyer.UserStatus,
 			&buyer.Name,
-			&buyer.ConfirmationToken,
-			&buyer.ConfirmedAt,
 			&buyer.UnconfirmedMobilePhone,
 			&buyer.MobilePhoneConfirmationSentAt,
 			&buyer.MobilePhoneConfirmationToken,
@@ -252,8 +248,6 @@ func (q *buyerRepository) FindBuyer(
 			, u.user_type
 			, u.user_status
 			, u.name
-			, u.confirmation_token
-			, u.confirmed_at
 			, u.unconfirmed_mobile_phone
 			, u.mobile_phone_confirmation_sent_at
 			, u.mobile_phone_confirmation_token
@@ -303,8 +297,6 @@ func (q *buyerRepository) FindBuyer(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
@@ -514,8 +506,6 @@ func (q *buyerRepository) CreateBuyer(
 			, user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -546,15 +536,12 @@ func (q *buyerRepository) CreateBuyer(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32
 		)
 		RETURNING id
 			, company_id
 			, user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -588,8 +575,6 @@ func (q *buyerRepository) CreateBuyer(
 		request.UserType,
 		request.UserStatus,
 		request.Name,
-		request.ConfirmationToken,
-		request.ConfirmedAt,
 		request.UnconfirmedMobilePhone,
 		request.MobilePhoneConfirmationSentAt,
 		request.MobilePhoneConfirmationToken,
@@ -622,8 +607,6 @@ func (q *buyerRepository) CreateBuyer(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
@@ -889,8 +872,6 @@ func (q *buyerRepository) UpdateBuyer(
 			, user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -930,8 +911,6 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
@@ -985,26 +964,6 @@ func (q *buyerRepository) UpdateBuyer(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " name = $%d", n)
-	}
-	if (response.ConfirmationToken != nil && request.ConfirmationToken == nil) ||
-		(response.ConfirmationToken == nil && request.ConfirmationToken != nil) ||
-		(response.ConfirmationToken != nil && request.ConfirmationToken != nil &&
-			*response.ConfirmationToken != *request.ConfirmationToken) {
-		params = append(params, request.ConfirmationToken)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " confirmation_token = $%d", n)
-	}
-	if (response.ConfirmedAt != nil && request.ConfirmedAt == nil) ||
-		(response.ConfirmedAt == nil && request.ConfirmedAt != nil) ||
-		(response.ConfirmedAt != nil && request.ConfirmedAt != nil &&
-			!response.ConfirmedAt.Equal(*request.ConfirmedAt)) {
-		params = append(params, request.ConfirmedAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " confirmed_at = $%d", n)
 	}
 	if (response.UnconfirmedMobilePhone != nil && request.UnconfirmedMobilePhone == nil) ||
 		(response.UnconfirmedMobilePhone == nil && request.UnconfirmedMobilePhone != nil) ||
@@ -1276,8 +1235,6 @@ func (q *buyerRepository) UpdateBuyer(
 			, user_type
 			, user_status
 			, name
-			, confirmation_token
-			, confirmed_at
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
@@ -1315,8 +1272,6 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
-		&response.ConfirmationToken,
-		&response.ConfirmedAt,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,

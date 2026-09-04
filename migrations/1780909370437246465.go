@@ -100,8 +100,6 @@ func init() {
 				, user_type integer NOT NULL
 				, user_status integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
-				, confirmation_token character varying UNIQUE
-				, confirmed_at timestamp with time zone
 				, unconfirmed_mobile_phone character varying
 				, mobile_phone_confirmation_sent_at timestamp with time zone
 				, mobile_phone_confirmation_token character varying
@@ -300,7 +298,7 @@ func init() {
 			DeliveryOriginLatitude:               latitude,
 			DeliveryCostPerKM:                    3_000,
 			DeliveryMaxDistanceKM:                15,
-			WhatsappPhoneNumber:                  "628116099887",
+			WhatsappPhoneNumber:                  "+628116099887",
 			PaymentTerms:                         24 * time.Hour,
 			MaximumDeliveryTime:                  4 * time.Hour,
 			TransactionAutoWithdrawalEnabled:     true,
@@ -332,7 +330,7 @@ func init() {
 				user_type
 				, user_status
 				, name
-				, confirmed_at
+				, mobile_phone_confirmed_at
 				, mobile_phone
 				, username
 				, photo
