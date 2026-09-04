@@ -37,9 +37,8 @@ var MapAdminLevels = map[AdminLevel]struct{}{
 }
 
 type Admin struct {
-	RowNo  int64     `json:"-" form:"-"`
-	ID     uuid.UUID `json:"id" form:"-"`
-	UserID uuid.UUID `json:"-" form:"-"`
+	RowNo int64     `json:"-" form:"-"`
+	ID    uuid.UUID `json:"id" form:"-"`
 	user
 	AdminLevel AdminLevel `json:"-" form:"admin_level"`
 }

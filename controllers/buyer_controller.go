@@ -264,7 +264,7 @@ func (q *buyerController) AdminCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	now := time.Now().In(time.Local)
-	createdBy := currentAdmin.UserID
+	createdBy := currentAdmin.ID
 	if request.PasswordIncluded {
 		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
 		if err != nil {
@@ -539,7 +539,7 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 	buyer.Wallet = 0
 	buyer.TransactionVolume = 0
 	buyer.ReferrerID = request.ReferrerID
-	buyer.UpdatedBy = &currentAdmin.UserID
+	buyer.UpdatedBy = &currentAdmin.ID
 	buyer.UpdatedAt = now
 	buyer.DeactivatedBy = nil
 	buyer.DeactivatedAt = nil
@@ -613,7 +613,7 @@ func (q *buyerController) AdminDelete(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/admin/buyers")
 	}
 	buyer.UserStatus = models.UserStatusDeactivated
-	buyer.DeactivatedBy = &currentAdmin.UserID
+	buyer.DeactivatedBy = &currentAdmin.ID
 	buyer.DeactivatedAt = new(time.Now())
 	buyer.DeactivationReason = nil
 	tx, err := repositories.BeginTx(ctx)

@@ -62,7 +62,7 @@ func (q *notificationTargetController) AdminCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	now := time.Now()
-	request.UserID = currentAdmin.UserID
+	request.UserID = currentAdmin.ID
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
@@ -110,7 +110,7 @@ func (q *notificationTargetController) V1BuyerSave(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	now := time.Now()
-	request.UserID = currentBuyer.UserID
+	request.UserID = currentBuyer.ID
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)

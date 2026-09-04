@@ -26,9 +26,8 @@ var MapBuyerSortings = map[string]struct{}{
 const BuyerSortingFieldName = "name"
 
 type Buyer struct {
-	RowNo  int64     `json:"-" form:"-"`
-	ID     uuid.UUID `json:"id" form:"id"`
-	UserID uuid.UUID `json:"-" form:"-"`
+	RowNo int64     `json:"-" form:"-"`
+	ID    uuid.UUID `json:"id" form:"id"`
 	user
 	ReferralCode      string     `json:"referral_code" form:"referral_code"`
 	Address           string     `json:"address" form:"address"`

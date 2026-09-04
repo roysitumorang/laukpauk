@@ -66,7 +66,7 @@ func (q *buyerRepository) FindBuyers(
 	sb.Reset()
 	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM users u JOIN buyers b ON u.id = b.user_id %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM users u JOIN buyers b ON u.id = b.id %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -81,7 +81,6 @@ func (q *buyerRepository) FindBuyers(
 		query,
 		"COUNT(1)",
 		`b.id
-		, b.user_id
 		, u.company_id
 		, u.user_type
 		, u.user_status
@@ -173,7 +172,6 @@ func (q *buyerRepository) FindBuyers(
 		var buyer models.Buyer
 		if err = rows.Scan(
 			&buyer.ID,
-			&buyer.UserID,
 			&buyer.CompanyID,
 			&buyer.UserType,
 			&buyer.UserStatus,
@@ -243,7 +241,6 @@ func (q *buyerRepository) FindBuyer(
 		sb,
 		`SELECT
 			b.id
-			, b.user_id
 			, u.company_id
 			, u.user_type
 			, u.user_status
@@ -286,13 +283,12 @@ func (q *buyerRepository) FindBuyer(
 			, b.transaction_volume
 			, b.delivery_route_id
 		FROM users u
-		JOIN buyers b ON u.id = b.user_id %s`,
+		JOIN buyers b ON u.id = b.id %s`,
 		condition,
 	)
 	var response models.Buyer
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.UserID,
 		&response.CompanyID,
 		&response.UserType,
 		&response.UserStatus,
@@ -602,7 +598,7 @@ func (q *buyerRepository) CreateBuyer(
 		request.UpdatedBy,
 		request.UpdatedAt,
 	).Scan(
-		&response.UserID,
+		&response.ID,
 		&response.CompanyID,
 		&response.UserType,
 		&response.UserStatus,
@@ -660,7 +656,7 @@ func (q *buyerRepository) CreateBuyer(
 	if err = tx.QueryRow(
 		ctx,
 		`INSERT INTO buyers (
-			user_id
+			id
 			, referral_code
 			, address
 			, referrer_id
@@ -671,7 +667,6 @@ func (q *buyerRepository) CreateBuyer(
 			, delivery_route_id
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
-			, user_id
 			, referral_code
 			, address
 			, referrer_id
@@ -680,7 +675,7 @@ func (q *buyerRepository) CreateBuyer(
 			, wallet
 			, transaction_volume
 			, delivery_route_id`,
-		response.UserID,
+		response.ID,
 		request.ReferralCode,
 		request.Address,
 		request.ReferrerID,
@@ -691,7 +686,6 @@ func (q *buyerRepository) CreateBuyer(
 		request.DeliveryRouteID,
 	).Scan(
 		&response.ID,
-		&response.UserID,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,
@@ -724,7 +718,6 @@ func (q *buyerRepository) UpdateBuyer(
 		ctx,
 		`SELECT
 			id
-			, user_id
 			, referral_code
 			, address
 			, referrer_id
@@ -739,7 +732,6 @@ func (q *buyerRepository) UpdateBuyer(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.UserID,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,
@@ -831,7 +823,6 @@ func (q *buyerRepository) UpdateBuyer(
 			sb,
 			` WHERE id = $%d
 			RETURNING id
-				, user_id
 				, referral_code
 				, address
 				, referrer_id
@@ -844,7 +835,6 @@ func (q *buyerRepository) UpdateBuyer(
 		)
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&response.ID,
-			&response.UserID,
 			&response.ReferralCode,
 			&response.Address,
 			&response.ReferrerID,
@@ -904,7 +894,7 @@ func (q *buyerRepository) UpdateBuyer(
 		FROM users
 		WHERE id = $1
 		FOR UPDATE`,
-		response.UserID,
+		response.ID,
 	).Scan(
 		&response.ID,
 		&response.CompanyID,
@@ -1226,7 +1216,7 @@ func (q *buyerRepository) UpdateBuyer(
 		}
 		_, _ = fmt.Fprintf(sb, " deactivation_reason = $%d", n)
 	}
-	params = append(params, response.UserID)
+	params = append(params, response.ID)
 	_, _ = fmt.Fprintf(
 		sb,
 		` WHERE id = $%d

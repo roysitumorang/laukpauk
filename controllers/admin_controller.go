@@ -263,7 +263,7 @@ func (q *adminController) AdminCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	now := time.Now().In(time.Local)
-	createdBy := currentAdmin.UserID
+	createdBy := currentAdmin.ID
 	if request.PasswordIncluded {
 		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
 		if err != nil {
@@ -532,7 +532,7 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 	admin.MobilePhone = request.MobilePhone
 	admin.Email = request.Email
 	admin.Photo = request.Photo
-	admin.UpdatedBy = &currentAdmin.UserID
+	admin.UpdatedBy = &currentAdmin.ID
 	admin.UpdatedAt = now
 	admin.DeactivatedBy = nil
 	admin.DeactivatedAt = nil
@@ -609,7 +609,7 @@ func (q *adminController) AdminDelete(c fiber.Ctx) (err error) {
 		return flash.Danger(models.ErrAdminNotFound.Error()).Redirect(c, sess.Session, "/admin/admins")
 	}
 	admin.UserStatus = models.UserStatusDeactivated
-	admin.DeactivatedBy = &currentAdmin.UserID
+	admin.DeactivatedBy = &currentAdmin.ID
 	admin.DeactivatedAt = new(time.Now())
 	admin.DeactivationReason = nil
 	tx, err := repositories.BeginTx(ctx)

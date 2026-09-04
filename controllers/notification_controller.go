@@ -188,7 +188,7 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 	params.Push("buyers", buyers)
 	mapUserIDs := map[uuid.UUID]struct{}{}
 	for _, buyer := range buyers {
-		mapUserIDs[buyer.UserID] = struct{}{}
+		mapUserIDs[buyer.ID] = struct{}{}
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateNotification(ctx, c)
 	params.Push("request", request)

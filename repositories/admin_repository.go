@@ -66,7 +66,7 @@ func (q *adminRepository) FindAdmins(
 	sb.Reset()
 	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM users u JOIN admins a ON u.id = a.user_id %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM users u JOIN admins a ON u.id = a.id %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -81,7 +81,6 @@ func (q *adminRepository) FindAdmins(
 		query,
 		"COUNT(1)",
 		`a.id
-		, a.user_id
 		, u.user_type
 		, u.user_status
 		, u.name
@@ -163,7 +162,6 @@ func (q *adminRepository) FindAdmins(
 		var admin models.Admin
 		if err = rows.Scan(
 			&admin.ID,
-			&admin.UserID,
 			&admin.UserType,
 			&admin.UserStatus,
 			&admin.Name,
@@ -223,7 +221,6 @@ func (q *adminRepository) FindAdmin(
 		sb,
 		`SELECT
 			a.id
-			, a.user_id
 			, u.user_type
 			, u.user_status
 			, u.name
@@ -256,13 +253,12 @@ func (q *adminRepository) FindAdmin(
 			, u.deactivation_reason
 			, a.admin_level
 		FROM users u
-		JOIN admins a ON u.id = a.user_id %s`,
+		JOIN admins a ON u.id = a.id %s`,
 		condition,
 	)
 	var response models.Admin
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.UserID,
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
@@ -508,7 +504,7 @@ func (q *adminRepository) CreateAdmin(
 		request.UpdatedBy,
 		request.UpdatedAt,
 	).Scan(
-		&response.UserID,
+		&response.ID,
 		&response.UserType,
 		&response.UserStatus,
 		&response.Name,
@@ -559,19 +555,13 @@ func (q *adminRepository) CreateAdmin(
 	if err = tx.QueryRow(
 		ctx,
 		`INSERT INTO admins (
-			user_id
+			id
 			, admin_level
 		) VALUES ($1, $2)
-		RETURNING id
-			, user_id
-			, admin_level`,
-		response.UserID,
+		RETURNING admin_level`,
+		response.ID,
 		request.AdminLevel,
-	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.AdminLevel,
-	); err != nil {
+	).Scan(&response.AdminLevel); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
@@ -589,7 +579,6 @@ func (q *adminRepository) UpdateAdmin(
 		ctx,
 		`SELECT
 			id
-			, user_id
 			, admin_level
 		FROM admins
 		WHERE id = $1
@@ -597,7 +586,6 @@ func (q *adminRepository) UpdateAdmin(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.UserID,
 		&response.AdminLevel,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -629,13 +617,11 @@ func (q *adminRepository) UpdateAdmin(
 			sb,
 			` WHERE id = $%d
 			RETURNING id
-				, user_id
 				, admin_level`,
 			len(params),
 		)
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&response.ID,
-			&response.UserID,
 			&response.AdminLevel,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -679,7 +665,7 @@ func (q *adminRepository) UpdateAdmin(
 		FROM users
 		WHERE id = $1
 		FOR UPDATE`,
-		response.UserID,
+		response.ID,
 	).Scan(
 		&response.ID,
 		&response.UserType,
@@ -978,7 +964,7 @@ func (q *adminRepository) UpdateAdmin(
 		}
 		_, _ = fmt.Fprintf(sb, " deactivation_reason = $%d", n)
 	}
-	params = append(params, response.UserID)
+	params = append(params, response.ID)
 	_, _ = fmt.Fprintf(
 		sb,
 		` WHERE id = $%d

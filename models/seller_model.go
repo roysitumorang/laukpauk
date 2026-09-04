@@ -24,24 +24,23 @@ var MapSellerSortings = map[string]struct{}{
 const SellerSortingFieldName = "name"
 
 const (
-	SellerTypeOwner SellerType = iota
-	SellerTypeStaff
+	SellerLevelOwner SellerLevel = iota
+	SellerLevelStaff
 )
 
-type SellerType int
+type SellerLevel int
 
-var SellerTypes = []SellerType{SellerTypeOwner, SellerTypeStaff}
-var MapSellerTypes = map[SellerType]struct{}{
-	SellerTypeOwner: {},
-	SellerTypeStaff: {},
+var SellerLevels = []SellerLevel{SellerLevelOwner, SellerLevelStaff}
+var MapSellerLevels = map[SellerLevel]struct{}{
+	SellerLevelOwner: {},
+	SellerLevelStaff: {},
 }
 
 type Seller struct {
-	RowNo  int64     `json:"-" form:"-"`
-	ID     uuid.UUID `json:"id" form:"-"`
-	UserID uuid.UUID `json:"-" form:"-"`
+	RowNo int64     `json:"-" form:"-"`
+	ID    uuid.UUID `json:"id" form:"-"`
 	user
-	SellerType SellerType `json:"-" form:"seller_type"`
+	SellerType SellerLevel `json:"-" form:"seller_type"`
 }
 
 func (q *Seller) Validate() error {
@@ -73,7 +72,7 @@ func (q *Seller) Validate() error {
 			return fmt.Errorf("password: %s", err.Error())
 		}
 	}
-	if _, ok := MapSellerTypes[q.SellerType]; !ok {
+	if _, ok := MapSellerLevels[q.SellerType]; !ok {
 		return errors.New("seller_type: not found")
 	}
 	return nil
@@ -93,7 +92,7 @@ func (q *Seller) PhotoPath(baseURLs ...string) string {
 }
 
 func (q *Seller) Owner() bool {
-	return q.SellerType == SellerTypeOwner
+	return q.SellerType == SellerLevelOwner
 }
 
 type SellerFilter struct {
@@ -181,17 +180,17 @@ func (q *SellerFilter) WithUrlValues(urlValues url.Values) *SellerFilter {
 	return q
 }
 
-func (q SellerType) Equal(v SellerType) bool {
+func (q SellerLevel) Equal(v SellerLevel) bool {
 	return q.Int() == v.Int()
 }
 
-func (q SellerType) String() string {
-	if q == SellerTypeStaff {
+func (q SellerLevel) String() string {
+	if q == SellerLevelStaff {
 		return "staff"
 	}
 	return "owner"
 }
 
-func (q SellerType) Int() int {
+func (q SellerLevel) Int() int {
 	return int(q)
 }
