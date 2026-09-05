@@ -86,6 +86,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, record_status
 		, name
 		, description
@@ -147,6 +148,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		var productCategory models.ProductCategory
 		if err = rows.Scan(
 			&productCategory.ID,
+			&productCategory.CompanyID,
 			&productCategory.RecordStatus,
 			&productCategory.Name,
 			&productCategory.Description,
@@ -186,6 +188,7 @@ func (q *productCategoryRepository) FindProductCategory(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, name
 			, description
@@ -204,6 +207,7 @@ func (q *productCategoryRepository) FindProductCategory(
 	var response models.ProductCategory
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -236,7 +240,8 @@ func (q *productCategoryRepository) CreateProductCategory(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO product_categories (
-			record_status
+			company_id
+			, record_status
 			, name
 			, description
 			, photo
@@ -244,8 +249,9 @@ func (q *productCategoryRepository) CreateProductCategory(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
+			, company_id
 			, record_status
 			, name
 			, description
@@ -257,6 +263,7 @@ func (q *productCategoryRepository) CreateProductCategory(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
+		request.CompanyID,
 		request.RecordStatus,
 		request.Name,
 		request.Description,
@@ -267,6 +274,7 @@ func (q *productCategoryRepository) CreateProductCategory(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -302,6 +310,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, name
 			, description
@@ -319,6 +328,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -427,6 +437,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
+			, company_id
 			, record_status
 			, name
 			, description
@@ -442,6 +453,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -497,6 +509,19 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedProductCategoryID := range request.ExcludedProductCategoryIDs {
 			params = append(params, excludedProductCategoryID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

@@ -145,9 +145,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/landing_pages/*":         "/landing_pages/admin/$1",
 				"/admin/landing_pages/*/*":       "/landing_pages/admin/$1/$2",
 				"/admin/landing_pages/*/*/*":     "/landing_pages/admin/$1/$2/$3",
-				"/admin/product_categories":      "/product_categories/admin",
-				"/admin/product_categories/*":    "/product_categories/admin/$1",
-				"/admin/product_categories/*/*":  "/product_categories/admin/$1/$2",
 				"/admin/products":                "/products/admin",
 				"/admin/products/*":              "/products/admin/$1",
 				"/admin/products/*/*":            "/products/admin/$1/$2",
@@ -194,6 +191,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/companies/*/*":           "/companies/admin/$1/$2",
 				"/seller/auth/*":                 "/auth/seller/$1",
 				"/seller":                        "/home/seller",
+				"/seller/product_categories":     "/product_categories/seller",
+				"/seller/product_categories/*":   "/product_categories/seller/$1",
+				"/seller/product_categories/*/*": "/product_categories/seller/$1/$2",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/notification_targets": "/notification_targets/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
@@ -308,6 +308,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/landing_pages"))
 	controllers.NewProductCategoryController(
 		q.AdminService,
+		q.SellerService,
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,

@@ -518,6 +518,7 @@ func init() {
 			ctx,
 			`CREATE TABLE product_categories (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
@@ -530,6 +531,13 @@ func init() {
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON product_categories (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
