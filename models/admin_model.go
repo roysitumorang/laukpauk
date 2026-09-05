@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 	"uuid"
 
 	"github.com/nyaruka/phonenumbers"
@@ -23,12 +24,27 @@ var MapAdminSortings = map[string]struct{}{
 
 const AdminSortingFieldName = "name"
 
+type AdminLevel int
+
 const (
 	AdminLevelSuperAdmin AdminLevel = iota
 	AdminLevelAdmin
 )
 
-type AdminLevel int
+func (q AdminLevel) Equal(v AdminLevel) bool {
+	return q.Int() == v.Int()
+}
+
+func (q AdminLevel) String() string {
+	if q == AdminLevelSuperAdmin {
+		return "super admin"
+	}
+	return "admin"
+}
+
+func (q AdminLevel) Int() int {
+	return int(q)
+}
 
 var AdminLevels = []AdminLevel{AdminLevelAdmin, AdminLevelSuperAdmin}
 var MapAdminLevels = map[AdminLevel]struct{}{
@@ -36,11 +52,47 @@ var MapAdminLevels = map[AdminLevel]struct{}{
 	AdminLevelSuperAdmin: {},
 }
 
+type AdminStatus int
+
+const (
+	AdminStatusActive AdminStatus = iota
+	AdminStatusDeactivated
+)
+
 type Admin struct {
-	RowNo int64     `json:"-" form:"-"`
-	ID    uuid.UUID `json:"id" form:"-"`
-	user
-	AdminLevel AdminLevel `json:"-" form:"admin_level"`
+	RowNo                         int64       `json:"-" form:"-"`
+	ID                            uuid.UUID   `json:"id" form:"-"`
+	Status                        AdminStatus `json:"-" form:"-"`
+	AdminLevel                    AdminLevel  `json:"-" form:"admin_level"`
+	Name                          string      `json:"name" form:"name"`
+	UnconfirmedMobilePhone        *string     `json:"-" form:"-"`
+	MobilePhoneConfirmationSentAt *time.Time  `json:"-" form:"-"`
+	MobilePhoneConfirmationToken  *string     `json:"-" form:"-"`
+	MobilePhoneConfirmedAt        *time.Time  `json:"-" form:"-"`
+	MobilePhone                   string      `json:"mobile_phone" form:"mobile_phone"`
+	Username                      string      `json:"username" form:"username"`
+	UnconfirmedEmail              *string     `json:"-" form:"-"`
+	EmailConfirmationSentAt       *time.Time  `json:"-" form:"-"`
+	EmailConfirmationToken        *string     `json:"-" form:"-"`
+	EmailConfirmedAt              *time.Time  `json:"-" form:"-"`
+	Email                         string      `json:"email" form:"email"`
+	PasswordIncluded              bool        `json:"-" form:"password_included"`
+	Base64Password                string      `json:"-" form:"password"`
+	Base64PasswordConfirmation    string      `json:"-" form:"password_confirmation"`
+	PlaintextPassword             string      `json:"-" form:"-"`
+	EncryptedPassword             *string     `json:"-" form:"-"`
+	PasswordResetAt               *time.Time  `json:"-" form:"-"`
+	PasswordResetToken            *string     `json:"-" form:"-"`
+	PasswordChangedAt             *time.Time  `json:"-" form:"-"`
+	Photo                         string      `json:"-" form:"photo"`
+	UnreadNotifications           int64       `json:"-" form:"-"`
+	CreatedBy                     *uuid.UUID  `json:"-" form:"-"`
+	CreatedAt                     time.Time   `json:"created_at" form:"-"`
+	UpdatedBy                     *uuid.UUID  `json:"-" form:"-"`
+	UpdatedAt                     time.Time   `json:"-" form:"-"`
+	DeactivatedBy                 *uuid.UUID  `json:"-" form:"-"`
+	DeactivatedAt                 *time.Time  `json:"-" form:"-"`
+	DeactivationReason            *string     `json:"-" form:"-"`
 }
 
 func (q *Admin) Validate() error {
@@ -50,14 +102,14 @@ func (q *Admin) Validate() error {
 	if q.Username = strings.TrimSpace(strings.ToLower(q.Username)); q.Username == "" {
 		return errors.New("username: is required")
 	}
-	if q.MobilePhone == nil || *q.MobilePhone == "" {
+	if q.MobilePhone = strings.TrimSpace(q.MobilePhone); q.MobilePhone == "" {
 		return errors.New("mobile_phone: is required")
 	}
-	mobilePhone, err := phonenumbers.Parse(*q.MobilePhone, "ID")
+	mobilePhone, err := phonenumbers.Parse(q.MobilePhone, "ID")
 	if err != nil {
 		return fmt.Errorf("mobile_phone: %w", err)
 	}
-	q.MobilePhone = new(phonenumbers.Format(mobilePhone, phonenumbers.E164))
+	q.MobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
 	if q.PasswordIncluded {
 		if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
 			return errors.New("password: is required")
@@ -96,7 +148,21 @@ func (q *Admin) SuperAdmin() bool {
 }
 
 type AdminFilter struct {
-	userFilter
+	AdminIDs,
+	ExcludedAdminIDs []uuid.UUID
+	Statuses []AdminStatus
+	Login,
+	Keyword,
+	Username,
+	Email,
+	MobilePhone,
+	PasswordResetToken,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
 }
 
 func NewAdminFilter() *AdminFilter {
@@ -107,17 +173,17 @@ func NewAdminFilter() *AdminFilter {
 }
 
 func (q *AdminFilter) WithAdminIDs(adminIDs ...uuid.UUID) *AdminFilter {
-	q.UserIDs = adminIDs
+	q.AdminIDs = adminIDs
 	return q
 }
 
 func (q *AdminFilter) WithExcludedAdminIDs(excludedAdminIDs ...uuid.UUID) *AdminFilter {
-	q.ExcludedUserIDs = excludedAdminIDs
+	q.ExcludedAdminIDs = excludedAdminIDs
 	return q
 }
 
-func (q *AdminFilter) WithUserStatuses(userStatuses ...UserStatus) *AdminFilter {
-	q.UserStatuses = userStatuses
+func (q *AdminFilter) WithStatuses(statuses ...AdminStatus) *AdminFilter {
+	q.Statuses = statuses
 	return q
 }
 
@@ -178,19 +244,4 @@ func (q *AdminFilter) WithPage(page int64) *AdminFilter {
 func (q *AdminFilter) WithUrlValues(urlValues url.Values) *AdminFilter {
 	q.UrlValues = urlValues
 	return q
-}
-
-func (q AdminLevel) Equal(v AdminLevel) bool {
-	return q.Int() == v.Int()
-}
-
-func (q AdminLevel) String() string {
-	if q == AdminLevelSuperAdmin {
-		return "super admin"
-	}
-	return "admin"
-}
-
-func (q AdminLevel) Int() int {
-	return int(q)
 }

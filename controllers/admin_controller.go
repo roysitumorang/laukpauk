@@ -103,7 +103,7 @@ func (q *adminController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.adminService.FindAdmins(
 		ctx,
-		request.WithUserStatuses(models.UserStatusActive),
+		request.WithStatuses(models.AdminStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmins")
 		return c.Render("admin/admin_index", params.Push(
@@ -143,7 +143,7 @@ func (q *adminController) AdminNew(c fiber.Ctx) (err error) {
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,
 		models.NewAdminFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.AdminStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.AdminSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -183,7 +183,7 @@ func (q *adminController) AdminCreate(c fiber.Ctx) (err error) {
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,
 		models.NewAdminFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.AdminStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.AdminSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -222,45 +222,39 @@ func (q *adminController) AdminCreate(c fiber.Ctx) (err error) {
 			"request", request.SetPhoto(""),
 		), "admin/layouts/authenticated")
 	}
-	if request.MobilePhone != nil {
-		admin, err := q.adminService.FindAdmin(
-			ctx,
-			models.NewAdminFilter().
-				WithMobilePhone(*request.MobilePhone),
-		)
-		if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
-			return c.Render("admin/admin_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(""),
-			), "admin/layouts/authenticated")
-		}
-		if admin != nil {
-			return c.Render("admin/admin_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueAdminMobilePhoneViolation.Error()),
-				"request", request.SetPhoto(""),
-			), "admin/layouts/authenticated")
-		}
+	if admin, err = q.adminService.FindAdmin(
+		ctx,
+		models.NewAdminFilter().
+			WithMobilePhone(request.MobilePhone),
+	); err != nil && !errors.Is(err, models.ErrAdminNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+		return c.Render("admin/admin_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(""),
+		), "admin/layouts/authenticated")
 	}
-	if request.Email != nil {
-		admin, err := q.adminService.FindAdmin(
-			ctx,
-			models.NewAdminFilter().
-				WithEmail(*request.Email),
-		)
-		if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
-			return c.Render("admin/admin_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(""),
-			), "admin/layouts/authenticated")
-		}
-		if admin != nil {
-			return c.Render("admin/admin_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueAdminEmailViolation.Error()),
-				"request", request.SetPhoto(""),
-			), "admin/layouts/authenticated")
-		}
+	if admin != nil {
+		return c.Render("admin/admin_new", params.Push(
+			"flash", flash.Danger(models.ErrUniqueAdminMobilePhoneViolation.Error()),
+			"request", request.SetPhoto(""),
+		), "admin/layouts/authenticated")
+	}
+	if admin, err = q.adminService.FindAdmin(
+		ctx,
+		models.NewAdminFilter().
+			WithEmail(request.Email),
+	); err != nil && !errors.Is(err, models.ErrAdminNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
+		return c.Render("admin/admin_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+			"request", request.SetPhoto(""),
+		), "admin/layouts/authenticated")
+	}
+	if admin != nil {
+		return c.Render("admin/admin_new", params.Push(
+			"flash", flash.Danger(models.ErrUniqueAdminEmailViolation.Error()),
+			"request", request.SetPhoto(""),
+		), "admin/layouts/authenticated")
 	}
 	now := time.Now().In(time.Local)
 	createdBy := currentAdmin.ID
@@ -347,7 +341,7 @@ func (q *adminController) AdminEdit(c fiber.Ctx) (err error) {
 	admin, err := q.adminService.FindAdmin(
 		ctx,
 		models.NewAdminFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.AdminStatusActive).
 			WithAdminIDs(adminID),
 	)
 	if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
@@ -373,7 +367,7 @@ func (q *adminController) AdminEdit(c fiber.Ctx) (err error) {
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,
 		models.NewAdminFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.AdminStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.AdminSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -405,7 +399,7 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 	admin, err := q.adminService.FindAdmin(
 		ctx,
 		models.NewAdminFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.AdminStatusActive).
 			WithAdminIDs(adminID),
 	)
 	if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
@@ -431,7 +425,7 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 	if admins, _, err = q.adminService.FindAdmins(
 		ctx,
 		models.NewAdminFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.AdminStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.AdminSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -473,13 +467,11 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 	}
-	if request.MobilePhone != nil &&
-		(admin.MobilePhone == nil ||
-			*admin.MobilePhone != *request.MobilePhone) {
+	if admin.MobilePhone != request.MobilePhone {
 		otherAdmin, err := q.adminService.FindAdmin(
 			ctx,
 			models.NewAdminFilter().
-				WithMobilePhone(*request.MobilePhone).
+				WithMobilePhone(request.MobilePhone).
 				WithExcludedAdminIDs(admin.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
@@ -494,13 +486,11 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 			), "admin/layouts/authenticated")
 		}
 	}
-	if request.Email != nil &&
-		(admin.Email == nil ||
-			*admin.Email != *request.Email) {
+	if admin.Email != request.Email {
 		otherAdmin, err := q.adminService.FindAdmin(
 			ctx,
 			models.NewAdminFilter().
-				WithEmail(*request.Email).
+				WithEmail(request.Email).
 				WithExcludedAdminIDs(admin.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
@@ -598,7 +588,7 @@ func (q *adminController) AdminDelete(c fiber.Ctx) (err error) {
 	admin, err := q.adminService.FindAdmin(
 		ctx,
 		models.NewAdminFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.AdminStatusActive).
 			WithAdminIDs(adminID),
 	)
 	if err != nil && !errors.Is(err, models.ErrAdminNotFound) {
@@ -608,7 +598,7 @@ func (q *adminController) AdminDelete(c fiber.Ctx) (err error) {
 	if admin == nil {
 		return flash.Danger(models.ErrAdminNotFound.Error()).Redirect(c, sess.Session, "/admin/admins")
 	}
-	admin.UserStatus = models.UserStatusDeactivated
+	admin.Status = models.AdminStatusDeactivated
 	admin.DeactivatedBy = &currentAdmin.ID
 	admin.DeactivatedAt = new(time.Now())
 	admin.DeactivationReason = nil

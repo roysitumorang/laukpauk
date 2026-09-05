@@ -66,7 +66,7 @@ func (q *adminRepository) FindAdmins(
 	sb.Reset()
 	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM users u JOIN admins a ON u.id = a.id %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM admins %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -80,38 +80,34 @@ func (q *adminRepository) FindAdmins(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`a.id
-		, u.user_type
-		, u.user_status
-		, u.name
-		, u.unconfirmed_mobile_phone
-		, u.mobile_phone_confirmation_sent_at
-		, u.mobile_phone_confirmation_token
-		, u.mobile_phone_confirmed_at
-		, u.mobile_phone
-		, u.otp_token
-		, u.otp_created_at
-		, u.otp_expired_at
-		, u.username
-		, u.unconfirmed_email
-		, u.email_confirmation_sent_at
-		, u.email_confirmation_token
-		, u.email_confirmed_at
-		, u.email
-		, u.encrypted_password
-		, u.password_reset_at
-		, u.password_reset_token
-		, u.password_changed_at
-		, u.photo
-		, u.unread_notifications
-		, u.created_by
-		, u.created_at
-		, u.updated_by
-		, u.updated_at
-		, u.deactivated_by
-		, u.deactivated_at
-		, u.deactivation_reason
-		, a.admin_level`,
+		`id
+		, status
+		, admin_level
+		, name
+		, unconfirmed_mobile_phone
+		, mobile_phone_confirmation_sent_at
+		, mobile_phone_confirmation_token
+		, mobile_phone_confirmed_at
+		, mobile_phone
+		, username
+		, unconfirmed_email
+		, email_confirmation_sent_at
+		, email_confirmation_token
+		, email_confirmed_at
+		, email
+		, encrypted_password
+		, password_reset_at
+		, password_reset_token
+		, password_changed_at
+		, photo
+		, unread_notifications
+		, created_by
+		, created_at
+		, updated_by
+		, updated_at
+		, deactivated_by
+		, deactivated_at
+		, deactivation_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -162,17 +158,14 @@ func (q *adminRepository) FindAdmins(
 		var admin models.Admin
 		if err = rows.Scan(
 			&admin.ID,
-			&admin.UserType,
-			&admin.UserStatus,
+			&admin.Status,
+			&admin.AdminLevel,
 			&admin.Name,
 			&admin.UnconfirmedMobilePhone,
 			&admin.MobilePhoneConfirmationSentAt,
 			&admin.MobilePhoneConfirmationToken,
 			&admin.MobilePhoneConfirmedAt,
 			&admin.MobilePhone,
-			&admin.OtpToken,
-			&admin.OtpCreatedAt,
-			&admin.OtpExpiredAt,
 			&admin.Username,
 			&admin.UnconfirmedEmail,
 			&admin.EmailConfirmationSentAt,
@@ -192,7 +185,6 @@ func (q *adminRepository) FindAdmins(
 			&admin.DeactivatedBy,
 			&admin.DeactivatedAt,
 			&admin.DeactivationReason,
-			&admin.AdminLevel,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -220,56 +212,48 @@ func (q *adminRepository) FindAdmin(
 	_, _ = fmt.Fprintf(
 		sb,
 		`SELECT
-			a.id
-			, u.user_type
-			, u.user_status
-			, u.name
-			, u.unconfirmed_mobile_phone
-			, u.mobile_phone_confirmation_sent_at
-			, u.mobile_phone_confirmation_token
-			, u.mobile_phone_confirmed_at
-			, u.mobile_phone
-			, u.otp_token
-			, u.otp_created_at
-			, u.otp_expired_at
-			, u.username
-			, u.unconfirmed_email
-			, u.email_confirmation_sent_at
-			, u.email_confirmation_token
-			, u.email_confirmed_at
-			, u.email
-			, u.encrypted_password
-			, u.password_reset_at
-			, u.password_reset_token
-			, u.password_changed_at
-			, u.photo
-			, u.unread_notifications
-			, u.created_by
-			, u.created_at
-			, u.updated_by
-			, u.updated_at
-			, u.deactivated_by
-			, u.deactivated_at
-			, u.deactivation_reason
-			, a.admin_level
-		FROM users u
-		JOIN admins a ON u.id = a.id %s`,
+			id
+			, status
+			, admin_level
+			, name
+			, unconfirmed_mobile_phone
+			, mobile_phone_confirmation_sent_at
+			, mobile_phone_confirmation_token
+			, mobile_phone_confirmed_at
+			, mobile_phone
+			, username
+			, unconfirmed_email
+			, email_confirmation_sent_at
+			, email_confirmation_token
+			, email_confirmed_at
+			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
+			, photo
+			, unread_notifications
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deactivated_by
+			, deactivated_at
+			, deactivation_reason
+		FROM admins %s`,
 		condition,
 	)
 	var response models.Admin
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
+		&response.AdminLevel,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
-		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,
@@ -289,7 +273,6 @@ func (q *adminRepository) FindAdmin(
 		&response.DeactivatedBy,
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
-		&response.AdminLevel,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrAdminNotFound
@@ -303,11 +286,11 @@ func (q *adminRepository) FindAdmin(
 
 func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.UserIDs) > 0 {
+	if len(request.AdminIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("a.id IN (")
-		for i, userID := range request.UserIDs {
-			params = append(params, userID)
+		_, _ = sb.WriteString("id IN (")
+		for i, adminID := range request.AdminIDs {
+			params = append(params, adminID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -316,11 +299,11 @@ func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *string
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ExcludedUserIDs) > 0 {
+	if len(request.ExcludedAdminIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("a.id NOT IN (")
-		for i, excludedUserID := range request.ExcludedUserIDs {
-			params = append(params, excludedUserID)
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedAdminID := range request.ExcludedAdminIDs {
+			params = append(params, excludedAdminID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -329,11 +312,11 @@ func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *string
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.UserStatuses) > 0 {
+	if len(request.Statuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("u.user_status IN (")
-		for i, userStatus := range request.UserStatuses {
-			params = append(params, userStatus)
+		_, _ = sb.WriteString("status IN (")
+		for i, status := range request.Statuses {
+			params = append(params, status)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -346,7 +329,7 @@ func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *string
 		params = append(params, strings.ToLower(request.Login))
 		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(u.username = $%d OR u.email = $%d OR u.mobile_phone = $%d)", n, n, n)
+		_, _ = fmt.Fprintf(sb, "(username = $%d OR email = $%d OR mobile_phone = $%d)", n, n, n)
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
@@ -357,10 +340,10 @@ func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *string
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
-			`(LOWER(u.name) LIKE $%d
-				OR u.username LIKE $%d
-				OR u.email LIKE $%d
-				OR u.mobile_phone LIKE $%d)`,
+			`(LOWER(name) LIKE $%d
+				OR username LIKE $%d
+				OR email LIKE $%d
+				OR mobile_phone LIKE $%d)`,
 			n, n, n, n,
 		)
 		conds = append(conds, sb.String())
@@ -368,25 +351,25 @@ func (q *adminRepository) buildCondition(request *models.AdminFilter, sb *string
 	if request.Username != "" {
 		params = append(params, strings.ToLower(request.Username))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.username = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "username = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.Email != "" {
 		params = append(params, strings.ToLower(request.Email))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.email = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "email = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.MobilePhone != "" {
 		params = append(params, strings.ToLower(request.MobilePhone))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.mobile_phone = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "mobile_phone = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.PasswordResetToken != "" {
 		params = append(params, request.PasswordResetToken)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.password_reset_token = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "password_reset_token = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
@@ -412,18 +395,15 @@ func (q *adminRepository) CreateAdmin(
 	var response models.Admin
 	err := tx.QueryRow(
 		ctx,
-		`INSERT INTO users (
-			user_type
-			, user_status
+		`INSERT INTO admins (
+			status
+			, admin_level
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
-			, otp_expired_at
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -443,20 +423,17 @@ func (q *adminRepository) CreateAdmin(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27
+			, $21, $22, $23, $24
 		)
 		RETURNING id
-			, user_type
-			, user_status
+			, status
+			, admin_level
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
-			, otp_expired_at
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -476,17 +453,14 @@ func (q *adminRepository) CreateAdmin(
 			, deactivated_by
 			, deactivated_at
 			, deactivation_reason`,
-		request.UserType,
-		request.UserStatus,
+		request.Status,
+		request.AdminLevel,
 		request.Name,
 		request.UnconfirmedMobilePhone,
 		request.MobilePhoneConfirmationSentAt,
 		request.MobilePhoneConfirmationToken,
 		request.MobilePhoneConfirmedAt,
 		request.MobilePhone,
-		request.OtpToken,
-		request.OtpCreatedAt,
-		request.OtpExpiredAt,
 		request.Username,
 		request.UnconfirmedEmail,
 		request.EmailConfirmationSentAt,
@@ -505,17 +479,14 @@ func (q *adminRepository) CreateAdmin(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
+		&response.AdminLevel,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
-		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,
@@ -540,29 +511,16 @@ func (q *adminRepository) CreateAdmin(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_key":
+			case "admins_username_key":
 				err = models.ErrUniqueAdminUsernameViolation
-			case "users_mobile_phone_key":
+			case "admins_mobile_phone_key":
 				err = models.ErrUniqueAdminMobilePhoneViolation
-			case "users_email_key":
+			case "admins_email_key":
 				err = models.ErrUniqueAdminEmailViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
-		return nil, err
-	}
-	if err = tx.QueryRow(
-		ctx,
-		`INSERT INTO admins (
-			id
-			, admin_level
-		) VALUES ($1, $2)
-		RETURNING admin_level`,
-		response.ID,
-		request.AdminLevel,
-	).Scan(&response.AdminLevel); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return &response, nil
@@ -579,70 +537,14 @@ func (q *adminRepository) UpdateAdmin(
 		ctx,
 		`SELECT
 			id
+			, status
 			, admin_level
-		FROM admins
-		WHERE id = $1
-		FOR UPDATE`,
-		request.ID,
-	).Scan(
-		&response.ID,
-		&response.AdminLevel,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrBuyerNotFound
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	sb := pools.BuilderPool.Get()
-	defer func() {
-		sb.Reset()
-		pools.BuilderPool.Put(sb)
-	}()
-	sb.Reset()
-	var params []any
-	var n int
-	_, _ = sb.WriteString("UPDATE admins SET")
-	if response.AdminLevel != request.AdminLevel {
-		params = append(params, request.AdminLevel)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " admin_level = $%d", n)
-	}
-	if len(params) > 0 {
-		params = append(params, request.ID)
-		_, _ = fmt.Fprintf(
-			sb,
-			` WHERE id = $%d
-			RETURNING id
-				, admin_level`,
-			len(params),
-		)
-		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-			&response.ID,
-			&response.AdminLevel,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return nil, err
-		}
-	}
-	err = tx.QueryRow(
-		ctx,
-		`SELECT
-			id
-			, user_type
-			, user_status
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
-			, otp_expired_at
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -662,23 +564,20 @@ func (q *adminRepository) UpdateAdmin(
 			, deactivated_by
 			, deactivated_at
 			, deactivation_reason
-		FROM users
+		FROM admins
 		WHERE id = $1
 		FOR UPDATE`,
-		response.ID,
+		request.ID,
 	).Scan(
 		&response.ID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
+		&response.AdminLevel,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
-		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,
@@ -706,11 +605,17 @@ func (q *adminRepository) UpdateAdmin(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	params = params[:0]
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
-	_, _ = sb.WriteString("UPDATE users SET")
-	if response.UserStatus != request.UserStatus {
-		params = append(params, request.UserStatus)
+	_, _ = sb.WriteString("UPDATE admins SET")
+	if response.Status != request.Status {
+		params = append(params, request.Status)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
@@ -763,45 +668,12 @@ func (q *adminRepository) UpdateAdmin(
 		}
 		_, _ = fmt.Fprintf(sb, " mobile_phone_confirmed_at = $%d", n)
 	}
-	if (response.MobilePhone != nil && request.MobilePhone == nil) ||
-		(response.MobilePhone == nil && request.MobilePhone != nil) ||
-		(response.MobilePhone != nil && request.MobilePhone != nil &&
-			*response.MobilePhone != *request.MobilePhone) {
+	if response.MobilePhone != request.MobilePhone {
 		params = append(params, request.MobilePhone)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " mobile_phone = $%d", n)
-	}
-	if (response.OtpToken != nil && request.OtpToken == nil) ||
-		(response.OtpToken == nil && request.OtpToken != nil) ||
-		(response.OtpToken != nil && request.OtpToken != nil &&
-			*response.OtpToken != *request.OtpToken) {
-		params = append(params, request.OtpToken)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " otp_token = $%d", n)
-	}
-	if (response.OtpCreatedAt != nil && request.OtpCreatedAt == nil) ||
-		(response.OtpCreatedAt == nil && request.OtpCreatedAt != nil) ||
-		(response.OtpCreatedAt != nil && request.OtpCreatedAt != nil &&
-			!response.OtpCreatedAt.Equal(*request.OtpCreatedAt)) {
-		params = append(params, request.OtpCreatedAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " otp_created_at = $%d", n)
-	}
-	if (response.OtpExpiredAt != nil && request.OtpExpiredAt == nil) ||
-		(response.OtpExpiredAt == nil && request.OtpExpiredAt != nil) ||
-		(response.OtpExpiredAt != nil && request.OtpExpiredAt != nil &&
-			!response.OtpExpiredAt.Equal(*request.OtpExpiredAt)) {
-		params = append(params, request.OtpExpiredAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " otp_expired_at = $%d", n)
 	}
 	if response.Username != request.Username {
 		params = append(params, request.Username)
@@ -850,10 +722,7 @@ func (q *adminRepository) UpdateAdmin(
 		}
 		_, _ = fmt.Fprintf(sb, " email_confirmed_at = $%d", n)
 	}
-	if (response.Email != nil && request.Email == nil) ||
-		(response.Email == nil && request.Email != nil) ||
-		(response.Email != nil && request.Email != nil &&
-			*response.Email != *request.Email) {
+	if response.Email != request.Email {
 		params = append(params, request.Email)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -969,17 +838,14 @@ func (q *adminRepository) UpdateAdmin(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, user_type
-			, user_status
+			, status
+			, admin_level
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
-			, otp_expired_at
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -1003,17 +869,14 @@ func (q *adminRepository) UpdateAdmin(
 	)
 	err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
+		&response.AdminLevel,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
-		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,
@@ -1038,11 +901,11 @@ func (q *adminRepository) UpdateAdmin(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_key":
+			case "admins_username_key":
 				err = models.ErrUniqueAdminUsernameViolation
-			case "users_mobile_phone_key":
+			case "admins_mobile_phone_key":
 				err = models.ErrUniqueAdminMobilePhoneViolation
-			case "users_email_key":
+			case "admins_email_key":
 				err = models.ErrUniqueAdminEmailViolation
 			}
 		} else {

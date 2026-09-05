@@ -113,7 +113,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 		ctx,
 		models.NewAdminFilter().
 			WithLogin(request.Login).
-			WithUserStatuses(models.UserStatusActive),
+			WithStatuses(models.AdminStatusActive),
 	)
 	if err != nil {
 		if !errors.Is(err, models.ErrAdminNotFound) {
