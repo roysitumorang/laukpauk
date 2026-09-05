@@ -9,30 +9,31 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-const (
-	CurrentAdmin        = "current_admin"
-	CurrentBuyer        = "current_buyer"
-	CurrentJsonWebToken = "current_jwt"
-	UserID              = "user_id"
-)
+const CurrentAdmin = "current_admin"
+const CurrentSeller = "current_seller"
+const CurrentBuyer = "current_buyer"
+const CurrentJsonWebToken = "current_jwt"
+const UserID = "user_id"
 
-var (
-	ErrLoginFailed = errors.New("login failed")
-)
+var ErrLoginFailed = errors.New("login failed")
 
-type (
-	LoginRequest struct {
-		Login          string `json:"login" form:"login"`
-		Base64Password string `json:"password" form:"password"`
-		Password       string `json:"-" form:"-"`
-	}
+type LoginRequest struct {
+	Login          string `json:"login" form:"login"`
+	Base64Password string `json:"password" form:"password"`
+	Password       string `json:"-" form:"-"`
+}
 
-	BuyerLoginResponse struct {
-		IDToken   string    `json:"id_token"`
-		ExpiredAt time.Time `json:"expired_at"`
-		Buyer     *Buyer    `json:"buyer"`
-	}
-)
+type SellerLoginResponse struct {
+	IDToken   string    `json:"id_token"`
+	ExpiredAt time.Time `json:"expired_at"`
+	Seller    *Seller   `json:"seller"`
+}
+
+type BuyerLoginResponse struct {
+	IDToken   string    `json:"id_token"`
+	ExpiredAt time.Time `json:"expired_at"`
+	Buyer     *Buyer    `json:"buyer"`
+}
 
 func (q *LoginRequest) Validate() error {
 	if q.Login = strings.TrimSpace(q.Login); q.Login == "" {

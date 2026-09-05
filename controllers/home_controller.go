@@ -22,6 +22,7 @@ import (
 type (
 	homeController struct {
 		adminService           services.AdminService
+		sellerService          services.SellerService
 		landingPageService     services.LandingPageService
 		landingPageItemService services.LandingPageItemService
 		blogService            services.BlogService
@@ -31,6 +32,7 @@ type (
 
 func NewHomeController(
 	adminService services.AdminService,
+	sellerService services.SellerService,
 	landingPageService services.LandingPageService,
 	landingPageItemService services.LandingPageItemService,
 	blogService services.BlogService,
@@ -38,6 +40,7 @@ func NewHomeController(
 ) *homeController {
 	return &homeController{
 		adminService:           adminService,
+		sellerService:          sellerService,
 		landingPageService:     landingPageService,
 		landingPageItemService: landingPageItemService,
 		blogService:            blogService,
@@ -47,6 +50,7 @@ func NewHomeController(
 
 func (q *homeController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
 	r.Get("", q.Index).
 		Get("/blogs", q.BlogIndex).
 		Get("/blogs/:id", q.BlogShow).
@@ -56,6 +60,8 @@ func (q *homeController) Mount(r fiber.Router) {
 		Get("/privacy-policy", q.PrivacyPolicy)
 	r.Group("/admin").
 		Get("", adminSessionAuth, q.AdminIndex)
+	r.Group("/seller").
+		Get("", sellerSessionAuth, q.SellerIndex)
 }
 
 func (q *homeController) Index(c fiber.Ctx) (err error) {
@@ -360,4 +366,23 @@ func (q *homeController) AdminIndex(c fiber.Ctx) error {
 		"currentAdmin", currentAdmin,
 		"pageTitle", "Dashboard Lauk Pauk",
 	), "admin/layouts/authenticated")
+}
+
+func (q *homeController) SellerIndex(c fiber.Ctx) error {
+	sess := session.FromContext(c)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	csrfToken := csrf.TokenFromContext(c)
+	return c.Render("seller/home_index", models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentSeller", currentSeller,
+		"pageTitle", "Dashboard Lauk Pauk",
+	), "seller/layouts/authenticated")
 }

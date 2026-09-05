@@ -75,6 +75,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	sessionStore.RegisterType(&helper.FlashMessage{})
 	sessionStore.RegisterType(uuid.UUID{})
 	sessionStore.RegisterType(&models.Admin{})
+	sessionStore.RegisterType(&models.Seller{})
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
@@ -191,6 +192,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/companies":               "/companies/admin",
 				"/admin/companies/*":             "/companies/admin/$1",
 				"/admin/companies/*/*":           "/companies/admin/$1/$2",
+				"/seller/auth/*":                 "/auth/seller/$1",
+				"/seller":                        "/home/seller",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/notification_targets": "/notification_targets/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
@@ -282,11 +285,13 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		}))
 	controllers.NewAuthController(
 		q.AdminService,
+		q.SellerService,
 		q.BuyerService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/auth"))
 	controllers.NewHomeController(
 		q.AdminService,
+		q.SellerService,
 		q.LandingPageService,
 		q.LandingPageItemService,
 		q.BlogService,

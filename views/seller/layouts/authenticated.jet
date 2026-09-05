@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta http-equiv="x-ua-compatible" content="ie=edge" />
+	<meta name="csrf-token" content="{{ csrfToken }}">
+	<meta name="csrf-header" content="X-Csrf-Token">
+	<title>{{ pageTitle }}</title>
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/fontawesome-free/css/all.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/ionicons/ionicons.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/dist/css/adminlte.min.css" />
+	<!-- Google Font: Source Sans Pro -->
+	<!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700"> -->
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/animate.css/animate.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/select2/css/select2.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/select2-bootstrap4-theme/select2-bootstrap4.css" />
+	<link rel="shortcut icon" href="{{ baseURL }}/assets/img/laukpauk-icon.png" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/css/flatpickr.min.css" />
+	<!-- REQUIRED SCRIPTS -->
+	<!-- jQuery -->
+	<script src="{{ baseURL }}/assets/plugins/jquery/jquery.min.js"></script>
+	<script src="{{ baseURL }}/assets/plugins/jquery-ui/jquery-ui.min.js"></script>
+	<!-- Bootstrap -->
+	<script src="{{ baseURL }}/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+	<!-- AdminLTE -->
+	<script src="{{ baseURL }}/assets/dist/js/adminlte.js"></script>
+	<!-- OPTIONAL SCRIPTS -->
+	{{ if path == "/seller" }}
+	<script src="{{ baseURL }}/assets/plugins/chart.js/Chart.min.js"></script>
+	<script src="{{ baseURL }}/assets/dist/js/demo.js"></script>
+	<script src="{{ baseURL }}/assets/dist/js/pages/dashboard3.js"></script>
+	{{ end }}
+	<script src="{{ baseURL }}/assets/js/flatpickr.min.js"></script>
+	<script src="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
+	<script src="{{ baseURL }}/assets/plugins/select2/js/select2.min.js"></script>
+	<script>
+		let _summernoteCustomToolbar = [
+			["style", ["style", "bold", "italic", "underline"]],
+			["fontname", ["fontname"]],
+			["fontsizeunit", ["fontsize", "fontsizeunit"]],
+			["fullscreen", ["fullscreen"]],
+			["undo", ["undo", "redo", "help"]],
+			["codeview", ["codeview"]],
+			["font", ["strikethrough", "superscript", "subscript"]],
+			["color", ["color"]],
+			["para", ["ul", "ol", "paragraph"]],
+			["height", ["height"]],
+			["insert", ["picture", "link", "video", "hr", "table"]]
+		];
+	</script>
+	<style type="text/css">
+		.nav-treeview > .nav-item {
+			font-size: .8rem;
+			margin-left: 1rem;
+		}
+		.nav-treeview > .nav-item .nav-icon {
+			font-size: .8rem !important;
+		}
+		.cp {
+			cursor: pointer;
+		}
+		.label-title {
+			font-weight: 100 !important;
+		}
+		.vam {
+			vertical-align: middle !important;
+		}
+		.size-50-50 {
+			width: 50px;
+			height: 50px;
+		}
+		.size-25-25 {
+			width: 25px;
+			height: 25px;
+		}
+		.size-15-15 {
+			width: 15px;
+			height: 15px;
+		}
+		.sidebar::-webkit-scrollbar {
+			width: .35rem;
+			height: .5rem;
+		}
+		.sidebar::-webkit-scrollbar-thumb {
+			background-color: #d2dfd9;
+		}
+	</style>
+</head>
+<body class="hold-transition sidebar-mini">
+	<div class="wrapper">
+		<!-- Navbar -->
+		<nav class="main-header navbar navbar-expand navbar-white navbar-light">
+			<!-- Left navbar links -->
+			<ul class="navbar-nav">
+				<li class="nav-item">
+					<a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+				</li>
+			</ul>
+			<!-- Right navbar links -->
+			<ul class="navbar-nav ml-auto">
+				<!-- Notifications Dropdown Menu -->
+				<li class="nav-item dropdown">
+					<a class="nav-link" data-toggle="dropdown" href="#">
+					<i class="far fa-bell"></i>
+					<span class="badge badge-primary navbar-badge" id="jumlahNotifikasi">0</span>
+					</a>
+					<div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+						<span class="dropdown-item dropdown-header">0 Newest of 0 Notifications</span>
+						<div id="notifikasi">
+							<div class="col text-center mb-4">
+								<h2 class="text-danger mb-3 animate__animated animate__fadeInDown"
+									style="font-weight:550;">Notifikasi</h2>
+								<img src="{{ baseURL }}/assets/img/empty.png"
+									alt="No Data Img"
+									class="animate__animated animate__fadeInUp"
+									style="animation-delay:.35s; width:200px;"
+									id="imgNotFound" />
+								<p class="text-muted mb-0 mt-3 animate__animated animate__fadeInUp"><i>Tidak ada notifikasi</i></p>
+							</div>
+							<script>
+								setTimeout(() => {
+									$("#imgNotFound").removeClass("animate__fadeInUp").addClass("animate__headShake animate__infinite");
+								}, 2000);
+							</script>
+						</div>
+						<div class="dropdown-divider"></div>
+						<a href="{{ baseURL }}/seller/notifications" class="dropdown-item dropdown-footer">Lihat Semua Notifikasi</a>
+					</div>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" href="{{ baseURL }}/seller/auth/logout">
+						<i class="fas fa-power-off text-danger" data-toggle="tooltip" data-placement="top" title="Logout"></i>
+					</a>
+				</li>
+			</ul>
+		</nav>
+		<!-- /.navbar -->
+		<!-- Main Sidebar Container -->
+		<aside class="main-sidebar sidebar-dark-primary elevation-4">
+			<!-- Brand Logo -->
+			<a href="{{ baseURL }}/seller" class="brand-link">
+				<img src="{{ baseURL }}/assets/img/laukpauk-icon.png"
+					alt="AdminLTE Logo"
+					class="brand-image img-circle elevation-3"
+					style="opacity: 0.8" />
+				<span class="brand-text font-weight-light">Laukpauk</span>
+			</a>
+			<!-- Sidebar -->
+			<div class="sidebar">
+				<!-- Sidebar user panel (optional) -->
+				<div class="user-panel mt-3 pb-3 mb-3 d-flex">
+					<div class="image">
+						<a href="{{ currentSeller.PhotoPath(baseURL) }}" target="_blank">
+						<img src="{{ currentSeller.PhotoPath(baseURL) }}"
+							class="img-circle elevation-2"
+							alt="{{ currentSeller.Name }}"
+							style="width:3.2rem;" />
+						</a>
+					</div>
+					<div class="info pt-0 pl-3">
+						<a href="#" class="d-block mb-0">{{ currentSeller.Name }}</a>
+						<p class="text-white text-sm mb-0 mt-1">{{ currentSeller.Username }}</p>
+					</div>
+				</div>
+				<!-- Sidebar Menu -->
+				<nav class="mt-2">
+					<ul class="nav nav-pills nav-sidebar flex-column"
+						data-widget="treeview"
+						role="menu"
+						data-accordion="false">
+						<li class="nav-header">Menu</li>
+						<li class="nav-item">
+							<a href="{{ baseURL }}/seller" class="nav-link">
+								<i class="nav-icon fa fa-desktop"></i>
+								<p>Dashboard</p>
+							</a>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/articles") || HasPrefix(path, "/seller/blogs") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-newspaper"></i>
+								<p>
+									Artikel & Blog
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/articles") || HasPrefix(path, "/seller/blogs") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/articles" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>List Data Artikel</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/articles/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Artikel Baru</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/blogs" class="nav-link">
+										<i class="fa fa-blog nav-icon"></i>
+										<p>List Data Blog</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/blogs/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Blog Baru</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/landing_pages") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-globe"></i>
+								<p>
+									Website
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/landing_pages") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/landing_pages/hero-slider" class="nav-link">
+										<i class="fa fa-image nav-icon"></i>
+										<p>Hero Slider</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/landing_pages/feature" class="nav-link">
+										<i class="fa fa-box nav-icon"></i>
+										<p>Fitur Laukpauk</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/landing_pages/why" class="nav-link">
+										<i class="fa fa-question nav-icon"></i>
+										<p>Mengapa Pilih Laukpauk</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/landing_pages/commitment" class="nav-link">
+										<i class="fa fa-handshake nav-icon"></i>
+										<p>Komitmen</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/landing_pages/free-shopping" class="nav-link">
+										<i class="fa fa-dollar-sign nav-icon"></i>
+										<p>Uang Belanja Gratis</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/landing_pages/kitchen-hero" class="nav-link">
+										<i class="fa fa-utensils nav-icon"></i>
+										<p>Pahlawan Dapur</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/landing_pages/faq" class="nav-link">
+										<i class="fa fa-question-circle nav-icon"></i>
+										<p>Halaman Bantuan</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/transactions") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-shopping-cart"></i>
+								<p>
+									Transaksi
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/transactions") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/transactions" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>List Data Transaksi</p>
+									</a>
+								</li>
+								<!--
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/transactions/mutasi-rekening-bca" class="nav-link">
+										<i class="fa fa-money-check-alt nav-icon"></i>
+										<p>Mutasi Rekening BCA</p>
+									</a>
+								</li>
+								-->
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/banners") || HasPrefix(path, "/seller/contents") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-image"></i>
+								<p>
+									Banner & Konten App
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/banners") || HasPrefix(path, "/seller/contents") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/banners" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>List Data Banner</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/banners/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Banner Baru</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/contents" class="nav-link">
+										<i class="fa fa-file nav-icon"></i>
+										<p>List Konten Aplikasi</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/contents/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Konten Baru Aplikasi</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/vouchers") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-money-check-alt"></i>
+								<p>
+									Voucher & Promo
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/vouchers") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/vouchers" class="nav-link">
+										<i class="fa fa-money-check-alt nav-icon"></i>
+										<p>List Data Voucher</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/vouchers/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Voucher Baru</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/buyers") || HasPrefix(path, "/seller/admins") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-user-circle"></i>
+								<p>
+									User{{ if currentSeller.Owner() }} & Administrator{{ end }}
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/buyers") || HasPrefix(path, "/seller/admins") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/buyers" class="nav-link">
+										<i class="fa fa-users nav-icon"></i>
+										<p>List Data User</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/buyers/new" class="nav-link">
+										<i class="fa fa-user-plus nav-icon"></i>
+										<p>User Baru</p>
+									</a>
+								</li>
+								{{ if currentSeller.Owner() }}
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/admins" class="nav-link">
+										<i class="fa fa-crown nav-icon"></i>
+										<p>Administrator</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/admins/new" class="nav-link">
+										<i class="fa fa-user-plus nav-icon"></i>
+										<p>Administrator Baru</p>
+									</a>
+								</li>
+								{{ end }}
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/product") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-box"></i>
+								<p>
+									Produk
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/product") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/product_categories" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>List Data Kategori Produk</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/product_categories/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Add New Kategori Produk</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/products" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>List Data Produk</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/products/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Add New Produk</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/produk/updateHargaProdukMassal" class="nav-link">
+										<i class="fa fa-dollar-sign nav-icon"></i>
+										<p>Update Harga Produk Massal</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/produk/variasiHargaProdukMassal" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Variasi Harga Produk Massal</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/produk/sinkronisasiProduk" class="nav-link">
+										<i class="fa fa-sync nav-icon"></i>
+										<p>Sinkronisasi Produk dan Harga</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/point") || HasPrefix(path, "/seller/gifts") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-coins"></i>
+								<p>
+									Poin & Gift
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/point") || HasPrefix(path, "/seller/gifts") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/points" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Histori Poin User</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/points/new" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Tambah Poin User</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/point_earning_caps" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Tarif Akumulasi Poin</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/point_earning_caps/new" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Tambah Tarif Akumulasi Poin</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/point_spending_caps" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Tarif Penggunaan Poin</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/point_spending_caps/new" class="nav-link">
+										<i class="fa fa-coins nav-icon"></i>
+										<p>Tambah Tarif Penggunaan Poin</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/gifts" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>List Gift</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/gifts/new" class="nav-link">
+										<i class="fa fa-gift nav-icon"></i>
+										<p>Add New Gift</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/text_messages") || HasPrefix(path, "/seller/notifications") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-wifi"></i>
+								<p>
+									Broadcast
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/text_messages") || HasPrefix(path, "/seller/notifications") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/text_messages" class="nav-link">
+										<i class="fa fa-envelope nav-icon"></i>
+										<p>Riwayat SMS</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/text_messages/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>SMS Baru</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/notifications" class="nav-link">
+										<i class="fa fa-bell nav-icon"></i>
+										<p>Riwayat Push Notifikasi</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/notifications/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Push Notifikasi Baru</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview">
+							<a href="{{ baseURL }}/seller/rpd" class="nav-link">
+								<i class="nav-icon fa fa-file"></i>
+								<p>
+									Request
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview">
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/withdrawals" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>Riwayat Pencairan Dana</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/withdrawals/request" class="nav-link">
+										<i class="fa fa-paper-plane nav-icon"></i>
+										<p>Request Pencairan Dana</p>
+										<span class="badge badge-danger ml-1">0</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/sellers/request" class="nav-link">
+										<i class="fa fa-stamp nav-icon"></i>
+										<p>Request Menjadi Penjual</p>
+										<span class="badge badge-danger ml-1">4</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/user/independent_request" class="nav-link">
+										<i class="fa fa-flag nav-icon"></i>
+										<p>Request Penjual Mandiri</p>
+										<span class="badge badge-danger ml-1">0</span>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/recipes") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-utensils"></i>
+								<p>
+									Resep
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/recipes") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/recipes" class="nav-link">
+										<i class="fa fa-list nav-icon"></i>
+										<p>List Resep</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/recipes/new" class="nav-link">
+										<i class="fa fa-plus-circle nav-icon"></i>
+										<p>Resep Baru</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/delivery_plans") || HasPrefix(path, "/seller/skipped_delivery_plans") }} menu-open{{ end }}">
+							<a href="#" class="nav-link">
+								<i class="nav-icon fa fa-truck"></i>
+								<p>
+									Jadwal Delivery
+									<i class="fas fa-angle-left right"></i>
+								</p>
+							</a>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/delivery_plans") || HasPrefix(path, "/seller/skipped_delivery_plans") }} style="display:block"{{ end }}>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/delivery_plans" class="nav-link">
+										<i class="fa fa-clock nav-icon"></i>
+										<p>Atur Jadwal Delivery</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/delivery_plans/new" class="nav-link">
+										<i class="fa fa-tags nav-icon"></i>
+										<p>Tambah Jadwal Delivery</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/skipped_delivery_plans" class="nav-link">
+										<i class="fa fa-clock nav-icon"></i>
+										<p>Jadwal Tutup</p>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="{{ baseURL }}/seller/skipped_delivery_plans/new" class="nav-link">
+										<i class="fa fa-clock nav-icon"></i>
+										<p>Tambah Jadwal Tutup</p>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item">
+							<a href="{{ baseURL }}/seller/settings" class="nav-link">
+								<i class="nav-icon fa fa-wrench"></i>
+								<p>Pengaturan</p>
+							</a>
+						</li>
+					</ul>
+				</nav>
+				<!-- /.sidebar-menu -->
+			</div>
+			<!-- /.sidebar -->
+		</aside>
+		{{ embed() }}
+		<!-- Main Footer -->
+		<footer class="main-footer">
+			<strong>Copyright &copy; 2026 <a href="{{ baseURL }}" target="_blank">laukpauk.id</a></strong>
+		</footer>
+	</div>
+	<!-- ./wrapper -->
+	<script>
+		let baseURLJS = "{{ baseURL }}/seller/";
+		$("[data-toggle=tooltip]").tooltip();
+		$(".notifikasi-item").on("click", function(e) {
+			e.preventDefault();
+			let href = $(this).attr("href");
+			let idNotifikasi = $(this).attr("idNotifikasi");
+			$.ajax({
+				url: `${baseURLJS}/NotifikasiAdmin/toggleStatus/${idNotifikasi}`,
+				success: function(responseFromServer) {
+					let rFS = JSON.parse(responseFromServer);
+					let statusToggleStatus = rFS.statusToggleStatus;
+					if (statusToggleStatus) {
+						location.href = href;
+					}
+				}
+			});
+		});
+		$(".not-allowed").on("click", function(e) {
+			e.preventDefault();
+			// Swal.fire({
+			//     title   :   "Not Allowed",
+			//     html    :   "Anda tidak diijinkan untuk mengakses halaman ini!",
+			//     type    :   "warning"
+			// });
+			alert("Anda tidak diijinkan untuk mengakses halaman ini!");
+		});
+		$("body").addClass("layout-fixed layout-navbar-fixed layout-footer-fixed");
+		// let environment = "development";
+		let environment = "production";
+		window.OneSignal = window.OneSignal || [];
+		OneSignal.push(function() {
+			OneSignal.init({
+				appId: (environment === "development") ? "52b56d11-5d2b-43e0-ba06-25f99fbde235" : "21ac8b87-e7cc-48b4-9fba-c38ccdf159c3",
+				subdomainName: "laukpauk",
+				promptOptions: {
+					slidedown: {
+						enabled: true,
+						autoPrompt: true,
+						timeDelay: 1,
+						pageViews: 3,
+						actionMessage: "Laukpauk ingin mengirimkan notifikasi realtime. Aktifkan fitur ini dengan klik ALLOW",
+						acceptButtonText: "ALLOW",
+						cancelButtonText: "NO"
+					}
+				}
+			});
+			OneSignal.on("notificationDisplay", function(noticationData) {
+				notificationReceived();
+			});
+		});
+
+		function notificationReceived() {
+			let notificationRingtone = new Audio("assets/ringtone/notification.mp3");
+			notificationRingtone.play();
+			let jumlahNotifikasiBelumDibaca = getJumlahNotifikasi(false);
+			let notifikasiAdminBelumDibaca = getNotifikasiAdmin(false, 5);
+			let notifikasiAdminBelumDibacaHTML = "";
+			if (notifikasiAdminBelumDibaca.length >= 1) {
+				notifikasiAdminBelumDibaca.forEach((item, index) => {
+					notifikasiAdminBelumDibacaHTML += `
+						<div class="dropdown-divider"></div>
+						<a href="${item.route}" class="notifikasi-item" idNotifikasi="${item.id}">
+							<div class="dropdown-item">
+								<div class="row">
+									<div class="col-lg-2 text-center">
+										<span class="fa fa-bell"></span>
+									</div>
+									<div class="col-lg-10">
+										<p class="text-primary mb-1" class="word-break:break-all;">${item.judul.toUpperCase()}</p>
+										<span class="text-muted" style="font-size:.75em">Pada ${item.waktu}</span>
+									</div>
+								</div>
+							</div>
+						</a>`;
+				});
+			}
+			$("#jumlahNotifikasi").text(jumlahNotifikasiBelumDibaca);
+			$("#notifikasi").html(notifikasiAdminBelumDibacaHTML);
+		}
+
+		function getJumlahNotifikasi(isRead = null) {
+			let jumlahNotifikasi = 0;
+			let isReadQS = "";
+			if (isRead != null) {
+				isReadQS = `${(isRead)? "&isRead=true" : "&isRead=false"}`;
+			}
+			$.ajax({
+				url: `{{ baseURL }}/seller/Admin/getJumlahNotifikasiAdmin?${isReadQS}`,
+				async: false,
+				success: function(responseFromServer) {
+					let rFS = JSON.parse(responseFromServer);
+					jumlahNotifikasi = rFS.numberOfAdminNotification;
+				}
+			});
+			return jumlahNotifikasi;
+		}
+
+		function getNotifikasiAdmin(isRead = null, limit = null) {
+			let notifikasiAdmin = [];
+			let isReadQS = "";
+			let limitQS = "";
+			if (isRead != null) {
+				isReadQS = `${(isRead)? "&isRead=true" : "&isRead=false"}`;
+			}
+			if (limit != null) {
+				limitQS = `&limit=${limit}`;
+			}
+			$.ajax({
+				url: `{{ baseURL }}/seller/Admin/getNotifikasiAdmin?${isReadQS}${limitQS}`,
+				async: false,
+				success: function(responseFromServer) {
+					let rFS = JSON.parse(responseFromServer);
+					notifikasiAdmin = rFS.notifikasiAdmin;
+				}
+			});
+			return notifikasiAdmin;
+		}
+	</script>
+	<script type="module">
+		import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+		import { getMessaging, onMessage, onRegistered } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging.js";
+		import { getInstallations, getId } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-installations.js";
+		const firebaseConfig = {
+			apiKey: "AIzaSyBob-5BSzx71suls2th1WpXpmw5gozG-Mk",
+			authDomain: "laukpauk-53b39.firebaseapp.com",
+			databaseURL: "https://laukpauk-53b39.firebaseio.com",
+			projectId: "laukpauk-53b39",
+			storageBucket: "laukpauk-53b39.firebasestorage.app",
+			messagingSenderId: "605038317389",
+			appId: "1:605038317389:web:767b27e1b3c33226d43104"
+		};
+		const app = initializeApp(firebaseConfig);
+		const vapidKey = "BMNjy4x4XOVtSplXSxg4Xq8ZAlc-6pTZRI-tAMDcYn5in5jrOd5yAEuOMn6I92QEDsrZYicsXNklWjwAFjl5CLk";
+		const installations = getInstallations(app);
+		const messaging = getMessaging(app);
+		async function requestPermission() {
+			const permission = await Notification.requestPermission();
+			if (permission === "granted") {
+				try {
+					const fid = await getId(installations);
+					console.log("FCM Token:", fid);
+					const formData = new FormData();
+					formData.append("_csrf", document.querySelector("meta[name='csrf-token']").getAttribute("content"));
+					formData.append("fid", fid);
+					const response = await fetch("{{ baseURL }}/seller/notification_targets", {
+						method: "POST",
+						headers: { "X-Request-Id": crypto.randomUUID() },
+						body: formData,
+						credentials: "include"
+					});
+				} catch (error) {
+					console.error("Token retrieval failed:", error);
+				}
+			} else {
+				console.warn("Notification permission denied.");
+			}
+		}
+		onMessage(messaging, (payload) => {
+			console.log("Message received in foreground: ", payload);
+		});
+		onRegistered(messaging, (fid) => {
+			console.log("FCM registered with Firebase Installation ID:", fid);
+			const formData = new FormData();
+			formData.append("_csrf", document.querySelector("meta[name='csrf-token']").getAttribute("content"));
+			formData.append("fid", fid);
+			const response = fetch("{{ baseURL }}/seller/notification_targets", {
+				method: "POST",
+				headers: { "X-Request-Id": crypto.randomUUID() },
+				body: formData,
+				credentials: "include"
+			});
+		});
+		requestPermission()
+	</script>
+</body>
+</html>
