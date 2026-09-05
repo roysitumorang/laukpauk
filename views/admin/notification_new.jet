@@ -66,7 +66,7 @@
 											<select name="user_id" id="user_id" class="form-control" required>
 												<option value="" disabled>- Pilih Penerima -</option>
 												{{ range _, buyer := buyers }}
-												<option value="{{ buyer.UserID }}"{{ if request.UserID.Compare(buyer.UserID) == 0 }} selected{{ end }}>{{ buyer.Name }}</option>
+												<option value="{{ buyer.ID }}"{{ if request.UserID.Compare(buyer.ID) == 0 }} selected{{ end }}>{{ buyer.Name }}</option>
 												{{ end }}
 											</select>
 										</div>
