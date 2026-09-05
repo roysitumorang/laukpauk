@@ -120,8 +120,14 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	encryptedPassword := helper.String2ByteSlice(*admin.EncryptedPassword)
-	if !helper.MatchedHashAndPassword(encryptedPassword, helper.String2ByteSlice(request.Password)) {
+	matched, err := helper.VerifyPassword(request.Password, *admin.EncryptedPassword)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+		return c.Render("admin/auth_login", params.Push(
+			"flash", flash.Danger(err.Error()),
+		))
+	}
+	if !matched {
 		return c.Render("admin/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
@@ -200,11 +206,22 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	if buyer == nil ||
-		buyer.EncryptedPassword == nil ||
-		!helper.MatchedHashAndPassword(
-			helper.String2ByteSlice(*buyer.EncryptedPassword),
-			helper.String2ByteSlice(loginRequest.Password),
-		) {
+		buyer.EncryptedPassword == nil {
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	matched, err := helper.VerifyPassword(
+		loginRequest.Password,
+		*buyer.EncryptedPassword,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	if !matched {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)

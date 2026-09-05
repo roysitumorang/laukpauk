@@ -30,7 +30,6 @@ import (
 	"github.com/roysitumorang/laukpauk/keys"
 	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/sqids/sqids-go"
-	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -234,19 +233,6 @@ func ValidPassword(password string) bool {
 		hasNumber &&
 		hasSymbol &&
 		length >= 8
-}
-
-func HashPassword(password string) (*string, error) {
-	hashByte, err := bcrypt.GenerateFromPassword(String2ByteSlice(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-	return new(ByteSlice2String(hashByte)), nil
-}
-
-func MatchedHashAndPassword(encryptedPassword, password []byte) bool {
-	err := bcrypt.CompareHashAndPassword(encryptedPassword, password)
-	return !errors.Is(err, bcrypt.ErrMismatchedHashAndPassword)
 }
 
 func Base64Decode(input string) (string, error) {
