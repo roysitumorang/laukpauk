@@ -110,10 +110,14 @@
 			if (event.target.checked) {
 				document.getElementById("password").removeAttribute("disabled");
 				document.getElementById("password_confirmation").removeAttribute("disabled");
+				document.querySelector('input[name="password"]').removeAttribute("disabled");
+				document.querySelector('input[name="password_confirmation"]').removeAttribute("disabled");
 				return;
 			}
 			document.getElementById("password").setAttribute("disabled", "disabled");
 			document.getElementById("password_confirmation").setAttribute("disabled", "disabled");
+			document.querySelector('input[name="password"]').setAttribute("disabled", "disabled");
+			document.querySelector('input[name="password_confirmation"]').setAttribute("disabled", "disabled");
 		});
 		document.getElementById("password").addEventListener("change", (event) => {
 			document.querySelector('input[name="password"]').value = btoa(event.target.value);
