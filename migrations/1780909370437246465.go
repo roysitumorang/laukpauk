@@ -34,6 +34,122 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		// admins
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE admins (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, status integer NOT NULL
+				, admin_level integer NOT NULL
+				, name character varying NOT NULL COLLATE "natural_sort"
+				, unconfirmed_mobile_phone character varying
+				, mobile_phone_confirmation_sent_at timestamp with time zone
+				, mobile_phone_confirmation_token character varying
+				, mobile_phone_confirmed_at timestamp with time zone
+				, mobile_phone character varying NOT NULL UNIQUE
+				, username character varying NOT NULL UNIQUE
+				, unconfirmed_email character varying
+				, email_confirmation_sent_at timestamp with time zone
+				, email_confirmation_token character varying
+				, email_confirmed_at timestamp with time zone
+				, email character varying NOT NULL UNIQUE
+				, encrypted_password character varying
+				, password_reset_at timestamp with time zone
+				, password_reset_token character varying
+				, password_changed_at timestamp with time zone
+				, photo character varying NOT NULL
+				, unread_notifications bigint NOT NULL DEFAULT 0
+				, created_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_at timestamp with time zone NOT NULL
+				, updated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_at timestamp with time zone NOT NULL
+				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_at timestamp with time zone
+				, deactivation_reason character varying
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON admins (status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON admins (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON admins (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON admins (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON admins (deactivated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		password, err := helper.Base64Decode(os.Getenv("DEFAULT_PASSWORD"))
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBase64Decode")
+			return
+		}
+		encryptedPassword, err := helper.HashPassword(password)
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrHashPassword")
+			return
+		}
+		var adminID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`INSERT INTO admins (
+				status
+				, admin_level
+				, name
+				, mobile_phone_confirmed_at
+				, mobile_phone
+				, username
+				, email_confirmed_at
+				, email
+				, encrypted_password
+				, photo
+				, created_at
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			RETURNING id`,
+			models.UserStatusActive,
+			models.AdminLevelSuperAdmin,
+			"Ben",
+			"2024-12-11 07:41:55.000 +0700",
+			"+6281265688889",
+			"bigben",
+			"2024-12-11 07:41:55.000 +0700",
+			"benni.surbakti@gmail.com",
+			encryptedPassword,
+			"admin-default.png",
+			"2021-12-16 17:26:51.000 +0700",
+			"2024-12-11 07:41:55.000 +0700",
+		).Scan(&adminID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
 		// companies
 		if _, err = tx.Exec(
 			ctx,
@@ -91,184 +207,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		// users
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE users (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, company_id UUID REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, user_type integer NOT NULL
-				, user_status integer NOT NULL
-				, name character varying NOT NULL COLLATE "natural_sort"
-				, unconfirmed_mobile_phone character varying
-				, mobile_phone_confirmation_sent_at timestamp with time zone
-				, mobile_phone_confirmation_token character varying
-				, mobile_phone_confirmed_at timestamp with time zone
-				, mobile_phone character varying
-				, otp_token character varying
-				, otp_created_at timestamp with time zone
-				, otp_expired_at timestamp with time zone
-				, username character varying NOT NULL
-				, unconfirmed_email character varying
-				, email_confirmation_sent_at timestamp with time zone
-				, email_confirmation_token character varying
-				, email_confirmed_at timestamp with time zone
-				, email character varying
-				, encrypted_password character varying
-				, password_reset_at timestamp with time zone
-				, password_reset_token character varying
-				, password_changed_at timestamp with time zone
-				, photo character varying NOT NULL
-				, unread_notifications bigint NOT NULL DEFAULT 0
-				, telegram_chat_id bigint UNIQUE
-				, telegram_username character varying
-				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, deactivated_at timestamp with time zone
-				, deactivation_reason character varying
-				, UNIQUE (mobile_phone, company_id)
-				, UNIQUE (username, company_id)
-				, UNIQUE (email, company_id)
-				, UNIQUE (telegram_username, company_id)
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (company_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (user_type);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (user_status);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (updated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (deactivated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		// admins
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE admins (
-				id UUID NOT NULL PRIMARY KEY REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, admin_level integer NOT NULL
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		password, err := helper.Base64Decode(os.Getenv("DEFAULT_PASSWORD"))
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBase64Decode")
-			return
-		}
-		encryptedPassword, err := helper.HashPassword(password)
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrHashPassword")
-			return
-		}
-		var adminID uuid.UUID
-		if err = tx.QueryRow(
-			ctx,
-			`INSERT INTO users (
-				user_type
-				, user_status
-				, name
-				, mobile_phone_confirmed_at
-				, mobile_phone
-				, username
-				, email_confirmed_at
-				, email
-				, encrypted_password
-				, photo
-				, created_by
-				, created_at
-				, updated_by
-				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-			RETURNING id`,
-			models.UserTypeAdmin,
-			models.UserStatusActive,
-			"Ben",
-			"2024-12-11 07:41:55.000 +0700",
-			"+6281265688889",
-			"bigben",
-			"2024-12-11 07:41:55.000 +0700",
-			"benni.surbakti@gmail.com",
-			encryptedPassword,
-			"admin-default.png",
-			nil,
-			"2021-12-16 17:26:51.000 +0700",
-			nil,
-			"2024-12-11 07:41:55.000 +0700",
-		).Scan(&adminID); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`INSERT INTO admins (
-				id
-				, admin_level
-			) VALUES ($1, $2)`,
-			adminID,
-			models.AdminLevelSuperAdmin,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		// sellers
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE sellers (
-				id UUID NOT NULL PRIMARY KEY REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, seller_level integer NOT NULL
-			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		longitude, err := decimal.Parse("98.64455685385735")
 		if err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
@@ -320,86 +258,6 @@ func init() {
 				now.Location(),
 			)),
 		}
-		var sellerID uuid.UUID
-		if err = tx.QueryRow(
-			ctx,
-			`INSERT INTO users (
-				user_type
-				, user_status
-				, name
-				, mobile_phone_confirmed_at
-				, mobile_phone
-				, username
-				, photo
-				, created_by
-				, created_at
-				, updated_by
-				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-			RETURNING id`,
-			models.UserTypeSeller,
-			models.UserStatusActive,
-			company.Name,
-			now,
-			company.WhatsappPhoneNumber,
-			strings.ToLower(company.Name),
-			"seller-default.png",
-			adminID,
-			now,
-			adminID,
-			now,
-		).Scan(&sellerID); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`INSERT INTO sellers (
-				id
-				, seller_level
-			) VALUES ($1, $2)`,
-			sellerID,
-			models.SellerLevelOwner,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`ALTER TABLE companies
-				ADD COLUMN owner_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-				, ADD COLUMN created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN created_at timestamp with time zone NOT NULL
-				, ADD COLUMN updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN updated_at timestamp with time zone NOT NULL
-				, ADD COLUMN deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN deactivated_at timestamp with time zone
-				, ADD COLUMN deactivation_reason character varying`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (updated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (deactivated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		var companyID uuid.UUID
 		if err = tx.QueryRow(
 			ctx,
@@ -427,15 +285,10 @@ func init() {
 				, maximum_delivery_time
 				, transaction_auto_withdrawal_enabled
 				, transaction_auto_withdrawal_window
-				, owner_id
-				, created_by
-				, created_at
-				, updated_by
-				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19
-				, $20, $21, $22, tstzrange($23, $24, '[]'), $25, $26, $27, $28, $29
+				, $20, $21, $22, tstzrange($23, $24, '[]')
 			)
 			RETURNING id`,
 			company.Name,
@@ -462,22 +315,194 @@ func init() {
 			company.TransactionAutoWithdrawalEnabled,
 			company.TransactionAutoWithdrawalWindowMin,
 			company.TransactionAutoWithdrawalWindowMax,
-			sellerID,
-			adminID,
-			now,
-			adminID,
-			now,
 		).Scan(&companyID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
+		// sellers
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE sellers (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, status integer NOT NULL
+				, seller_level integer NOT NULL
+				, name character varying NOT NULL COLLATE "natural_sort"
+				, unconfirmed_mobile_phone character varying
+				, mobile_phone_confirmation_sent_at timestamp with time zone
+				, mobile_phone_confirmation_token character varying
+				, mobile_phone_confirmed_at timestamp with time zone
+				, mobile_phone character varying NOT NULL
+				, otp_token character varying
+				, otp_created_at timestamp with time zone
+				, otp_expired_at timestamp with time zone
+				, username character varying NOT NULL
+				, unconfirmed_email character varying
+				, email_confirmation_sent_at timestamp with time zone
+				, email_confirmation_token character varying
+				, email_confirmed_at timestamp with time zone
+				, email character varying
+				, photo character varying NOT NULL
+				, unread_notifications bigint NOT NULL DEFAULT 0
+				, telegram_chat_id bigint UNIQUE
+				, telegram_username character varying
+				, created_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_at timestamp with time zone NOT NULL
+				, updated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_at timestamp with time zone NOT NULL
+				, deactivated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_at timestamp with time zone
+				, deactivation_reason character varying
+				, UNIQUE (mobile_phone, company_id)
+				, UNIQUE (username, company_id)
+				, UNIQUE (email, company_id)
+				, UNIQUE (telegram_username, company_id)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sellers (company_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sellers (status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sellers (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sellers (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sellers (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON sellers (deactivated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		var sellerID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`INSERT INTO sellers (
+				company_id
+				, status
+				, seller_level
+				, name
+				, mobile_phone_confirmed_at
+				, mobile_phone
+				, username
+				, photo
+				, created_at
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			RETURNING id`,
+			companyID,
+			models.UserStatusActive,
+			models.SellerLevelOwner,
+			company.Name,
+			now,
+			company.WhatsappPhoneNumber,
+			strings.ToLower(company.Name),
+			"seller-default.png",
+			now,
+			now,
+		).Scan(&sellerID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`UPDATE users SET
-				company_id = $1
-			WHERE id = $2`,
-			companyID,
+			`ALTER TABLE companies
+				ADD COLUMN owner_id UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN created_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN created_at timestamp with time zone
+				, ADD COLUMN updated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN updated_at timestamp with time zone
+				, ADD COLUMN deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD COLUMN deactivated_at timestamp with time zone
+				, ADD COLUMN deactivation_reason character varying`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (owner_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (deactivated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`UPDATE companies SET
+				owner_id = $1
+				, created_by = $2
+				, created_at = $3
+				, updated_by = $4
+				, updated_at = $5
+			WHERE id = $6`,
 			sellerID,
+			adminID,
+			now,
+			sellerID,
+			now,
+			companyID,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`ALTER TABLE companies
+				ALTER COLUMN created_by SET NOT NULL
+				, ALTER COLUMN created_at SET NOT NULL
+				, ALTER COLUMN updated_by SET NOT NULL
+				, ALTER COLUMN updated_at SET NOT NULL;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -486,14 +511,44 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE TABLE buyers (
-				id UUID NOT NULL PRIMARY KEY REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, status integer NOT NULL
+				, name character varying NOT NULL COLLATE "natural_sort"
+				, unconfirmed_mobile_phone character varying
+				, mobile_phone_confirmation_sent_at timestamp with time zone
+				, mobile_phone_confirmation_token character varying
+				, mobile_phone_confirmed_at timestamp with time zone
+				, mobile_phone character varying
+				, otp_token character varying
+				, otp_created_at timestamp with time zone
+				, otp_expired_at timestamp with time zone
+				, username character varying NOT NULL
+				, unconfirmed_email character varying
+				, email_confirmation_sent_at timestamp with time zone
+				, email_confirmation_token character varying
+				, email_confirmed_at timestamp with time zone
+				, email character varying
+				, photo character varying NOT NULL
+				, unread_notifications bigint NOT NULL DEFAULT 0
+				, telegram_chat_id bigint UNIQUE
+				, telegram_username character varying
 				, referral_code character varying NOT NULL
 				, address character varying NOT NULL
-				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, referrer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_points bigint NOT NULL DEFAULT 0
 				, reward_points bigint NOT NULL DEFAULT 0
 				, wallet bigint NOT NULL DEFAULT 0
 				, transaction_volume bigint NOT NULL DEFAULT 0
+				, created_at timestamp with time zone NOT NULL
+				, updated_at timestamp with time zone NOT NULL
+				, deactivated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_at timestamp with time zone
+				, deactivation_reason character varying
+				, UNIQUE (mobile_phone, company_id)
+				, UNIQUE (username, company_id)
+				, UNIQUE (email, company_id)
+				, UNIQUE (telegram_username, company_id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -501,7 +556,28 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON buyers (LOWER(referral_code));`,
+			`CREATE INDEX ON buyers (company_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON buyers (status);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON buyers (LOWER(name));`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE UNIQUE INDEX ON buyers (LOWER(referral_code), company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -509,6 +585,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON buyers (referrer_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON buyers (deactivated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -523,11 +606,11 @@ func init() {
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -551,7 +634,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX product_categories_unique_name_idx ON product_categories (LOWER(name)) WHERE record_status = 0;`,
+			`CREATE UNIQUE INDEX product_categories_unique_name_idx ON product_categories (LOWER(name), company_id) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -593,11 +676,11 @@ func init() {
 				, pinned BOOLEAN NOT NULL DEFAULT FALSE
 				, hits bigint NOT NULL
 				, lowest_selling_price bigint NOT NULL DEFAULT 0
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -695,11 +778,11 @@ func init() {
 				, discount_amount bigint NOT NULL
 				, sale_price bigint NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -761,7 +844,7 @@ func init() {
 			ctx,
 			`CREATE TABLE notification_targets (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, user_id UUID NOT NULL
 				, firebase_installation_id character varying NOT NULL UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
@@ -785,9 +868,9 @@ func init() {
 				, photo character varying
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -827,13 +910,13 @@ func init() {
 			ctx,
 			`CREATE TABLE notifications (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, user_id UUID NOT NULL
 				, notification_type character varying NOT NULL
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
 				, photo character varying
 				, params JSONB NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, sent_at timestamp with time zone
 				, read_at timestamp with time zone
@@ -880,9 +963,9 @@ func init() {
 				, monthly_billing_amount bigint NOT NULL
 				, annual_billing_amount bigint NOT NULL
 				, billing_grace_period integer NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
 			);`,
 		); err != nil {
@@ -933,13 +1016,13 @@ func init() {
 			ctx,
 			`CREATE TABLE text_messages (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, mobile_phone character varying NOT NULL
 				, message_type integer NOT NULL
 				, body character varying NOT NULL
 				, delivery_status character varying
 				, message_id bigint
-				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, sent_at timestamp with time zone
@@ -999,11 +1082,11 @@ func init() {
 				, next_day_window TSTZRANGE NOT NULL
 				, next_two_day BOOLEAN NOT NULL
 				, next_two_day_window TSTZRANGE NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
@@ -1088,9 +1171,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1108,9 +1191,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1128,9 +1211,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			},
 			// friday
@@ -1150,9 +1233,9 @@ func init() {
 				false,
 				nil,
 				nil,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1170,9 +1253,9 @@ func init() {
 				false,
 				nil,
 				nil,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1190,9 +1273,9 @@ func init() {
 				false,
 				nil,
 				nil,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			},
 			// saturday
@@ -1212,9 +1295,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1232,9 +1315,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1252,9 +1335,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			},
 			// sunday
@@ -1274,9 +1357,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
@@ -1294,9 +1377,9 @@ func init() {
 				true,
 				nextTwoDay080000,
 				nextTwoDay120000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			},
 		}
@@ -1362,11 +1445,11 @@ func init() {
 				, effective_start_date timestamp with time zone NOT NULL
 				, effective_end_date timestamp with time zone NOT NULL
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -1471,7 +1554,7 @@ func init() {
 			`CREATE TABLE vouchers_buyers (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, voucher_id UUID NOT NULL REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, UNIQUE (voucher_id, buyer_id)
 			);`,
@@ -1498,7 +1581,7 @@ func init() {
 			ctx,
 			`CREATE TABLE json_web_tokens (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, user_id UUID NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, expired_at timestamp with time zone NOT NULL
 			);`,
@@ -1525,8 +1608,8 @@ func init() {
 			ctx,
 			`CREATE TABLE carts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-				, deleted_buyer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+				, deleted_buyer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 			);`,
@@ -1793,7 +1876,7 @@ func init() {
 				, parent_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, reordered BOOLEAN NOT NULL
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 				, reference_number character varying NOT NULL
 				, status integer NOT NULL
@@ -1802,7 +1885,7 @@ func init() {
 				, buyer_note character varying NOT NULL
 				, unique_code bigint NOT NULL
 				, shopping_cost bigint NOT NULL
-				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, referrer_id UUID REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_code character varying
 				, referral_points bigint NOT NULL
 				, voucher_id UUID REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -1842,9 +1925,9 @@ func init() {
 				, paid_at timestamp with time zone
 				, withdrawal_requested_at timestamp with time zone
 				, withdrawal_reason character varying
-				, withdrawn_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, withdrawn_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, withdrawn_at timestamp with time zone
-				, processed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, processed_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, processed_at timestamp with time zone
 				, revised_shopping_cost bigint NOT NULL
 				, revised_discounted_shopping_cost bigint NOT NULL
@@ -1852,12 +1935,12 @@ func init() {
 				, refund_amount bigint NOT NULL
 				, refunded_at timestamp with time zone
 				, refund_id character varying UNIQUE
-				, shipped_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, shipped_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, shipped_at timestamp with time zone
 				, delivery_actual_cost bigint NOT NULL
 				, complained_at timestamp with time zone
 				, complaint character varying
-				, completed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, completed_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, completed_at timestamp with time zone
 			);`,
 		); err != nil {
@@ -2074,11 +2157,11 @@ func init() {
 				, record_status integer NOT NULL
 				, shopping_cost int8range NOT NULL
 				, earned_points bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT point_earning_caps_no_overlapping_shopping_cost EXCLUDE USING gist (
@@ -2123,81 +2206,81 @@ func init() {
 				100_000,
 				149_999,
 				1_500,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				150_000,
 				199_999,
 				2_500,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				200_000,
 				299_999,
 				3_500,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				300_000,
 				399_999,
 				5_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				400_000,
 				499_999,
 				7_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				500_000,
 				649_999,
 				10_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				650_000,
 				799_999,
 				13_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				800_000,
 				999_999,
 				17_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				1_000_000,
 				100_000_000,
 				22_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			},
 		}
@@ -2224,7 +2307,7 @@ func init() {
 			ctx,
 			`CREATE TABLE point_earnings (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, start_date timestamp with time zone NOT NULL
 				, end_date timestamp with time zone NOT NULL
 				, amount bigint NOT NULL
@@ -2265,11 +2348,11 @@ func init() {
 				, record_status integer NOT NULL
 				, shopping_cost int8range NOT NULL
 				, disposable_points bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT point_spending_caps_no_overlapping_shopping_cost EXCLUDE USING gist (
@@ -2321,36 +2404,36 @@ func init() {
 				60_000,
 				149_999,
 				5_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				150_000,
 				249_999,
 				7_500,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				250_000,
 				399_999,
 				10_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			}, {
 				models.RecordStatusActive,
 				400_000,
 				99_999_999,
 				15_000,
-				adminID,
+				sellerID,
 				now,
-				adminID,
+				sellerID,
 				now,
 			},
 		}
@@ -2379,15 +2462,15 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, record_status integer NOT NULL
 				, point_type integer NOT NULL
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
 				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, description character varying NOT NULL
-				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2456,7 +2539,7 @@ func init() {
 			ctx,
 			`CREATE TABLE wallets (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, wallet_transfer_type integer NOT NULL
 				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
@@ -2497,11 +2580,11 @@ func init() {
 				, body character varying NOT NULL
 				, photo character varying NOT NULL
 				, link character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2554,11 +2637,11 @@ func init() {
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
 				, visible boolean NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2619,11 +2702,11 @@ func init() {
 				, slug character varying UNIQUE
 				, deleted_slug character varying
 				, photo character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2674,11 +2757,11 @@ func init() {
 				, record_status integer NOT NULL
 				, name character varying NOT NULL UNIQUE
 				, custom_attributes JSONB NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2726,11 +2809,11 @@ func init() {
 				, link_text character varying
 				, link_url character varying
 				, photo character varying
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2797,11 +2880,11 @@ func init() {
 				, content_type character varying NOT NULL
 				, route character varying
 				, ordinal_number bigint NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2839,11 +2922,11 @@ func init() {
 				, item character varying NOT NULL
 				, option character varying
 				, description character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
 			);`,
@@ -2877,13 +2960,13 @@ func init() {
 			ctx,
 			`CREATE TABLE withdrawals (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, buyer_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, recipient_name character varying NOT NULL
 				, bank_account character varying NOT NULL
 				, amount bigint NOT NULL
 				, description character varying NOT NULL
 				, status character varying NOT NULL
-				, reviewed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, reviewed_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, reviewed_at timestamp with time zone
 				, rejection_reason character varying
 				, created_at timestamp with time zone NOT NULL
@@ -2918,11 +3001,11 @@ func init() {
 				, description character varying NOT NULL
 				, instagram_link character varying NOT NULL
 				, facebook_link character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -2980,11 +3063,11 @@ func init() {
 				, record_status integer NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, instruction character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -3040,11 +3123,11 @@ func init() {
 				, product_ready_stock BOOLEAN NOT NULL
 				, dose character varying NOT NULL
 				, note character varying NOT NULL
-				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
-				, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, updated_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, updated_at timestamp with time zone NOT NULL
-				, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
@@ -3142,7 +3225,7 @@ func init() {
 			`CREATE TABLE message_receipts (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, message_id UUID NOT NULL REFERENCES messages (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, user_id UUID NOT NULL
 				, read_at timestamp with time zone NOT NULL
 				, UNIQUE (message_id, user_id)
 			);`,
