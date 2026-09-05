@@ -40,7 +40,7 @@ type Seller struct {
 	RowNo int64     `json:"-" form:"-"`
 	ID    uuid.UUID `json:"id" form:"-"`
 	user
-	SellerType SellerLevel `json:"-" form:"seller_type"`
+	SellerLevel SellerLevel `json:"-" form:"seller_level"`
 }
 
 func (q *Seller) Validate() error {
@@ -72,7 +72,7 @@ func (q *Seller) Validate() error {
 			return fmt.Errorf("password: %s", err.Error())
 		}
 	}
-	if _, ok := MapSellerLevels[q.SellerType]; !ok {
+	if _, ok := MapSellerLevels[q.SellerLevel]; !ok {
 		return errors.New("seller_type: not found")
 	}
 	return nil
@@ -92,7 +92,7 @@ func (q *Seller) PhotoPath(baseURLs ...string) string {
 }
 
 func (q *Seller) Owner() bool {
-	return q.SellerType == SellerLevelOwner
+	return q.SellerLevel == SellerLevelOwner
 }
 
 type SellerFilter struct {
