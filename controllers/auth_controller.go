@@ -257,14 +257,13 @@ func (q *authController) SellerLogin(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if seller == nil ||
-		seller.OtpHash == nil ||
-		seller.OtpExpiredAt == nil ||
+		seller.OtpHash == "" ||
 		!seller.OtpExpiredAt.After(now) {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	matched, err := helper.VerifyPassword(request.Password, *seller.OtpHash)
+	matched, err := helper.VerifyPassword(request.Password, seller.OtpHash)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
 		return c.Render("seller/auth_login", params.Push(
@@ -351,14 +350,13 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if buyer == nil ||
-		buyer.OtpHash == nil ||
-		buyer.OtpExpiredAt == nil ||
+		buyer.OtpHash == "" ||
 		!buyer.OtpExpiredAt.After(now) {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	matched, err := helper.VerifyPassword(loginRequest.Password, *buyer.OtpHash)
+	matched, err := helper.VerifyPassword(loginRequest.Password, buyer.OtpHash)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
 		return helper.NewResponse(fiber.StatusBadRequest).

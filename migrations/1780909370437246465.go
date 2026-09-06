@@ -333,8 +333,8 @@ func init() {
 				, mobile_phone_confirmation_token character varying
 				, mobile_phone_confirmed_at timestamp with time zone
 				, mobile_phone character varying NOT NULL
-				, otp_hash character varying
-				, otp_expired_at timestamp with time zone
+				, otp_hash character varying NOT NULL
+				, otp_expired_at timestamp with time zone NOT NULL
 				, username character varying NOT NULL
 				, unconfirmed_email character varying
 				, email_confirmation_sent_at timestamp with time zone
@@ -413,11 +413,13 @@ func init() {
 				, name
 				, mobile_phone_confirmed_at
 				, mobile_phone
+				, otp_hash
+				, otp_expired_at
 				, username
 				, photo
 				, created_at
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 			RETURNING id`,
 			companyID,
 			models.SellerStatusActive,
@@ -425,6 +427,8 @@ func init() {
 			company.Name,
 			now,
 			company.WhatsappPhoneNumber,
+			"",
+			time.Unix(0, 0),
 			strings.ToLower(company.Name),
 			"seller-default.png",
 			now,
@@ -519,8 +523,8 @@ func init() {
 				, mobile_phone_confirmation_token character varying
 				, mobile_phone_confirmed_at timestamp with time zone
 				, mobile_phone character varying
-				, otp_hash character varying
-				, otp_expired_at timestamp with time zone
+				, otp_hash character varying NOT NULL
+				, otp_expired_at timestamp with time zone NOT NULL
 				, username character varying NOT NULL
 				, unconfirmed_email character varying
 				, email_confirmation_sent_at timestamp with time zone

@@ -725,20 +725,14 @@ func (q *sellerRepository) UpdateSeller(
 		}
 		_, _ = fmt.Fprintf(sb, " mobile_phone = $%d", n)
 	}
-	if (response.OtpHash != nil && request.OtpHash == nil) ||
-		(response.OtpHash == nil && request.OtpHash != nil) ||
-		(response.OtpHash != nil && request.OtpHash != nil &&
-			*response.OtpHash != *request.OtpHash) {
+	if response.OtpHash != request.OtpHash {
 		params = append(params, request.OtpHash)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " otp_hash = $%d", n)
 	}
-	if (response.OtpExpiredAt != nil && request.OtpExpiredAt == nil) ||
-		(response.OtpExpiredAt == nil && request.OtpExpiredAt != nil) ||
-		(response.OtpExpiredAt != nil && request.OtpExpiredAt != nil &&
-			!response.OtpExpiredAt.Equal(*request.OtpExpiredAt)) {
+	if !response.OtpExpiredAt.Equal(request.OtpExpiredAt) {
 		params = append(params, request.OtpExpiredAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")

@@ -111,8 +111,7 @@ func (q *otpController) SellerCreate(c fiber.Ctx) error {
 		))
 	}
 	now := time.Now().In(time.Local)
-	if seller.OtpHash == nil ||
-		seller.OtpExpiredAt == nil ||
+	if seller.OtpHash == "" ||
 		!seller.OtpExpiredAt.After(now) {
 		otpDuration, err := time.ParseDuration(os.Getenv("OTP_DURATION"))
 		if err != nil {
@@ -122,13 +121,17 @@ func (q *otpController) SellerCreate(c fiber.Ctx) error {
 			))
 		}
 		otpToken := helper.RandomNumber(6)
-		if seller.OtpHash, err = helper.HashPassword(otpToken); err != nil {
+		otpHash, err := helper.HashPassword(otpToken)
+		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
 			return c.Render("seller/otp_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
-		seller.OtpExpiredAt = new(now.Add(otpDuration + time.Nanosecond))
+		if otpHash != nil {
+			seller.OtpHash = *otpHash
+		}
+		seller.OtpExpiredAt = now.Add(otpDuration + time.Nanosecond)
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -190,8 +193,7 @@ func (q *otpController) V1BuyerCreate(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	now := time.Now().In(time.Local)
-	if buyer.OtpHash == nil ||
-		buyer.OtpExpiredAt == nil ||
+	if buyer.OtpHash == "" ||
 		!buyer.OtpExpiredAt.After(now) {
 		otpDuration, err := time.ParseDuration(os.Getenv("OTP_DURATION"))
 		if err != nil {
@@ -201,13 +203,17 @@ func (q *otpController) V1BuyerCreate(c fiber.Ctx) error {
 				WriteResponse(c)
 		}
 		otpToken := helper.RandomNumber(6)
-		if buyer.OtpHash, err = helper.HashPassword(otpToken); err != nil {
+		otpHash, err := helper.HashPassword(otpToken)
+		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
-		buyer.OtpExpiredAt = new(now.Add(otpDuration + time.Nanosecond))
+		if otpHash != nil {
+			buyer.OtpHash = *otpHash
+		}
+		buyer.OtpExpiredAt = now.Add(otpDuration + time.Nanosecond)
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")

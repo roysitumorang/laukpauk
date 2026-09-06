@@ -44,8 +44,8 @@ type Buyer struct {
 	MobilePhoneConfirmationToken  *string     `json:"-" form:"-"`
 	MobilePhoneConfirmedAt        *time.Time  `json:"-" form:"-"`
 	MobilePhone                   *string     `json:"mobile_phone" form:"mobile_phone"`
-	OtpHash                       *string     `json:"-" form:"-"`
-	OtpExpiredAt                  *time.Time  `json:"-" form:"-"`
+	OtpHash                       string      `json:"-" form:"-"`
+	OtpExpiredAt                  time.Time   `json:"-" form:"-"`
 	Username                      string      `json:"username" form:"username"`
 	UnconfirmedEmail              *string     `json:"-" form:"-"`
 	EmailConfirmationSentAt       *time.Time  `json:"-" form:"-"`
