@@ -264,7 +264,14 @@ func (q *authController) SellerLogin(c fiber.Ctx) error {
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	if helper.SHA512(request.Password) != *seller.OtpHash {
+	matched, err := helper.VerifyPassword(request.Password, *seller.OtpHash)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+		return c.Render("seller/auth_login", params.Push(
+			"flash", flash.Danger(models.ErrLoginFailed.Error()),
+		))
+	}
+	if !matched {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
@@ -351,7 +358,14 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	if helper.SHA512(loginRequest.Password) != *buyer.OtpHash {
+	matched, err := helper.VerifyPassword(loginRequest.Password, *buyer.OtpHash)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	if !matched {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)

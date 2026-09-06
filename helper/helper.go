@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha512"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json/v2"
 	"errors"
 	"fmt"
@@ -395,9 +393,4 @@ func ValidLatitude(latitude float64) bool {
 
 func ValidLongitude(longitude float64) bool {
 	return longitude >= -180 && longitude <= 180
-}
-
-func SHA512(input string) string {
-	hashBytes := sha512.Sum512(String2ByteSlice(input))
-	return hex.EncodeToString(hashBytes[:])
 }
