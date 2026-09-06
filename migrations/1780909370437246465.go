@@ -134,7 +134,7 @@ func init() {
 				, updated_at
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 			RETURNING id`,
-			models.UserStatusActive,
+			models.AdminStatusActive,
 			models.AdminLevelSuperAdmin,
 			"Ben",
 			"2024-12-11 07:41:55.000 +0700",
@@ -420,7 +420,7 @@ func init() {
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			RETURNING id`,
 			companyID,
-			models.UserStatusActive,
+			models.SellerStatusActive,
 			models.SellerLevelOwner,
 			company.Name,
 			now,
