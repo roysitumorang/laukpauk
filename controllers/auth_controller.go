@@ -67,7 +67,7 @@ func (q *authController) AdminNewLogin(c fiber.Ctx) error {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	if sess.Get(models.UserID) != nil {
+	if sess.Get(models.AdminID) != nil {
 		return flash.Redirect(c, sess.Session, "/admin")
 	}
 	csrfToken := csrf.TokenFromContext(c)
@@ -89,7 +89,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	if sess.Get(models.UserID) != nil {
+	if sess.Get(models.AdminID) != nil {
 		return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin")
 	}
 	csrfToken := csrf.TokenFromContext(c)
@@ -144,7 +144,7 @@ func (q *authController) AdminLogin(c fiber.Ctx) error {
 	if err = sess.RegenerateWithContext(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRegenerate")
 	}
-	sess.Set(models.UserID, admin.ID)
+	sess.Set(models.AdminID, admin.ID)
 	next, ok := sess.Get("next").(string)
 	if !ok {
 		next = "/admin"
@@ -199,7 +199,7 @@ func (q *authController) SellerNewLogin(c fiber.Ctx) error {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	if sess.Get(models.UserID) != nil {
+	if sess.Get(models.SellerID) != nil {
 		return flash.Redirect(c, sess.Session, "/seller")
 	}
 	csrfToken := csrf.TokenFromContext(c)
@@ -221,7 +221,7 @@ func (q *authController) SellerLogin(c fiber.Ctx) error {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	if sess.Get(models.UserID) != nil {
+	if sess.Get(models.SellerID) != nil {
 		return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/seller")
 	}
 	csrfToken := csrf.TokenFromContext(c)
@@ -279,7 +279,7 @@ func (q *authController) SellerLogin(c fiber.Ctx) error {
 	if err = sess.RegenerateWithContext(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRegenerate")
 	}
-	sess.Set(models.UserID, seller.ID)
+	sess.Set(models.SellerID, seller.ID)
 	next, ok := sess.Get("next").(string)
 	if !ok {
 		next = "/seller"

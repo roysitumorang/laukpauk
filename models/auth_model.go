@@ -13,7 +13,9 @@ const CurrentAdmin = "current_admin"
 const CurrentSeller = "current_seller"
 const CurrentBuyer = "current_buyer"
 const CurrentJsonWebToken = "current_jwt"
-const UserID = "user_id"
+const AdminID = "admin_id"
+const SellerID = "seller_id"
+const BuyerID = "buyer_id"
 
 var ErrLoginFailed = errors.New("login failed")
 

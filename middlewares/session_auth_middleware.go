@@ -21,7 +21,7 @@ func AdminSessionAuthMiddleware(
 		if !ok {
 			flash = helper.NewFlashMessage()
 		}
-		userID, ok := sess.Get(models.UserID).(uuid.UUID)
+		adminID, ok := sess.Get(models.AdminID).(uuid.UUID)
 		if !ok {
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
@@ -31,7 +31,7 @@ func AdminSessionAuthMiddleware(
 		currentAdmin, err := adminService.FindAdmin(
 			ctx,
 			models.NewAdminFilter().
-				WithAdminIDs(userID),
+				WithAdminIDs(adminID),
 		)
 		if err != nil || currentAdmin == nil {
 			_ = sess.ResetWithContext(ctx)
@@ -60,7 +60,7 @@ func SellerSessionAuthMiddleware(
 		if !ok {
 			flash = helper.NewFlashMessage()
 		}
-		userID, ok := sess.Get(models.UserID).(uuid.UUID)
+		sellerID, ok := sess.Get(models.SellerID).(uuid.UUID)
 		if !ok {
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
@@ -70,7 +70,7 @@ func SellerSessionAuthMiddleware(
 		currentSeller, err := sellerService.FindSeller(
 			ctx,
 			models.NewSellerFilter().
-				WithSellerIDs(userID),
+				WithSellerIDs(sellerID),
 		)
 		if err != nil || currentSeller == nil {
 			_ = sess.ResetWithContext(ctx)
