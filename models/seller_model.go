@@ -62,7 +62,7 @@ func (q SellerLevel) Int() int {
 type Seller struct {
 	RowNo                         int64        `json:"-" form:"-"`
 	ID                            uuid.UUID    `json:"id" form:"-"`
-	CompanyID                     *uuid.UUID   `json:"-" form:"-"`
+	CompanyID                     uuid.UUID    `json:"-" form:"-"`
 	Status                        SellerStatus `json:"-" form:"-"`
 	SellerLevel                   SellerLevel  `json:"-" form:"seller_level"`
 	Name                          string       `json:"name" form:"name"`

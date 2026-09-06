@@ -418,6 +418,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/recipes"))
 	controllers.NewCompanyController(
 		q.AdminService,
+		q.SellerService,
 		q.CompanyService,
 	).Mount(app.Group("/companies"))
 	controllers.NewOtpController(

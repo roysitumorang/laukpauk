@@ -21,15 +21,18 @@ import (
 
 type companyController struct {
 	adminService   services.AdminService
+	sellerService  services.SellerService
 	companyService services.CompanyService
 }
 
 func NewCompanyController(
 	adminService services.AdminService,
+	sellerService services.SellerService,
 	companyService services.CompanyService,
 ) *companyController {
 	return &companyController{
 		adminService:   adminService,
+		sellerService:  sellerService,
 		companyService: companyService,
 	}
 }
@@ -173,7 +176,7 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 	createdBy := currentAdmin.ID
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
-	request.UpdatedBy = createdBy
+	request.UpdatedBy = uuid.Nil()
 	request.UpdatedAt = now
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
@@ -191,8 +194,33 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.companyService.CreateCompany(ctx, tx, request); err != nil {
+	company, err := q.companyService.CreateCompany(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateCompany")
+		return c.Render("admin/company_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	seller, err := q.sellerService.CreateSeller(ctx, tx, &models.Seller{
+		CompanyID:    company.ID,
+		Status:       models.SellerStatusActive,
+		SellerLevel:  models.SellerLevelOwner,
+		Name:         company.Name,
+		MobilePhone:  &company.WhatsappPhoneNumber,
+		OtpExpiredAt: time.Unix(0, 0),
+		Username:     helper.RandomString(10),
+		Photo:        "seller-default.png",
+	})
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateSeller")
+		return c.Render("admin/company_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	company.OwnerID = seller.ID
+	company.UpdatedBy = seller.ID
+	if _, err = q.companyService.UpdateCompany(ctx, tx, company); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCompany")
 		return c.Render("admin/company_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
