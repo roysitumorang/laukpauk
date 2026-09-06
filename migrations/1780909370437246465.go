@@ -181,6 +181,14 @@ func init() {
 				, maximum_delivery_time interval NOT NULL
 				, transaction_auto_withdrawal_enabled boolean NOT NULL
 				, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
+				, owner_id UUID NOT NULL
+				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_at timestamp with time zone NOT NULL
+				, updated_by UUID NOT NULL
+				, updated_at timestamp with time zone NOT NULL
+				, deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, deactivated_at timestamp with time zone
+				, deactivation_reason character varying
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -203,6 +211,34 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON companies (subscription_end_date);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (owner_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (updated_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON companies (deactivated_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -285,10 +321,15 @@ func init() {
 				, maximum_delivery_time
 				, transaction_auto_withdrawal_enabled
 				, transaction_auto_withdrawal_window
+				, owner_id
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19
-				, $20, $21, $22, tstzrange($23, $24, '[]')
+				, $20, $21, $22, tstzrange($23, $24, '[]'), $25, $26, $27, $28, $29
 			)
 			RETURNING id`,
 			company.Name,
@@ -315,6 +356,11 @@ func init() {
 			company.TransactionAutoWithdrawalEnabled,
 			company.TransactionAutoWithdrawalWindowMin,
 			company.TransactionAutoWithdrawalWindowMax,
+			uuid.Nil(),
+			adminID,
+			now,
+			uuid.Nil(),
+			now,
 		).Scan(&companyID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
@@ -439,73 +485,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`ALTER TABLE companies
-				ADD COLUMN owner_id UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN created_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN created_at timestamp with time zone
-				, ADD COLUMN updated_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN updated_at timestamp with time zone
-				, ADD COLUMN deactivated_by UUID REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, ADD COLUMN deactivated_at timestamp with time zone
-				, ADD COLUMN deactivation_reason character varying`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (owner_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (created_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (updated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON companies (deactivated_by);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
 			`UPDATE companies SET
 				owner_id = $1
-				, created_by = $2
-				, created_at = $3
-				, updated_by = $4
-				, updated_at = $5
-			WHERE id = $6`,
+				, updated_by = $2
+			WHERE id = $3`,
 			sellerID,
-			adminID,
-			now,
 			sellerID,
-			now,
 			companyID,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`ALTER TABLE companies
-				ALTER COLUMN created_by SET NOT NULL
-				, ALTER COLUMN created_at SET NOT NULL
-				, ALTER COLUMN updated_by SET NOT NULL
-				, ALTER COLUMN updated_at SET NOT NULL;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
