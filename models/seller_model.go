@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 	"uuid"
 
 	"github.com/nyaruka/phonenumbers"
@@ -23,12 +24,19 @@ var MapSellerSortings = map[string]struct{}{
 
 const SellerSortingFieldName = "name"
 
+type SellerStatus int
+
+const (
+	SellerStatusActive SellerStatus = iota
+	SellerStatusDeactivated
+)
+
+type SellerLevel int
+
 const (
 	SellerLevelOwner SellerLevel = iota
 	SellerLevelStaff
 )
-
-type SellerLevel int
 
 var SellerLevels = []SellerLevel{SellerLevelOwner, SellerLevelStaff}
 var MapSellerLevels = map[SellerLevel]struct{}{
@@ -36,11 +44,53 @@ var MapSellerLevels = map[SellerLevel]struct{}{
 	SellerLevelStaff: {},
 }
 
+func (q SellerLevel) Equal(v SellerLevel) bool {
+	return q.Int() == v.Int()
+}
+
+func (q SellerLevel) String() string {
+	if q == SellerLevelStaff {
+		return "staff"
+	}
+	return "owner"
+}
+
+func (q SellerLevel) Int() int {
+	return int(q)
+}
+
 type Seller struct {
-	RowNo int64     `json:"-" form:"-"`
-	ID    uuid.UUID `json:"id" form:"-"`
-	user
-	SellerLevel SellerLevel `json:"-" form:"seller_level"`
+	RowNo                         int64        `json:"-" form:"-"`
+	ID                            uuid.UUID    `json:"id" form:"-"`
+	CompanyID                     *uuid.UUID   `json:"-" form:"-"`
+	Status                        SellerStatus `json:"-" form:"-"`
+	SellerLevel                   SellerLevel  `json:"-" form:"seller_level"`
+	Name                          string       `json:"name" form:"name"`
+	UnconfirmedMobilePhone        *string      `json:"-" form:"-"`
+	MobilePhoneConfirmationSentAt *time.Time   `json:"-" form:"-"`
+	MobilePhoneConfirmationToken  *string      `json:"-" form:"-"`
+	MobilePhoneConfirmedAt        *time.Time   `json:"-" form:"-"`
+	MobilePhone                   *string      `json:"mobile_phone" form:"mobile_phone"`
+	OtpToken                      *string      `json:"-" form:"-"`
+	OtpCreatedAt                  *time.Time   `json:"-" form:"-"`
+	OtpExpiredAt                  *time.Time   `json:"-" form:"-"`
+	Username                      string       `json:"username" form:"username"`
+	UnconfirmedEmail              *string      `json:"-" form:"-"`
+	EmailConfirmationSentAt       *time.Time   `json:"-" form:"-"`
+	EmailConfirmationToken        *string      `json:"-" form:"-"`
+	EmailConfirmedAt              *time.Time   `json:"-" form:"-"`
+	Email                         *string      `json:"email" form:"email"`
+	Photo                         string       `json:"-" form:"photo"`
+	UnreadNotifications           int64        `json:"-" form:"-"`
+	TelegramChatID                *int64       `json:"telegram_chat_id" form:"telegram_chat_id"`
+	TelegramUsername              *string      `json:"telegram_username" form:"telegram_username"`
+	CreatedBy                     *uuid.UUID   `json:"-" form:"-"`
+	CreatedAt                     time.Time    `json:"created_at" form:"-"`
+	UpdatedBy                     *uuid.UUID   `json:"-" form:"-"`
+	UpdatedAt                     time.Time    `json:"-" form:"-"`
+	DeactivatedBy                 *uuid.UUID   `json:"-" form:"-"`
+	DeactivatedAt                 *time.Time   `json:"-" form:"-"`
+	DeactivationReason            *string      `json:"-" form:"-"`
 }
 
 func (q *Seller) Validate() error {
@@ -58,22 +108,8 @@ func (q *Seller) Validate() error {
 		return fmt.Errorf("mobile_phone: %w", err)
 	}
 	q.MobilePhone = new(phonenumbers.Format(mobilePhone, phonenumbers.E164))
-	if q.PasswordIncluded {
-		if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
-			return errors.New("password: is required")
-		}
-		if q.Base64PasswordConfirmation = strings.TrimSpace(q.Base64PasswordConfirmation); q.Base64PasswordConfirmation == "" {
-			return errors.New("password_confirmation: is required")
-		}
-		if q.Base64Password != q.Base64PasswordConfirmation {
-			return errors.New("password: does not match password_confirmation")
-		}
-		if q.PlaintextPassword, err = helper.Base64Decode(q.Base64Password); err != nil {
-			return fmt.Errorf("password: %s", err.Error())
-		}
-	}
 	if _, ok := MapSellerLevels[q.SellerLevel]; !ok {
-		return errors.New("seller_type: not found")
+		return errors.New("seller_level: not found")
 	}
 	return nil
 }
@@ -96,7 +132,23 @@ func (q *Seller) Owner() bool {
 }
 
 type SellerFilter struct {
-	userFilter
+	CompanyIDs,
+	SellerIDs,
+	ExcludedSellerIDs []uuid.UUID
+	TelegramChatIDs []int64
+	Statuses        []SellerStatus
+	Login,
+	Keyword,
+	Username,
+	TelegramUsername,
+	Email,
+	MobilePhone,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
 }
 
 func NewSellerFilter() *SellerFilter {
@@ -107,17 +159,17 @@ func NewSellerFilter() *SellerFilter {
 }
 
 func (q *SellerFilter) WithSellerIDs(sellerIDs ...uuid.UUID) *SellerFilter {
-	q.UserIDs = sellerIDs
+	q.SellerIDs = sellerIDs
 	return q
 }
 
 func (q *SellerFilter) WithExcludedSellerIDs(excludedSellerIDs ...uuid.UUID) *SellerFilter {
-	q.ExcludedUserIDs = excludedSellerIDs
+	q.ExcludedSellerIDs = excludedSellerIDs
 	return q
 }
 
-func (q *SellerFilter) WithUserStatuses(userStatuses ...UserStatus) *SellerFilter {
-	q.UserStatuses = userStatuses
+func (q *SellerFilter) WithStatuses(statuses ...SellerStatus) *SellerFilter {
+	q.Statuses = statuses
 	return q
 }
 
@@ -143,11 +195,6 @@ func (q *SellerFilter) WithEmail(email string) *SellerFilter {
 
 func (q *SellerFilter) WithMobilePhone(mobilePhone string) *SellerFilter {
 	q.MobilePhone = mobilePhone
-	return q
-}
-
-func (q *SellerFilter) WithPasswordResetToken(passwordResetToken string) *SellerFilter {
-	q.PasswordResetToken = passwordResetToken
 	return q
 }
 
@@ -178,19 +225,4 @@ func (q *SellerFilter) WithPage(page int64) *SellerFilter {
 func (q *SellerFilter) WithUrlValues(urlValues url.Values) *SellerFilter {
 	q.UrlValues = urlValues
 	return q
-}
-
-func (q SellerLevel) Equal(v SellerLevel) bool {
-	return q.Int() == v.Int()
-}
-
-func (q SellerLevel) String() string {
-	if q == SellerLevelStaff {
-		return "staff"
-	}
-	return "owner"
-}
-
-func (q SellerLevel) Int() int {
-	return int(q)
 }

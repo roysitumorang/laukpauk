@@ -245,7 +245,7 @@ func (q *authController) SellerLogin(c fiber.Ctx) error {
 		ctx,
 		models.NewSellerFilter().
 			WithLogin(request.Login).
-			WithUserStatuses(models.UserStatusActive),
+			WithStatuses(models.SellerStatusActive),
 	)
 	if err != nil {
 		if !errors.Is(err, models.ErrSellerNotFound) {
@@ -255,20 +255,16 @@ func (q *authController) SellerLogin(c fiber.Ctx) error {
 			"flash", flash.Danger(err.Error()),
 		))
 	}
+	now := time.Now().In(time.Local)
 	if seller == nil ||
-		seller.EncryptedPassword == nil {
+		seller.OtpToken == nil ||
+		seller.OtpExpiredAt == nil ||
+		!seller.OtpExpiredAt.After(now) {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	matched, err := helper.VerifyPassword(request.Password, *seller.EncryptedPassword)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
-		return c.Render("seller/auth_login", params.Push(
-			"flash", flash.Danger(err.Error()),
-		))
-	}
-	if !matched {
+	if request.Password != *seller.OtpToken {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
@@ -338,7 +334,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 		ctx,
 		models.NewBuyerFilter().
 			WithLogin(loginRequest.Login).
-			WithUserStatuses(models.UserStatusActive),
+			WithStatuses(models.BuyerStatusActive),
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
@@ -346,28 +342,20 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	now := time.Now().In(time.Local)
 	if buyer == nil ||
-		buyer.EncryptedPassword == nil {
+		buyer.OtpToken == nil ||
+		buyer.OtpExpiredAt == nil ||
+		!buyer.OtpExpiredAt.After(now) {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	matched, err := helper.VerifyPassword(
-		loginRequest.Password,
-		*buyer.EncryptedPassword,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+	if loginRequest.Password != *buyer.OtpToken {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	if !matched {
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
-			WriteResponse(c)
-	}
-	now := time.Now()
 	expiredAt := now.Add(helper.GetAccessTokenAge() + time.Nanosecond)
 	jsonWebTokenRequest := &models.JsonWebToken{
 		UserID:    buyer.ID,

@@ -106,7 +106,7 @@ func (q *buyerController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.buyerService.FindBuyers(
 		ctx,
-		request.WithUserStatuses(models.UserStatusActive),
+		request.WithStatuses(models.BuyerStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
 		return c.Render("admin/buyer_index", params.Push(
@@ -145,7 +145,7 @@ func (q *buyerController) AdminNew(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -184,7 +184,7 @@ func (q *buyerController) AdminCreate(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -264,26 +264,11 @@ func (q *buyerController) AdminCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	now := time.Now().In(time.Local)
-	createdBy := currentAdmin.ID
-	if request.PasswordIncluded {
-		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
-			return c.Render("admin/buyer_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(""),
-			), "admin/layouts/authenticated")
-		}
-		request.EncryptedPassword = encryptedPasword
-		request.PasswordChangedAt = &now
-	}
 	request.ReferralPoints = 0
 	request.RewardPoints = 0
 	request.Wallet = 0
 	request.TransactionVolume = 0
-	request.CreatedBy = &createdBy
 	request.CreatedAt = now
-	request.UpdatedBy = &createdBy
 	request.UpdatedAt = now
 	if photo == nil {
 		request.Photo = os.Getenv("BUYER_DEFAULT_PHOTO")
@@ -352,7 +337,7 @@ func (q *buyerController) AdminEdit(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.BuyerStatusActive).
 			WithBuyerIDs(buyerID),
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -377,7 +362,7 @@ func (q *buyerController) AdminEdit(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -409,7 +394,7 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.BuyerStatusActive).
 			WithBuyerIDs(buyerID),
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -434,7 +419,7 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -519,17 +504,6 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	now := time.Now().In(time.Local)
-	if request.PasswordIncluded {
-		encryptedPasword, err := helper.HashPassword(request.PlaintextPassword)
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
-			return c.Render("admin/buyer_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
-		}
-		buyer.EncryptedPassword = encryptedPasword
-		buyer.PasswordChangedAt = &now
-	}
 	buyer.Name = request.Name
 	buyer.Username = request.Username
 	buyer.Photo = request.Photo
@@ -539,7 +513,6 @@ func (q *buyerController) AdminUpdate(c fiber.Ctx) (err error) {
 	buyer.Wallet = 0
 	buyer.TransactionVolume = 0
 	buyer.ReferrerID = request.ReferrerID
-	buyer.UpdatedBy = &currentAdmin.ID
 	buyer.UpdatedAt = now
 	buyer.DeactivatedBy = nil
 	buyer.DeactivatedAt = nil
@@ -602,7 +575,7 @@ func (q *buyerController) AdminDelete(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithUserStatuses(models.UserStatusActive).
+			WithStatuses(models.BuyerStatusActive).
 			WithBuyerIDs(buyerID),
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -612,7 +585,7 @@ func (q *buyerController) AdminDelete(c fiber.Ctx) (err error) {
 	if buyer == nil {
 		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/admin/buyers")
 	}
-	buyer.UserStatus = models.UserStatusDeactivated
+	buyer.Status = models.BuyerStatusDeactivated
 	buyer.DeactivatedBy = &currentAdmin.ID
 	buyer.DeactivatedAt = new(time.Now())
 	buyer.DeactivationReason = nil

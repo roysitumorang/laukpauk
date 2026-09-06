@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 	"uuid"
 
 	"github.com/nyaruka/phonenumbers"
@@ -25,18 +26,50 @@ var MapBuyerSortings = map[string]struct{}{
 
 const BuyerSortingFieldName = "name"
 
+type BuyerStatus int
+
+const (
+	BuyerStatusActive BuyerStatus = iota
+	BuyerStatusDeactivated
+)
+
 type Buyer struct {
-	RowNo int64     `json:"-" form:"-"`
-	ID    uuid.UUID `json:"id" form:"id"`
-	user
-	ReferralCode      string     `json:"referral_code" form:"referral_code"`
-	Address           string     `json:"address" form:"address"`
-	ReferrerID        *uuid.UUID `json:"referrer_id" form:"referrer_id"`
-	ReferralPoints    int64      `json:"referral_points" form:"-"`
-	RewardPoints      int64      `json:"reward_points" form:"-"`
-	Wallet            int64      `json:"wallet" form:"-"`
-	TransactionVolume int64      `json:"transaction_volume" form:"-"`
-	DeliveryRouteID   *uuid.UUID `json:"delivery_route_id" form:"-"`
+	RowNo                         int64       `json:"-" form:"-"`
+	ID                            uuid.UUID   `json:"id" form:"id"`
+	CompanyID                     uuid.UUID   `json:"-" form:"-"`
+	Status                        BuyerStatus `json:"-" form:"-"`
+	Name                          string      `json:"name" form:"name"`
+	UnconfirmedMobilePhone        *string     `json:"-" form:"-"`
+	MobilePhoneConfirmationSentAt *time.Time  `json:"-" form:"-"`
+	MobilePhoneConfirmationToken  *string     `json:"-" form:"-"`
+	MobilePhoneConfirmedAt        *time.Time  `json:"-" form:"-"`
+	MobilePhone                   *string     `json:"mobile_phone" form:"mobile_phone"`
+	OtpToken                      *string     `json:"-" form:"-"`
+	OtpCreatedAt                  *time.Time  `json:"-" form:"-"`
+	OtpExpiredAt                  *time.Time  `json:"-" form:"-"`
+	Username                      string      `json:"username" form:"username"`
+	UnconfirmedEmail              *string     `json:"-" form:"-"`
+	EmailConfirmationSentAt       *time.Time  `json:"-" form:"-"`
+	EmailConfirmationToken        *string     `json:"-" form:"-"`
+	EmailConfirmedAt              *time.Time  `json:"-" form:"-"`
+	Email                         *string     `json:"email" form:"email"`
+	Photo                         string      `json:"-" form:"photo"`
+	UnreadNotifications           int64       `json:"-" form:"-"`
+	ReferralCode                  string      `json:"referral_code" form:"referral_code"`
+	Address                       string      `json:"address" form:"address"`
+	ReferrerID                    *uuid.UUID  `json:"referrer_id" form:"referrer_id"`
+	ReferralPoints                int64       `json:"referral_points" form:"-"`
+	RewardPoints                  int64       `json:"reward_points" form:"-"`
+	Wallet                        int64       `json:"wallet" form:"-"`
+	TransactionVolume             int64       `json:"transaction_volume" form:"-"`
+	DeliveryRouteID               *uuid.UUID  `json:"delivery_route_id" form:"-"`
+	TelegramChatID                *int64      `json:"telegram_chat_id" form:"telegram_chat_id"`
+	TelegramUsername              *string     `json:"telegram_username" form:"telegram_username"`
+	CreatedAt                     time.Time   `json:"created_at" form:"-"`
+	UpdatedAt                     time.Time   `json:"-" form:"-"`
+	DeactivatedBy                 *uuid.UUID  `json:"-" form:"-"`
+	DeactivatedAt                 *time.Time  `json:"-" form:"-"`
+	DeactivationReason            *string     `json:"-" form:"-"`
 }
 
 func (q *Buyer) Validate() error {
@@ -56,20 +89,6 @@ func (q *Buyer) Validate() error {
 	q.MobilePhone = new(phonenumbers.Format(mobilePhone, phonenumbers.E164))
 	if q.Address = strings.TrimSpace(q.Address); q.Address == "" {
 		return errors.New("address: is required")
-	}
-	if q.PasswordIncluded {
-		if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
-			return errors.New("password: is required")
-		}
-		if q.Base64PasswordConfirmation = strings.TrimSpace(q.Base64PasswordConfirmation); q.Base64PasswordConfirmation == "" {
-			return errors.New("password_confirmation: is required")
-		}
-		if q.Base64Password != q.Base64PasswordConfirmation {
-			return errors.New("password: does not match password_confirmation")
-		}
-		if q.PlaintextPassword, err = helper.Base64Decode(q.Base64Password); err != nil {
-			return fmt.Errorf("password: %s", err.Error())
-		}
 	}
 	if q.ReferrerID != nil && q.ReferrerID.Compare(uuid.Nil()) == 0 {
 		q.ReferrerID = nil
@@ -91,8 +110,24 @@ func (q *Buyer) PhotoPath(baseURLs ...string) string {
 }
 
 type BuyerFilter struct {
-	userFilter
-	ReferralCodes []string
+	CompanyIDs,
+	BuyerIDs,
+	ExcludedBuyerIDs []uuid.UUID
+	TelegramChatIDs []int64
+	ReferralCodes   []string
+	Statuses        []BuyerStatus
+	Login,
+	Keyword,
+	Username,
+	TelegramUsername,
+	Email,
+	MobilePhone,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
 }
 
 func NewBuyerFilter() *BuyerFilter {
@@ -103,12 +138,12 @@ func NewBuyerFilter() *BuyerFilter {
 }
 
 func (q *BuyerFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *BuyerFilter {
-	q.UserIDs = buyerIDs
+	q.BuyerIDs = buyerIDs
 	return q
 }
 
 func (q *BuyerFilter) WithExcludedBuyerIDs(excludedBuyerIDs ...uuid.UUID) *BuyerFilter {
-	q.ExcludedUserIDs = excludedBuyerIDs
+	q.ExcludedBuyerIDs = excludedBuyerIDs
 	return q
 }
 
@@ -122,8 +157,8 @@ func (q *BuyerFilter) WithTelegramChatIDs(telegramChatIDs ...int64) *BuyerFilter
 	return q
 }
 
-func (q *BuyerFilter) WithUserStatuses(userStatuses ...UserStatus) *BuyerFilter {
-	q.UserStatuses = userStatuses
+func (q *BuyerFilter) WithStatuses(statuses ...BuyerStatus) *BuyerFilter {
+	q.Statuses = statuses
 	return q
 }
 
@@ -154,11 +189,6 @@ func (q *BuyerFilter) WithEmail(email string) *BuyerFilter {
 
 func (q *BuyerFilter) WithMobilePhone(mobilePhone string) *BuyerFilter {
 	q.MobilePhone = mobilePhone
-	return q
-}
-
-func (q *BuyerFilter) WithPasswordResetToken(passwordResetToken string) *BuyerFilter {
-	q.PasswordResetToken = passwordResetToken
 	return q
 }
 

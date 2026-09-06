@@ -64,15 +64,10 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if currentBuyer.CompanyID == nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrCompanyNotFound.Error()).
-			WriteResponse(c)
-	}
 	company, err := q.companyService.FindCompany(
 		ctx,
 		models.NewCompanyFilter().
-			WithCompanyIDs(*currentBuyer.CompanyID),
+			WithCompanyIDs(currentBuyer.CompanyID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")

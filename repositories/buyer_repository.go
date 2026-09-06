@@ -66,7 +66,7 @@ func (q *buyerRepository) FindBuyers(
 	sb.Reset()
 	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM users u JOIN buyers b ON u.id = b.id %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM buyers %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -80,48 +80,41 @@ func (q *buyerRepository) FindBuyers(
 	query = strings.ReplaceAll(
 		query,
 		"COUNT(1)",
-		`b.id
-		, u.company_id
-		, u.user_type
-		, u.user_status
-		, u.name
-		, u.unconfirmed_mobile_phone
-		, u.mobile_phone_confirmation_sent_at
-		, u.mobile_phone_confirmation_token
-		, u.mobile_phone_confirmed_at
-		, u.mobile_phone
-		, u.otp_token
-		, u.otp_created_at
-		, u.otp_expired_at
-		, u.username
-		, u.unconfirmed_email
-		, u.email_confirmation_sent_at
-		, u.email_confirmation_token
-		, u.email_confirmed_at
-		, u.email
-		, u.encrypted_password
-		, u.password_reset_at
-		, u.password_reset_token
-		, u.password_changed_at
-		, u.photo
-		, u.unread_notifications
-		, u.telegram_chat_id
-		, u.telegram_username
-		, u.created_by
-		, u.created_at
-		, u.updated_by
-		, u.updated_at
-		, u.deactivated_by
-		, u.deactivated_at
-		, u.deactivation_reason
-		, b.referral_code
-		, b.address
-		, b.referrer_id
-		, b.referral_points
-		, b.reward_points
-		, b.wallet
-		, b.transaction_volume
-		, b.delivery_route_id`,
+		`id
+		, company_id
+		, status
+		, name
+		, unconfirmed_mobile_phone
+		, mobile_phone_confirmation_sent_at
+		, mobile_phone_confirmation_token
+		, mobile_phone_confirmed_at
+		, mobile_phone
+		, otp_token
+		, otp_created_at
+		, otp_expired_at
+		, username
+		, unconfirmed_email
+		, email_confirmation_sent_at
+		, email_confirmation_token
+		, email_confirmed_at
+		, email
+		, photo
+		, unread_notifications
+		, referral_code
+		, address
+		, referrer_id
+		, referral_points
+		, reward_points
+		, wallet
+		, transaction_volume
+		, delivery_route_id
+		, telegram_chat_id
+		, telegram_username
+		, created_at
+		, updated_at
+		, deactivated_by
+		, deactivated_at
+		, deactivation_reason`,
 	)
 	sb.Reset()
 	_, _ = sb.WriteString(query)
@@ -173,8 +166,7 @@ func (q *buyerRepository) FindBuyers(
 		if err = rows.Scan(
 			&buyer.ID,
 			&buyer.CompanyID,
-			&buyer.UserType,
-			&buyer.UserStatus,
+			&buyer.Status,
 			&buyer.Name,
 			&buyer.UnconfirmedMobilePhone,
 			&buyer.MobilePhoneConfirmationSentAt,
@@ -190,21 +182,8 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.EmailConfirmationToken,
 			&buyer.EmailConfirmedAt,
 			&buyer.Email,
-			&buyer.EncryptedPassword,
-			&buyer.PasswordResetAt,
-			&buyer.PasswordResetToken,
-			&buyer.PasswordChangedAt,
 			&buyer.Photo,
 			&buyer.UnreadNotifications,
-			&buyer.TelegramChatID,
-			&buyer.TelegramUsername,
-			&buyer.CreatedBy,
-			&buyer.CreatedAt,
-			&buyer.UpdatedBy,
-			&buyer.UpdatedAt,
-			&buyer.DeactivatedBy,
-			&buyer.DeactivatedAt,
-			&buyer.DeactivationReason,
 			&buyer.ReferralCode,
 			&buyer.Address,
 			&buyer.ReferrerID,
@@ -213,6 +192,13 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.Wallet,
 			&buyer.TransactionVolume,
 			&buyer.DeliveryRouteID,
+			&buyer.TelegramChatID,
+			&buyer.TelegramUsername,
+			&buyer.CreatedAt,
+			&buyer.UpdatedAt,
+			&buyer.DeactivatedBy,
+			&buyer.DeactivatedAt,
+			&buyer.DeactivationReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -240,58 +226,49 @@ func (q *buyerRepository) FindBuyer(
 	_, _ = fmt.Fprintf(
 		sb,
 		`SELECT
-			b.id
-			, u.company_id
-			, u.user_type
-			, u.user_status
-			, u.name
-			, u.unconfirmed_mobile_phone
-			, u.mobile_phone_confirmation_sent_at
-			, u.mobile_phone_confirmation_token
-			, u.mobile_phone_confirmed_at
-			, u.mobile_phone
-			, u.otp_token
-			, u.otp_created_at
-			, u.otp_expired_at
-			, u.username
-			, u.unconfirmed_email
-			, u.email_confirmation_sent_at
-			, u.email_confirmation_token
-			, u.email_confirmed_at
-			, u.email
-			, u.encrypted_password
-			, u.password_reset_at
-			, u.password_reset_token
-			, u.password_changed_at
-			, u.photo
-			, u.unread_notifications
-			, u.telegram_chat_id
-			, u.telegram_username
-			, u.created_by
-			, u.created_at
-			, u.updated_by
-			, u.updated_at
-			, u.deactivated_by
-			, u.deactivated_at
-			, u.deactivation_reason
-			, b.referral_code
-			, b.address
-			, b.referrer_id
-			, b.referral_points
-			, b.reward_points
-			, b.wallet
-			, b.transaction_volume
-			, b.delivery_route_id
-		FROM users u
-		JOIN buyers b ON u.id = b.id %s`,
+			id
+			, company_id
+			, status
+			, name
+			, unconfirmed_mobile_phone
+			, mobile_phone_confirmation_sent_at
+			, mobile_phone_confirmation_token
+			, mobile_phone_confirmed_at
+			, mobile_phone
+			, otp_token
+			, otp_created_at
+			, otp_expired_at
+			, username
+			, unconfirmed_email
+			, email_confirmation_sent_at
+			, email_confirmation_token
+			, email_confirmed_at
+			, email
+			, photo
+			, unread_notifications
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, transaction_volume
+			, delivery_route_id
+			, telegram_chat_id
+			, telegram_username
+			, created_at
+			, updated_at
+			, deactivated_by
+			, deactivated_at
+			, deactivation_reason
+		FROM buyers %s`,
 		condition,
 	)
 	var response models.Buyer
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.CompanyID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
@@ -307,21 +284,8 @@ func (q *buyerRepository) FindBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
-		&response.EncryptedPassword,
-		&response.PasswordResetAt,
-		&response.PasswordResetToken,
-		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
-		&response.TelegramChatID,
-		&response.TelegramUsername,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeactivatedBy,
-		&response.DeactivatedAt,
-		&response.DeactivationReason,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,
@@ -330,6 +294,13 @@ func (q *buyerRepository) FindBuyer(
 		&response.Wallet,
 		&response.TransactionVolume,
 		&response.DeliveryRouteID,
+		&response.TelegramChatID,
+		&response.TelegramUsername,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+		&response.DeactivatedBy,
+		&response.DeactivatedAt,
+		&response.DeactivationReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, models.ErrBuyerNotFound
@@ -345,7 +316,7 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 	var conds []string
 	if len(request.CompanyIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("u.company_id IN (")
+		_, _ = sb.WriteString("company_id IN (")
 		for i, companyID := range request.CompanyIDs {
 			params = append(params, companyID)
 			if i > 0 {
@@ -356,11 +327,11 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.UserIDs) > 0 {
+	if len(request.BuyerIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("b.id IN (")
-		for i, userID := range request.UserIDs {
-			params = append(params, userID)
+		_, _ = sb.WriteString("id IN (")
+		for i, buyerID := range request.BuyerIDs {
+			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -369,11 +340,11 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ExcludedUserIDs) > 0 {
+	if len(request.ExcludedBuyerIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("b.id NOT IN (")
-		for i, excludedUserID := range request.ExcludedUserIDs {
-			params = append(params, excludedUserID)
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedBuyerID := range request.ExcludedBuyerIDs {
+			params = append(params, excludedBuyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -384,7 +355,7 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 	}
 	if len(request.TelegramChatIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("u.telegram_chat_id IN (")
+		_, _ = sb.WriteString("telegram_chat_id IN (")
 		for i, telegramChatID := range request.TelegramChatIDs {
 			params = append(params, telegramChatID)
 			if i > 0 {
@@ -395,11 +366,11 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.UserStatuses) > 0 {
+	if len(request.Statuses) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("u.user_status IN (")
-		for i, userStatus := range request.UserStatuses {
-			params = append(params, userStatus)
+		_, _ = sb.WriteString("status IN (")
+		for i, status := range request.Statuses {
+			params = append(params, status)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -412,7 +383,7 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		params = append(params, strings.ToLower(request.Login))
 		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(u.username = $%d OR u.email = $%d OR u.mobile_phone = $%d)", n, n, n)
+		_, _ = fmt.Fprintf(sb, "(username = $%d OR email = $%d OR mobile_phone = $%d)", n, n, n)
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
@@ -423,10 +394,10 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
-			`(LOWER(u.name) LIKE $%d
-				OR u.username LIKE $%d
-				OR u.email LIKE $%d
-				OR u.mobile_phone LIKE $%d)`,
+			`(LOWER(name) LIKE $%d
+				OR username LIKE $%d
+				OR email LIKE $%d
+				OR mobile_phone LIKE $%d)`,
 			n, n, n, n,
 		)
 		conds = append(conds, sb.String())
@@ -434,36 +405,30 @@ func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *string
 	if request.Username != "" {
 		params = append(params, strings.ToLower(request.Username))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.username = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "username = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.TelegramUsername != "" {
 		params = append(params, request.TelegramUsername)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.telegram_username = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "telegram_username = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.Email != "" {
 		params = append(params, strings.ToLower(request.Email))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.email = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "email = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.MobilePhone != "" {
 		params = append(params, strings.ToLower(request.MobilePhone))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.mobile_phone = $%d", len(params))
-		conds = append(conds, sb.String())
-	}
-	if request.PasswordResetToken != "" {
-		params = append(params, request.PasswordResetToken)
-		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "u.password_reset_token = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "mobile_phone = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(request.ReferralCodes) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(b.referral_code) IN (")
+		_, _ = sb.WriteString("LOWER(referral_code) IN (")
 		for i, referralCode := range request.ReferralCodes {
 			params = append(params, strings.ToLower(referralCode))
 			if i > 0 {
@@ -497,10 +462,9 @@ func (q *buyerRepository) CreateBuyer(
 	var response models.Buyer
 	err := tx.QueryRow(
 		ctx,
-		`INSERT INTO users (
+		`INSERT INTO buyers (
 			company_id
-			, user_type
-			, user_status
+			, status
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
@@ -516,27 +480,29 @@ func (q *buyerRepository) CreateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
-			, encrypted_password
-			, password_reset_at
-			, password_reset_token
-			, password_changed_at
 			, photo
 			, unread_notifications
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, transaction_volume
+			, delivery_route_id
 			, telegram_chat_id
 			, telegram_username
-			, created_by
 			, created_at
-			, updated_by
 			, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+			, $31
 		)
 		RETURNING id
 			, company_id
-			, user_type
-			, user_status
+			, status
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
@@ -558,18 +524,23 @@ func (q *buyerRepository) CreateBuyer(
 			, password_changed_at
 			, photo
 			, unread_notifications
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, transaction_volume
+			, delivery_route_id
 			, telegram_chat_id
 			, telegram_username
-			, created_by
 			, created_at
-			, updated_by
 			, updated_at
 			, deactivated_by
 			, deactivated_at
 			, deactivation_reason`,
 		request.CompanyID,
-		request.UserType,
-		request.UserStatus,
+		request.Status,
 		request.Name,
 		request.UnconfirmedMobilePhone,
 		request.MobilePhoneConfirmationSentAt,
@@ -585,23 +556,24 @@ func (q *buyerRepository) CreateBuyer(
 		request.EmailConfirmationToken,
 		request.EmailConfirmedAt,
 		request.Email,
-		request.EncryptedPassword,
-		request.PasswordResetAt,
-		request.PasswordResetToken,
-		request.PasswordChangedAt,
 		request.Photo,
 		request.UnreadNotifications,
+		request.ReferralCode,
+		request.Address,
+		request.ReferrerID,
+		request.ReferralPoints,
+		request.RewardPoints,
+		request.Wallet,
+		request.TransactionVolume,
+		request.DeliveryRouteID,
 		request.TelegramChatID,
 		request.TelegramUsername,
-		request.CreatedBy,
 		request.CreatedAt,
-		request.UpdatedBy,
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
 		&response.CompanyID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
@@ -617,17 +589,19 @@ func (q *buyerRepository) CreateBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
-		&response.EncryptedPassword,
-		&response.PasswordResetAt,
-		&response.PasswordResetToken,
-		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
+		&response.ReferralCode,
+		&response.Address,
+		&response.ReferrerID,
+		&response.ReferralPoints,
+		&response.RewardPoints,
+		&response.Wallet,
+		&response.TransactionVolume,
+		&response.DeliveryRouteID,
 		&response.TelegramChatID,
 		&response.TelegramUsername,
-		&response.CreatedBy,
 		&response.CreatedAt,
-		&response.UpdatedBy,
 		&response.UpdatedAt,
 		&response.DeactivatedBy,
 		&response.DeactivatedAt,
@@ -637,68 +611,19 @@ func (q *buyerRepository) CreateBuyer(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_company_id_key":
+			case "buyers_username_company_id_key":
 				err = models.ErrUniqueBuyerUsernameViolation
-			case "users_mobile_phone_company_id_key":
+			case "buyers_mobile_phone_company_id_key":
 				err = models.ErrUniqueBuyerMobilePhoneViolation
-			case "users_email_company_id_key":
+			case "buyers_email_company_id_key":
 				err = models.ErrUniqueBuyerEmailViolation
-			case "users_telegram_chat_id_key":
+			case "buyers_telegram_chat_id_key":
 				err = models.ErrUniqueTelegramChatIdViolation
-			case "users_telegram_username_company_id_key":
+			case "buyers_telegram_username_company_id_key":
 				err = models.ErrUniqueTelegramUsernameViolation
+			case "buyers_lower_idx":
+				err = models.ErrUniqueBuyerReferralCodeViolation
 			}
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
-		return nil, err
-	}
-	if err = tx.QueryRow(
-		ctx,
-		`INSERT INTO buyers (
-			id
-			, referral_code
-			, address
-			, referrer_id
-			, referral_points
-			, reward_points
-			, wallet
-			, transaction_volume
-			, delivery_route_id
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id
-			, referral_code
-			, address
-			, referrer_id
-			, referral_points
-			, reward_points
-			, wallet
-			, transaction_volume
-			, delivery_route_id`,
-		response.ID,
-		request.ReferralCode,
-		request.Address,
-		request.ReferrerID,
-		request.ReferralPoints,
-		request.RewardPoints,
-		request.Wallet,
-		request.TransactionVolume,
-		request.DeliveryRouteID,
-	).Scan(
-		&response.ID,
-		&response.ReferralCode,
-		&response.Address,
-		&response.ReferrerID,
-		&response.ReferralPoints,
-		&response.RewardPoints,
-		&response.Wallet,
-		&response.TransactionVolume,
-		&response.DeliveryRouteID,
-	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "buyers_lower_idx" {
-			err = models.ErrUniqueBuyerReferralCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		}
@@ -718,149 +643,8 @@ func (q *buyerRepository) UpdateBuyer(
 		ctx,
 		`SELECT
 			id
-			, referral_code
-			, address
-			, referrer_id
-			, referral_points
-			, reward_points
-			, wallet
-			, transaction_volume
-			, delivery_route_id
-		FROM buyers
-		WHERE id = $1
-		FOR UPDATE`,
-		request.ID,
-	).Scan(
-		&response.ID,
-		&response.ReferralCode,
-		&response.Address,
-		&response.ReferrerID,
-		&response.ReferralPoints,
-		&response.RewardPoints,
-		&response.Wallet,
-		&response.TransactionVolume,
-		&response.DeliveryRouteID,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrBuyerNotFound
-	}
-	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		return nil, err
-	}
-	sb := pools.BuilderPool.Get()
-	defer func() {
-		sb.Reset()
-		pools.BuilderPool.Put(sb)
-	}()
-	sb.Reset()
-	var params []any
-	var n int
-	_, _ = sb.WriteString("UPDATE buyers SET")
-	if response.ReferralCode != request.ReferralCode {
-		params = append(params, request.ReferralCode)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " referral_code = $%d", n)
-	}
-	if response.Address != request.Address {
-		params = append(params, request.Address)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " address = $%d", n)
-	}
-	if response.ReferrerID == nil && request.ReferrerID != nil {
-		params = append(params, request.ReferrerID)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " referrer_id = $%d", n)
-	}
-	if request.ReferralPoints != 0 {
-		params = append(params, request.ReferralPoints)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " referral_points = referral_points + $%d", n)
-	}
-	if request.RewardPoints != 0 {
-		params = append(params, request.RewardPoints)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " reward_points = reward_points + $%d", n)
-	}
-	if request.Wallet != 0 {
-		params = append(params, request.Wallet)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " wallet = wallet + $%d", n)
-	}
-	if request.TransactionVolume != 0 {
-		params = append(params, request.TransactionVolume)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " transaction_volume = transaction_volume + $%d", n)
-	}
-	if (response.DeliveryRouteID == nil &&
-		request.DeliveryRouteID != nil) ||
-		(response.DeliveryRouteID != nil &&
-			request.DeliveryRouteID != nil &&
-			response.DeliveryRouteID.Compare(*request.DeliveryRouteID) != 0) {
-		params = append(params, request.DeliveryRouteID)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " delivery_route_id = $%d", n)
-	}
-	if len(params) > 0 {
-		params = append(params, request.ID)
-		_, _ = fmt.Fprintf(
-			sb,
-			` WHERE id = $%d
-			RETURNING id
-				, referral_code
-				, address
-				, referrer_id
-				, referral_points
-				, reward_points
-				, wallet
-				, transaction_volume
-				, delivery_route_id`,
-			len(params),
-		)
-		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-			&response.ID,
-			&response.ReferralCode,
-			&response.Address,
-			&response.ReferrerID,
-			&response.ReferralPoints,
-			&response.RewardPoints,
-			&response.Wallet,
-			&response.TransactionVolume,
-			&response.DeliveryRouteID,
-		); err != nil {
-			if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-				pgxErr.Code == pgerrcode.UniqueViolation &&
-				pgxErr.ConstraintName == "buyers_lower_idx" {
-				err = models.ErrUniqueBuyerReferralCodeViolation
-			} else {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			}
-			return nil, err
-		}
-	}
-	err = tx.QueryRow(
-		ctx,
-		`SELECT
-			id
 			, company_id
-			, user_type
-			, user_status
+			, status
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
@@ -876,30 +660,31 @@ func (q *buyerRepository) UpdateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
-			, encrypted_password
-			, password_reset_at
-			, password_reset_token
-			, password_changed_at
 			, photo
 			, unread_notifications
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, transaction_volume
+			, delivery_route_id
 			, telegram_chat_id
 			, telegram_username
-			, created_by
 			, created_at
-			, updated_by
 			, updated_at
 			, deactivated_by
 			, deactivated_at
 			, deactivation_reason
-		FROM users
+		FROM buyers
 		WHERE id = $1
 		FOR UPDATE`,
 		response.ID,
 	).Scan(
 		&response.ID,
 		&response.CompanyID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
@@ -915,17 +700,19 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
-		&response.EncryptedPassword,
-		&response.PasswordResetAt,
-		&response.PasswordResetToken,
-		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
+		&response.ReferralCode,
+		&response.Address,
+		&response.ReferrerID,
+		&response.ReferralPoints,
+		&response.RewardPoints,
+		&response.Wallet,
+		&response.TransactionVolume,
+		&response.DeliveryRouteID,
 		&response.TelegramChatID,
 		&response.TelegramUsername,
-		&response.CreatedBy,
 		&response.CreatedAt,
-		&response.UpdatedBy,
 		&response.UpdatedAt,
 		&response.DeactivatedBy,
 		&response.DeactivatedAt,
@@ -938,15 +725,21 @@ func (q *buyerRepository) UpdateBuyer(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	params = params[:0]
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	sb.Reset()
 	_, _ = sb.WriteString("UPDATE users SET")
-	if response.UserStatus != request.UserStatus {
-		params = append(params, request.UserStatus)
+	if response.Status != request.Status {
+		params = append(params, request.Status)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " user_status = $%d", n)
+		_, _ = fmt.Fprintf(sb, " status = $%d", n)
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
@@ -1092,46 +885,6 @@ func (q *buyerRepository) UpdateBuyer(
 		}
 		_, _ = fmt.Fprintf(sb, " email = $%d", n)
 	}
-	if (response.EncryptedPassword != nil && request.EncryptedPassword == nil) ||
-		(response.EncryptedPassword == nil && request.EncryptedPassword != nil) ||
-		(response.EncryptedPassword != nil && request.EncryptedPassword != nil &&
-			*response.EncryptedPassword != *request.EncryptedPassword) {
-		params = append(params, request.EncryptedPassword)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " encrypted_password = $%d", n)
-	}
-	if (response.PasswordResetAt != nil && request.PasswordResetAt == nil) ||
-		(response.PasswordResetAt == nil && request.PasswordResetAt != nil) ||
-		(response.PasswordResetAt != nil && request.PasswordResetAt != nil &&
-			!response.PasswordResetAt.Equal(*request.PasswordResetAt)) {
-		params = append(params, request.PasswordResetAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " password_reset_at = $%d", n)
-	}
-	if (response.PasswordResetToken != nil && request.PasswordResetToken == nil) ||
-		(response.PasswordResetToken == nil && request.PasswordResetToken != nil) ||
-		(response.PasswordResetToken != nil && request.PasswordResetToken != nil &&
-			*response.PasswordResetToken != *request.PasswordResetToken) {
-		params = append(params, request.PasswordResetToken)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " password_reset_token = $%d", n)
-	}
-	if (response.PasswordChangedAt != nil && request.PasswordChangedAt == nil) ||
-		(response.PasswordChangedAt == nil && request.PasswordChangedAt != nil) ||
-		(response.PasswordChangedAt != nil && request.PasswordChangedAt != nil &&
-			!response.PasswordChangedAt.Equal(*request.PasswordChangedAt)) {
-		params = append(params, request.PasswordChangedAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " password_changed_at = $%d", n)
-	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
@@ -1145,6 +898,66 @@ func (q *buyerRepository) UpdateBuyer(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " unread_notifications = unread_notifications + $%d", n)
+	}
+	if response.ReferralCode != request.ReferralCode {
+		params = append(params, request.ReferralCode)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " referral_code = $%d", n)
+	}
+	if response.Address != request.Address {
+		params = append(params, request.Address)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " address = $%d", n)
+	}
+	if response.ReferrerID == nil && request.ReferrerID != nil {
+		params = append(params, request.ReferrerID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " referrer_id = $%d", n)
+	}
+	if request.ReferralPoints != 0 {
+		params = append(params, request.ReferralPoints)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " referral_points = referral_points + $%d", n)
+	}
+	if request.RewardPoints != 0 {
+		params = append(params, request.RewardPoints)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " reward_points = reward_points + $%d", n)
+	}
+	if request.Wallet != 0 {
+		params = append(params, request.Wallet)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " wallet = wallet + $%d", n)
+	}
+	if request.TransactionVolume != 0 {
+		params = append(params, request.TransactionVolume)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " transaction_volume = transaction_volume + $%d", n)
+	}
+	if (response.DeliveryRouteID == nil &&
+		request.DeliveryRouteID != nil) ||
+		(response.DeliveryRouteID != nil &&
+			request.DeliveryRouteID != nil &&
+			response.DeliveryRouteID.Compare(*request.DeliveryRouteID) != 0) {
+		params = append(params, request.DeliveryRouteID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " delivery_route_id = $%d", n)
 	}
 	if (response.TelegramChatID != nil && request.TelegramChatID == nil) ||
 		(response.TelegramChatID == nil && request.TelegramChatID != nil) ||
@@ -1168,16 +981,6 @@ func (q *buyerRepository) UpdateBuyer(
 	}
 	if len(params) == 0 {
 		return &response, nil
-	}
-	if (response.UpdatedBy != nil && request.UpdatedBy == nil) ||
-		(response.UpdatedBy == nil && request.UpdatedBy != nil) ||
-		(response.UpdatedBy != nil && request.UpdatedBy != nil &&
-			*response.UpdatedBy != *request.UpdatedBy) {
-		params = append(params, request.UpdatedBy)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
@@ -1222,8 +1025,7 @@ func (q *buyerRepository) UpdateBuyer(
 		` WHERE id = $%d
 		RETURNING id
 			, company_id
-			, user_type
-			, user_status
+			, status
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
@@ -1239,12 +1041,16 @@ func (q *buyerRepository) UpdateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
-			, encrypted_password
-			, password_reset_at
-			, password_reset_token
-			, password_changed_at
 			, photo
 			, unread_notifications
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, transaction_volume
+			, delivery_route_id
 			, telegram_chat_id
 			, telegram_username
 			, created_by
@@ -1259,8 +1065,7 @@ func (q *buyerRepository) UpdateBuyer(
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.CompanyID,
-		&response.UserType,
-		&response.UserStatus,
+		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
 		&response.MobilePhoneConfirmationSentAt,
@@ -1276,17 +1081,19 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
-		&response.EncryptedPassword,
-		&response.PasswordResetAt,
-		&response.PasswordResetToken,
-		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
+		&response.ReferralCode,
+		&response.Address,
+		&response.ReferrerID,
+		&response.ReferralPoints,
+		&response.RewardPoints,
+		&response.Wallet,
+		&response.TransactionVolume,
+		&response.DeliveryRouteID,
 		&response.TelegramChatID,
 		&response.TelegramUsername,
-		&response.CreatedBy,
 		&response.CreatedAt,
-		&response.UpdatedBy,
 		&response.UpdatedAt,
 		&response.DeactivatedBy,
 		&response.DeactivatedAt,
@@ -1295,16 +1102,18 @@ func (q *buyerRepository) UpdateBuyer(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_company_id_key":
+			case "buyers_username_company_id_key":
 				err = models.ErrUniqueBuyerUsernameViolation
-			case "users_mobile_phone_company_id_key":
+			case "buyers_mobile_phone_company_id_key":
 				err = models.ErrUniqueBuyerMobilePhoneViolation
-			case "users_email_company_id_key":
+			case "buyers_email_company_id_key":
 				err = models.ErrUniqueBuyerEmailViolation
-			case "users_telegram_chat_id_key":
+			case "buyers_telegram_chat_id_key":
 				err = models.ErrUniqueTelegramChatIdViolation
-			case "users_telegram_username_company_id_key":
+			case "buyers_telegram_username_company_id_key":
 				err = models.ErrUniqueTelegramUsernameViolation
+			case "buyers_lower_idx":
+				err = models.ErrUniqueBuyerReferralCodeViolation
 			}
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
