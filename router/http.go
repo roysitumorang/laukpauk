@@ -191,6 +191,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/companies/*/*":           "/companies/admin/$1/$2",
 				"/seller/auth/*":                 "/auth/seller/$1",
 				"/seller":                        "/home/seller",
+				"/seller/otp":                    "/otp/seller",
+				"/seller/otp/*":                  "/otp/seller/$1",
 				"/seller/product_categories":     "/product_categories/seller",
 				"/seller/product_categories/*":   "/product_categories/seller/$1",
 				"/seller/product_categories/*/*": "/product_categories/seller/$1/$2",
@@ -213,6 +215,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/delivery_routes":      "/delivery_routes/v1/buyer",
 				"/v1/buyer/setting":              "/setting/v1/buyer",
 				"/v1/buyer/payment_channels":     "/payment_channels/v1/buyer",
+				"/v1/buyer/otp":                  "/otp/v1/buyer",
 				"/":                              "/home",
 				"/blogs":                         "/home/blogs",
 				"/read/*":                        "/home/blogs/$1",
@@ -417,6 +420,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.AdminService,
 		q.CompanyService,
 	).Mount(app.Group("/companies"))
+	controllers.NewOtpController(
+		q.SellerService,
+		q.BuyerService,
+	).Mount(app.Group("/otp"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).

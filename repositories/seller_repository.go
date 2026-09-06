@@ -606,7 +606,7 @@ func (q *sellerRepository) UpdateSeller(
 		FROM sellers
 		WHERE id = $1
 		FOR UPDATE`,
-		response.ID,
+		request.ID,
 	).Scan(
 		&response.ID,
 		&response.CompanyID,

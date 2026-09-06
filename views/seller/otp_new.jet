@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta http-equiv="x-ua-compatible" content="ie=edge" />
+	<title>Laukpauk</title>
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/fontawesome-free/css/all.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/ionicons/ionicons.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/dist/css/adminlte.min.css" />
+	<!-- Google Font: Source Sans Pro -->
+	<!-- <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet"> -->
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/animate.css/animate.css" />
+	<link rel="shortcut icon" href="{{ baseURL }}/assets/img/laukpauk-icon.png" />
+	<script src="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.css" />
+	<style type="text/css">
+		.nav-treeview > .nav-item {
+			font-size: .8rem;
+			margin-left: 1rem;
+		}
+		.nav-treeview > .nav-item .nav-icon {
+			font-size: .8rem !important;
+		}
+		.cp {
+			cursor: pointer;
+		}
+		.label-title {
+			font-weight: 100 !important;
+		}
+		.vam {
+			vertical-align: middle !important;
+		}
+		.size-50-50 {
+			width: 50px;
+			height: 50px;
+		}
+		.size-25-25 {
+			width: 25px;
+			height: 25px;
+		}
+		.size-15-15 {
+			width: 15px;
+			height: 15px;
+		}
+		.sidebar::-webkit-scrollbar {
+			width: .35rem;
+			height: .5rem;
+		}
+		.sidebar::-webkit-scrollbar-thumb {
+			background-color: #d2dfd9;
+		}
+	</style>
+</head>
+<body class="hold-transition login-page">
+	<div class="body-overlay"></div>
+	{{ range type, message := flash.Data }}
+	<div class="alert alert-{{ type }}">
+		<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+	</div>
+	{{ end }}
+	<div class="login-box" style="z-index:2;">
+		<div class="login-logo">
+			<a href="{{ baseURL }}" target="_blank">
+				<b class="text-success">Lauk</b> <span class="text-white">Pauk</span>
+			</a>
+			<p class="mb-3 text-md">
+				<span class="badge badge-danger animate__animated animate__fadeIn animate__infinite">You're not authenticated</span>
+			</p>
+		</div>
+		<!-- /.login-logo -->
+		<div class="card">
+			<div class="card-body login-card-body">
+				<p class="login-box-msg">Sign in to start your session</p>
+				<form method="POST" action="{{ baseURL }}/seller/otp" id="formLogin">
+					<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+					<div class="input-group mb-3">
+						<input type="text" name="login" id="login" value="{{ request.Login }}" placeholder="Email or Username" class="form-control" />
+						<div class="input-group-append">
+							<div class="input-group-text">
+								<span class="fas fa-envelope"></span>
+							</div>
+						</div>
+					</div>
+					<button type="submit" id="btnSubmit" class="btn btn-primary btn-block">Submit</button>
+				</form>
+			</div>
+			<!-- /.login-card-body -->
+		</div>
+	</div>
+	<!-- /.login-box -->
+	<!-- REQUIRED SCRIPTS -->
+	<!-- jQuery -->
+	<script src="{{ baseURL }}/assets/plugins/jquery/jquery.min.js"></script>
+	<script src="{{ baseURL }}/assets/plugins/jquery-ui/jquery-ui.min.js"></script>
+	<!-- Bootstrap -->
+	<script src="{{ baseURL }}/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+	<!-- AdminLTE -->
+	<script src="{{ baseURL }}/assets/dist/js/adminlte.js"></script>
+
+	<!-- OPTIONAL SCRIPTS -->
+	<script>
+		$("body").addClass("layout-fixed layout-navbar-fixed layout-footer-fixed");
+		/*
+		let btnSubmit = $("#btnSubmit");
+		let btnSubmitText = btnSubmit.text();
+		$("#formLogin").on("submit", function(e) {
+			e.preventDefault();
+			let formData = $(this).serialize();
+			btnSubmit.prop("disabled", true).text("Processing ..");
+			$.ajax({
+				url: "{{ baseURL }}/seller/auth/login",
+				data: formData,
+				type: "POST",
+				success: function(responseFromServer) {
+					responseFromServer = JSON.parse(responseFromServer);
+					let statusLogin = responseFromServer.statusLogin;
+					if (statusLogin) {
+						let _urlSP = new URLSearchParams(location.search);
+						let _afterLogin = _urlSP.get("afterLogin");
+						let _to = "{{ baseURL }}/seller/auth/me";
+						if (_afterLogin != null) {
+							_to = _afterLogin;
+						}
+						location.href = _to;
+					} else {
+						Swal.fire({
+							title: `Autentikasi Login`,
+							html: "Kombinasi username dan password tidak sesuai !",
+							type: "error"
+						});
+						btnSubmit.prop("disabled", false).text(btnSubmitText);
+					}
+				}
+			})
+		});
+		*/
+	</script>
+	<script src="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.css" />
+	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/icheck-bootstrap/icheck-bootstrap.min.css" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" />
+	<style type="text/css">
+		body {
+			background-image: url("{{ baseURL }}/assets/img/login-background.jpg") !important;
+			background-size: cover !important;
+			background-position: center !important;
+			position: relative;
+		}
+		.body-overlay {
+			position: fixed;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, .5);
+			top: 0;
+			left: 0;
+			bottom: 0;
+			right: 0;
+		}
+		body.swal2-height-auto {
+			height: null;
+		}
+	</style>
+</body>
+</html>

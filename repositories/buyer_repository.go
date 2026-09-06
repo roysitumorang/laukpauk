@@ -670,7 +670,7 @@ func (q *buyerRepository) UpdateBuyer(
 		FROM buyers
 		WHERE id = $1
 		FOR UPDATE`,
-		response.ID,
+		request.ID,
 	).Scan(
 		&response.ID,
 		&response.CompanyID,
@@ -722,7 +722,7 @@ func (q *buyerRepository) UpdateBuyer(
 		pools.BuilderPool.Put(sb)
 	}()
 	sb.Reset()
-	_, _ = sb.WriteString("UPDATE users SET")
+	_, _ = sb.WriteString("UPDATE buyers SET")
 	if response.Status != request.Status {
 		params = append(params, request.Status)
 		if n = len(params); n > 1 {
@@ -1031,9 +1031,7 @@ func (q *buyerRepository) UpdateBuyer(
 			, delivery_route_id
 			, telegram_chat_id
 			, telegram_username
-			, created_by
 			, created_at
-			, updated_by
 			, updated_at
 			, deactivated_by
 			, deactivated_at
