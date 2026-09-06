@@ -333,8 +333,7 @@ func init() {
 				, mobile_phone_confirmation_token character varying
 				, mobile_phone_confirmed_at timestamp with time zone
 				, mobile_phone character varying NOT NULL
-				, otp_token character varying
-				, otp_created_at timestamp with time zone
+				, otp_hash character varying
 				, otp_expired_at timestamp with time zone
 				, username character varying NOT NULL
 				, unconfirmed_email character varying
@@ -520,8 +519,7 @@ func init() {
 				, mobile_phone_confirmation_token character varying
 				, mobile_phone_confirmed_at timestamp with time zone
 				, mobile_phone character varying
-				, otp_token character varying
-				, otp_created_at timestamp with time zone
+				, otp_hash character varying
 				, otp_expired_at timestamp with time zone
 				, username character varying NOT NULL
 				, unconfirmed_email character varying

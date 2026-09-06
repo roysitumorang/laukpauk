@@ -89,8 +89,7 @@ func (q *buyerRepository) FindBuyers(
 		, mobile_phone_confirmation_token
 		, mobile_phone_confirmed_at
 		, mobile_phone
-		, otp_token
-		, otp_created_at
+		, otp_hash
 		, otp_expired_at
 		, username
 		, unconfirmed_email
@@ -173,8 +172,7 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.MobilePhoneConfirmationToken,
 			&buyer.MobilePhoneConfirmedAt,
 			&buyer.MobilePhone,
-			&buyer.OtpToken,
-			&buyer.OtpCreatedAt,
+			&buyer.OtpHash,
 			&buyer.OtpExpiredAt,
 			&buyer.Username,
 			&buyer.UnconfirmedEmail,
@@ -235,8 +233,7 @@ func (q *buyerRepository) FindBuyer(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -275,8 +272,7 @@ func (q *buyerRepository) FindBuyer(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
@@ -471,8 +467,7 @@ func (q *buyerRepository) CreateBuyer(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -498,7 +493,6 @@ func (q *buyerRepository) CreateBuyer(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31
 		)
 		RETURNING id
 			, company_id
@@ -509,8 +503,7 @@ func (q *buyerRepository) CreateBuyer(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -547,8 +540,7 @@ func (q *buyerRepository) CreateBuyer(
 		request.MobilePhoneConfirmationToken,
 		request.MobilePhoneConfirmedAt,
 		request.MobilePhone,
-		request.OtpToken,
-		request.OtpCreatedAt,
+		request.OtpHash,
 		request.OtpExpiredAt,
 		request.Username,
 		request.UnconfirmedEmail,
@@ -580,8 +572,7 @@ func (q *buyerRepository) CreateBuyer(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
@@ -651,8 +642,7 @@ func (q *buyerRepository) UpdateBuyer(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -691,8 +681,7 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
@@ -798,25 +787,15 @@ func (q *buyerRepository) UpdateBuyer(
 		}
 		_, _ = fmt.Fprintf(sb, " mobile_phone = $%d", n)
 	}
-	if (response.OtpToken != nil && request.OtpToken == nil) ||
-		(response.OtpToken == nil && request.OtpToken != nil) ||
-		(response.OtpToken != nil && request.OtpToken != nil &&
-			*response.OtpToken != *request.OtpToken) {
-		params = append(params, request.OtpToken)
+	if (response.OtpHash != nil && request.OtpHash == nil) ||
+		(response.OtpHash == nil && request.OtpHash != nil) ||
+		(response.OtpHash != nil && request.OtpHash != nil &&
+			*response.OtpHash != *request.OtpHash) {
+		params = append(params, request.OtpHash)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " otp_token = $%d", n)
-	}
-	if (response.OtpCreatedAt != nil && request.OtpCreatedAt == nil) ||
-		(response.OtpCreatedAt == nil && request.OtpCreatedAt != nil) ||
-		(response.OtpCreatedAt != nil && request.OtpCreatedAt != nil &&
-			!response.OtpCreatedAt.Equal(*request.OtpCreatedAt)) {
-		params = append(params, request.OtpCreatedAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " otp_created_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " otp_hash = $%d", n)
 	}
 	if (response.OtpExpiredAt != nil && request.OtpExpiredAt == nil) ||
 		(response.OtpExpiredAt == nil && request.OtpExpiredAt != nil) ||
@@ -1032,8 +1011,7 @@ func (q *buyerRepository) UpdateBuyer(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -1072,8 +1050,7 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,

@@ -90,8 +90,7 @@ func (q *sellerRepository) FindSellers(
 		, mobile_phone_confirmation_token
 		, mobile_phone_confirmed_at
 		, mobile_phone
-		, otp_token
-		, otp_created_at
+		, otp_hash
 		, otp_expired_at
 		, username
 		, unconfirmed_email
@@ -169,8 +168,7 @@ func (q *sellerRepository) FindSellers(
 			&seller.MobilePhoneConfirmationToken,
 			&seller.MobilePhoneConfirmedAt,
 			&seller.MobilePhone,
-			&seller.OtpToken,
-			&seller.OtpCreatedAt,
+			&seller.OtpHash,
 			&seller.OtpExpiredAt,
 			&seller.Username,
 			&seller.UnconfirmedEmail,
@@ -226,8 +224,7 @@ func (q *sellerRepository) FindSeller(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -261,8 +258,7 @@ func (q *sellerRepository) FindSeller(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
@@ -439,8 +435,7 @@ func (q *sellerRepository) CreateSeller(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -459,7 +454,7 @@ func (q *sellerRepository) CreateSeller(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26
+			, $21, $22, $23, $24, $25
 		)
 		RETURNING id
 			, company_id
@@ -471,8 +466,7 @@ func (q *sellerRepository) CreateSeller(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -500,8 +494,7 @@ func (q *sellerRepository) CreateSeller(
 		request.MobilePhoneConfirmationToken,
 		request.MobilePhoneConfirmedAt,
 		request.MobilePhone,
-		request.OtpToken,
-		request.OtpCreatedAt,
+		request.OtpHash,
 		request.OtpExpiredAt,
 		request.Username,
 		request.UnconfirmedEmail,
@@ -528,8 +521,7 @@ func (q *sellerRepository) CreateSeller(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
@@ -592,8 +584,7 @@ func (q *sellerRepository) UpdateSeller(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -627,8 +618,7 @@ func (q *sellerRepository) UpdateSeller(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,
@@ -735,25 +725,15 @@ func (q *sellerRepository) UpdateSeller(
 		}
 		_, _ = fmt.Fprintf(sb, " mobile_phone = $%d", n)
 	}
-	if (response.OtpToken != nil && request.OtpToken == nil) ||
-		(response.OtpToken == nil && request.OtpToken != nil) ||
-		(response.OtpToken != nil && request.OtpToken != nil &&
-			*response.OtpToken != *request.OtpToken) {
-		params = append(params, request.OtpToken)
+	if (response.OtpHash != nil && request.OtpHash == nil) ||
+		(response.OtpHash == nil && request.OtpHash != nil) ||
+		(response.OtpHash != nil && request.OtpHash != nil &&
+			*response.OtpHash != *request.OtpHash) {
+		params = append(params, request.OtpHash)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " otp_token = $%d", n)
-	}
-	if (response.OtpCreatedAt != nil && request.OtpCreatedAt == nil) ||
-		(response.OtpCreatedAt == nil && request.OtpCreatedAt != nil) ||
-		(response.OtpCreatedAt != nil && request.OtpCreatedAt != nil &&
-			!response.OtpCreatedAt.Equal(*request.OtpCreatedAt)) {
-		params = append(params, request.OtpCreatedAt)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " otp_created_at = $%d", n)
+		_, _ = fmt.Fprintf(sb, " otp_hash = $%d", n)
 	}
 	if (response.OtpExpiredAt != nil && request.OtpExpiredAt == nil) ||
 		(response.OtpExpiredAt == nil && request.OtpExpiredAt != nil) ||
@@ -920,8 +900,7 @@ func (q *sellerRepository) UpdateSeller(
 			, mobile_phone_confirmation_token
 			, mobile_phone_confirmed_at
 			, mobile_phone
-			, otp_token
-			, otp_created_at
+			, otp_hash
 			, otp_expired_at
 			, username
 			, unconfirmed_email
@@ -953,8 +932,7 @@ func (q *sellerRepository) UpdateSeller(
 		&response.MobilePhoneConfirmationToken,
 		&response.MobilePhoneConfirmedAt,
 		&response.MobilePhone,
-		&response.OtpToken,
-		&response.OtpCreatedAt,
+		&response.OtpHash,
 		&response.OtpExpiredAt,
 		&response.Username,
 		&response.UnconfirmedEmail,

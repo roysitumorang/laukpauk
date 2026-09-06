@@ -257,14 +257,14 @@ func (q *authController) SellerLogin(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if seller == nil ||
-		seller.OtpToken == nil ||
+		seller.OtpHash == nil ||
 		seller.OtpExpiredAt == nil ||
 		!seller.OtpExpiredAt.After(now) {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	if request.Password != *seller.OtpToken {
+	if helper.SHA512(request.Password) != *seller.OtpHash {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
@@ -344,14 +344,14 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if buyer == nil ||
-		buyer.OtpToken == nil ||
+		buyer.OtpHash == nil ||
 		buyer.OtpExpiredAt == nil ||
 		!buyer.OtpExpiredAt.After(now) {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	if loginRequest.Password != *buyer.OtpToken {
+	if helper.SHA512(loginRequest.Password) != *buyer.OtpHash {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
