@@ -3,7 +3,7 @@
 	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 </div>
 {{ end }}
-<form method="POST" action="{{ baseURL }}/admin/recipes/{{ recipe.ID }}/items{{ if !recipeItem.New() }}/{{ recipeItem.ID }}{{ end }}">
+<form method="POST" action="{{ baseURL }}/seller/recipes/{{ recipe.ID }}/items{{ if !recipeItem.New() }}/{{ recipeItem.ID }}{{ end }}">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !recipeItem.New() }}
 	<input type="hidden" name="id" value="{{ recipeItem.ID }}" />
@@ -37,7 +37,7 @@
 		</div>
 	</div>
 	<button type="submit" class="btn btn-success">Simpan{{ if !recipeItem.New() }} Perubahan{{ end }} Resep Item</button>
-	<a href="{{ baseURL }}/admin/recipes/{{ recipe.ID }}" class="btn btn-default ml-1">
+	<a href="{{ baseURL }}/seller/recipes/{{ recipe.ID }}" class="btn btn-default ml-1">
 		Back to Detail Resep
 	</a>
 </form>

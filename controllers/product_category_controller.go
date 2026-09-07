@@ -198,6 +198,7 @@ func (q *productCategoryController) SellerCreate(c fiber.Ctx) (err error) {
 		if products, _, err = q.productService.FindProducts(
 			ctx,
 			models.NewProductFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductCategoryIDs(productCategory.ID),
 		); err != nil {
@@ -212,6 +213,7 @@ func (q *productCategoryController) SellerCreate(c fiber.Ctx) (err error) {
 		if productVariants, _, err = q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductCategoryIDs(productCategory.ID),
 		); err != nil {
@@ -381,7 +383,7 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = productCategory.ID
-	request.CompanyID = currentSeller.CompanyID
+	request.CompanyID = productCategory.CompanyID
 	request.RecordStatus = productCategory.RecordStatus
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
@@ -392,6 +394,7 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 	products, _, err := q.productService.FindProducts(
 		ctx,
 		models.NewProductFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(productCategory.ID),
 	)
@@ -405,6 +408,7 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 	productVariants, _, err := q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(productCategory.ID),
 	)

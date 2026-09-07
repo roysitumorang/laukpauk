@@ -40,11 +40,6 @@
 							</div>
 						</div>
 						<div class="card-body">
-							{{ range type, message := flash.Data }}
-							<div class="alert alert-{{ type }}">
-								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
-							</div>
-							{{ end }}
 							{{ include "_product_form" }}
 						</div>
 					</div>

@@ -19,6 +19,7 @@ var MapRecipeItemSortings = map[string]struct{}{
 type RecipeItem struct {
 	RowNo             int64        `json:"-" form:"-"`
 	ID                uuid.UUID    `json:"-" form:"id"`
+	CompanyID         uuid.UUID    `json:"-" form:"-"`
 	RecordStatus      RecordStatus `json:"-" form:"-"`
 	RecipeID          uuid.UUID    `json:"-" form:"-"`
 	ProductID         uuid.UUID    `json:"-" form:"product_id"`
@@ -57,6 +58,7 @@ func (q *RecipeItem) ProductPhotoPath(baseURLs ...string) string {
 
 type RecipeItemFilter struct {
 	RecipeIDs,
+	CompanyIDs,
 	ProductIDs,
 	RecipeItemIDs,
 	ExcludedRecipeItemIDs []uuid.UUID
@@ -79,6 +81,11 @@ func NewRecipeItemFilter() *RecipeItemFilter {
 
 func (q *RecipeItemFilter) WithRecipeIDs(recipeIDs ...uuid.UUID) *RecipeItemFilter {
 	q.RecipeIDs = recipeIDs
+	return q
+}
+
+func (q *RecipeItemFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *RecipeItemFilter {
+	q.CompanyIDs = companyIDs
 	return q
 }
 

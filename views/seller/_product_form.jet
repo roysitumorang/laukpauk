@@ -1,4 +1,9 @@
-<form method="POST" action="{{ baseURL }}/admin/products{{ if !product.New() }}/{{ product.ID }}{{ end }}" enctype="multipart/form-data">
+{{ range type, message := flash.Data }}
+<div class="alert alert-{{ type }}">
+	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+</div>
+{{ end }}
+<form method="POST" action="{{ baseURL }}/seller/products{{ if !product.New() }}/{{ product.ID }}{{ end }}" enctype="multipart/form-data">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !product.New() }}
 	<input type="hidden" name="id" value="{{ product.ID }}" />
@@ -55,11 +60,11 @@
 			<button type="submit" class="btn btn-success mr-1">
 				Simpan{{ if !product.New() }} Perubahan{{ end }} Data Produk
 			</button>
-			<a href="{{ baseURL }}/admin/products" class="btn btn-default ml-1">
+			<a href="{{ baseURL }}/seller/products" class="btn btn-default ml-1">
 				Back to List Produk
 			</a>
 			{{ if !product.New() }}
-			<a href="{{ baseURL }}/admin/products/{{ product.ID }}" class="btn btn-default ml-1">
+			<a href="{{ baseURL }}/seller/products/{{ product.ID }}" class="btn btn-default ml-1">
 				Back to Detail Produk
 			</a>
 			{{ end }}

@@ -24,7 +24,7 @@ import (
 )
 
 type productController struct {
-	adminService           services.AdminService
+	sellerService          services.SellerService
 	productCategoryService services.ProductCategoryService
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
@@ -33,7 +33,7 @@ type productController struct {
 }
 
 func NewProductController(
-	adminService services.AdminService,
+	sellerService services.SellerService,
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
@@ -41,7 +41,7 @@ func NewProductController(
 	storage fiber.Storage,
 ) *productController {
 	return &productController{
-		adminService:           adminService,
+		sellerService:          sellerService,
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
@@ -51,28 +51,28 @@ func NewProductController(
 }
 
 func (q *productController) Mount(r fiber.Router) {
-	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
-	r.Group("/admin", adminSessionAuth).
-		Get("", q.AdminIndex).
-		Get("/new", q.AdminNew).
-		Post("", q.AdminCreate).
-		Get("/:id", q.AdminShow).
-		Get("/:id/edit", q.AdminEdit).
-		Post("/:id", q.AdminUpdate).
-		Post("/:id/delete", q.AdminDelete).
-		Get("/:id/variants/new", q.AdminNewVariant).
-		Post("/:id/variants", q.AdminCreateVariant).
-		Get("/:id/variants/:product_variant_id/edit", q.AdminEditVariant).
-		Post("/:id/variants/:product_variant_id", q.AdminUpdateVariant).
-		Post("/:id/variants/:product_variant_id/delete", q.AdminDeleteVariant)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	r.Group("/seller", sellerSessionAuth).
+		Get("", q.SellerIndex).
+		Get("/new", q.SellerNew).
+		Post("", q.SellerCreate).
+		Get("/:id", q.SellerShow).
+		Get("/:id/edit", q.SellerEdit).
+		Post("/:id", q.SellerUpdate).
+		Post("/:id/delete", q.SellerDelete).
+		Get("/:id/variants/new", q.SellerNewVariant).
+		Post("/:id/variants", q.SellerCreateVariant).
+		Get("/:id/variants/:product_variant_id/edit", q.SellerEditVariant).
+		Post("/:id/variants/:product_variant_id", q.SellerUpdateVariant).
+		Post("/:id/variants/:product_variant_id/delete", q.SellerDeleteVariant)
 	r.Group("/v1/buyer").
 		Get("", q.V1BuyerIndex).
 		Get("/:id", q.V1BuyerShow)
 }
 
-func (q *productController) AdminIndex(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminIndex"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerIndex(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerIndex"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	request := new(models.ProductFilter)
 	rows := []*models.Product{}
@@ -82,7 +82,7 @@ func (q *productController) AdminIndex(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Data Produk",
 		"limits", models.Limits,
 		"request", request,
@@ -113,50 +113,51 @@ func (q *productController) AdminIndex(c fiber.Ctx) (err error) {
 	)
 	if request, err = sanitizers.FindProducts(ctx, c); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
-		return c.Render("admin/product_index", params.Push(
+		return c.Render("seller/product_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if rows, pagination, err = q.productService.FindProducts(
-		c,
-		request.WithRecordStatuses(models.RecordStatusActive),
+		ctx,
+		request.WithCompanyIDs(currentSeller.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
-		return c.Render("admin/product_index", params.Push(
+		return c.Render("seller/product_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return c.Render("admin/product_index", params.Push(
+	return c.Render("seller/product_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
-	), "admin/layouts/authenticated")
+	), "seller/layouts/authenticated")
 }
 
-func (q *productController) AdminNew(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminNew"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerNew(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerNew"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, _, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
+	_, params, _, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, true, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return c.Render("admin/product_new", params, "admin/layouts/authenticated")
+	return c.Render("seller/product_new", params, "seller/layouts/authenticated")
 }
 
-func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminCreate"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerCreate"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentAdmin, csrfToken, true, true)
+	_, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, true, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	if photo == nil {
@@ -170,53 +171,55 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
 		c.Response().SetStatusCode(statusCode)
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 			"product", request,
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	productCategoryName, ok := mapProductCategoryNames[request.ProductCategoryID]
 	if !ok {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger("product_category_id: not found"),
 			"request", request,
 			"product", request,
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	product, err := q.productService.FindProduct(
 		ctx,
 		models.NewProductFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithNames(request.Name),
 	)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 			"product", request,
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	now := time.Now()
+	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.ProductCategoryName = productCategoryName
 	request.Hits = 0
-	request.CreatedBy = currentAdmin.ID
+	request.CreatedBy = currentSeller.ID
 	request.CreatedAt = now
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = now
 	var productVariants []*models.ProductVariant
 	var recipeItems []*models.RecipeItem
 	if product != nil {
 		if product.RecordStatus == models.RecordStatusActive {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("admin/product_new", params.Push(
+			return c.Render("seller/product_new", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
 				"request", request,
 				"product", request,
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		request.ID = product.ID
 		request.Name = product.Name
@@ -231,16 +234,17 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		if productVariants, _, err = q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductCategoryIDs(request.ProductCategoryID),
 		); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("admin/product_new", params.Push(
+			return c.Render("seller/product_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request,
 				"product", request,
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
 			ctx,
@@ -249,22 +253,22 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("admin/product_new", params.Push(
+			return c.Render("seller/product_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request,
 				"product", request,
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 			"product", request,
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -278,11 +282,11 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProduct")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 			"product", request,
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
@@ -292,11 +296,11 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("admin/product_new", params.Push(
+			return c.Render("seller/product_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request,
 				"product", request,
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	for _, recipeItem := range recipeItems {
@@ -306,21 +310,21 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("admin/product_new", params.Push(
+			return c.Render("seller/product_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request,
 				"product", request,
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 			"product", request,
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if product != nil &&
 		product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
@@ -328,36 +332,36 @@ func (q *productController) AdminCreate(c fiber.Ctx) (err error) {
 		if err = os.RemoveAll(helper.PhotoLocation(product.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
 			request.SetPhoto(product.Photo)
-			return c.Render("admin/product_new", params.Push(
+			return c.Render("seller/product_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request,
 				"product", request,
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("admin/product_new", params.Push(
+		return c.Render("seller/product_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request,
 			"product", request,
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return flash.Success("product created successfully").Redirect(c, sess.Session, "/admin/products")
+	return flash.Success("product created successfully").Redirect(c, sess.Session, "/seller/products")
 }
 
-func (q *productController) AdminShow(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminShow"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerShow(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerShow"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	product, err := q.prepareProductByID(ctx, c)
+	product, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	var productVariants []*models.ProductVariant
 	params := models.NewMap().Push(
@@ -365,7 +369,7 @@ func (q *productController) AdminShow(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 		"product", product,
 		"productVariants", productVariants,
@@ -374,54 +378,55 @@ func (q *productController) AdminShow(c fiber.Ctx) (err error) {
 	if productVariants, _, err = q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(product.ID),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-		return c.Render("admin/product_show", params.Push(
+		return c.Render("seller/product_show", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	params.Push("productVariants", productVariants)
-	return c.Render("admin/product_show", params, "admin/layouts/authenticated")
+	return c.Render("seller/product_show", params, "seller/layouts/authenticated")
 }
 
-func (q *productController) AdminEdit(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminEdit"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerEdit(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerEdit"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, params, _, err := q.prepareProduct(
 		ctx,
 		c,
 		flash,
-		currentAdmin,
+		currentSeller,
 		csrfToken,
 		true,
 		true,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
-	return c.Render("admin/product_edit", params, "admin/layouts/authenticated")
+	return c.Render("seller/product_edit", params, "seller/layouts/authenticated")
 }
 
-func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminUpdate"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerUpdate"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, params, mapProductCategoryNames, err := q.prepareProduct(
 		ctx,
 		c,
 		flash,
-		currentAdmin,
+		currentSeller,
 		csrfToken,
 		true,
 		true,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	if photo == nil {
@@ -431,45 +436,47 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	params.Push("request", request)
 	productCategoryName, ok := mapProductCategoryNames[request.ProductCategoryID]
 	if !ok {
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger("product_category_id: not found"),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if product.Name != request.Name {
 		otherProduct, err := q.productService.FindProduct(
 			ctx,
 			models.NewProductFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithNames(request.Name).
 				WithExcludedProductIDs(product.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
-			return c.Render("admin/product_edit", params.Push(
+			return c.Render("seller/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(product.Photo),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		if otherProduct != nil {
-			return c.Render("admin/product_edit", params.Push(
+			return c.Render("seller/product_edit", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
 				"request", request.SetPhoto(product.Photo),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	request.ID = product.ID
+	request.CompanyID = product.CompanyID
 	request.RecordStatus = product.RecordStatus
 	request.ProductCategoryName = productCategoryName
 	request.Hits = product.Hits
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -478,15 +485,16 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	productVariants, _, err := q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(request.ProductCategoryID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	recipeItems, _, err := q.recipeItemService.FindRecipeItems(
 		ctx,
@@ -495,18 +503,18 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -519,10 +527,10 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 	response, err := q.productService.UpdateProduct(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
@@ -531,10 +539,10 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-			return c.Render("admin/product_edit", params.Push(
+			return c.Render("seller/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(product.Photo),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	for _, recipeItem := range recipeItems {
@@ -543,59 +551,59 @@ func (q *productController) AdminUpdate(c fiber.Ctx) (err error) {
 		recipeItem.ProductReadyStock = response.ReadyStock
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
-			return c.Render("admin/product_edit", params.Push(
+			return c.Render("seller/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(product.Photo),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
 		product.Photo != request.Photo {
 		if err = os.RemoveAll(helper.PhotoLocation(product.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
-			return c.Render("admin/product_edit", params.Push(
+			return c.Render("seller/product_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(product.Photo),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/product_edit", params.Push(
+		return c.Render("seller/product_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(product.Photo),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return flash.Success("product updated successfully").Redirect(c, sess.Session, "/admin/products")
+	return flash.Success("product updated successfully").Redirect(c, sess.Session, "/seller/products")
 }
 
-func (q *productController) AdminDelete(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminDelete"
-	ctx, sess, flash, currentAdmin, _ := q.prepare(c)
+func (q *productController) SellerDelete(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerDelete"
+	ctx, sess, flash, currentSeller, _ := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request, err := q.prepareProductByID(ctx, c)
+	request, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	if request == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentAdmin.ID
+	request.DeletedBy = &currentSeller.ID
 	request.DeletedAt = new(time.Now())
 	request.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -607,85 +615,87 @@ func (q *productController) AdminDelete(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.productService.UpdateProduct(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
-	return flash.Success("product deleted successfully").Redirect(c, sess.Session, "/admin/products")
+	return flash.Success("product deleted successfully").Redirect(c, sess.Session, "/seller/products")
 }
 
-func (q *productController) AdminNewVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminNewVariant"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerNewVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerNewVariant"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, params, err := q.prepareProductVariant(
 		ctx,
 		c,
 		flash,
-		currentAdmin,
+		currentSeller,
 		csrfToken,
 		true,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
-	return c.Render("admin/product_variant_new", params, "admin/layouts/authenticated")
+	return c.Render("seller/product_variant_new", params, "seller/layouts/authenticated")
 }
 
-func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminCreateVariant"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerCreateVariant"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, _, params, err := q.prepareProductVariant(
 		ctx,
 		c,
 		flash,
-		currentAdmin,
+		currentSeller,
 		csrfToken,
 		true,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductVariant")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/product_variant_new", params.Push(
+		return c.Render("seller/product_variant_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	productVariant, err := q.productVariantService.FindProductVariant(
 		ctx,
 		models.NewProductVariantFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithProductIDs(product.ID).
 			WithStockUnits(request.StockUnit),
 	)
 	if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 	}
 	now := time.Now()
+	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.ProductCategoryID = product.ProductCategoryID
 	request.ProductCategoryName = product.ProductCategoryName
 	request.ProductID = product.ID
 	request.ProductName = product.Name
 	request.ProductReadyStock = product.ReadyStock
-	request.CreatedBy = currentAdmin.ID
+	request.CreatedBy = currentSeller.ID
 	request.CreatedAt = now
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = now
 	if productVariant != nil {
 		if productVariant.RecordStatus == models.RecordStatusActive {
-			return c.Render("admin/product_variant_new", params.Push(
+			return c.Render("seller/product_variant_new", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductVariantStockUnitViolation.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		request.ID = productVariant.ID
 		request.StockUnit = productVariant.StockUnit
@@ -698,9 +708,9 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/product_variant_new", params.Push(
+		return c.Render("seller/product_variant_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -712,100 +722,102 @@ func (q *productController) AdminCreateVariant(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.productVariantService.SaveProductVariant(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProductVariant")
-		return c.Render("admin/product_variant_new", params.Push(
+		return c.Render("seller/product_variant_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if request.SellingPrice < product.LowestSellingPrice {
 		product.LowestSellingPrice = request.SellingPrice
 		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-			return c.Render("admin/product_variant_new", params.Push(
+			return c.Render("seller/product_variant_new", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/product_variant_new", params.Push(
+		return c.Render("seller/product_variant_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return flash.Success("product variant created successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+	return flash.Success("product variant created successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 }
 
-func (q *productController) AdminEditVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminEditVariant"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerEditVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerEditVariant"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, params, err := q.prepareProductVariant(
 		ctx,
 		c,
 		flash,
-		currentAdmin,
+		currentSeller,
 		csrfToken,
 		true,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
-	return c.Render("admin/product_variant_edit", params, "admin/layouts/authenticated")
+	return c.Render("seller/product_variant_edit", params, "seller/layouts/authenticated")
 }
 
-func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminUpdateVariant"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerUpdateVariant"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, productVariant, params, err := q.prepareProductVariant(
 		ctx,
 		c,
 		flash,
-		currentAdmin,
+		currentSeller,
 		csrfToken,
 		true,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductVariant")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/product_variant_edit", params.Push(
+		return c.Render("seller/product_variant_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if productVariant.StockUnit != request.StockUnit {
 		otherProductVariant, err := q.productVariantService.FindProductVariant(
 			ctx,
 			models.NewProductVariantFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithProductIDs(product.ID).
 				WithStockUnits(request.StockUnit).
 				WithExcludedProductVariantIDs(productVariant.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-			return c.Render("admin/product_variant_edit", params.Push(
+			return c.Render("seller/product_variant_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		if otherProductVariant != nil {
-			return c.Render("admin/product_variant_edit", params.Push(
+			return c.Render("seller/product_variant_edit", params.Push(
 				"flash", flash.Danger(models.ErrUniqueProductVariantStockUnitViolation.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	request.ID = productVariant.ID
+	request.CompanyID = productVariant.CompanyID
 	request.RecordStatus = productVariant.RecordStatus
 	request.ProductCategoryID = product.ProductCategoryID
 	request.ProductCategoryName = product.ProductCategoryName
 	request.ProductID = product.ID
 	request.ProductName = product.Name
 	request.ProductReadyStock = productVariant.ProductReadyStock
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -813,9 +825,9 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/product_variant_edit", params.Push(
+		return c.Render("seller/product_variant_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -827,52 +839,52 @@ func (q *productController) AdminUpdateVariant(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-		return c.Render("admin/product_variant_edit", params.Push(
+		return c.Render("seller/product_variant_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if request.SellingPrice < product.LowestSellingPrice {
 		product.LowestSellingPrice = request.SellingPrice
 		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-			return c.Render("admin/product_variant_edit", params.Push(
+			return c.Render("seller/product_variant_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/product_variant_edit", params.Push(
+		return c.Render("seller/product_variant_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return flash.Success("product variant updated successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+	return flash.Success("product variant updated successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 }
 
-func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-AdminDeleteVariant"
-	ctx, sess, flash, currentAdmin, csrfToken := q.prepare(c)
+func (q *productController) SellerDeleteVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-SellerDeleteVariant"
+	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, productVariant, _, err := q.prepareProductVariant(
 		ctx,
 		c,
 		flash,
-		currentAdmin,
+		currentSeller,
 		csrfToken,
 		false,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/products")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
 	}
 	productVariant.RecordStatus = models.RecordStatusDeleted
-	productVariant.DeletedBy = new(currentAdmin.ID)
+	productVariant.DeletedBy = new(currentSeller.ID)
 	productVariant.DeletedAt = new(time.Now())
 	productVariant.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -884,20 +896,20 @@ func (q *productController) AdminDeleteVariant(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 	}
-	return flash.Success("product variant deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/admin/products/%s", product.ID))
+	return flash.Success("product variant deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 }
 
 func (q *productController) prepare(c fiber.Ctx) (
 	context.Context,
 	*session.Middleware,
 	*helper.FlashMessage,
-	*models.Admin,
+	*models.Seller,
 	string,
 ) {
 	ctx := c.Context()
@@ -906,14 +918,15 @@ func (q *productController) prepare(c fiber.Ctx) (
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentAdmin, csrfToken
+	return ctx, sess, flash, currentSeller, csrfToken
 }
 
 func (q *productController) prepareProductByID(
 	ctx context.Context,
 	c fiber.Ctx,
+	companyID uuid.UUID,
 ) (
 	*models.Product,
 	error,
@@ -925,6 +938,7 @@ func (q *productController) prepareProductByID(
 	product, err := q.productService.FindProduct(
 		ctx,
 		models.NewProductFilter().
+			WithCompanyIDs(companyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(productID),
 	)
@@ -941,7 +955,7 @@ func (q *productController) prepareProduct(
 	ctx context.Context,
 	c fiber.Ctx,
 	flash *helper.FlashMessage,
-	currentAdmin *models.Admin,
+	currentSeller *models.Seller,
 	csrfToken string,
 	withParams,
 	withProductCategories bool,
@@ -959,7 +973,7 @@ func (q *productController) prepareProduct(
 			"flash", flash,
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
-			"currentAdmin", currentAdmin,
+			"currentSeller", currentSeller,
 			"pageTitle", "Produk Baru",
 			"request", product,
 			"product", product,
@@ -967,7 +981,7 @@ func (q *productController) prepareProduct(
 		)
 	}
 	if c.Params("id") != "" {
-		if product, err = q.prepareProductByID(ctx, c); err != nil {
+		if product, err = q.prepareProductByID(ctx, c, currentSeller.CompanyID); err != nil {
 			return nil, nil, nil, err
 		}
 		if withParams && params.Size() > 0 && product != nil {
@@ -986,6 +1000,7 @@ func (q *productController) prepareProduct(
 		productCategories, _, err := q.productCategoryService.FindProductCategories(
 			ctx,
 			models.NewProductCategoryFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithSortings(models.Sorting{
 					Field:     models.SortProductCategoriesByName,
@@ -1010,7 +1025,7 @@ func (q *productController) prepareProductVariant(
 	ctx context.Context,
 	c fiber.Ctx,
 	flash *helper.FlashMessage,
-	currentAdmin *models.Admin,
+	currentSeller *models.Seller,
 	csrfToken string,
 	withParams bool,
 ) (
@@ -1019,7 +1034,7 @@ func (q *productController) prepareProductVariant(
 	models.Map,
 	error,
 ) {
-	product, err := q.prepareProductByID(ctx, c)
+	product, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -1031,7 +1046,7 @@ func (q *productController) prepareProductVariant(
 			"flash", flash,
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
-			"currentAdmin", currentAdmin,
+			"currentSeller", currentSeller,
 			"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 			"product", product,
 			"productVariant", productVariant,
@@ -1047,6 +1062,7 @@ func (q *productController) prepareProductVariant(
 		if productVariant, err = q.productVariantService.FindProductVariant(
 			ctx,
 			models.NewProductVariantFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(product.ID).
 				WithProductVariantIDs(productVariantID),

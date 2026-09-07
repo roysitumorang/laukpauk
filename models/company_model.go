@@ -12,6 +12,9 @@ import (
 )
 
 var ErrCompanyNotFound = errors.New("company not found")
+var ErrUniqueCompanySlugViolation = errors.New("slug: already exists")
+var ErrUniqueCompanyTelegramBotTokenViolation = errors.New("telegram_bot_token: already exists")
+var ErrUniqueCompanyWhatsappPhoneNumberViolation = errors.New("whatsapp_phone_number: already exists")
 var MapCompanySortings = map[string]struct{}{
 	SortingFieldID:          {},
 	CompanySortingFieldName: {},
@@ -58,6 +61,8 @@ type Company struct {
 	RowNo                                 int64              `json:"-" form:"-"`
 	ID                                    uuid.UUID          `json:"-" form:"-"`
 	Name                                  string             `json:"-" form:"name"`
+	Android                               bool               `json:"-" form:"android"`
+	Slug                                  string             `json:"-" form:"slug"`
 	Billed                                bool               `json:"-" form:"billed"`
 	BillingInterval                       *BillingInterval   `json:"-" form:"billing_interval"`
 	RawBillingInterval                    *string            `json:"billing_interval" form:"-"`
@@ -102,6 +107,7 @@ type Company struct {
 
 type CompanyFilter struct {
 	CompanyIDs []uuid.UUID
+	Slugs      []string
 	Keyword,
 	PaginationURL string
 	Sortings    []Sorting
@@ -120,6 +126,11 @@ func NewCompanyFilter() *CompanyFilter {
 
 func (q *CompanyFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *CompanyFilter {
 	q.CompanyIDs = companyIDs
+	return q
+}
+
+func (q *CompanyFilter) WithSlugs(slugs ...string) *CompanyFilter {
+	q.Slugs = slugs
 	return q
 }
 
@@ -160,6 +171,9 @@ func (q *CompanyFilter) WithUrlValues(urlValues url.Values) *CompanyFilter {
 func (q *Company) Validate() error {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
+	}
+	if q.Slug = strings.ToLower(strings.TrimSpace(q.Slug)); q.Slug == "" {
+		return errors.New("slug: is required")
 	}
 	now := time.Now().In(time.Local)
 	if q.VacationMode {

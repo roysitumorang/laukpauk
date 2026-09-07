@@ -185,6 +185,8 @@ func init() {
 			`CREATE TABLE companies (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, name character varying NOT NULL COLLATE "natural_sort"
+				, android BOOLEAN NOT NULL
+				, slug character varying NOT NULL UNIQUE
 				, billed BOOLEAN NOT NULL
 				, billing_interval integer
 				, subscription_status integer NOT NULL
@@ -205,7 +207,7 @@ func init() {
 				, delivery_origin_latitude character varying NOT NULL
 				, delivery_cost_per_km bigint NOT NULL
 				, delivery_max_distance_km bigint NOT NULL
-				, whatsapp_phone_number character varying NOT NULL
+				, whatsapp_phone_number character varying NOT NULL UNIQUE
 				, payment_terms interval NOT NULL
 				, maximum_delivery_time interval NOT NULL
 				, transaction_auto_withdrawal_enabled boolean NOT NULL
@@ -290,6 +292,8 @@ func init() {
 			`INSERT INTO companies (
 				id
 				, name
+				, android
+				, slug
 				, billed
 				, subscription_status
 				, telegram_bot_token
@@ -321,11 +325,13 @@ func init() {
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-				, $21, $22, $23, tstzrange($24, $25, '[]'), $26, $27, $28, $29, $30
-				, $31
+				, $21, $22, $23, $24, $25, tstzrange($26, $27, '[]'), $28, $29, $30
+				, $31, $32, $33
 			)`,
 			uuid.Nil(),
 			company.Name,
+			company.Android,
+			company.Slug,
 			company.Billed,
 			company.SubscriptionStatus,
 			company.TelegramBotToken,
@@ -361,6 +367,8 @@ func init() {
 		}
 		company = models.Company{
 			Name:                                 "Laukpauk",
+			Android:                              true,
+			Slug:                                 "laukpauk",
 			Billed:                               false,
 			SubscriptionStatus:                   models.SubscriptionStatusActive,
 			TelegramBotToken:                     "7895135905:AAGh8uCKeDniAQdJ0sh2PZh1YO2afkAto5Y",
@@ -404,6 +412,8 @@ func init() {
 			ctx,
 			`INSERT INTO companies (
 				name
+				, android
+				, slug
 				, billed
 				, subscription_status
 				, telegram_bot_token
@@ -433,11 +443,14 @@ func init() {
 				, updated_at
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-				, $11, $12, $13, $14, $15, $16, $17, $18, $19
-				, $20, $21, $22, tstzrange($23, $24, '[]'), $25, $26, $27, $28, $29
+				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+				, $21, $22, $23, $24, tstzrange($25, $26, '[]'), $27, $28, $29, $30
+				, $31
 			)
 			RETURNING id`,
 			company.Name,
+			company.Android,
+			company.Slug,
 			company.Billed,
 			company.SubscriptionStatus,
 			company.TelegramBotToken,
@@ -840,6 +853,7 @@ func init() {
 			ctx,
 			`CREATE TABLE products (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status integer NOT NULL
 				, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
@@ -859,6 +873,13 @@ func init() {
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON products (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -886,7 +907,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX product_categories_unique_idx ON products (LOWER(name)) WHERE record_status = 0;`,
+			`CREATE UNIQUE INDEX products_unique_name_idx ON products (LOWER(name), company_id) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -938,6 +959,7 @@ func init() {
 			ctx,
 			`CREATE TABLE product_variants (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status integer NOT NULL
 				, product_category_id UUID NOT NULL REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
@@ -967,6 +989,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON product_variants (company_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON product_variants (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -988,7 +1017,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON product_variants (product_id, LOWER(stock_unit)) WHERE record_status = 0;`,
+			`CREATE UNIQUE INDEX ON product_variants (LOWER(stock_unit), company_id, product_id) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -3185,6 +3214,7 @@ func init() {
 			ctx,
 			`CREATE TABLE recipes (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status integer NOT NULL
 				, name character varying
 				, deleted_name character varying
@@ -3206,6 +3236,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON recipes (company_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON recipes (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -3213,7 +3250,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON recipes (LOWER(name));`,
+			`CREATE UNIQUE INDEX ON recipes (LOWER(name), company_id) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -3251,6 +3288,7 @@ func init() {
 			ctx,
 			`CREATE TABLE recipe_guides (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status integer NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, instruction character varying NOT NULL
@@ -3262,6 +3300,13 @@ func init() {
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipe_guides (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -3306,6 +3351,7 @@ func init() {
 			ctx,
 			`CREATE TABLE recipe_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status integer NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -3322,6 +3368,13 @@ func init() {
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipe_items (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -3349,7 +3402,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON recipe_items (recipe_id, product_id) WHERE record_status = 0;`,
+			`CREATE UNIQUE INDEX ON recipe_items (recipe_id, product_id, company_id) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

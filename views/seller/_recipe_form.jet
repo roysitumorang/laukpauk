@@ -3,7 +3,7 @@
 	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 </div>
 {{ end }}
-<form method="POST" action="{{ baseURL }}/admin/recipes{{ if !recipe.New() }}/{{ recipe.ID }}{{ end }}" enctype="multipart/form-data">
+<form method="POST" action="{{ baseURL }}/seller/recipes{{ if !recipe.New() }}/{{ recipe.ID }}{{ end }}" enctype="multipart/form-data">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !recipe.New() }}
 	<input type="hidden" name="id" value="{{ recipe.ID }}" />
@@ -60,11 +60,11 @@
 			<button type="submit" class="btn btn-success mr-1">
 				Simpan{{ if !recipe.New() }} Perubahan{{ end }} Data Resep
 			</button>
-			<a href="{{ baseURL }}/admin/recipes" class="btn btn-default ml-1">
+			<a href="{{ baseURL }}/seller/recipes" class="btn btn-default ml-1">
 				Back to List Resep
 			</a>
 			{{ if !recipe.New() }}
-			<a href="{{ baseURL }}/admin/recipes/{{ recipe.ID }}" class="btn btn-default ml-1">
+			<a href="{{ baseURL }}/seller/recipes/{{ recipe.ID }}" class="btn btn-default ml-1">
 				Back to Detail Resep
 			</a>
 			{{ end }}

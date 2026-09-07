@@ -81,6 +81,7 @@ func (q *productVariantRepository) FindProductVariants(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, record_status
 		, product_category_id
 		, product_category_name
@@ -153,6 +154,7 @@ func (q *productVariantRepository) FindProductVariants(
 		var productVariant models.ProductVariant
 		if err = rows.Scan(
 			&productVariant.ID,
+			&productVariant.CompanyID,
 			&productVariant.RecordStatus,
 			&productVariant.ProductCategoryID,
 			&productVariant.ProductCategoryName,
@@ -203,6 +205,7 @@ func (q *productVariantRepository) FindProductVariant(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -231,6 +234,7 @@ func (q *productVariantRepository) FindProductVariant(
 	var response models.ProductVariant
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -274,7 +278,8 @@ func (q *productVariantRepository) CreateProductVariant(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO product_variants (
-			record_status
+			company_id
+			, record_status
 			, product_category_id
 			, product_category_name
 			, product_id
@@ -293,8 +298,9 @@ func (q *productVariantRepository) CreateProductVariant(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 		RETURNING id
+			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -317,6 +323,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
+		request.CompanyID,
 		request.RecordStatus,
 		request.ProductCategoryID,
 		request.ProductCategoryName,
@@ -338,6 +345,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -363,7 +371,7 @@ func (q *productVariantRepository) CreateProductVariant(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_product_id_stock_unit_key" {
+			pgxErr.ConstraintName == "product_variants_lower_company_id_product_id_idx" {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -384,6 +392,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -412,6 +421,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -608,6 +618,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
+			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -634,6 +645,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -659,7 +671,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_product_id_stock_unit_key" {
+			pgxErr.ConstraintName == "product_variants_lower_company_id_product_id_idx" {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -671,6 +683,19 @@ func (q *productVariantRepository) UpdateProductVariant(
 
 func (q *productVariantRepository) buildCondition(request *models.ProductVariantFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if len(request.ProductCategoryIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("product_category_id IN (")

@@ -11,7 +11,9 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -90,6 +92,8 @@ func (q *companyRepository) FindCompanies(
 		"COUNT(1)",
 		`id
 		, name
+		, android
+		, slug
 		, billed
 		, billing_interval
 		, subscription_status
@@ -179,6 +183,8 @@ func (q *companyRepository) FindCompanies(
 		if err = rows.Scan(
 			&company.ID,
 			&company.Name,
+			&company.Android,
+			&company.Slug,
 			&company.Billed,
 			&company.BillingInterval,
 			&company.SubscriptionStatus,
@@ -241,6 +247,8 @@ func (q *companyRepository) FindCompany(
 		`SELECT
 			id
 			, name
+			, android
+			, slug
 			, billed
 			, billing_interval
 			, subscription_status
@@ -283,6 +291,8 @@ func (q *companyRepository) FindCompany(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.Name,
+		&response.Android,
+		&response.Slug,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -339,6 +349,8 @@ func (q *companyRepository) CreateCompany(
 		ctx,
 		`INSERT INTO companies (
 			name
+			, android
+			, slug
 			, billed
 			, billing_interval
 			, subscription_status
@@ -373,9 +385,11 @@ func (q *companyRepository) CreateCompany(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, tstzrange($26, $27, '[]'), $28, $29, $30
-			, $31, $32
+			, $31, $32, $33, $34
 		)
 		RETURNING id
+			, android
+			, slug
 			, name
 			, billed
 			, billing_interval
@@ -412,6 +426,8 @@ func (q *companyRepository) CreateCompany(
 			, deactivated_at
 			, deactivation_reason`,
 		request.Name,
+		request.Android,
+		request.Slug,
 		request.Billed,
 		request.BillingInterval,
 		request.SubscriptionStatus,
@@ -446,6 +462,8 @@ func (q *companyRepository) CreateCompany(
 	).Scan(
 		&response.ID,
 		&response.Name,
+		&response.Android,
+		&response.Slug,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -481,7 +499,19 @@ func (q *companyRepository) CreateCompany(
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation {
+			switch pgxErr.ConstraintName {
+			case "companies_slug_key":
+				err = models.ErrUniqueCompanySlugViolation
+			case "companies_telegram_bot_token_key":
+				err = models.ErrUniqueCompanyTelegramBotTokenViolation
+			case "companies_whatsapp_phone_number_key":
+				err = models.ErrUniqueCompanyWhatsappPhoneNumberViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return &response, nil
@@ -499,6 +529,8 @@ func (q *companyRepository) UpdateCompany(
 		`SELECT
 			id
 			, name
+			, android
+			, slug
 			, billed
 			, billing_interval
 			, subscription_status
@@ -540,6 +572,8 @@ func (q *companyRepository) UpdateCompany(
 	).Scan(
 		&response.ID,
 		&response.Name,
+		&response.Android,
+		&response.Slug,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -596,6 +630,20 @@ func (q *companyRepository) UpdateCompany(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+	}
+	if response.Android != request.Android {
+		params = append(params, request.Android)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " android = $%d", n)
+	}
+	if response.Slug != request.Slug {
+		params = append(params, request.Slug)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " slug = $%d", n)
 	}
 	if response.Billed != request.Billed {
 		params = append(params, request.Billed)
@@ -817,6 +865,8 @@ func (q *companyRepository) UpdateCompany(
 		WHERE id = $%d
 		RETURNING id
 			, name
+			, android
+			, slug
 			, billed
 			, billing_interval
 			, subscription_status
@@ -856,6 +906,8 @@ func (q *companyRepository) UpdateCompany(
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.Name,
+		&response.Android,
+		&response.Slug,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -891,7 +943,19 @@ func (q *companyRepository) UpdateCompany(
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation {
+			switch pgxErr.ConstraintName {
+			case "companies_slug_key":
+				err = models.ErrUniqueCompanySlugViolation
+			case "companies_telegram_bot_token_key":
+				err = models.ErrUniqueCompanyTelegramBotTokenViolation
+			case "companies_whatsapp_phone_number_key":
+				err = models.ErrUniqueCompanyWhatsappPhoneNumberViolation
+			}
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return &response, nil
@@ -912,6 +976,8 @@ func (q *companyRepository) AddReferralPointsExpense(
 		`SELECT
 			id
 			, name
+			, android
+			, slug
 			, billed
 			, billing_interval
 			, subscription_status
@@ -953,6 +1019,8 @@ func (q *companyRepository) AddReferralPointsExpense(
 	).Scan(
 		&response.ID,
 		&response.Name,
+		&response.Android,
+		&response.Slug,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -1004,6 +1072,8 @@ func (q *companyRepository) AddReferralPointsExpense(
 		WHERE id = $4
 		RETURNING id
 			, name
+			, android
+			, slug
 			, billed
 			, billing_interval
 			, subscription_status
@@ -1045,6 +1115,8 @@ func (q *companyRepository) AddReferralPointsExpense(
 	).Scan(
 		&response.ID,
 		&response.Name,
+		&response.Android,
+		&response.Slug,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -1093,6 +1165,19 @@ func (q *companyRepository) buildCondition(request *models.CompanyFilter, sb *st
 		_, _ = sb.WriteString("id IN (")
 		for i, companyID := range request.CompanyIDs {
 			params = append(params, companyID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.Slugs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("slug IN (")
+		for i, slug := range request.Slugs {
+			params = append(params, slug)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

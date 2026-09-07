@@ -86,6 +86,7 @@ func (q *recipeRepository) FindRecipes(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, record_status
 		, name
 		, photo
@@ -149,6 +150,7 @@ func (q *recipeRepository) FindRecipes(
 		var recipe models.Recipe
 		if err = rows.Scan(
 			&recipe.ID,
+			&recipe.CompanyID,
 			&recipe.RecordStatus,
 			&recipe.Name,
 			&recipe.Photo,
@@ -190,6 +192,7 @@ func (q *recipeRepository) FindRecipe(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, name
 			, photo
@@ -209,6 +212,7 @@ func (q *recipeRepository) FindRecipe(
 	var response models.Recipe
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Photo,
@@ -243,7 +247,8 @@ func (q *recipeRepository) CreateRecipe(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO recipes (
-			record_status
+			company_id
+			, record_status
 			, name
 			, photo
 			, description
@@ -253,8 +258,9 @@ func (q *recipeRepository) CreateRecipe(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id
+			, company_id
 			, record_status
 			, name
 			, photo
@@ -268,6 +274,7 @@ func (q *recipeRepository) CreateRecipe(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
+		request.CompanyID,
 		request.RecordStatus,
 		request.Name,
 		request.Photo,
@@ -280,6 +287,7 @@ func (q *recipeRepository) CreateRecipe(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Photo,
@@ -296,7 +304,7 @@ func (q *recipeRepository) CreateRecipe(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipes_unique_name_idx" {
+			pgxErr.ConstraintName == "recipes_lower_company_id_idx" {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -317,6 +325,7 @@ func (q *recipeRepository) UpdateRecipe(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, name
 			, photo
@@ -336,6 +345,7 @@ func (q *recipeRepository) UpdateRecipe(
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Photo,
@@ -473,6 +483,7 @@ func (q *recipeRepository) UpdateRecipe(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
+			, company_id
 			, record_status
 			, name
 			, photo
@@ -490,6 +501,7 @@ func (q *recipeRepository) UpdateRecipe(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Photo,
@@ -506,7 +518,7 @@ func (q *recipeRepository) UpdateRecipe(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipes_unique_name_idx" {
+			pgxErr.ConstraintName == "recipes_lower_company_id_idx" {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -547,6 +559,19 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedRecipeID := range request.ExcludedRecipeIDs {
 			params = append(params, excludedRecipeID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

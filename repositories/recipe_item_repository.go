@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -84,6 +86,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, record_status
 		, recipe_id
 		, product_id
@@ -149,6 +152,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 		var recipeItem models.RecipeItem
 		if err = rows.Scan(
 			&recipeItem.ID,
+			&recipeItem.CompanyID,
 			&recipeItem.RecordStatus,
 			&recipeItem.RecipeID,
 			&recipeItem.ProductID,
@@ -192,6 +196,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, recipe_id
 			, product_id
@@ -213,6 +218,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 	var response models.RecipeItem
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
@@ -249,7 +255,8 @@ func (q *recipeItemRepository) CreateRecipeItem(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO recipe_items (
-			record_status
+			company_id
+			, record_status
 			, recipe_id
 			, product_id
 			, product_name
@@ -261,8 +268,9 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id
+			, company_id
 			, record_status
 			, recipe_id
 			, product_id
@@ -278,6 +286,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
+		request.CompanyID,
 		request.RecordStatus,
 		request.RecipeID,
 		request.ProductID,
@@ -292,6 +301,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
@@ -308,7 +318,13 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "recipe_items_recipe_id_product_id_company_id_idx" {
+			err = models.ErrUniqueRecipeItemProductIdViolation
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return &response, nil
@@ -325,6 +341,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, recipe_id
 			, product_id
@@ -346,6 +363,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
@@ -479,6 +497,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
+			, company_id
 			, record_status
 			, recipe_id
 			, product_id
@@ -498,6 +517,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.ProductID,
@@ -514,7 +534,13 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
+			pgxErr.Code == pgerrcode.UniqueViolation &&
+			pgxErr.ConstraintName == "recipe_items_recipe_id_product_id_company_id_idx" {
+			err = models.ErrUniqueRecipeItemProductIdViolation
+		} else {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		}
 		return nil, err
 	}
 	return &response, nil
@@ -544,6 +570,20 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 			_, _ = fmt.Fprintf(sb, "$%d", len(params))
 		}
 		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		placeholder := sb.String()
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "company_id IN (%s)", placeholder)
 		conds = append(conds, sb.String())
 	}
 	if len(request.ProductIDs) > 0 {

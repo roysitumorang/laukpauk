@@ -17,6 +17,7 @@ var ErrUniqueProductVariantStockUnitViolation = errors.New("stock_unit: already 
 type ProductVariant struct {
 	RowNo                   int64        `json:"-" form:"-"`
 	ID                      uuid.UUID    `json:"id" form:"id"`
+	CompanyID               uuid.UUID    `json:"-" form:"-"`
 	RecordStatus            RecordStatus `json:"-" form:"-"`
 	ProductCategoryID       uuid.UUID    `json:"-" form:"-"`
 	ProductCategoryName     string       `json:"-" form:"-"`
@@ -105,6 +106,7 @@ func (q *ProductVariant) Populate() *ProductVariant {
 }
 
 type ProductVariantFilter struct {
+	CompanyIDs,
 	ProductCategoryIDs,
 	ProductIDs,
 	ProductVariantIDs,
@@ -128,6 +130,11 @@ func NewProductVariantFilter() *ProductVariantFilter {
 
 func (q *ProductVariantFilter) WithProductCategoryIDs(productCategoryIDs ...uuid.UUID) *ProductVariantFilter {
 	q.ProductCategoryIDs = productCategoryIDs
+	return q
+}
+
+func (q *ProductVariantFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *ProductVariantFilter {
+	q.CompanyIDs = companyIDs
 	return q
 }
 
