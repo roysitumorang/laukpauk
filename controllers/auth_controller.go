@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"time"
+	"uuid"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
@@ -65,8 +66,8 @@ func (q *authController) Mount(r fiber.Router) {
 		Get("/me", sellerSessionAuth, q.SellerProfile).
 		Get("/logout", q.SellerLogout)
 	r.Group("/v1/buyer").
-		Post("/otp", q.V1BuyerCreateOTP).
-		Post("/login", q.V1BuyerLogin).
+		Post("/login", q.V1BuyerCreateOTP).
+		Post("/login/otp", q.V1BuyerLogin).
 		Get("/me", buyerKeyAuth, q.V1BuyerProfile)
 }
 
@@ -307,14 +308,16 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 			}
 		}(ctx)
-		if _, err = q.sellerService.UpdateSeller(ctx, tx, seller); err != nil {
+		if seller, err = q.sellerService.UpdateSeller(ctx, tx, seller); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSeller")
 			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
 		textMessage, err := q.textMessageService.CreateTextMessage(ctx, tx, &models.TextMessage{
-			BuyerID:     seller.ID,
+			AdminID:     uuid.Nil(),
+			SellerID:    seller.ID,
+			BuyerID:     uuid.Nil(),
 			MobilePhone: seller.MobilePhone,
 			MessageType: models.TextMessageTypeOtp,
 			Body:        helper.Sprintf("%s is your OTP token, valid for %f minutes", otpToken, otpDuration.Minutes()),
@@ -492,7 +495,8 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer == nil {
+	if buyer == nil ||
+		buyer.MobilePhone == nil {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginNotFound.Error()).
 			WriteResponse(c)
@@ -532,8 +536,24 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 			}
 		}(ctx)
-		if _, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
+		if buyer, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		textMessage, err := q.textMessageService.CreateTextMessage(ctx, tx, &models.TextMessage{
+			AdminID:     uuid.Nil(),
+			SellerID:    uuid.Nil(),
+			BuyerID:     buyer.ID,
+			MobilePhone: *buyer.MobilePhone,
+			MessageType: models.TextMessageTypeOtp,
+			Body:        helper.Sprintf("%s is your OTP token, valid for %f minutes", otpToken, otpDuration.Minutes()),
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		})
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTextMessage")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
 				WriteResponse(c)
@@ -543,6 +563,21 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
 				WriteResponse(c)
+		}
+		if err = q.kafkaService.Publish(
+			ctx,
+			models.TopicRequest{
+				Topic: models.TopicTextMessage,
+				Messages: []models.TopicMessage{
+					{
+						Topic: models.TopicTextMessage,
+						Event: models.TopicTextMessageEventSend,
+						ID:    textMessage.ID,
+					},
+				},
+			},
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
 		}
 	}
 	return helper.NewResponse(fiber.StatusNoContent).WriteResponse(c)

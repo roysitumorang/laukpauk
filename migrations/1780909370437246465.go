@@ -106,6 +106,35 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		now := time.Now().In(time.Local)
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO admins (
+				id
+				, status
+				, admin_level
+				, name
+				, mobile_phone
+				, username
+				, email
+				, photo
+				, created_at
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+			uuid.Nil(),
+			models.AdminStatusDeactivated,
+			models.AdminLevelAdmin,
+			"",
+			"",
+			"",
+			"",
+			"admin-default.png",
+			now,
+			now,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		password, err := helper.Base64Decode(os.Getenv("DEFAULT_PASSWORD"))
 		if err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBase64Decode")
@@ -253,7 +282,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParse")
 			return
 		}
-		now := time.Now().In(time.Local)
 		company := models.Company{
 			ReferralPointsSlots: []int64{},
 		}
@@ -706,6 +734,43 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO buyers (
+				id
+				, company_id
+				, status
+				, name
+				, mobile_phone
+				, otp_hash
+				, otp_expired_at
+				, username
+				, photo
+				, referral_code
+				, address
+				, created_at
+				, updated_at
+				, deactivated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			RETURNING id`,
+			uuid.Nil(),
+			uuid.Nil(),
+			models.BuyerStatusDeactivated,
+			"",
+			"",
+			"",
+			time.Unix(0, 0),
+			"",
+			"buyer-default.png",
+			"",
+			"",
+			now,
+			now,
+			now,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		// product_categories
 		if _, err = tx.Exec(
 			ctx,
@@ -1126,6 +1191,8 @@ func init() {
 			ctx,
 			`CREATE TABLE text_messages (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, admin_id UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, seller_id UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, mobile_phone character varying NOT NULL
 				, message_type integer NOT NULL
@@ -1137,6 +1204,20 @@ func init() {
 				, updated_at timestamp with time zone NOT NULL
 				, sent_at timestamp with time zone
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON text_messages (admin_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON text_messages (seller_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

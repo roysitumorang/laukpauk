@@ -42,6 +42,8 @@ func (q TextMessageType) String() string {
 type TextMessage struct {
 	RowNo          int64           `json:"-" form:"-"`
 	ID             uuid.UUID       `json:"-" form:"-"`
+	AdminID        uuid.UUID       `json:"-" form:"-"`
+	SellerID       uuid.UUID       `json:"-" form:"-"`
 	BuyerID        uuid.UUID       `json:"-" form:"buyer_id"`
 	MobilePhone    string          `json:"-" form:"-"`
 	MessageType    TextMessageType `json:"-" form:"-"`
@@ -66,6 +68,8 @@ func (q *TextMessage) Validate() error {
 
 type TextMessageFilter struct {
 	TextMessageIDs,
+	AdminIDs,
+	SellerIDs,
 	BuyerIDs []uuid.UUID
 	MessageTypes        []TextMessageType
 	DeliveryStatusBlank bool
@@ -89,6 +93,16 @@ func NewTextMessageFilter() *TextMessageFilter {
 
 func (q *TextMessageFilter) WithTextMessageIDs(textMessageIDs ...uuid.UUID) *TextMessageFilter {
 	q.TextMessageIDs = textMessageIDs
+	return q
+}
+
+func (q *TextMessageFilter) WithAdminIDs(adminIDs ...uuid.UUID) *TextMessageFilter {
+	q.AdminIDs = adminIDs
+	return q
+}
+
+func (q *TextMessageFilter) WithSellerIDs(sellerIDs ...uuid.UUID) *TextMessageFilter {
+	q.SellerIDs = sellerIDs
 	return q
 }
 
