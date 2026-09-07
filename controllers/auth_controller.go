@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
@@ -25,6 +26,8 @@ type (
 		sellerService       services.SellerService
 		buyerService        services.BuyerService
 		jsonWebTokenService services.JsonWebTokenService
+		textMessageService  services.TextMessageService
+		kafkaService        *externals.KafkaClient
 	}
 )
 
@@ -33,12 +36,16 @@ func NewAuthController(
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
+	textMessageService services.TextMessageService,
+	kafkaService *externals.KafkaClient,
 ) *authController {
 	return &authController{
 		adminService:        adminService,
 		sellerService:       sellerService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
+		textMessageService:  textMessageService,
+		kafkaService:        kafkaService,
 	}
 }
 
@@ -306,11 +313,40 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 				"flash", flash.Danger(err.Error()),
 			))
 		}
+		textMessage, err := q.textMessageService.CreateTextMessage(ctx, tx, &models.TextMessage{
+			BuyerID:     seller.ID,
+			MobilePhone: seller.MobilePhone,
+			MessageType: models.TextMessageTypeOtp,
+			Body:        helper.Sprintf("%s is your OTP token, valid for %f minutes", otpToken, otpDuration.Minutes()),
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		})
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTextMessage")
+			return c.Render("seller/auth_login", params.Push(
+				"flash", flash.Danger(err.Error()),
+			))
+		}
 		if err = tx.Commit(ctx); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
+		}
+		if err = q.kafkaService.Publish(
+			ctx,
+			models.TopicRequest{
+				Topic: models.TopicTextMessage,
+				Messages: []models.TopicMessage{
+					{
+						Topic: models.TopicTextMessage,
+						Event: models.TopicTextMessageEventSend,
+						ID:    textMessage.ID,
+					},
+				},
+			},
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
 		}
 	}
 	return c.Render("seller/auth_otp", params.Push(

@@ -288,6 +288,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.SellerService,
 		q.BuyerService,
 		q.JsonWebTokenService,
+		q.TextMessageService,
+		q.KafkaClient,
 	).Mount(app.Group("/auth"))
 	controllers.NewHomeController(
 		q.AdminService,

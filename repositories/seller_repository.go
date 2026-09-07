@@ -715,10 +715,7 @@ func (q *sellerRepository) UpdateSeller(
 		}
 		_, _ = fmt.Fprintf(sb, " mobile_phone_confirmed_at = $%d", n)
 	}
-	if (response.MobilePhone != nil && request.MobilePhone == nil) ||
-		(response.MobilePhone == nil && request.MobilePhone != nil) ||
-		(response.MobilePhone != nil && request.MobilePhone != nil &&
-			*response.MobilePhone != *request.MobilePhone) {
+	if response.MobilePhone != request.MobilePhone {
 		params = append(params, request.MobilePhone)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")

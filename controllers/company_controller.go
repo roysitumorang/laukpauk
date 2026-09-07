@@ -206,7 +206,7 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 		Status:       models.SellerStatusActive,
 		SellerLevel:  models.SellerLevelOwner,
 		Name:         company.Name,
-		MobilePhone:  &company.WhatsappPhoneNumber,
+		MobilePhone:  company.WhatsappPhoneNumber,
 		OtpExpiredAt: time.Unix(0, 0),
 		Username:     helper.RandomString(10),
 		Photo:        "seller-default.png",
