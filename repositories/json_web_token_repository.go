@@ -80,7 +80,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		query,
 		"COUNT(1)",
 		`id
-		, user_id
+		, buyer_id
 		, created_at
 		, expired_at`,
 	)
@@ -133,7 +133,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		var jsonWebToken models.JsonWebToken
 		if err = rows.Scan(
 			&jsonWebToken.ID,
-			&jsonWebToken.UserID,
+			&jsonWebToken.BuyerID,
 			&jsonWebToken.CreatedAt,
 			&jsonWebToken.ExpiredAt,
 		); err != nil {
@@ -164,7 +164,7 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 		sb,
 		`SELECT
 			id
-			, user_id
+			, buyer_id
 			, created_at
 			, expired_at
 		FROM json_web_tokens %s`,
@@ -174,7 +174,7 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 	var response models.JsonWebToken
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.UserID,
+		&response.BuyerID,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	)
@@ -198,20 +198,20 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO json_web_tokens (
-			user_id
+			buyer_id
 			, created_at
 			, expired_at
 		) VALUES ($1, $2, $3)
 		RETURNING id
-			, user_id
+			, buyer_id
 			, created_at
 			, expired_at`,
-		request.UserID,
+		request.BuyerID,
 		request.CreatedAt,
 		request.ExpiredAt,
 	).Scan(
 		&response.ID,
-		&response.UserID,
+		&response.BuyerID,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	); err != nil {
@@ -262,11 +262,11 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.UserIDs) > 0 {
+	if len(request.BuyerIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("user_id IN (")
-		for i, userID := range request.UserIDs {
-			params = append(params, userID)
+		_, _ = sb.WriteString("buyer_id IN (")
+		for i, buyerID := range request.BuyerIDs {
+			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

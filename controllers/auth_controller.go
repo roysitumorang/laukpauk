@@ -627,7 +627,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 	}
 	expiredAt := now.Add(helper.GetAccessTokenAge() + time.Nanosecond)
 	jsonWebTokenRequest := &models.JsonWebToken{
-		UserID:    buyer.ID,
+		BuyerID:   buyer.ID,
 		CreatedAt: now,
 		ExpiredAt: expiredAt,
 	}

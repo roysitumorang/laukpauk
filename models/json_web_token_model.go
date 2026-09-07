@@ -19,14 +19,14 @@ type (
 	JsonWebToken struct {
 		RowNo     int64     `json:"-" form:"-"`
 		ID        uuid.UUID `json:"-" form:"-"`
-		UserID    uuid.UUID `json:"-" form:"-"`
+		BuyerID   uuid.UUID `json:"buyer_id" form:"-"`
 		CreatedAt time.Time `json:"-" form:"-"`
 		ExpiredAt time.Time `json:"-" form:"-"`
 	}
 
 	JsonWebTokenFilter struct {
 		JsonWebTokenIDs,
-		UserIDs []uuid.UUID
+		BuyerIDs []uuid.UUID
 		Expired *bool
 		Keyword,
 		PaginationURL string
@@ -50,8 +50,8 @@ func (q *JsonWebTokenFilter) WithJsonWebTokenIDs(jsonWebTokenIDs ...uuid.UUID) *
 	return q
 }
 
-func (q *JsonWebTokenFilter) WithUserIDs(userIDs ...uuid.UUID) *JsonWebTokenFilter {
-	q.UserIDs = userIDs
+func (q *JsonWebTokenFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *JsonWebTokenFilter {
+	q.BuyerIDs = buyerIDs
 	return q
 }
 
@@ -95,8 +95,8 @@ func (q *JsonWebTokenFilter) WithUrlValues(urlValues url.Values) *JsonWebTokenFi
 }
 
 func (q *JsonWebToken) Validate() error {
-	if q.UserID.Compare(uuid.Nil()) == 0 {
-		return errors.New("user_id: is required")
+	if q.BuyerID.Compare(uuid.Nil()) == 0 {
+		return errors.New("buyer_id: is required")
 	}
 	return nil
 }
