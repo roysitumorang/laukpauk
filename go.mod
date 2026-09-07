@@ -14,11 +14,11 @@ require (
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.4.0
 	github.com/gofiber/template/jet/v3 v3.0.8
-	github.com/gofiber/utils/v2 v2.5.0
+	github.com/gofiber/utils/v2 v2.5.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
-	github.com/jackc/pgx/v5 v5.10.0
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kolesa-team/go-webp v1.0.5
 	github.com/nyaruka/phonenumbers v1.8.1
@@ -28,7 +28,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/twmb/franz-go v1.21.6
 	github.com/urfave/cli/v3 v3.11.0
-	github.com/valyala/fasthttp v1.73.0
+	github.com/valyala/fasthttp v1.74.0
 	golang.org/x/crypto v0.56.0
 	golang.org/x/sync v0.22.0
 )
@@ -37,7 +37,6 @@ require (
 	github.com/CloudyKit/fastprinter v0.0.0-20251202014920-1725d2651bd4 // indirect
 	github.com/CloudyKit/jet/v6 v6.3.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/andybalholm/brotli v1.2.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coregx/ahocorasick v0.3.1 // indirect
 	github.com/ebitengine/purego v0.11.0 // indirect
@@ -62,6 +61,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20260802145828-341c2f0c90b5 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
+	github.com/molecule-man/go-brrr v1.0.1 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.29 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
