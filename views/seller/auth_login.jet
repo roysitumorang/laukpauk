@@ -74,9 +74,9 @@
 				<p class="login-box-msg">Sign in to start your session</p>
 				<form method="POST" action="{{ baseURL }}/seller/auth/login" id="formLogin">
 					<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-					<input type="hidden" name="password" id="password" value="" />
+					<input type="hidden" name="otp_token" id="otp_token" value="" />
 					<div class="input-group mb-3">
-						<input type="text" name="login" id="login" value="{{ request.Login }}" placeholder="Email or Username" class="form-control" />
+						<input type="text" name="login" id="login" value="{{ request.Login }}" placeholder="Email / Username / Mobile Phone" class="form-control" />
 						<div class="input-group-append">
 							<div class="input-group-text">
 								<span class="fas fa-envelope"></span>
@@ -84,7 +84,7 @@
 						</div>
 					</div>
 					<div class="input-group mb-3">
-						<input type="password" placeholder="Password" class="form-control" onchange="document.getElementById('password').value=btoa(this.value)" />
+						<input type="password" placeholder="OTP" class="form-control" onchange="document.getElementById('otp_token').value=btoa(this.value)" />
 						<div class="input-group-append">
 							<div class="input-group-text">
 								<span class="fas fa-lock"></span>
@@ -92,9 +92,6 @@
 						</div>
 					</div>
 					<button type="submit" id="btnSubmit" class="btn btn-primary btn-block">Login</button>
-					<p class="mb-1 mt-4 text-center">
-						<a href="{{ baseURL }}/seller/auth/password/forgot">I forgot my password</a>
-					</p>
 				</form>
 			</div>
 			<!-- /.login-card-body -->
