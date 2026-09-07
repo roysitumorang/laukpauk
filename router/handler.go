@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -291,6 +292,15 @@ func (q *Service) Consume(ctx context.Context) error {
 		q.KafkaClient.AllowRebalance()
 		for _, record := range records {
 			now := time.Now()
+			var message models.TopicMessage
+			err := json.Unmarshal(record.Value, &message)
+			if err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUnmarshal")
+			} else {
+				if err = q.TextMessageService.ConsumeMessage(ctx, message.Topic, message); err != nil {
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrConsumeMessage")
+				}
+			}
 			duration := time.Since(now)
 			helper.Log(ctx, slog.LevelInfo, helper.Sprintf("consumed message on topic %s[%d]@%d: %s in %s", record.Topic, record.Partition, record.Offset, record.Value, duration.String()), ctxt, "")
 		}

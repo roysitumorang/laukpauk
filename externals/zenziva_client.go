@@ -3,8 +3,10 @@ package externals
 import (
 	"context"
 	"encoding/json/v2"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,9 +39,9 @@ type (
 	}
 
 	ZenzivaResponse struct {
-		MessageID int64  `json:"messageId,string"`
+		MessageID string `json:"messageId"`
 		To        string `json:"to"`
-		Status    int    `json:"status,string"`
+		Status    string `json:"status"`
 		Text      string `json:"text"`
 	}
 
@@ -125,7 +127,14 @@ func (q *ZenzivaClient) send(ctx context.Context, messageType ZenzivaMessageType
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
 	}
-	return &response.MessageID, nil
+	if response.Status != "1" {
+		return nil, errors.New(response.Text)
+	}
+	messageID, err := strconv.ParseInt(response.MessageID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &messageID, nil
 }
 
 func (q *ZenzivaClient) CheckReport(ctx context.Context, messageID int64) (*string, error) {
