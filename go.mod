@@ -1,10 +1,10 @@
 module github.com/roysitumorang/laukpauk
 
-go 1.27
+go 1.27.1
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/coregx/coregex v0.12.23
+	github.com/coregx/coregex v0.12.25
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gabriel-vasile/mimetype v1.4.15
 	github.com/getsentry/sentry-go v0.49.0
@@ -14,7 +14,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.4.0
 	github.com/gofiber/template/jet/v3 v3.0.8
-	github.com/gofiber/utils/v2 v2.4.3
+	github.com/gofiber/utils/v2 v2.5.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
@@ -39,7 +39,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.2.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/coregx/ahocorasick v0.3.0 // indirect
+	github.com/coregx/ahocorasick v0.3.1 // indirect
 	github.com/ebitengine/purego v0.11.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.1 // indirect
