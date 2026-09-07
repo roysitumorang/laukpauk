@@ -52,10 +52,9 @@ func (q *authController) Mount(r fiber.Router) {
 		Get("/me", adminSessionAuth, q.AdminProfile).
 		Get("/logout", q.AdminLogout)
 	r.Group("/seller").
-		Get("/otp", q.SellerNewOTP).
-		Post("/otp", q.SellerCreateOTP).
-		Get("/login", q.SellerNewSession).
-		Post("/login", q.SellerCreateSession).
+		Get("/login", q.SellerNewIdentifier).
+		Post("/login", q.SellerCreateOTP).
+		Post("/login/otp", q.SellerCreateSession).
 		Get("/me", sellerSessionAuth, q.SellerProfile).
 		Get("/logout", q.SellerLogout)
 	r.Group("/v1/buyer").
@@ -196,7 +195,7 @@ func (q *authController) AdminLogout(c fiber.Ctx) error {
 	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin/auth/login")
 }
 
-func (q *authController) SellerNewOTP(c fiber.Ctx) error {
+func (q *authController) SellerNewIdentifier(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -210,7 +209,7 @@ func (q *authController) SellerNewOTP(c fiber.Ctx) error {
 	request := &models.OtpRequest{
 		Login: c.Query("login"),
 	}
-	return c.Render("seller/auth_otp", models.NewMap().Push(
+	return c.Render("seller/auth_login", models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
@@ -243,7 +242,7 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateOtp")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/auth_otp", params.Push(
+		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
@@ -257,12 +256,12 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 		if !errors.Is(err, models.ErrSellerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSeller")
 		}
-		return c.Render("seller/auth_otp", params.Push(
+		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
 	if seller == nil {
-		return c.Render("seller/auth_otp", params.Push(
+		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginNotFound.Error()),
 		))
 	}
@@ -272,7 +271,7 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 		otpDuration, err := time.ParseDuration(os.Getenv("OTP_DURATION"))
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
-			return c.Render("seller/auth_otp", params.Push(
+			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
@@ -280,18 +279,16 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 		otpHash, err := helper.HashPassword(otpToken)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
-			return c.Render("seller/auth_otp", params.Push(
+			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
-		if otpHash != nil {
-			seller.OtpHash = *otpHash
-		}
+		seller.OtpHash = otpHash
 		seller.OtpExpiredAt = now.Add(otpDuration + time.Nanosecond)
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-			return c.Render("seller/auth_otp", params.Push(
+			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
@@ -305,40 +302,22 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 		}(ctx)
 		if _, err = q.sellerService.UpdateSeller(ctx, tx, seller); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSeller")
-			return c.Render("seller/auth_otp", params.Push(
+			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
 		if err = tx.Commit(ctx); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-			return c.Render("seller/auth_otp", params.Push(
+			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
 	}
-	return flash.Success("please check your phone for OTP token SMS").Redirect(c, sess.Session, helper.Sprintf("/seller/auth/login?login=%s", request.Login))
-}
-
-func (q *authController) SellerNewSession(c fiber.Ctx) error {
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	defer flash.Clear(c, sess.Session)
-	if sess.Get(models.SellerID) != nil {
-		return flash.Redirect(c, sess.Session, "/seller")
-	}
-	csrfToken := csrf.TokenFromContext(c)
-	request := &models.LoginRequest{
-		Login: c.Query("login"),
-	}
-	return c.Render("seller/auth_login", models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"request", request,
+	return c.Render("seller/auth_otp", params.Push(
+		"flash", flash.Success("please check your phone for OTP token SMS"),
+		"request", &models.SellerLoginRequest{
+			Login: request.Login,
+		},
 	))
 }
 
@@ -366,7 +345,7 @@ func (q *authController) SellerCreateSession(c fiber.Ctx) error {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSellerLogin")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/auth_login", params.Push(
+		return c.Render("seller/auth_otp", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
@@ -380,34 +359,27 @@ func (q *authController) SellerCreateSession(c fiber.Ctx) error {
 		if !errors.Is(err, models.ErrSellerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSeller")
 		}
-		return c.Render("seller/auth_login", params.Push(
+		return c.Render("seller/auth_otp", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
-	if seller == nil {
-		return c.Render("seller/auth_login", params.Push(
-			"flash", flash.Danger(models.ErrLoginFailed.Error()),
-		))
-	}
 	now := time.Now().In(time.Local)
-	if seller.OtpHash == "" ||
+	if seller == nil ||
+		seller.OtpHash == "" ||
 		!seller.OtpExpiredAt.After(now) {
-		return flash.Clear(c, sess.Session).Redirect(c, sess.Session, helper.Sprintf("/seller/auth/otp?login=%s", request.Login))
-	}
-	if request.OtpToken == "" {
-		return c.Render("seller/auth_login", params.Push(
-			"flash", flash.Danger("otp_token: is required"),
+		return c.Render("seller/auth_otp", params.Push(
+			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
 	matched, err := helper.VerifyPassword(request.OtpToken, seller.OtpHash)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
-		return c.Render("seller/auth_login", params.Push(
+		return c.Render("seller/auth_otp", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
 	if !matched {
-		return c.Render("seller/auth_login", params.Push(
+		return c.Render("seller/auth_otp", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
@@ -507,9 +479,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
-		if otpHash != nil {
-			buyer.OtpHash = *otpHash
-		}
+		buyer.OtpHash = otpHash
 		buyer.OtpExpiredAt = now.Add(otpDuration + time.Nanosecond)
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {

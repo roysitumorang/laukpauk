@@ -267,7 +267,7 @@ func (q *adminController) AdminCreate(c fiber.Ctx) (err error) {
 				"request", request.SetPhoto(""),
 			), "admin/layouts/authenticated")
 		}
-		request.EncryptedPassword = encryptedPasword
+		request.EncryptedPassword = &encryptedPasword
 		request.PasswordChangedAt = &now
 	}
 	request.CreatedBy = &createdBy
@@ -514,7 +514,7 @@ func (q *adminController) AdminUpdate(c fiber.Ctx) (err error) {
 				"flash", flash.Danger(err.Error()),
 			), "admin/layouts/authenticated")
 		}
-		admin.EncryptedPassword = encryptedPasword
+		admin.EncryptedPassword = &encryptedPasword
 		admin.PasswordChangedAt = &now
 	}
 	admin.Name = request.Name

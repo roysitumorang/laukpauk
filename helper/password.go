@@ -42,7 +42,7 @@ type Argon2Params struct {
 	Threads uint8
 }
 
-func HashPassword(password string, params ...*Argon2Params) (*string, error) {
+func HashPassword(password string, params ...*Argon2Params) (string, error) {
 	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
@@ -56,7 +56,7 @@ func HashPassword(password string, params ...*Argon2Params) (*string, error) {
 	salt := make([]byte, param.SaltLength)
 	_, err := rand.Read(salt)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	key := argon2.IDKey(
 		String2ByteSlice(password),
@@ -77,7 +77,7 @@ func HashPassword(password string, params ...*Argon2Params) (*string, error) {
 		b64Enc.EncodeToString(salt),
 		b64Enc.EncodeToString(key),
 	)
-	return new(sb.String()), nil
+	return sb.String(), nil
 }
 
 func VerifyPassword(password, hash string) (bool, error) {

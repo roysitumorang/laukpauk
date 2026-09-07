@@ -76,7 +76,7 @@ func (q *SellerLoginRequest) Validate() error {
 		return errors.New("login: is required")
 	}
 	if q.Base64OtpToken = strings.TrimSpace(q.Base64OtpToken); q.Base64OtpToken == "" {
-		return nil
+		return errors.New("otp_token: is required")
 	}
 	otpToken, err := helper.Base64Decode(q.Base64OtpToken)
 	if err != nil {
