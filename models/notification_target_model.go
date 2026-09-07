@@ -15,7 +15,9 @@ var ErrNotificationTargetNotFound = errors.New("notification target not found")
 type NotificationTarget struct {
 	RowNo                  int64     `json:"-" form:"-"`
 	ID                     uuid.UUID `json:"-" form:"-"`
-	UserID                 uuid.UUID `json:"-" form:"-"`
+	AdminID                uuid.UUID `json:"-" form:"-"`
+	SellerID               uuid.UUID `json:"-" form:"-"`
+	BuyerID                uuid.UUID `json:"-" form:"-"`
 	FirebaseInstallationID string    `json:"-" form:"fid"`
 	CreatedAt              time.Time `json:"-" form:"-"`
 	UpdatedAt              time.Time `json:"-" form:"-"`
@@ -34,7 +36,9 @@ func (q *NotificationTarget) New() bool {
 
 type NotificationTargetFilter struct {
 	NotificationTargetIDs,
-	UserIDs []uuid.UUID
+	AdminIDs,
+	SellerIDs,
+	BuyerIDs []uuid.UUID
 	FirebaseInstallationIDs []string
 	PaginationURL           string
 	Sortings                []Sorting
@@ -56,8 +60,18 @@ func (q *NotificationTargetFilter) WithNotificationTargetIDs(notificationTargetI
 	return q
 }
 
-func (q *NotificationTargetFilter) WithUserIDs(userIDs ...uuid.UUID) *NotificationTargetFilter {
-	q.UserIDs = userIDs
+func (q *NotificationTargetFilter) WithAdminIDs(adminIDs ...uuid.UUID) *NotificationTargetFilter {
+	q.AdminIDs = adminIDs
+	return q
+}
+
+func (q *NotificationTargetFilter) WithSellerIDs(sellerIDs ...uuid.UUID) *NotificationTargetFilter {
+	q.SellerIDs = sellerIDs
+	return q
+}
+
+func (q *NotificationTargetFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *NotificationTargetFilter {
+	q.BuyerIDs = buyerIDs
 	return q
 }
 

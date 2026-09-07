@@ -554,11 +554,10 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 					AND (
 						LOWER(buyers.name) LIKE $%d
 						OR buyers.username LIKE $%d
-						OR buyers.email LIKE $%d
 						OR buyers.mobile_phone LIKE $%d
 					)
 			))`,
-			n, n, n, n, n, n, n, n, n, n, n, n,
+			n, n, n, n, n, n, n, n, n, n, n,
 		)
 		conds = append(conds, sb.String())
 	}

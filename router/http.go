@@ -194,6 +194,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/recipes":                "/recipes/seller",
 				"/seller/recipes/*":              "/recipes/seller/$1",
 				"/seller/recipes/*/*":            "/recipes/seller/$1/$2",
+				"/seller/notification_targets":   "/notification_targets/seller",
 				"/v1/buyer/auth/*":               "/auth/v1/buyer/$1",
 				"/v1/buyer/notification_targets": "/notification_targets/v1/buyer",
 				"/v1/buyer/product_categories":   "/product_categories/v1/buyer",
@@ -357,6 +358,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/transactions"))
 	controllers.NewNotificationTargetController(
 		q.AdminService,
+		q.SellerService,
 		q.BuyerService,
 		q.NotificationTargetService,
 		q.JsonWebTokenService,

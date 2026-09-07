@@ -31,7 +31,9 @@ const TopicNotificationEventSend TopicEvent = "send"
 type Notification struct {
 	RowNo            int64             `json:"-" form:"-"`
 	ID               uuid.UUID         `json:"-" form:"-"`
-	UserID           uuid.UUID         `json:"-" form:"user_id"`
+	AdminID          uuid.UUID         `json:"-" form:"admin_id"`
+	SellerID         uuid.UUID         `json:"-" form:"seller_id"`
+	BuyerID          uuid.UUID         `json:"-" form:"buyer_id"`
 	NotificationType NotificationType  `json:"-" form:"-"`
 	Subject          string            `json:"-" form:"subject"`
 	Body             string            `json:"-" form:"body"`
@@ -60,9 +62,6 @@ func (q *Notification) PhotoPath(baseURLs ...string) string {
 }
 
 func (q *Notification) Validate() error {
-	if q.UserID.Compare(uuid.Nil()) == 0 {
-		return errors.New("user_id: is required")
-	}
 	if q.Subject = strings.TrimSpace(q.Subject); q.Subject == "" {
 		return errors.New("subject: is required")
 	}
@@ -72,7 +71,9 @@ func (q *Notification) Validate() error {
 
 type NotificationFilter struct {
 	NotificationIDs,
-	UserIDs []uuid.UUID
+	AdminIDs,
+	SellerIDs,
+	BuyerIDs []uuid.UUID
 	NotificationTypes []NotificationType
 	SentAtBlank,
 	ReadAtBlank *bool
@@ -97,8 +98,18 @@ func (q *NotificationFilter) WithNotificationIDs(notificationIDs ...uuid.UUID) *
 	return q
 }
 
-func (q *NotificationFilter) WithUserIDs(userIDs ...uuid.UUID) *NotificationFilter {
-	q.UserIDs = userIDs
+func (q *NotificationFilter) WithAdminIDs(adminIDs ...uuid.UUID) *NotificationFilter {
+	q.AdminIDs = adminIDs
+	return q
+}
+
+func (q *NotificationFilter) WithSellerIDs(sellerIDs ...uuid.UUID) *NotificationFilter {
+	q.SellerIDs = sellerIDs
+	return q
+}
+
+func (q *NotificationFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *NotificationFilter {
+	q.BuyerIDs = buyerIDs
 	return q
 }
 

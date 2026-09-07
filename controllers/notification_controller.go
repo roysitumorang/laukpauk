@@ -186,9 +186,9 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	params.Push("buyers", buyers)
-	mapUserIDs := map[uuid.UUID]struct{}{}
+	mapBuyerIDs := map[uuid.UUID]struct{}{}
 	for _, buyer := range buyers {
-		mapUserIDs[buyer.ID] = struct{}{}
+		mapBuyerIDs[buyer.ID] = struct{}{}
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateNotification(ctx, c)
 	params.Push("request", request)
@@ -199,9 +199,9 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if _, ok := mapUserIDs[request.UserID]; !ok {
+	if _, ok := mapBuyerIDs[request.BuyerID]; !ok {
 		return c.Render("/admin/notification_new", params.Push(
-			"flash", flash.Danger("user_id: not found"),
+			"flash", flash.Danger("buyer_id: not found"),
 		), "admin/layouts/authenticated")
 	}
 	createdBy := currentAdmin.ID

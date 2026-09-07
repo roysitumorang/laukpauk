@@ -1048,7 +1048,9 @@ func init() {
 			ctx,
 			`CREATE TABLE notification_targets (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL
+				, admin_id UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, seller_id UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, firebase_installation_id character varying NOT NULL UNIQUE
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
@@ -1059,7 +1061,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON notification_targets (user_id);`,
+			`CREATE INDEX ON notification_targets (admin_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON notification_targets (seller_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON notification_targets (buyer_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -1114,7 +1130,9 @@ func init() {
 			ctx,
 			`CREATE TABLE notifications (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, user_id UUID NOT NULL
+				, admin_id UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, seller_id UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, notification_type character varying NOT NULL
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
@@ -1131,7 +1149,21 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON notifications (user_id);`,
+			`CREATE INDEX ON notifications (admin_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON notifications (seller_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON notifications (buyer_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
