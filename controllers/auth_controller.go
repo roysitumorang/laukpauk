@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math"
 	"os"
 	"time"
 	"uuid"
@@ -320,7 +321,7 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 			BuyerID:     uuid.Nil(),
 			MobilePhone: seller.MobilePhone,
 			MessageType: models.TextMessageTypeOtp,
-			Body:        helper.Sprintf("%s is your OTP token, valid for %f minutes", otpToken, otpDuration.Minutes()),
+			Body:        helper.Sprintf("%s is your OTP token, valid for %d minutes", otpToken, int64(math.Round(otpDuration.Minutes()))),
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		})
@@ -548,7 +549,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 			BuyerID:     buyer.ID,
 			MobilePhone: *buyer.MobilePhone,
 			MessageType: models.TextMessageTypeOtp,
-			Body:        helper.Sprintf("%s is your OTP token, valid for %f minutes", otpToken, otpDuration.Minutes()),
+			Body:        helper.Sprintf("%s is your OTP token, valid for %d minutes", otpToken, int64(math.Round(otpDuration.Minutes()))),
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		})
