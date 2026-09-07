@@ -255,6 +255,83 @@ func init() {
 		}
 		now := time.Now().In(time.Local)
 		company := models.Company{
+			ReferralPointsSlots: []int64{},
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO companies (
+				id
+				, name
+				, billed
+				, subscription_status
+				, telegram_bot_token
+				, vacation_mode
+				, vacation_start_date
+				, vacation_end_date
+				, voucher_enabled
+				, referral_points_enabled
+				, referral_points_minimum_shopping_cost
+				, referral_points_per_referee
+				, referral_points_slots
+				, referral_points_expense
+				, reward_points_accumulation_window_in_days
+				, delivery_origin_longitude
+				, delivery_origin_latitude
+				, delivery_cost_per_km
+				, delivery_max_distance_km
+				, whatsapp_phone_number
+				, payment_terms
+				, maximum_delivery_time
+				, transaction_auto_withdrawal_enabled
+				, transaction_auto_withdrawal_window
+				, owner_id
+				, created_by
+				, created_at
+				, updated_by
+				, updated_at
+				, deactivated_at
+			) VALUES (
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+				, $21, $22, $23, tstzrange($24, $25, '[]'), $26, $27, $28, $29, $30
+				, $31
+			)`,
+			uuid.Nil(),
+			company.Name,
+			company.Billed,
+			company.SubscriptionStatus,
+			company.TelegramBotToken,
+			company.VacationMode,
+			company.VacationStartDate,
+			company.VacationEndDate,
+			company.VoucherEnabled,
+			company.ReferralPointsEnabled,
+			company.ReferralPointsMinimumShoppingCost,
+			company.ReferralPointsPerReferee,
+			company.ReferralPointsSlots,
+			company.ReferralPointsExpense,
+			company.RewardPointsAccumulationWindowInDays,
+			company.DeliveryOriginLongitude,
+			company.DeliveryOriginLatitude,
+			company.DeliveryCostPerKM,
+			company.DeliveryMaxDistanceKM,
+			company.WhatsappPhoneNumber,
+			company.PaymentTerms,
+			company.MaximumDeliveryTime,
+			company.TransactionAutoWithdrawalEnabled,
+			company.TransactionAutoWithdrawalWindowMin,
+			company.TransactionAutoWithdrawalWindowMax,
+			uuid.Nil(),
+			adminID,
+			now,
+			uuid.Nil(),
+			now,
+			now,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		company = models.Company{
 			Name:                                 "Laukpauk",
 			Billed:                               false,
 			SubscriptionStatus:                   models.SubscriptionStatusActive,
@@ -449,6 +526,42 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO sellers (
+				id
+				, company_id
+				, status
+				, seller_level
+				, name
+				, mobile_phone_confirmed_at
+				, mobile_phone
+				, otp_hash
+				, otp_expired_at
+				, username
+				, photo
+				, created_at
+				, updated_at
+				, deactivated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+			uuid.Nil(),
+			uuid.Nil(),
+			models.SellerStatusDeactivated,
+			models.SellerLevelOwner,
+			"",
+			nil,
+			"",
+			"",
+			time.Unix(0, 0),
+			"",
+			"seller-default.png",
+			now,
+			now,
+			now,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
 		var sellerID uuid.UUID
 		if err = tx.QueryRow(
 			ctx,
@@ -492,6 +605,15 @@ func init() {
 			sellerID,
 			sellerID,
 			companyID,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`ALTER TABLE companies
+				ADD FOREIGN KEY (owner_id) REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, ADD FOREIGN KEY (updated_by) REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
