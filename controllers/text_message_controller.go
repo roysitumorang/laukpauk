@@ -188,9 +188,7 @@ func (q *textMessageController) AdminCreate(c fiber.Ctx) (err error) {
 	params.Push("buyers", buyers)
 	mapBuyerMobilePhones := map[uuid.UUID]string{}
 	for _, buyer := range buyers {
-		if buyer.MobilePhone != nil {
-			mapBuyerMobilePhones[buyer.ID] = *buyer.MobilePhone
-		}
+		mapBuyerMobilePhones[buyer.ID] = buyer.MobilePhone
 	}
 	request, statusCode, err := sanitizers.ValidateTextMessage(ctx, c)
 	params.Push("request", request)

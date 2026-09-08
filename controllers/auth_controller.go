@@ -521,8 +521,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer == nil ||
-		buyer.MobilePhone == nil {
+	if buyer == nil {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginNotFound.Error()).
 			WriteResponse(c)
@@ -573,7 +572,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 			AdminID:     uuid.Nil(),
 			SellerID:    uuid.Nil(),
 			BuyerID:     buyer.ID,
-			MobilePhone: *buyer.MobilePhone,
+			MobilePhone: buyer.MobilePhone,
 			MessageType: models.TextMessageTypeOtp,
 			Body:        otpMessage,
 			CreatedAt:   now,

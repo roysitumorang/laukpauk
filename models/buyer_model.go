@@ -43,7 +43,7 @@ type Buyer struct {
 	MobilePhoneConfirmationSentAt *time.Time  `json:"-" form:"-"`
 	MobilePhoneConfirmationToken  *string     `json:"-" form:"-"`
 	MobilePhoneConfirmedAt        *time.Time  `json:"-" form:"-"`
-	MobilePhone                   *string     `json:"mobile_phone" form:"mobile_phone"`
+	MobilePhone                   string      `json:"mobile_phone" form:"mobile_phone"`
 	OtpHash                       string      `json:"-" form:"-"`
 	OtpExpiredAt                  time.Time   `json:"-" form:"-"`
 	OtpTextMessageID              uuid.UUID   `json:"-" form:"-"`
@@ -79,14 +79,14 @@ func (q *Buyer) Validate() error {
 	if q.Username = strings.TrimSpace(strings.ToLower(q.Username)); q.Username == "" {
 		return errors.New("username: is required")
 	}
-	if q.MobilePhone == nil || *q.MobilePhone == "" {
+	if q.MobilePhone = strings.TrimSpace(q.MobilePhone); q.MobilePhone == "" {
 		return errors.New("mobile_phone: is required")
 	}
-	mobilePhone, err := phonenumbers.Parse(*q.MobilePhone, "ID")
+	mobilePhone, err := phonenumbers.Parse(q.MobilePhone, "ID")
 	if err != nil {
 		return fmt.Errorf("mobile_phone: %w", err)
 	}
-	q.MobilePhone = new(phonenumbers.Format(mobilePhone, phonenumbers.E164))
+	q.MobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
 	if q.Address = strings.TrimSpace(q.Address); q.Address == "" {
 		return errors.New("address: is required")
 	}

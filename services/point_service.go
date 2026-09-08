@@ -115,9 +115,7 @@ func (q *pointService) FindPoints(
 			if buyer, ok := mapBuyers[point.BuyerID]; ok {
 				point.BuyerName = buyer.Name
 				point.BuyerUsername = buyer.Username
-				if buyer.MobilePhone != nil {
-					point.BuyerMobilePhone = *buyer.MobilePhone
-				}
+				point.BuyerMobilePhone = buyer.MobilePhone
 				point.BuyerReferralCode = buyer.ReferralCode
 			}
 			if point.TransactionID != nil {
@@ -168,9 +166,7 @@ func (q *pointService) FindPoint(
 	}
 	response.BuyerName = buyer.Name
 	response.BuyerUsername = buyer.Username
-	if buyer.MobilePhone != nil {
-		response.BuyerMobilePhone = *buyer.MobilePhone
-	}
+	response.BuyerMobilePhone = buyer.MobilePhone
 	response.BuyerReferralCode = buyer.ReferralCode
 	if response.TransactionID != nil {
 		transaction, err := q.transactionRepository.FindTransaction(
@@ -209,9 +205,7 @@ func (q *pointService) CreatePoint(
 	}
 	response.BuyerName = buyer.Name
 	response.BuyerUsername = buyer.Username
-	if buyer.MobilePhone != nil {
-		response.BuyerMobilePhone = *buyer.MobilePhone
-	}
+	response.BuyerMobilePhone = buyer.MobilePhone
 	response.BuyerReferralCode = buyer.ReferralCode
 	if response.TransactionID != nil {
 		transaction, err := q.transactionRepository.FindTransaction(
@@ -253,9 +247,7 @@ func (q *pointService) UpdatePoint(
 	}
 	response.BuyerName = buyer.Name
 	response.BuyerUsername = buyer.Username
-	if buyer.MobilePhone != nil {
-		response.BuyerMobilePhone = *buyer.MobilePhone
-	}
+	response.BuyerMobilePhone = buyer.MobilePhone
 	response.BuyerReferralCode = buyer.ReferralCode
 	if response.TransactionID != nil {
 		transaction, err := q.transactionRepository.FindTransaction(
