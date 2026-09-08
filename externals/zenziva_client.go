@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	ZensivaMessageTypeSms ZenzivaMessageType = iota
+	ZenzivaMessageTypeSms ZenzivaMessageType = iota
 	ZenzivaMessageTypeOtp
 )
 
@@ -82,7 +82,7 @@ func NewZenzivaClient(
 }
 
 func (q *ZenzivaClient) SendSMS(ctx context.Context, to, message string) (*int64, error) {
-	return q.send(ctx, ZensivaMessageTypeSms, to, message)
+	return q.send(ctx, ZenzivaMessageTypeSms, to, message)
 }
 
 func (q *ZenzivaClient) SendOTP(ctx context.Context, to, message string) (*int64, error) {

@@ -177,11 +177,11 @@ func (q *textMessageService) ConsumeMessage(
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecrypt")
 				return err
 			}
-			messageID, err = q.zenzivaClient.SendOTP(ctx, textMessage.MobilePhone, otpMessage)
-		} else {
-			messageID, err = q.zenzivaClient.SendSMS(ctx, textMessage.MobilePhone, textMessage.Body)
-		}
-		if err != nil {
+			if messageID, err = q.zenzivaClient.SendOTP(ctx, textMessage.MobilePhone, otpMessage); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSendOTP")
+				return err
+			}
+		} else if messageID, err = q.zenzivaClient.SendSMS(ctx, textMessage.MobilePhone, textMessage.Body); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSend")
 			return err
 		}
