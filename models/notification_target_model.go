@@ -18,7 +18,7 @@ type NotificationTarget struct {
 	AdminID                uuid.UUID `json:"-" form:"-"`
 	SellerID               uuid.UUID `json:"-" form:"-"`
 	BuyerID                uuid.UUID `json:"-" form:"-"`
-	FirebaseInstallationID string    `json:"-" form:"fid"`
+	FirebaseInstallationID string    `json:"fid" form:"fid"`
 	CreatedAt              time.Time `json:"-" form:"-"`
 	UpdatedAt              time.Time `json:"-" form:"-"`
 }
