@@ -311,7 +311,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.MessageService,
 	).Mount(app.Group("/landing_pages"))
 	controllers.NewProductCategoryController(
-		q.AdminService,
 		q.SellerService,
 		q.CompanyService,
 		q.ProductCategoryService,

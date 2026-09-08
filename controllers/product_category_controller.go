@@ -21,7 +21,6 @@ import (
 )
 
 type productCategoryController struct {
-	adminService           services.AdminService
 	sellerService          services.SellerService
 	companyService         services.CompanyService
 	productCategoryService services.ProductCategoryService
@@ -30,7 +29,6 @@ type productCategoryController struct {
 }
 
 func NewProductCategoryController(
-	adminService services.AdminService,
 	sellerService services.SellerService,
 	companyService services.CompanyService,
 	productCategoryService services.ProductCategoryService,
@@ -38,7 +36,6 @@ func NewProductCategoryController(
 	productVariantService services.ProductVariantService,
 ) *productCategoryController {
 	return &productCategoryController{
-		adminService:           adminService,
 		sellerService:          sellerService,
 		companyService:         companyService,
 		productCategoryService: productCategoryService,
