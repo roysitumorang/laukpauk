@@ -172,7 +172,12 @@ func (q *textMessageService) ConsumeMessage(
 		}
 		var messageID *int64
 		if textMessage.MessageType == models.TextMessageTypeOtp {
-			messageID, err = q.zenzivaClient.SendOTP(ctx, textMessage.MobilePhone, textMessage.Body)
+			otpMessage, err := helper.Decrypt(textMessage.Body)
+			if err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecrypt")
+				return err
+			}
+			messageID, err = q.zenzivaClient.SendOTP(ctx, textMessage.MobilePhone, otpMessage)
 		} else {
 			messageID, err = q.zenzivaClient.SendSMS(ctx, textMessage.MobilePhone, textMessage.Body)
 		}

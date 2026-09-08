@@ -298,6 +298,13 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 		}
 		seller.OtpHash = otpHash
 		seller.OtpExpiredAt = now.Add(otpDuration + time.Nanosecond)
+		otpMessage, err := helper.Encrypt(helper.Sprintf("%s is your OTP token, valid for %d minutes", otpToken, int64(math.Round(otpDuration.Minutes()))))
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrEncrypt")
+			return c.Render("seller/auth_login", params.Push(
+				"flash", flash.Danger(err.Error()),
+			))
+		}
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -319,7 +326,7 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 			BuyerID:     uuid.Nil(),
 			MobilePhone: seller.MobilePhone,
 			MessageType: models.TextMessageTypeOtp,
-			Body:        helper.Sprintf("%s is your OTP token, valid for %d minutes", otpToken, int64(math.Round(otpDuration.Minutes()))),
+			Body:        otpMessage,
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		})
@@ -540,6 +547,13 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 		}
 		buyer.OtpHash = otpHash
 		buyer.OtpExpiredAt = now.Add(otpDuration + time.Nanosecond)
+		otpMessage, err := helper.Encrypt(helper.Sprintf("%s is your OTP token, valid for %d minutes", otpToken, int64(math.Round(otpDuration.Minutes()))))
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrEncrypt")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -561,7 +575,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 			BuyerID:     buyer.ID,
 			MobilePhone: *buyer.MobilePhone,
 			MessageType: models.TextMessageTypeOtp,
-			Body:        helper.Sprintf("%s is your OTP token, valid for %d minutes", otpToken, int64(math.Round(otpDuration.Minutes()))),
+			Body:        otpMessage,
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		})
