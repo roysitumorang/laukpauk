@@ -197,7 +197,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/notification_targets":               "/notification_targets/seller",
 				"/v1/companies/*/buyer/auth/*":               "/auth/$1/v1/buyer/$2",
 				"/v1/companies/*/buyer/notification_targets": "/notification_targets/$1/v1/buyer",
-				"/v1/buyer/product_categories":               "/product_categories/v1/buyer",
+				"/v1/companies/*/buyer/product_categories":   "/product_categories/$1/v1/buyer",
 				"/v1/buyer/products":                         "/products/v1/buyer",
 				"/v1/buyer/products/*":                       "/products/v1/buyer/$1",
 				"/v1/buyer/cart":                             "/cart/v1/buyer",
@@ -313,6 +313,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewProductCategoryController(
 		q.AdminService,
 		q.SellerService,
+		q.CompanyService,
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,
