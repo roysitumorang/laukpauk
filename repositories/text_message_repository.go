@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgx/v5"
@@ -34,6 +35,11 @@ type TextMessageRepository interface {
 		tx pgx.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
+	DeleteTextMessage(
+		ctx context.Context,
+		tx pgx.Tx,
+		textMessageID uuid.UUID,
+	) (int64, error)
 }
 
 type textMessageRepository struct {
@@ -421,6 +427,23 @@ func (q *textMessageRepository) UpdateTextMessage(
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (q *textMessageRepository) DeleteTextMessage(
+	ctx context.Context,
+	tx pgx.Tx,
+	textMessageID uuid.UUID,
+) (int64, error) {
+	ctxt := "TextMessageRepository-DeleteTextMessage"
+	result, err := tx.Exec(
+		ctx,
+		`DELETE FROM text_messages WHERE id = $1`,
+		textMessageID,
+	)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+	}
+	return result.RowsAffected(), nil
 }
 
 func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter, sb *strings.Builder) (condition string, params []any) {

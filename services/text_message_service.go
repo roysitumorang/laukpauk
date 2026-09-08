@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"time"
+	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/externals"
@@ -32,6 +33,11 @@ type TextMessageService interface {
 		tx pgx.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
+	DeleteTextMessage(
+		ctx context.Context,
+		tx pgx.Tx,
+		textMessageID uuid.UUID,
+	) (int64, error)
 	ConsumeMessage(
 		ctx context.Context,
 		topic models.Topic,
@@ -125,6 +131,19 @@ func (q *textMessageService) UpdateTextMessage(
 		return nil, err
 	}
 	return response, nil
+}
+
+func (q *textMessageService) DeleteTextMessage(
+	ctx context.Context,
+	tx pgx.Tx,
+	textMessageID uuid.UUID,
+) (int64, error) {
+	ctxt := "TextMessageService-DeleteTextMessage"
+	response, err := q.textMessageRepository.DeleteTextMessage(ctx, tx, textMessageID)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteTextMessage")
+	}
+	return response, err
 }
 
 func (q *textMessageService) ConsumeMessage(

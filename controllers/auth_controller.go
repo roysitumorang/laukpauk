@@ -280,8 +280,7 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if seller.OtpHash == "" ||
-		!seller.OtpExpiredAt.After(now) ||
-		seller.OtpTextMessageID.Compare(uuid.Nil()) == 0 {
+		!seller.OtpExpiredAt.After(now) {
 		otpDuration, err := time.ParseDuration(os.Getenv("OTP_DURATION"))
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
@@ -330,12 +329,21 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 				"flash", flash.Danger(err.Error()),
 			))
 		}
+		oldOtpTextMessageID := seller.OtpTextMessageID
 		seller.OtpTextMessageID = textMessage.ID
 		if seller, err = q.sellerService.UpdateSeller(ctx, tx, seller); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSeller")
 			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
+		}
+		if oldOtpTextMessageID.Compare(uuid.Nil()) != 0 {
+			if _, err = q.textMessageService.DeleteTextMessage(ctx, tx, oldOtpTextMessageID); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteTextMessage")
+				return c.Render("seller/auth_login", params.Push(
+					"flash", flash.Danger(err.Error()),
+				))
+			}
 		}
 		if err = tx.Commit(ctx); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
@@ -514,8 +522,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if buyer.OtpHash == "" ||
-		!buyer.OtpExpiredAt.After(now) ||
-		buyer.OtpTextMessageID.Compare(uuid.Nil()) == 0 {
+		!buyer.OtpExpiredAt.After(now) {
 		otpDuration, err := time.ParseDuration(os.Getenv("OTP_DURATION"))
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
@@ -564,12 +571,21 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
+		oldOtpTextMessageID := buyer.OtpTextMessageID
 		buyer.OtpTextMessageID = textMessage.ID
 		if buyer, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
 				WriteResponse(c)
+		}
+		if oldOtpTextMessageID.Compare(uuid.Nil()) != 0 {
+			if _, err = q.textMessageService.DeleteTextMessage(ctx, tx, oldOtpTextMessageID); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteTextMessage")
+				return helper.NewResponse(fiber.StatusBadRequest).
+					SetMessage(err.Error()).
+					WriteResponse(c)
+			}
 		}
 		if err = tx.Commit(ctx); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
