@@ -499,6 +499,7 @@ func init() {
 				, mobile_phone character varying NOT NULL
 				, otp_hash character varying NOT NULL
 				, otp_expired_at timestamp with time zone NOT NULL
+				, otp_text_message_id UUID NOT NULL
 				, username character varying NOT NULL
 				, unconfirmed_email character varying
 				, email_confirmation_sent_at timestamp with time zone
@@ -548,6 +549,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON sellers (otp_text_message_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE INDEX ON sellers (created_by);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -579,12 +587,13 @@ func init() {
 				, mobile_phone
 				, otp_hash
 				, otp_expired_at
+				, otp_text_message_id
 				, username
 				, photo
 				, created_at
 				, updated_at
 				, deactivated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
 			uuid.Nil(),
 			uuid.Nil(),
 			models.SellerStatusDeactivated,
@@ -594,6 +603,7 @@ func init() {
 			"",
 			"",
 			time.Unix(0, 0),
+			uuid.Nil(),
 			"",
 			"seller-default.png",
 			now,
@@ -615,11 +625,12 @@ func init() {
 				, mobile_phone
 				, otp_hash
 				, otp_expired_at
+				, otp_text_message_id
 				, username
 				, photo
 				, created_at
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			RETURNING id`,
 			companyID,
 			models.SellerStatusActive,
@@ -629,6 +640,7 @@ func init() {
 			company.WhatsappPhoneNumber,
 			"",
 			time.Unix(0, 0),
+			uuid.Nil(),
 			strings.ToLower(company.Name),
 			"seller-default.png",
 			now,
@@ -674,6 +686,7 @@ func init() {
 				, mobile_phone character varying
 				, otp_hash character varying NOT NULL
 				, otp_expired_at timestamp with time zone NOT NULL
+				, otp_text_message_id UUID NOT NULL
 				, username character varying NOT NULL
 				, unconfirmed_email character varying
 				, email_confirmation_sent_at timestamp with time zone
@@ -728,6 +741,13 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`CREATE INDEX ON buyers (otp_text_message_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`CREATE UNIQUE INDEX ON buyers (LOWER(referral_code), company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -757,6 +777,7 @@ func init() {
 				, mobile_phone
 				, otp_hash
 				, otp_expired_at
+				, otp_text_message_id
 				, username
 				, photo
 				, referral_code
@@ -764,7 +785,7 @@ func init() {
 				, created_at
 				, updated_at
 				, deactivated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 			RETURNING id`,
 			uuid.Nil(),
 			uuid.Nil(),
@@ -773,6 +794,7 @@ func init() {
 			"",
 			"",
 			time.Unix(0, 0),
+			uuid.Nil(),
 			"",
 			"buyer-default.png",
 			"",
@@ -1314,6 +1336,49 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON text_messages (created_by);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		// text_messages
+		if _, err = tx.Exec(
+			ctx,
+			`INSERT INTO text_messages (
+				id
+				, admin_id
+				, seller_id
+				, buyer_id
+				, mobile_phone
+				, message_type
+				, body
+				, created_at
+				, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
+			uuid.Nil(),
+			uuid.Nil(),
+			uuid.Nil(),
+			uuid.Nil(),
+			"",
+			models.TextMessageTypeOtp,
+			"",
+			now,
+			now,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`ALTER TABLE sellers
+				ADD FOREIGN KEY (otp_text_message_id) REFERENCES text_messages (id) ON UPDATE CASCADE ON DELETE CASCADE;`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`ALTER TABLE buyers
+				ADD FOREIGN KEY (otp_text_message_id) REFERENCES text_messages (id) ON UPDATE CASCADE ON DELETE CASCADE;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

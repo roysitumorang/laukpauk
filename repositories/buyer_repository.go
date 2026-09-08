@@ -91,6 +91,7 @@ func (q *buyerRepository) FindBuyers(
 		, mobile_phone
 		, otp_hash
 		, otp_expired_at
+		, otp_text_message_id
 		, username
 		, unconfirmed_email
 		, email_confirmation_sent_at
@@ -174,6 +175,7 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.MobilePhone,
 			&buyer.OtpHash,
 			&buyer.OtpExpiredAt,
+			&buyer.OtpTextMessageID,
 			&buyer.Username,
 			&buyer.UnconfirmedEmail,
 			&buyer.EmailConfirmationSentAt,
@@ -235,6 +237,7 @@ func (q *buyerRepository) FindBuyer(
 			, mobile_phone
 			, otp_hash
 			, otp_expired_at
+			, otp_text_message_id
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -274,6 +277,7 @@ func (q *buyerRepository) FindBuyer(
 		&response.MobilePhone,
 		&response.OtpHash,
 		&response.OtpExpiredAt,
+		&response.OtpTextMessageID,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,
@@ -469,6 +473,7 @@ func (q *buyerRepository) CreateBuyer(
 			, mobile_phone
 			, otp_hash
 			, otp_expired_at
+			, otp_text_message_id
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -493,6 +498,7 @@ func (q *buyerRepository) CreateBuyer(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+			, $31
 		)
 		RETURNING id
 			, company_id
@@ -505,6 +511,7 @@ func (q *buyerRepository) CreateBuyer(
 			, mobile_phone
 			, otp_hash
 			, otp_expired_at
+			, otp_text_message_id
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -542,6 +549,7 @@ func (q *buyerRepository) CreateBuyer(
 		request.MobilePhone,
 		request.OtpHash,
 		request.OtpExpiredAt,
+		request.OtpTextMessageID,
 		request.Username,
 		request.UnconfirmedEmail,
 		request.EmailConfirmationSentAt,
@@ -574,6 +582,7 @@ func (q *buyerRepository) CreateBuyer(
 		&response.MobilePhone,
 		&response.OtpHash,
 		&response.OtpExpiredAt,
+		&response.OtpTextMessageID,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,
@@ -644,6 +653,7 @@ func (q *buyerRepository) UpdateBuyer(
 			, mobile_phone
 			, otp_hash
 			, otp_expired_at
+			, otp_text_message_id
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -683,6 +693,7 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.MobilePhone,
 		&response.OtpHash,
 		&response.OtpExpiredAt,
+		&response.OtpTextMessageID,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,
@@ -800,6 +811,13 @@ func (q *buyerRepository) UpdateBuyer(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " otp_expired_at = $%d", n)
+	}
+	if response.OtpTextMessageID.Compare(request.OtpTextMessageID) != 0 {
+		params = append(params, request.OtpTextMessageID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " otp_text_message_id = $%d", n)
 	}
 	if response.Username != request.Username {
 		params = append(params, request.Username)
@@ -1007,6 +1025,7 @@ func (q *buyerRepository) UpdateBuyer(
 			, mobile_phone
 			, otp_hash
 			, otp_expired_at
+			, otp_text_message_id
 			, username
 			, unconfirmed_email
 			, email_confirmation_sent_at
@@ -1044,6 +1063,7 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.MobilePhone,
 		&response.OtpHash,
 		&response.OtpExpiredAt,
+		&response.OtpTextMessageID,
 		&response.Username,
 		&response.UnconfirmedEmail,
 		&response.EmailConfirmationSentAt,

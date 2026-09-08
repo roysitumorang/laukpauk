@@ -280,7 +280,8 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if seller.OtpHash == "" ||
-		!seller.OtpExpiredAt.After(now) {
+		!seller.OtpExpiredAt.After(now) ||
+		seller.OtpTextMessageID.Compare(uuid.Nil()) == 0 {
 		otpDuration, err := time.ParseDuration(os.Getenv("OTP_DURATION"))
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
@@ -313,12 +314,6 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 			}
 		}(ctx)
-		if seller, err = q.sellerService.UpdateSeller(ctx, tx, seller); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSeller")
-			return c.Render("seller/auth_login", params.Push(
-				"flash", flash.Danger(err.Error()),
-			))
-		}
 		textMessage, err := q.textMessageService.CreateTextMessage(ctx, tx, &models.TextMessage{
 			AdminID:     uuid.Nil(),
 			SellerID:    seller.ID,
@@ -335,12 +330,21 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 				"flash", flash.Danger(err.Error()),
 			))
 		}
+		seller.OtpTextMessageID = textMessage.ID
+		if seller, err = q.sellerService.UpdateSeller(ctx, tx, seller); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSeller")
+			return c.Render("seller/auth_login", params.Push(
+				"flash", flash.Danger(err.Error()),
+			))
+		}
 		if err = tx.Commit(ctx); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return c.Render("seller/auth_login", params.Push(
 				"flash", flash.Danger(err.Error()),
 			))
 		}
+	}
+	go func() {
 		if err = q.kafkaService.Publish(
 			ctx,
 			models.TopicRequest{
@@ -349,14 +353,14 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 					{
 						Topic: models.TopicTextMessage,
 						Event: models.TopicTextMessageEventSend,
-						ID:    textMessage.ID,
+						ID:    seller.OtpTextMessageID,
 					},
 				},
 			},
 		); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
 		}
-	}
+	}()
 	return c.Render("seller/auth_otp", params.Push(
 		"flash", flash.Success("please check your phone for OTP token SMS"),
 		"request", &models.SellerLoginRequest{
@@ -510,7 +514,8 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 	}
 	now := time.Now().In(time.Local)
 	if buyer.OtpHash == "" ||
-		!buyer.OtpExpiredAt.After(now) {
+		!buyer.OtpExpiredAt.After(now) ||
+		buyer.OtpTextMessageID.Compare(uuid.Nil()) == 0 {
 		otpDuration, err := time.ParseDuration(os.Getenv("OTP_DURATION"))
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
@@ -543,12 +548,6 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 			}
 		}(ctx)
-		if buyer, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
-			return helper.NewResponse(fiber.StatusBadRequest).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
 		textMessage, err := q.textMessageService.CreateTextMessage(ctx, tx, &models.TextMessage{
 			AdminID:     uuid.Nil(),
 			SellerID:    uuid.Nil(),
@@ -565,12 +564,21 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
+		buyer.OtpTextMessageID = textMessage.ID
+		if buyer, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+			return helper.NewResponse(fiber.StatusBadRequest).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
 		if err = tx.Commit(ctx); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
+	}
+	go func() {
 		if err = q.kafkaService.Publish(
 			ctx,
 			models.TopicRequest{
@@ -579,14 +587,14 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 					{
 						Topic: models.TopicTextMessage,
 						Event: models.TopicTextMessageEventSend,
-						ID:    textMessage.ID,
+						ID:    buyer.OtpTextMessageID,
 					},
 				},
 			},
 		); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
 		}
-	}
+	}()
 	return helper.NewResponse(fiber.StatusNoContent).WriteResponse(c)
 }
 
