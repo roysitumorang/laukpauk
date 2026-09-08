@@ -182,7 +182,7 @@ func (q *textMessageService) ConsumeMessage(
 				return err
 			}
 		} else if messageID, err = q.zenzivaClient.SendSMS(ctx, textMessage.MobilePhone, textMessage.Body); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSend")
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSendSMS")
 			return err
 		}
 		if messageID == nil {
