@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json/v2"
 	"errors"
 	"fmt"
@@ -400,10 +399,7 @@ func ValidLongitude(longitude float64) bool {
 }
 
 func Encrypt(plaintext string) (string, error) {
-	key, err := hex.DecodeString(os.Getenv("ENCRYPTION_SECRET_KEY"))
-	if err != nil {
-		return "", err
-	}
+	key := String2ByteSlice(os.Getenv("ENCRYPTION_SECRET_KEY"))
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
@@ -425,10 +421,7 @@ func Decrypt(cryptoText string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	key, err := hex.DecodeString(os.Getenv("ENCRYPTION_SECRET_KEY"))
-	if err != nil {
-		return "", err
-	}
+	key := String2ByteSlice(os.Getenv("ENCRYPTION_SECRET_KEY"))
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
