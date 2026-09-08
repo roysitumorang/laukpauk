@@ -27,6 +27,7 @@ type (
 		adminService        services.AdminService
 		sellerService       services.SellerService
 		buyerService        services.BuyerService
+		companyService      services.CompanyService
 		jsonWebTokenService services.JsonWebTokenService
 		textMessageService  services.TextMessageService
 		kafkaService        *externals.KafkaClient
@@ -37,6 +38,7 @@ func NewAuthController(
 	adminService services.AdminService,
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
+	companyService services.CompanyService,
 	jsonWebTokenService services.JsonWebTokenService,
 	textMessageService services.TextMessageService,
 	kafkaService *externals.KafkaClient,
@@ -45,6 +47,7 @@ func NewAuthController(
 		adminService:        adminService,
 		sellerService:       sellerService,
 		buyerService:        buyerService,
+		companyService:      companyService,
 		jsonWebTokenService: jsonWebTokenService,
 		textMessageService:  textMessageService,
 		kafkaService:        kafkaService,
@@ -55,6 +58,7 @@ func (q *authController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	r.Group("/admin").
 		Get("/login", q.AdminNewSession).
 		Post("/login", q.AdminCreateSession).
@@ -66,7 +70,7 @@ func (q *authController) Mount(r fiber.Router) {
 		Post("/login/otp", q.SellerCreateSession).
 		Get("/me", sellerSessionAuth, q.SellerProfile).
 		Get("/logout", q.SellerLogout)
-	r.Group("/v1/buyer").
+	r.Group("/:slug/v1/buyer", companyVerify).
 		Post("/login", q.V1BuyerCreateOTP).
 		Post("/login/otp", q.V1BuyerLogin).
 		Get("/me", buyerKeyAuth, q.V1BuyerProfile)
@@ -477,6 +481,7 @@ func (q *authController) SellerLogout(c fiber.Ctx) error {
 func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 	ctx := c.Context()
 	ctxt := "AuthController-V1BuyerCreateOTP"
+	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	otpRequest, statusCode, err := sanitizers.ValidateOtp(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateOtp")
@@ -487,6 +492,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
+			WithCompanyIDs(company.ID).
 			WithLogin(otpRequest.Login).
 			WithStatuses(models.BuyerStatusActive),
 	)
@@ -587,6 +593,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 	ctx := c.Context()
 	ctxt := "AuthController-V1BuyerLogin"
+	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	loginRequest, statusCode, err := sanitizers.ValidateLogin(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLogin")
@@ -597,6 +604,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
+			WithCompanyIDs(company.ID).
 			WithLogin(loginRequest.Login).
 			WithStatuses(models.BuyerStatusActive),
 	)
@@ -678,7 +686,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 }
 
 func (q *authController) V1BuyerProfile(c fiber.Ctx) error {
-	currentBuyer := c.Locals(models.CurrentBuyer)
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(currentBuyer).
 		WriteResponse(c)
