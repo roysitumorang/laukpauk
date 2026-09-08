@@ -25,6 +25,7 @@ import (
 
 type productController struct {
 	sellerService          services.SellerService
+	companyService         services.CompanyService
 	productCategoryService services.ProductCategoryService
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
@@ -34,6 +35,7 @@ type productController struct {
 
 func NewProductController(
 	sellerService services.SellerService,
+	companyService services.CompanyService,
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
@@ -42,6 +44,7 @@ func NewProductController(
 ) *productController {
 	return &productController{
 		sellerService:          sellerService,
+		companyService:         companyService,
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
@@ -52,6 +55,7 @@ func NewProductController(
 
 func (q *productController) Mount(r fiber.Router) {
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -65,7 +69,7 @@ func (q *productController) Mount(r fiber.Router) {
 		Get("/:id/variants/:product_variant_id/edit", q.SellerEditVariant).
 		Post("/:id/variants/:product_variant_id", q.SellerUpdateVariant).
 		Post("/:id/variants/:product_variant_id/delete", q.SellerDeleteVariant)
-	r.Group("/v1/buyer").
+	r.Group("/:slug/v1/buyer", companyVerify).
 		Get("", q.V1BuyerIndex).
 		Get("/:id", q.V1BuyerShow)
 }
@@ -1085,6 +1089,7 @@ func (q *productController) prepareProductVariant(
 func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductController-V1BuyerIndex"
+	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	request, err := sanitizers.FindProducts(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
@@ -1094,7 +1099,8 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	infiniteScroll, err := q.productService.InfiniteScrollProducts(
 		ctx,
-		request.WithRecordStatuses(models.RecordStatusActive).
+		request.WithCompanyIDs(company.ID).
+			WithRecordStatuses(models.RecordStatusActive).
 			WithReadyStock(new(true)),
 	)
 	if err != nil {
@@ -1118,6 +1124,7 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductController-V1BuyerShow"
+	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	productID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -1142,6 +1149,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		if response, err = q.productService.FindProduct(
 			ctx,
 			models.NewProductFilter().
+				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(productID),
 		); errors.Is(err, models.ErrProductNotFound) || response == nil {
@@ -1158,6 +1166,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		variants, _, err := q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
+				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(response.ID),
 		)
@@ -1206,6 +1215,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		product, err := q.productService.FindProduct(
 			ctx,
 			models.NewProductFilter().
+				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(productID),
 		)
@@ -1257,6 +1267,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		variants, _, err := q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
+				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(response.ID),
 		)
