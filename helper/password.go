@@ -20,7 +20,7 @@ var ErrIncompatibleVersion = errors.New("argon2id: incompatible version of argon
 var DefaultArgon2Params = &Argon2Params{
 	SaltLength: 16,
 	KeyLength:  32,
-	Iterations: 1,
+	Iterations: 3,
 	Memory:     64 * 1024,
 	Threads:    uint8(runtime.NumCPU()),
 }
