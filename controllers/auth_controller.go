@@ -474,25 +474,12 @@ func (q *authController) SellerCreateSession(c fiber.Ctx) error {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
+	oneTimePassword.AttemptsCount++
+	oneTimePassword.Valid = false
 	if !matched {
 		otpMaxAttempts, _ := strconv.Atoi(os.Getenv("OTP_MAX_ATTEMPTS"))
-		if oneTimePassword.AttemptsCount < otpMaxAttempts-1 {
-			oneTimePassword.AttemptsCount++
-		} else {
-			oneTimePassword.Valid = false
-		}
-		if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
-			ctx,
-			tx,
-			oneTimePassword,
-		); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
-			return c.Render("seller/auth_login", params.Push(
-				"flash", flash.Danger(err.Error()),
-			))
-		}
+		oneTimePassword.Valid = oneTimePassword.AttemptsCount < otpMaxAttempts
 	}
-	oneTimePassword.Valid = false
 	if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
 		ctx,
 		tx,
@@ -505,6 +492,11 @@ func (q *authController) SellerCreateSession(c fiber.Ctx) error {
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return c.Render("seller/auth_login", params.Push(
+			"flash", flash.Danger(err.Error()),
+		))
+	}
+	if !matched {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
@@ -722,7 +714,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			WithTrackingIDs(loginRequest.TrackingID),
 	)
 	if err != nil {
-		if errors.Is(err, models.ErrOneTimePasswordNotFound) {
+		if !errors.Is(err, models.ErrOneTimePasswordNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindOneTimePassword")
 		}
 		return helper.NewResponse(fiber.StatusBadRequest).
@@ -741,25 +733,20 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
 		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	oneTimePassword.AttemptsCount++
+	oneTimePassword.Valid = false
 	if !matched {
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
-			WriteResponse(c)
-	}
-	expiredAt := now.Add(helper.GetAccessTokenAge()).Add(time.Nanosecond)
-	jsonWebTokenRequest := &models.JsonWebToken{
-		BuyerID:   buyer.ID,
-		CreatedAt: now,
-		ExpiredAt: expiredAt,
+		otpMaxAttempts, _ := strconv.Atoi(os.Getenv("OTP_MAX_ATTEMPTS"))
+		oneTimePassword.Valid = oneTimePassword.AttemptsCount < otpMaxAttempts
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrLoginFailed.Error()).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
@@ -770,18 +757,45 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
+	if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
+		ctx,
+		tx,
+		oneTimePassword,
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if !matched {
+		if err = tx.Commit(ctx); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	expiredAt := now.Add(helper.GetAccessTokenAge()).Add(time.Nanosecond)
+	jsonWebTokenRequest := &models.JsonWebToken{
+		BuyerID:   buyer.ID,
+		CreatedAt: now,
+		ExpiredAt: expiredAt,
+	}
 	jsonWebToken, err := q.jsonWebTokenService.CreateJsonWebToken(ctx, tx, jsonWebTokenRequest)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateJsonWebToken")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrLoginFailed.Error()).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	tokenString, err := helper.GenerateAccessToken(buyer.ID.String(), jsonWebToken.ID.String(), buyer.Username, jsonWebToken.CreatedAt, jsonWebToken.ExpiredAt)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGenerateAccessToken")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrLoginFailed.Error()).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
