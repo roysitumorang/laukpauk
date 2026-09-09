@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/roysitumorang/laukpauk/helper"
 )
@@ -66,13 +67,14 @@ func (q *LoginRequest) Validate() error {
 	return nil
 }
 
-type SellerLoginRequest struct {
-	Login          string `json:"login" form:"login"`
-	Base64OtpToken string `json:"otp_token" form:"otp_token"`
-	OtpToken       string `json:"-" form:"-"`
+type OtpLoginRequest struct {
+	Login          string    `json:"login" form:"login"`
+	Base64OtpToken string    `json:"otp_token" form:"otp_token"`
+	OtpToken       string    `json:"-" form:"-"`
+	TrackingID     uuid.UUID `json:"tracking_id" form:"tracking_id"`
 }
 
-func (q *SellerLoginRequest) Validate() error {
+func (q *OtpLoginRequest) Validate() error {
 	if q.Login = strings.TrimSpace(q.Login); q.Login == "" {
 		return errors.New("login: is required")
 	}
@@ -84,5 +86,8 @@ func (q *SellerLoginRequest) Validate() error {
 		return fmt.Errorf("otp_token: %s", err.Error())
 	}
 	q.OtpToken = strings.TrimSpace(otpToken)
+	if q.TrackingID.Compare(uuid.Nil()) == 0 {
+		return errors.New("tracking_id: is required")
+	}
 	return nil
 }

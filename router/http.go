@@ -47,9 +47,7 @@ import (
 	slogfiber "github.com/samber/slog-fiber"
 )
 
-const (
-	DefaultPort uint16 = 8080
-)
+const DefaultPort uint16 = 8080
 
 func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error {
 	ctxt := "Router-HTTPServerMain"
@@ -57,10 +55,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	// Create a new engine
 	engine := jet.New("./views", ".jet")
 	engine.Debug(debug)
-	if debug {
-		engine.ShouldReload = true
-		engine.Verbose = true
-	}
+	engine.ShouldReload = debug
+	engine.Verbose = debug
 	engine.AddFunc("Comma", func(v int64) string {
 		return humanize.Comma(v)
 	})
@@ -290,6 +286,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BuyerService,
 		q.CompanyService,
 		q.JsonWebTokenService,
+		q.OneTimePasswordService,
 		q.TextMessageService,
 		q.KafkaClient,
 	).Mount(app.Group("/auth"))

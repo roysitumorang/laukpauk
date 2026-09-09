@@ -72,8 +72,10 @@
 		<div class="card">
 			<div class="card-body login-card-body">
 				<p class="login-box-msg">Sign in to start your session</p>
-				<form method="POST" action="{{ baseURL }}/auth/seller/login">
+				<form method="POST" action="{{ baseURL }}/seller/auth/login">
 					<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+					<input type="hidden" name="otp_token" id="otp_token" value="" />
+					<input type="hidden" name="tracking_id" value="{{ request.TrackingID }}" />
 					<div class="input-group mb-3">
 						<input type="text" name="login" id="login" value="{{ request.Login }}" placeholder="Email / Username / Mobile Phone" class="form-control" />
 						<div class="input-group-append">
@@ -82,7 +84,15 @@
 							</div>
 						</div>
 					</div>
-					<button type="submit" class="btn btn-primary btn-block">Next</button>
+					<div class="input-group mb-3">
+						<input type="password" placeholder="OTP" class="form-control" onchange="document.getElementById('otp_token').value=btoa(this.value)" />
+						<div class="input-group-append">
+							<div class="input-group-text">
+								<span class="fas fa-lock"></span>
+							</div>
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary btn-block">Login</button>
 				</form>
 			</div>
 			<!-- /.login-card-body -->

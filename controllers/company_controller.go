@@ -202,14 +202,13 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	seller, err := q.sellerService.CreateSeller(ctx, tx, &models.Seller{
-		CompanyID:    company.ID,
-		Status:       models.SellerStatusActive,
-		SellerLevel:  models.SellerLevelOwner,
-		Name:         company.Name,
-		MobilePhone:  company.WhatsappPhoneNumber,
-		OtpExpiredAt: time.Unix(0, 0),
-		Username:     helper.RandomString(10),
-		Photo:        "seller-default.png",
+		CompanyID:   company.ID,
+		Status:      models.SellerStatusActive,
+		SellerLevel: models.SellerLevelOwner,
+		Name:        company.Name,
+		MobilePhone: company.WhatsappPhoneNumber,
+		Username:    helper.RandomString(10),
+		Photo:       "seller-default.png",
 	})
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateSeller")
