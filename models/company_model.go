@@ -106,8 +106,9 @@ type Company struct {
 }
 
 type CompanyFilter struct {
-	CompanyIDs []uuid.UUID
-	Slugs      []string
+	CompanyIDs,
+	ExcludedCompanyIDs []uuid.UUID
+	Slugs []string
 	Keyword,
 	PaginationURL string
 	Sortings    []Sorting
@@ -126,6 +127,11 @@ func NewCompanyFilter() *CompanyFilter {
 
 func (q *CompanyFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *CompanyFilter {
 	q.CompanyIDs = companyIDs
+	return q
+}
+
+func (q *CompanyFilter) WithExcludedCompanyIDs(excludedCompanyIDs ...uuid.UUID) *CompanyFilter {
+	q.ExcludedCompanyIDs = excludedCompanyIDs
 	return q
 }
 

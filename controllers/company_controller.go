@@ -106,7 +106,7 @@ func (q *companyController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.companyService.FindCompanies(
 		ctx,
-		request,
+		request.WithExcludedCompanyIDs(uuid.Nil()),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompanies")
 		return c.Render("admin/company_index", params.Push(

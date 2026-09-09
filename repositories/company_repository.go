@@ -1173,6 +1173,19 @@ func (q *companyRepository) buildCondition(request *models.CompanyFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if len(request.ExcludedCompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedCompanyID := range request.ExcludedCompanyIDs {
+			params = append(params, excludedCompanyID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
 	if len(request.Slugs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("slug IN (")
