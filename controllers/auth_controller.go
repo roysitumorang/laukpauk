@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"strconv"
 	"time"
 	"uuid"
 
@@ -324,6 +325,7 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 		BuyerID:       uuid.Nil(),
 		Hash:          otpHash,
 		AttemptsCount: 0,
+		Valid:         true,
 		CreatedAt:     now,
 		ExpiredAt:     now.Add(otpDuration).Add(time.Nanosecond),
 	})
@@ -428,7 +430,7 @@ func (q *authController) SellerCreateSession(c fiber.Ctx) error {
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	oneTimePasword, err := q.oneTimePasswordService.FindOneTimePassword(
+	oneTimePassword, err := q.oneTimePasswordService.FindOneTimePassword(
 		ctx,
 		models.NewOneTimePasswordFilter().
 			WithSellerIDs(seller.ID).
@@ -442,19 +444,67 @@ func (q *authController) SellerCreateSession(c fiber.Ctx) error {
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	if oneTimePasword == nil {
+	now := time.Now().In(time.Local)
+	if oneTimePassword == nil ||
+		!oneTimePassword.Valid ||
+		!oneTimePassword.ExpiredAt.After(now) {
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	matched, err := helper.VerifyPassword(request.OtpToken, oneTimePasword.Hash)
+	matched, err := helper.VerifyPassword(request.OtpToken, oneTimePassword.Hash)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return c.Render("seller/auth_login", params.Push(
+			"flash", flash.Danger(err.Error()),
+		))
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
 	if !matched {
+		otpMaxAttempts, _ := strconv.Atoi(os.Getenv("OTP_MAX_ATTEMPTS"))
+		if oneTimePassword.AttemptsCount < otpMaxAttempts-1 {
+			oneTimePassword.AttemptsCount++
+		} else {
+			oneTimePassword.Valid = false
+		}
+		if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
+			ctx,
+			tx,
+			oneTimePassword,
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
+			return c.Render("seller/auth_login", params.Push(
+				"flash", flash.Danger(err.Error()),
+			))
+		}
+	}
+	oneTimePassword.Valid = false
+	if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
+		ctx,
+		tx,
+		oneTimePassword,
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
+		return c.Render("seller/auth_login", params.Push(
+			"flash", flash.Danger(err.Error()),
+		))
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("seller/auth_login", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
@@ -507,7 +557,7 @@ func (q *authController) SellerLogout(c fiber.Ctx) error {
 	if err := sess.ResetWithContext(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
-	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/seller/auth/login")
+	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/seller/auth/otp/new")
 }
 
 func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
@@ -582,6 +632,7 @@ func (q *authController) V1BuyerCreateOTP(c fiber.Ctx) error {
 		BuyerID:       buyer.ID,
 		Hash:          otpHash,
 		AttemptsCount: 0,
+		Valid:         true,
 		CreatedAt:     now,
 		ExpiredAt:     now.Add(otpDuration).Add(time.Nanosecond),
 	})
@@ -664,7 +715,7 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	oneTimePasword, err := q.oneTimePasswordService.FindOneTimePassword(
+	oneTimePassword, err := q.oneTimePasswordService.FindOneTimePassword(
 		ctx,
 		models.NewOneTimePasswordFilter().
 			WithBuyerIDs(buyer.ID).
@@ -678,12 +729,15 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	if oneTimePasword == nil {
+	now := time.Now().In(time.Local)
+	if oneTimePassword == nil ||
+		!oneTimePassword.Valid ||
+		!oneTimePassword.ExpiredAt.After(now) {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	matched, err := helper.VerifyPassword(loginRequest.OtpToken, oneTimePasword.Hash)
+	matched, err := helper.VerifyPassword(loginRequest.OtpToken, oneTimePassword.Hash)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
 		return helper.NewResponse(fiber.StatusBadRequest).
@@ -695,7 +749,6 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	now := time.Now().In(time.Local)
 	expiredAt := now.Add(helper.GetAccessTokenAge()).Add(time.Nanosecond)
 	jsonWebTokenRequest := &models.JsonWebToken{
 		BuyerID:   buyer.ID,

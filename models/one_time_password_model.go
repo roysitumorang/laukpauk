@@ -12,6 +12,7 @@ import (
 
 var ErrOneTimePasswordNotFound = errors.New("OTP not found")
 var ErrUniqueOneTimePasswordTrackingIdViolation = errors.New("tracking_id: already exists")
+var ErrOneTimePasswordMaxAttemptsExceeded = errors.New("max attempts exceeded")
 
 type OneTimePassword struct {
 	RowNo         int64     `json:"-" form:"-"`
@@ -21,6 +22,7 @@ type OneTimePassword struct {
 	Hash          string    `json:"-" form:"-"`
 	TrackingID    uuid.UUID `json:"tracking_id" form:"-"`
 	AttemptsCount int       `json:"-" form:"-"`
+	Valid         bool      `json:"-" form:"-"`
 	CreatedAt     time.Time `json:"-" form:"-"`
 	ExpiredAt     time.Time `json:"-" form:"-"`
 }
@@ -30,6 +32,7 @@ type OneTimePasswordFilter struct {
 	SellerIDs,
 	BuyerIDs,
 	TrackingIDs []uuid.UUID
+	Valid         *bool
 	PaginationURL string
 	Sortings      []Sorting
 	MapSortings   Map
@@ -62,6 +65,11 @@ func (q *OneTimePasswordFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *OneTimePass
 
 func (q *OneTimePasswordFilter) WithTrackingIDs(trackingIDs ...uuid.UUID) *OneTimePasswordFilter {
 	q.TrackingIDs = trackingIDs
+	return q
+}
+
+func (q *OneTimePasswordFilter) WithValid(valid *bool) *OneTimePasswordFilter {
+	q.Valid = valid
 	return q
 }
 

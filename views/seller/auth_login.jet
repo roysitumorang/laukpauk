@@ -93,6 +93,9 @@
 						</div>
 					</div>
 					<button type="submit" class="btn btn-primary btn-block">Login</button>
+					<a href="{{ baseURL }}/seller/auth/otp/new{{ if request.Login }}?login={{ request.Login }}{{ end }}" class="btn btn-default ml-1">
+						Request New OTP Code
+					</a>
 				</form>
 			</div>
 			<!-- /.login-card-body -->

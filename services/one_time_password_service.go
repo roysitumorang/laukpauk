@@ -30,6 +30,9 @@ type OneTimePasswordService interface {
 		tx pgx.Tx,
 		request *models.OneTimePassword,
 	) (*models.OneTimePassword, error)
+	AutoDeleteInvalidOneTimePasswords(
+		ctx context.Context,
+	) error
 }
 
 type oneTimePasswordService struct {
@@ -110,4 +113,15 @@ func (q *oneTimePasswordService) UpdateOneTimePassword(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
 	}
 	return response, err
+}
+
+func (q *oneTimePasswordService) AutoDeleteInvalidOneTimePasswords(
+	ctx context.Context,
+) error {
+	ctxt := "OneTimePasswordService-AutoDeleteInvalidOneTimePasswords"
+	err := q.oneTimePasswordRepository.AutoDeleteInvalidOneTimePasswords(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoDeleteInvalidOneTimePasswords")
+	}
+	return err
 }

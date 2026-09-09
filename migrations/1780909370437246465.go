@@ -774,6 +774,7 @@ func init() {
 				, hash character varying NOT NULL
 				, tracking_id UUID NOT NULL UNIQUE
 				, attempts_count integer NOT NULL
+				, valid BOOLEAN NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, expired_at timestamp with time zone NOT NULL
 			);`,
@@ -797,7 +798,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON one_time_passwords (attempts_count);`,
+			`CREATE INDEX ON one_time_passwords (valid);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

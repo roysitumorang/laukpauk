@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 	"uuid"
 
 	"github.com/govalues/decimal"
@@ -37,6 +38,9 @@ type OneTimePasswordRepository interface {
 		tx pgx.Tx,
 		request *models.OneTimePassword,
 	) (*models.OneTimePassword, error)
+	AutoDeleteInvalidOneTimePasswords(
+		ctx context.Context,
+	) error
 }
 
 type oneTimePasswordRepository struct {
@@ -87,6 +91,7 @@ func (q *oneTimePasswordRepository) FindOneTimePasswords(
 		, hash
 		, tracking_id
 		, attempts_count
+		, valid
 		, created_at
 		, expired_at`,
 	)
@@ -144,6 +149,7 @@ func (q *oneTimePasswordRepository) FindOneTimePasswords(
 			&oneTimePassword.Hash,
 			&oneTimePassword.TrackingID,
 			&oneTimePassword.AttemptsCount,
+			&oneTimePassword.Valid,
 			&oneTimePassword.CreatedAt,
 			&oneTimePassword.ExpiredAt,
 		); err != nil {
@@ -179,6 +185,7 @@ func (q *oneTimePasswordRepository) FindOneTimePassword(
 			, hash
 			, tracking_id
 			, attempts_count
+			, valid
 			, created_at
 			, expired_at
 		FROM one_time_passwords %s`,
@@ -192,6 +199,7 @@ func (q *oneTimePasswordRepository) FindOneTimePassword(
 		&response.Hash,
 		&response.TrackingID,
 		&response.AttemptsCount,
+		&response.Valid,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	)
@@ -238,15 +246,17 @@ func (q *oneTimePasswordRepository) CreateOneTimePassword(
 			, hash
 			, tracking_id
 			, attempts_count
+			, valid
 			, created_at
 			, expired_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 			, seller_id
 			, buyer_id
 			, hash
 			, tracking_id
 			, attempts_count
+			, valid
 			, created_at
 			, expired_at`,
 		request.SellerID,
@@ -254,6 +264,7 @@ func (q *oneTimePasswordRepository) CreateOneTimePassword(
 		request.Hash,
 		trackingID,
 		request.AttemptsCount,
+		request.Valid,
 		request.CreatedAt,
 		request.ExpiredAt,
 	).Scan(
@@ -263,6 +274,7 @@ func (q *oneTimePasswordRepository) CreateOneTimePassword(
 		&response.Hash,
 		&response.TrackingID,
 		&response.AttemptsCount,
+		&response.Valid,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	); err != nil {
@@ -294,11 +306,12 @@ func (q *oneTimePasswordRepository) UpdateOneTimePassword(
 			, hash
 			, tracking_id
 			, attempts_count
+			, valid
 			, created_at
 			, expired_at
 		FROM one_time_passwords
 		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -307,6 +320,7 @@ func (q *oneTimePasswordRepository) UpdateOneTimePassword(
 		&response.Hash,
 		&response.TrackingID,
 		&response.AttemptsCount,
+		&response.Valid,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	)
@@ -317,27 +331,55 @@ func (q *oneTimePasswordRepository) UpdateOneTimePassword(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	if err = tx.QueryRow(
-		ctx,
-		`UPDATE one_time_passwords SET
-			attempts_count = attempts_count + 1
-		WHERE id = $1
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString("UPDATE one_time_passwords SET")
+	if response.AttemptsCount != request.AttemptsCount {
+		params = append(params, request.AttemptsCount)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " attempts_count = $%d", n)
+	}
+	if response.Valid != request.Valid {
+		params = append(params, request.Valid)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " valid = $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	params = append(params, request.ID)
+	_, _ = fmt.Fprintf(
+		sb,
+		` WHERE id = $%d
 		RETURNING id
 			, seller_id
 			, buyer_id
 			, hash
 			, tracking_id
 			, attempts_count
+			, valid
 			, created_at
 			, expired_at`,
-		request.ID,
-	).Scan(
+		len(params),
+	)
+	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.SellerID,
 		&response.BuyerID,
 		&response.Hash,
 		&response.TrackingID,
 		&response.AttemptsCount,
+		&response.Valid,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	); err != nil {
@@ -345,6 +387,39 @@ func (q *oneTimePasswordRepository) UpdateOneTimePassword(
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (q *oneTimePasswordRepository) AutoDeleteInvalidOneTimePasswords(
+	ctx context.Context,
+) error {
+	ctxt := "OneTimePasswordRepository-AutoDeleteInvalidOneTimePasswords"
+	tx, err := BeginTx(ctx)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		return err
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrRollback")
+		}
+	}(ctx)
+	if _, err = tx.Exec(
+		ctx,
+		`DELETE
+		FROM one_time_passwords
+		WHERE NOT valid OR expired_at < $1`,
+		time.Now(),
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommit")
+	}
+	return err
 }
 
 func (q *oneTimePasswordRepository) buildCondition(request *models.OneTimePasswordFilter, sb *strings.Builder) (condition string, params []any) {
@@ -400,6 +475,13 @@ func (q *oneTimePasswordRepository) buildCondition(request *models.OneTimePasswo
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
+	}
+	if request.Valid != nil {
+		if *request.Valid {
+			conds = append(conds, "valid")
+		} else {
+			conds = append(conds, "NOT valid")
+		}
 	}
 	if len(conds) > 0 {
 		sb.Reset()
