@@ -177,199 +177,39 @@
 								<p>Dashboard</p>
 							</a>
 						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/articles") || HasPrefix(path, "/admin/blogs") }} menu-open{{ end }}">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/companies") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-newspaper"></i>
 								<p>
-									Artikel & Blog
+									Companies
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/articles") || HasPrefix(path, "/admin/blogs") }} style="display:block"{{ end }}>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/companies") }} style="display:block"{{ end }}>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/articles" class="nav-link">
+									<a href="{{ baseURL }}/admin/companies" class="nav-link">
 										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Artikel</p>
+										<p>List Data Company</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/articles/new" class="nav-link">
+									<a href="{{ baseURL }}/admin/companies/new" class="nav-link">
 										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Artikel Baru</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blogs" class="nav-link">
-										<i class="fa fa-blog nav-icon"></i>
-										<p>List Data Blog</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/blogs/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Blog Baru</p>
+										<p>Company Baru</p>
 									</a>
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/landing_pages") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-globe"></i>
-								<p>
-									Website
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/landing_pages") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/landing_pages/hero-slider" class="nav-link">
-										<i class="fa fa-image nav-icon"></i>
-										<p>Hero Slider</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/landing_pages/feature" class="nav-link">
-										<i class="fa fa-box nav-icon"></i>
-										<p>Fitur Laukpauk</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/landing_pages/why" class="nav-link">
-										<i class="fa fa-question nav-icon"></i>
-										<p>Mengapa Pilih Laukpauk</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/landing_pages/commitment" class="nav-link">
-										<i class="fa fa-handshake nav-icon"></i>
-										<p>Komitmen</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/landing_pages/free-shopping" class="nav-link">
-										<i class="fa fa-dollar-sign nav-icon"></i>
-										<p>Uang Belanja Gratis</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/landing_pages/kitchen-hero" class="nav-link">
-										<i class="fa fa-utensils nav-icon"></i>
-										<p>Pahlawan Dapur</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/landing_pages/faq" class="nav-link">
-										<i class="fa fa-question-circle nav-icon"></i>
-										<p>Halaman Bantuan</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/transactions") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-shopping-cart"></i>
-								<p>
-									Transaksi
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/transactions") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/transactions" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Transaksi</p>
-									</a>
-								</li>
-								<!--
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/transactions/mutasi-rekening-bca" class="nav-link">
-										<i class="fa fa-money-check-alt nav-icon"></i>
-										<p>Mutasi Rekening BCA</p>
-									</a>
-								</li>
-								-->
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/banners") || HasPrefix(path, "/admin/contents") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-image"></i>
-								<p>
-									Banner & Konten App
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/banners") || HasPrefix(path, "/admin/contents") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/banners" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Banner</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/banners/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Banner Baru</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/contents" class="nav-link">
-										<i class="fa fa-file nav-icon"></i>
-										<p>List Konten Aplikasi</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/contents/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Konten Baru Aplikasi</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/vouchers") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-money-check-alt"></i>
-								<p>
-									Voucher & Promo
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/vouchers") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/vouchers" class="nav-link">
-										<i class="fa fa-money-check-alt nav-icon"></i>
-										<p>List Data Voucher</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/vouchers/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Voucher Baru</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/buyers") || HasPrefix(path, "/admin/admins") }} menu-open{{ end }}">
+						{{ if currentAdmin.SuperAdmin() }}
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/admins") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-user-circle"></i>
 								<p>
-									User{{ if currentAdmin.SuperAdmin() }} & Administrator{{ end }}
+									Administrator
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/buyers") || HasPrefix(path, "/admin/admins") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/buyers" class="nav-link">
-										<i class="fa fa-users nav-icon"></i>
-										<p>List Data User</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/buyers/new" class="nav-link">
-										<i class="fa fa-user-plus nav-icon"></i>
-										<p>User Baru</p>
-									</a>
-								</li>
-								{{ if currentAdmin.SuperAdmin() }}
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/admins") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/admin/admins" class="nav-link">
 										<i class="fa fa-crown nav-icon"></i>
@@ -382,252 +222,9 @@
 										<p>Administrator Baru</p>
 									</a>
 								</li>
-								{{ end }}
 							</ul>
 						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/product") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-box"></i>
-								<p>
-									Produk
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/product") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/product_categories" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Kategori Produk</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/product_categories/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Add New Kategori Produk</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/products" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Produk</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/products/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Add New Produk</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/produk/updateHargaProdukMassal" class="nav-link">
-										<i class="fa fa-dollar-sign nav-icon"></i>
-										<p>Update Harga Produk Massal</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/produk/variasiHargaProdukMassal" class="nav-link">
-										<i class="fa fa-coins nav-icon"></i>
-										<p>Variasi Harga Produk Massal</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/produk/sinkronisasiProduk" class="nav-link">
-										<i class="fa fa-sync nav-icon"></i>
-										<p>Sinkronisasi Produk dan Harga</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/point") || HasPrefix(path, "/admin/gifts") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-coins"></i>
-								<p>
-									Poin & Gift
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/point") || HasPrefix(path, "/admin/gifts") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/points" class="nav-link">
-										<i class="fa fa-coins nav-icon"></i>
-										<p>Histori Poin User</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/points/new" class="nav-link">
-										<i class="fa fa-coins nav-icon"></i>
-										<p>Tambah Poin User</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/point_earning_caps" class="nav-link">
-										<i class="fa fa-coins nav-icon"></i>
-										<p>Tarif Akumulasi Poin</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/point_earning_caps/new" class="nav-link">
-										<i class="fa fa-coins nav-icon"></i>
-										<p>Tambah Tarif Akumulasi Poin</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/point_spending_caps" class="nav-link">
-										<i class="fa fa-coins nav-icon"></i>
-										<p>Tarif Penggunaan Poin</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/point_spending_caps/new" class="nav-link">
-										<i class="fa fa-coins nav-icon"></i>
-										<p>Tambah Tarif Penggunaan Poin</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/gifts" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Gift</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/gifts/new" class="nav-link">
-										<i class="fa fa-gift nav-icon"></i>
-										<p>Add New Gift</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/text_messages") || HasPrefix(path, "/admin/notifications") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-wifi"></i>
-								<p>
-									Broadcast
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/text_messages") || HasPrefix(path, "/admin/notifications") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/text_messages" class="nav-link">
-										<i class="fa fa-envelope nav-icon"></i>
-										<p>Riwayat SMS</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/text_messages/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>SMS Baru</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/notifications" class="nav-link">
-										<i class="fa fa-bell nav-icon"></i>
-										<p>Riwayat Push Notifikasi</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/notifications/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Push Notifikasi Baru</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview">
-							<a href="{{ baseURL }}/admin/rpd" class="nav-link">
-								<i class="nav-icon fa fa-file"></i>
-								<p>
-									Request
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview">
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/withdrawals" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>Riwayat Pencairan Dana</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/withdrawals/request" class="nav-link">
-										<i class="fa fa-paper-plane nav-icon"></i>
-										<p>Request Pencairan Dana</p>
-										<span class="badge badge-danger ml-1">0</span>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/sellers/request" class="nav-link">
-										<i class="fa fa-stamp nav-icon"></i>
-										<p>Request Menjadi Penjual</p>
-										<span class="badge badge-danger ml-1">4</span>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/user/independent_request" class="nav-link">
-										<i class="fa fa-flag nav-icon"></i>
-										<p>Request Penjual Mandiri</p>
-										<span class="badge badge-danger ml-1">0</span>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/recipes") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-utensils"></i>
-								<p>
-									Resep
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/recipes") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/recipes" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Resep</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/recipes/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Resep Baru</p>
-									</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/delivery_plans") || HasPrefix(path, "/admin/skipped_delivery_plans") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-truck"></i>
-								<p>
-									Jadwal Delivery
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/delivery_plans") || HasPrefix(path, "/admin/skipped_delivery_plans") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/delivery_plans" class="nav-link">
-										<i class="fa fa-clock nav-icon"></i>
-										<p>Atur Jadwal Delivery</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/delivery_plans/new" class="nav-link">
-										<i class="fa fa-tags nav-icon"></i>
-										<p>Tambah Jadwal Delivery</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/skipped_delivery_plans" class="nav-link">
-										<i class="fa fa-clock nav-icon"></i>
-										<p>Jadwal Tutup</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/skipped_delivery_plans/new" class="nav-link">
-										<i class="fa fa-clock nav-icon"></i>
-										<p>Tambah Jadwal Tutup</p>
-									</a>
-								</li>
-							</ul>
-						</li>
+						{{ end }}
 						<li class="nav-item">
 							<a href="{{ baseURL }}/admin/settings" class="nav-link">
 								<i class="nav-icon fa fa-wrench"></i>

@@ -76,7 +76,7 @@ func ValidateCompany(ctx context.Context, c fiber.Ctx) (*models.Company, int, er
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, fiberErr.Code, err
 	}
-	if err = (&response).Validate(); err != nil {
+	if err = (&response).Validate(false); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, fiber.StatusBadRequest, err
 	}

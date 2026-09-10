@@ -192,7 +192,7 @@ func init() {
 				, subscription_status integer NOT NULL
 				, subscription_start_date timestamp with time zone
 				, subscription_end_date timestamp with time zone
-				, telegram_bot_token character varying NOT NULL UNIQUE
+				, telegram_bot_token character varying UNIQUE
 				, vacation_mode BOOLEAN NOT NULL
 				, vacation_start_date timestamp with time zone
 				, vacation_end_date timestamp with time zone
@@ -371,7 +371,7 @@ func init() {
 			Slug:                                 "laukpauk",
 			Billed:                               false,
 			SubscriptionStatus:                   models.SubscriptionStatusActive,
-			TelegramBotToken:                     "7895135905:AAGh8uCKeDniAQdJ0sh2PZh1YO2afkAto5Y",
+			TelegramBotToken:                     new("7895135905:AAGh8uCKeDniAQdJ0sh2PZh1YO2afkAto5Y"),
 			VoucherEnabled:                       true,
 			ReferralPointsEnabled:                true,
 			ReferralPointsMinimumShoppingCost:    60_000,

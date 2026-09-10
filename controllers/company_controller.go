@@ -174,6 +174,8 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	createdBy := currentAdmin.ID
+	request.SubscriptionStatus = models.SubscriptionStatusTrial
+	request.ReferralPointsSlots = []int64{}
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
 	request.UpdatedBy = uuid.Nil()
@@ -323,7 +325,6 @@ func (q *companyController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	request.ID = company.ID
-	request.UpdatedBy = currentAdmin.ID
 	request.UpdatedAt = time.Now()
 	request.DeactivatedBy = nil
 	request.DeactivatedAt = nil

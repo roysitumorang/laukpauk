@@ -2,12 +2,14 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
 	"uuid"
 
 	"github.com/govalues/decimal"
+	"github.com/nyaruka/phonenumbers"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -70,7 +72,7 @@ type Company struct {
 	RawSubscriptionStatus                 string             `json:"subscription_status" form:"-"`
 	SubscriptionStartDate                 *time.Time         `json:"-" form:"subscription_start_date"`
 	SubscriptionEndDate                   *time.Time         `json:"-" form:"subscription_end_date"`
-	TelegramBotToken                      string             `json:"-" form:"-"`
+	TelegramBotToken                      *string            `json:"-" form:"-"`
 	VacationMode                          bool               `json:"vacation_mode" form:"vacation_mode"`
 	VacationStartDate                     *time.Time         `json:"vacation_start_date" form:"vacation_start_date"`
 	VacationEndDate                       *time.Time         `json:"vacation_end_date" form:"vacation_end_date"`
@@ -105,81 +107,28 @@ type Company struct {
 	DeactivationReason                    *string            `json:"-" form:"-"`
 }
 
-type CompanyFilter struct {
-	CompanyIDs,
-	ExcludedCompanyIDs []uuid.UUID
-	Slugs []string
-	Keyword,
-	PaginationURL string
-	Sortings    []Sorting
-	MapSortings Map
-	Limit,
-	Page int64
-	UrlValues url.Values
-}
-
-func NewCompanyFilter() *CompanyFilter {
-	return &CompanyFilter{
-		MapSortings: NewMap(),
-		UrlValues:   url.Values{},
-	}
-}
-
-func (q *CompanyFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *CompanyFilter {
-	q.CompanyIDs = companyIDs
-	return q
-}
-
-func (q *CompanyFilter) WithExcludedCompanyIDs(excludedCompanyIDs ...uuid.UUID) *CompanyFilter {
-	q.ExcludedCompanyIDs = excludedCompanyIDs
-	return q
-}
-
-func (q *CompanyFilter) WithSlugs(slugs ...string) *CompanyFilter {
-	q.Slugs = slugs
-	return q
-}
-
-func (q *CompanyFilter) WithKeyword(keyword string) *CompanyFilter {
-	q.Keyword = keyword
-	return q
-}
-
-func (q *CompanyFilter) WithPaginationURL(paginationURL string) *CompanyFilter {
-	q.PaginationURL = paginationURL
-	return q
-}
-
-func (q *CompanyFilter) WithSortings(sortings ...Sorting) *CompanyFilter {
-	q.Sortings = sortings
-	q.MapSortings.Clear()
-	for _, sorting := range sortings {
-		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
-	}
-	return q
-}
-
-func (q *CompanyFilter) WithLimit(limit int64) *CompanyFilter {
-	q.Limit = limit
-	return q
-}
-
-func (q *CompanyFilter) WithPage(page int64) *CompanyFilter {
-	q.Page = page
-	return q
-}
-
-func (q *CompanyFilter) WithUrlValues(urlValues url.Values) *CompanyFilter {
-	q.UrlValues = urlValues
-	return q
-}
-
-func (q *Company) Validate() error {
+func (q *Company) Validate(includeSetting ...bool) error {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
 	if q.Slug = strings.ToLower(strings.TrimSpace(q.Slug)); q.Slug == "" {
 		return errors.New("slug: is required")
+	}
+	if q.WhatsappPhoneNumber = strings.TrimSpace(q.WhatsappPhoneNumber); q.WhatsappPhoneNumber == "" {
+		return errors.New("whatsapp_phone_number: is required")
+	}
+	whatsappPhoneNumber, err := phonenumbers.Parse(q.WhatsappPhoneNumber, "ID")
+	if err != nil {
+		return fmt.Errorf("whatsapp_phone_number: %w", err)
+	}
+	q.WhatsappPhoneNumber = phonenumbers.Format(whatsappPhoneNumber, phonenumbers.E164)
+	if q.TelegramBotToken != nil {
+		if *q.TelegramBotToken = strings.TrimSpace(*q.TelegramBotToken); *q.TelegramBotToken == "" {
+			q.TelegramBotToken = nil
+		}
+	}
+	if len(includeSetting) == 0 || !includeSetting[0] {
+		return nil
 	}
 	now := time.Now().In(time.Local)
 	if q.VacationMode {
@@ -264,4 +213,73 @@ func (q *Company) Populate() *Company {
 
 func (q *Company) New() bool {
 	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+type CompanyFilter struct {
+	CompanyIDs,
+	ExcludedCompanyIDs []uuid.UUID
+	Slugs []string
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
+
+func NewCompanyFilter() *CompanyFilter {
+	return &CompanyFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
+	}
+}
+
+func (q *CompanyFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *CompanyFilter {
+	q.CompanyIDs = companyIDs
+	return q
+}
+
+func (q *CompanyFilter) WithExcludedCompanyIDs(excludedCompanyIDs ...uuid.UUID) *CompanyFilter {
+	q.ExcludedCompanyIDs = excludedCompanyIDs
+	return q
+}
+
+func (q *CompanyFilter) WithSlugs(slugs ...string) *CompanyFilter {
+	q.Slugs = slugs
+	return q
+}
+
+func (q *CompanyFilter) WithKeyword(keyword string) *CompanyFilter {
+	q.Keyword = keyword
+	return q
+}
+
+func (q *CompanyFilter) WithPaginationURL(paginationURL string) *CompanyFilter {
+	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *CompanyFilter) WithSortings(sortings ...Sorting) *CompanyFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
+	return q
+}
+
+func (q *CompanyFilter) WithLimit(limit int64) *CompanyFilter {
+	q.Limit = limit
+	return q
+}
+
+func (q *CompanyFilter) WithPage(page int64) *CompanyFilter {
+	q.Page = page
+	return q
+}
+
+func (q *CompanyFilter) WithUrlValues(urlValues url.Values) *CompanyFilter {
+	q.UrlValues = urlValues
+	return q
 }
