@@ -1,4 +1,9 @@
-<form method="POST" action="{{ baseURL }}/admin/vouchers{{ if !voucher.New() }}/{{ voucher.ID }}{{ end }}" enctype="multipart/form-data">
+{{ range type, message := flash.Data }}
+<div class="alert alert-{{ type }}">
+	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+</div>
+{{ end }}
+<form method="POST" action="{{ baseURL }}/seller/vouchers{{ if !voucher.New() }}/{{ voucher.ID }}{{ end }}" enctype="multipart/form-data">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !voucher.New() }}<input type="hidden" name="id" value="{{ voucher.ID }}" />{{ end }}
 	<div class="row">
@@ -94,7 +99,7 @@
 			<button type="submit" class="btn btn-success mr-1">
 				Simpan{{ if !voucher.New() }} Perubahan{{ end }} Data Voucher
 			</button>
-			<a href="{{ baseURL }}/admin/vouchers" class="btn btn-default ml-1">
+			<a href="{{ baseURL }}/seller/vouchers" class="btn btn-default ml-1">
 				Back to List Voucher
 			</a>
 		</div>
@@ -116,11 +121,11 @@
 			dateFormat: "Y-m-d",
 		});
 		document.getElementById("photo").addEventListener("change", (event) => {
-			let file = event.target.files[0]
+			const file = event.target.files[0]
 			if (!file || !file.type.startsWith("image/")) {
 				return;
 			}
-			let preview = document.getElementById("photo_preview");
+			const preview = document.getElementById("photo_preview");
 			preview.setAttribute("src", URL.createObjectURL(file));
 			preview.classList.add("img-thumbnail");
 		});

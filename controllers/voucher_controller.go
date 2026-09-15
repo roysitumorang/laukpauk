@@ -21,20 +21,20 @@ import (
 )
 
 type voucherController struct {
-	adminService        services.AdminService
+	sellerService       services.SellerService
 	voucherService      services.VoucherService
 	buyerService        services.BuyerService
 	jsonWebTokenService services.JsonWebTokenService
 }
 
 func NewVoucherController(
-	adminService services.AdminService,
+	sellerService services.SellerService,
 	voucherService services.VoucherService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *voucherController {
 	return &voucherController{
-		adminService:        adminService,
+		sellerService:       sellerService,
 		voucherService:      voucherService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
@@ -42,25 +42,25 @@ func NewVoucherController(
 }
 
 func (q *voucherController) Mount(r fiber.Router) {
-	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/admin", adminSessionAuth).
-		Get("", q.AdminIndex).
-		Get("/new", q.AdminNew).
-		Post("", q.AdminCreate).
-		Get("/:id/edit", q.AdminEdit).
-		Post("/:id", q.AdminUpdate).
-		Post("/:id/delete", q.AdminDelete)
+	r.Group("/seller", sellerSessionAuth).
+		Get("", q.SellerIndex).
+		Get("/new", q.SellerNew).
+		Post("", q.SellerCreate).
+		Get("/:id/edit", q.SellerEdit).
+		Post("/:id", q.SellerUpdate).
+		Post("/:id/delete", q.SellerDelete)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("/:id", q.V1BuyerShow)
 }
 
-func (q *voucherController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *voucherController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "VoucherController-AdminIndex"
+	ctxt := "VoucherController-SellerIndex"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.VoucherFilter)
 	rows := []*models.Voucher{}
@@ -70,7 +70,7 @@ func (q *voucherController) AdminIndex(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Data Voucher",
 		"limits", models.Limits,
 		"request", request,
@@ -101,31 +101,31 @@ func (q *voucherController) AdminIndex(c fiber.Ctx) (err error) {
 	)
 	if request, err = sanitizers.FindVouchers(ctx, c); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
-		return c.Render("admin/voucher_index", params.Push(
+		return c.Render("seller/voucher_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	request.WithRecordStatuses(models.RecordStatusActive)
 	if rows, pagination, err = q.voucherService.FindVouchers(
 		c,
-		request,
+		request.WithCompanyIDs(currentSeller.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
-		return c.Render("admin/voucher_index", params.Push(
+		return c.Render("seller/voucher_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return c.Render("admin/voucher_index", params.Push(
+	return c.Render("seller/voucher_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
-	), "admin/layouts/authenticated")
+	), "seller/layouts/authenticated")
 }
 
-func (q *voucherController) AdminNew(c fiber.Ctx) (err error) {
+func (q *voucherController) SellerNew(c fiber.Ctx) (err error) {
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	csrfToken := csrf.TokenFromContext(c)
 	now := time.Now().In(time.Local)
 	t := time.Date(
@@ -149,22 +149,22 @@ func (q *voucherController) AdminNew(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Add New Voucher",
 		"request", request,
 		"voucher", request,
 		"voucherTypes", models.VoucherTypes,
 		"targetAudiences", models.VoucherTargetAudiences,
 	)
-	return c.Render("admin/voucher_new", params, "admin/layouts/authenticated")
+	return c.Render("seller/voucher_new", params, "seller/layouts/authenticated")
 }
 
-func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *voucherController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "VoucherController-AdminCreate"
+	ctxt := "VoucherController-SellerCreate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	csrfToken := csrf.TokenFromContext(c)
 	now := time.Now().In(time.Local)
 	t := time.Date(
@@ -188,7 +188,7 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Add New Voucher",
 		"voucher", request,
 		"voucherTypes", models.VoucherTypes,
@@ -199,29 +199,31 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateVoucher")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/voucher_new", params.Push(
+		return c.Render("seller/voucher_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if request.Code != nil {
 		voucher, err := q.voucherService.FindVoucher(
 			ctx,
 			models.NewVoucherFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithCodes(*request.Code),
 		)
 		if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
-			return c.Render("admin/voucher_new", params.Push(
+			return c.Render("seller/voucher_new", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		if voucher != nil {
-			return c.Render("admin/voucher_new", params.Push(
+			return c.Render("seller/voucher_new", params.Push(
 				"flash", flash.Danger(models.ErrUniqueVoucherCodeViolation.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
-	createdBy := currentAdmin.ID
+	createdBy := currentSeller.ID
+	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -233,9 +235,9 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/voucher_new", params.Push(
+		return c.Render("seller/voucher_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -247,96 +249,98 @@ func (q *voucherController) AdminCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.voucherService.CreateVoucher(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateVoucher")
-		return c.Render("admin/voucher_new", params.Push(
+		return c.Render("seller/voucher_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("admin/voucher_new", params.Push(
+		return c.Render("seller/voucher_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/voucher_new", params.Push(
+		return c.Render("seller/voucher_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return flash.Success("voucher created successfully").Redirect(c, sess.Session, "/admin/vouchers")
+	return flash.Success("voucher created successfully").Redirect(c, sess.Session, "/seller/vouchers")
 }
 
-func (q *voucherController) AdminEdit(c fiber.Ctx) (err error) {
+func (q *voucherController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "VoucherController-AdminEdit"
+	ctxt := "VoucherController-SellerEdit"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	csrfToken := csrf.TokenFromContext(c)
 	voucherID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithVoucherIDs(voucherID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	if voucher == nil {
-		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", helper.Sprintf("Edit Data Voucher|%s", voucher.Name),
 		"request", voucher,
 		"voucher", voucher,
 		"voucherTypes", models.VoucherTypes,
 		"targetAudiences", models.VoucherTargetAudiences,
 	)
-	return c.Render("admin/voucher_edit", params, "admin/layouts/authenticated")
+	return c.Render("seller/voucher_edit", params, "seller/layouts/authenticated")
 }
 
-func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
+func (q *voucherController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "VoucherController-AdminUpdate"
+	ctxt := "VoucherController-SellerUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	csrfToken := csrf.TokenFromContext(c)
 	voucherID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithVoucherIDs(voucherID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	if voucher == nil {
-		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", helper.Sprintf("Edit Data Voucher|%s", voucher.Name),
 		"request", voucher,
 		"voucher", voucher,
@@ -348,32 +352,33 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateVoucher")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/voucher_edit", params.Push(
+		return c.Render("seller/voucher_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if voucher.Code != nil && request.Code != nil && *voucher.Code != *request.Code {
 		otherVoucher, err := q.voucherService.FindVoucher(
 			ctx,
 			models.NewVoucherFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithCodes(*request.Code).
 				WithExcludedVoucherIDs(voucher.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
-			return c.Render("admin/voucher_edit", params.Push(
+			return c.Render("seller/voucher_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		if otherVoucher != nil {
-			return c.Render("admin/voucher_edit", params.Push(
+			return c.Render("seller/voucher_edit", params.Push(
 				"flash", flash.Danger(models.ErrUniqueVoucherCodeViolation.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	request.ID = voucher.ID
 	request.RecordStatus = voucher.RecordStatus
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -386,9 +391,9 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/voucher_edit", params.Push(
+		return c.Render("seller/voucher_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -400,30 +405,30 @@ func (q *voucherController) AdminUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.voucherService.UpdateVoucher(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateVoucher")
-		return c.Render("admin/voucher_edit", params.Push(
+		return c.Render("seller/voucher_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("admin/voucher_edit", params.Push(
+		return c.Render("seller/voucher_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/voucher_edit", params.Push(
+		return c.Render("seller/voucher_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return flash.Success("voucher updated successfully").Redirect(c, sess.Session, "/admin/vouchers")
+	return flash.Success("voucher updated successfully").Redirect(c, sess.Session, "/seller/vouchers")
 }
 
-func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *voucherController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "VoucherController-AdminDelete"
+	ctxt := "VoucherController-SellerDelete"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -431,20 +436,21 @@ func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
 	voucherID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithVoucherIDs(voucherID),
 	)
 	if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	if voucher == nil {
-		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(models.ErrVoucherNotFound.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	request := voucher
 	if request.Code != nil {
@@ -452,13 +458,13 @@ func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
 	}
 	request.Code = nil
 	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentAdmin.ID
+	request.DeletedBy = &currentSeller.ID
 	request.DeletedAt = new(time.Now())
 	request.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -470,23 +476,25 @@ func (q *voucherController) AdminDelete(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.voucherService.UpdateVoucher(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateVoucher")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/vouchers")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/vouchers")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("voucher deleted successfully").
-		Redirect(c, sess.Session, "/admin/vouchers")
+		Redirect(c, sess.Session, "/seller/vouchers")
 }
 
 func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "VoucherController-V1BuyerShow"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	response, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
+			WithCompanyIDs(currentBuyer.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithCodes(c.Params("id")),
 	)

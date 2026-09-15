@@ -150,9 +150,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/points":                              "/points/admin",
 				"/admin/points/*":                            "/points/admin/$1",
 				"/admin/points/*/*":                          "/points/admin/$1/$2",
-				"/admin/vouchers":                            "/vouchers/admin",
-				"/admin/vouchers/*":                          "/vouchers/admin/$1",
-				"/admin/vouchers/*/*":                        "/vouchers/admin/$1/$2",
 				"/admin/point_earning_caps":                  "/point_earning_caps/admin",
 				"/admin/point_earning_caps/*":                "/point_earning_caps/admin/$1",
 				"/admin/point_earning_caps/*/*":              "/point_earning_caps/admin/$1/$2",
@@ -187,6 +184,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/products":                           "/products/seller",
 				"/seller/products/*":                         "/products/seller/$1",
 				"/seller/products/*/*":                       "/products/seller/$1/$2",
+				"/seller/vouchers":                           "/vouchers/seller",
+				"/seller/vouchers/*":                         "/vouchers/seller/$1",
+				"/seller/vouchers/*/*":                       "/vouchers/seller/$1/$2",
 				"/seller/recipes":                            "/recipes/seller",
 				"/seller/recipes/*":                          "/recipes/seller/$1",
 				"/seller/recipes/*/*":                        "/recipes/seller/$1/$2",
@@ -336,7 +336,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.PointService,
 	).Mount(app.Group("/points"))
 	controllers.NewVoucherController(
-		q.AdminService,
+		q.SellerService,
 		q.VoucherService,
 		q.BuyerService,
 		q.JsonWebTokenService,

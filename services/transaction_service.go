@@ -326,6 +326,7 @@ func (q *transactionService) CreateTransaction(
 			voucher, err := q.voucherRepository.FindVoucher(
 				ctx,
 				models.NewVoucherFilter().
+					WithCompanyIDs(request.CompanyID).
 					WithRecordStatuses(models.RecordStatusActive).
 					WithCodes(*request.VoucherCode).
 					WithTransactionDatetime(now).

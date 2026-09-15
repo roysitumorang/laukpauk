@@ -12,44 +12,43 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	ErrVoucherNotFound            = errors.New("voucher not found")
-	ErrUniqueVoucherCodeViolation = errors.New("code: already exists")
+var ErrVoucherNotFound = errors.New("voucher not found")
+var ErrUniqueVoucherCodeViolation = errors.New("code: already exists")
 
-	VoucherCodeRegex = regexp.MustCompile("^[a-zA-Z0-9-]+$")
+var VoucherCodeRegex = regexp.MustCompile("^[a-zA-Z0-9-]+$")
 
-	VoucherTypes = []VoucherType{
-		VoucherTypeDeliveryCost,
-		VoucherTypeShoppingCost,
-	}
-	MapVoucherTypes = map[VoucherType]struct{}{
-		VoucherTypeDeliveryCost: {},
-		VoucherTypeShoppingCost: {},
-	}
-	VoucherTargetAudiences = []VoucherTargetAudience{
-		VoucherTargetAudienceAllBuyers,
-		VoucherTargetAudienceNewBuyers,
-		VoucherTargetAudienceLoyalty,
-		VoucherTargetAudienceEarlyShopping,
-		VoucherTargetAudienceInactiveBuyers,
-	}
-	MapVoucherTargetAudiences = map[VoucherTargetAudience]struct{}{
-		VoucherTargetAudienceAllBuyers:      {},
-		VoucherTargetAudienceNewBuyers:      {},
-		VoucherTargetAudienceLoyalty:        {},
-		VoucherTargetAudienceEarlyShopping:  {},
-		VoucherTargetAudienceInactiveBuyers: {},
-	}
-	MapVoucherSortings = map[string]struct{}{
-		SortingFieldID:          {},
-		VoucherSortingFieldName: {},
-	}
-)
+type VoucherType int
 
 const (
 	VoucherTypeDeliveryCost VoucherType = iota
 	VoucherTypeShoppingCost
 )
+
+var VoucherTypes = []VoucherType{
+	VoucherTypeDeliveryCost,
+	VoucherTypeShoppingCost,
+}
+var MapVoucherTypes = map[VoucherType]struct{}{
+	VoucherTypeDeliveryCost: {},
+	VoucherTypeShoppingCost: {},
+}
+
+func (q VoucherType) String() string {
+	if q == VoucherTypeShoppingCost {
+		return "shopping cost"
+	}
+	return "delivery cost"
+}
+
+func (q VoucherType) Int() int {
+	return int(q)
+}
+
+func (q VoucherType) Equal(v VoucherType) bool {
+	return q.Int() == v.Int()
+}
+
+type VoucherTargetAudience int
 
 const (
 	VoucherTargetAudienceAllBuyers VoucherTargetAudience = iota
@@ -59,146 +58,85 @@ const (
 	VoucherTargetAudienceInactiveBuyers
 )
 
-const (
-	VoucherSortingFieldName = "name"
-)
+func (q VoucherTargetAudience) Equal(v VoucherTargetAudience) bool {
+	return q.Int() == v.Int()
+}
 
-type (
-	VoucherType           int
-	VoucherTargetAudience int
+func (q VoucherTargetAudience) Int() int {
+	return int(q)
+}
 
-	Voucher struct {
-		RowNo                 int64                 `json:"-" form:"-"`
-		ID                    uuid.UUID             `json:"id" form:"id"`
-		RecordStatus          RecordStatus          `json:"-" form:"-"`
-		VoucherType           VoucherType           `json:"voucher_type" form:"voucher_type"`
-		VoucherTypeName       string                `json:"voucher_type_name" form:"-"`
-		TargetAudience        VoucherTargetAudience `json:"target_audience" form:"target_audience"`
-		TargetAudienceName    string                `json:"target_audience_name" form:"-"`
-		Code                  *string               `json:"code" form:"code"`
-		DeletedCode           *string               `json:"-" form:"-"`
-		Photo                 string                `json:"photo" form:"photo"`
-		Name                  string                `json:"name" form:"name"`
-		Discount              int64                 `json:"discount" form:"discount"`
-		MinimumPurchase       int64                 `json:"minimum_purchase" form:"minimum_purchase"`
-		QuotaPerBuyer         int                   `json:"-" form:"quota_per_buyer"`
-		EffectiveStartTime    time.Time             `json:"effective_start_time" form:"-"`
-		RawEffectiveStartTime string                `json:"-" form:"effective_start_time"`
-		EffectiveEndTime      time.Time             `json:"effective_end_time" form:"-"`
-		RawEffectiveEndTime   string                `json:"-" form:"effective_end_time"`
-		EffectiveStartDate    time.Time             `json:"effective_start_date" form:"-"`
-		RawEffectiveStartDate string                `json:"-" form:"effective_start_date"`
-		EffectiveEndDate      time.Time             `json:"effective_end_date" form:"-"`
-		RawEffectiveEndDate   string                `json:"-" form:"effective_end_date"`
-		Description           string                `json:"description" form:"description"`
-		CreatedBy             uuid.UUID             `json:"-" form:"-"`
-		CreatedAt             time.Time             `json:"-" form:"-"`
-		UpdatedBy             uuid.UUID             `json:"-" form:"-"`
-		UpdatedAt             time.Time             `json:"-" form:"-"`
-		DeletedBy             *uuid.UUID            `json:"-" form:"-"`
-		DeletedAt             *time.Time            `json:"-" form:"-"`
-		DeletionReason        *string               `json:"-" form:"-"`
-		BuyerIDs              []uuid.UUID           `json:"-" form:"-"`
+var VoucherTargetAudiences = []VoucherTargetAudience{
+	VoucherTargetAudienceAllBuyers,
+	VoucherTargetAudienceNewBuyers,
+	VoucherTargetAudienceLoyalty,
+	VoucherTargetAudienceEarlyShopping,
+	VoucherTargetAudienceInactiveBuyers,
+}
+var MapVoucherTargetAudiences = map[VoucherTargetAudience]struct{}{
+	VoucherTargetAudienceAllBuyers:      {},
+	VoucherTargetAudienceNewBuyers:      {},
+	VoucherTargetAudienceLoyalty:        {},
+	VoucherTargetAudienceEarlyShopping:  {},
+	VoucherTargetAudienceInactiveBuyers: {},
+}
+
+func (q VoucherTargetAudience) String() string {
+	if q == VoucherTargetAudienceNewBuyers {
+		return "new buyers"
 	}
-
-	VoucherFilter struct {
-		VoucherIDs,
-		ExcludedVoucherIDs,
-		BuyerIDs []uuid.UUID
-		RecordStatuses      []RecordStatus
-		VoucherTypes        []VoucherType
-		TargetAudiences     []VoucherTargetAudience
-		Codes               []string
-		TransactionDatetime time.Time
-		Keyword,
-		PaginationURL string
-		Sortings    []Sorting
-		MapSortings Map
-		Limit,
-		Page int64
-		UrlValues url.Values
+	if q == VoucherTargetAudienceLoyalty {
+		return "loyalty"
 	}
-)
-
-func NewVoucherFilter() *VoucherFilter {
-	return &VoucherFilter{
-		MapSortings: NewMap(),
-		UrlValues:   url.Values{},
+	if q == VoucherTargetAudienceEarlyShopping {
+		return "belanja lebih awal"
 	}
-}
-
-func (q *VoucherFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *VoucherFilter {
-	q.VoucherIDs = voucherIDs
-	return q
-}
-
-func (q *VoucherFilter) WithExcludedVoucherIDs(excludedVoucherIDs ...uuid.UUID) *VoucherFilter {
-	q.ExcludedVoucherIDs = excludedVoucherIDs
-	return q
-}
-
-func (q *VoucherFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *VoucherFilter {
-	q.BuyerIDs = buyerIDs
-	return q
-}
-
-func (q *VoucherFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *VoucherFilter {
-	q.RecordStatuses = recordStatuses
-	return q
-}
-
-func (q *VoucherFilter) WithVoucherTypes(voucherTypes ...VoucherType) *VoucherFilter {
-	q.VoucherTypes = voucherTypes
-	return q
-}
-
-func (q *VoucherFilter) WithTargetAudiences(targetAudiences ...VoucherTargetAudience) *VoucherFilter {
-	q.TargetAudiences = targetAudiences
-	return q
-}
-
-func (q *VoucherFilter) WithCodes(codes ...string) *VoucherFilter {
-	q.Codes = codes
-	return q
-}
-
-func (q *VoucherFilter) WithTransactionDatetime(transactionDatetime time.Time) *VoucherFilter {
-	q.TransactionDatetime = transactionDatetime
-	return q
-}
-
-func (q *VoucherFilter) WithKeyword(keyword string) *VoucherFilter {
-	q.Keyword = keyword
-	return q
-}
-
-func (q *VoucherFilter) WithPaginationURL(paginationURL string) *VoucherFilter {
-	q.PaginationURL = paginationURL
-	return q
-}
-
-func (q *VoucherFilter) WithSortings(sortings ...Sorting) *VoucherFilter {
-	q.Sortings = sortings
-	q.MapSortings.Clear()
-	for _, sorting := range sortings {
-		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	if q == VoucherTargetAudienceInactiveBuyers {
+		return "inactive buyers"
 	}
-	return q
+	return "all buyers"
 }
 
-func (q *VoucherFilter) WithLimit(limit int64) *VoucherFilter {
-	q.Limit = limit
-	return q
+const VoucherSortingFieldName = "name"
+
+var MapVoucherSortings = map[string]struct{}{
+	SortingFieldID:          {},
+	VoucherSortingFieldName: {},
 }
 
-func (q *VoucherFilter) WithPage(page int64) *VoucherFilter {
-	q.Page = page
-	return q
-}
-
-func (q *VoucherFilter) WithUrlValues(urlValues url.Values) *VoucherFilter {
-	q.UrlValues = urlValues
-	return q
+type Voucher struct {
+	RowNo                 int64                 `json:"-" form:"-"`
+	ID                    uuid.UUID             `json:"id" form:"id"`
+	CompanyID             uuid.UUID             `json:"-" form:"-"`
+	RecordStatus          RecordStatus          `json:"-" form:"-"`
+	VoucherType           VoucherType           `json:"voucher_type" form:"voucher_type"`
+	VoucherTypeName       string                `json:"voucher_type_name" form:"-"`
+	TargetAudience        VoucherTargetAudience `json:"target_audience" form:"target_audience"`
+	TargetAudienceName    string                `json:"target_audience_name" form:"-"`
+	Code                  *string               `json:"code" form:"code"`
+	DeletedCode           *string               `json:"-" form:"-"`
+	Photo                 string                `json:"photo" form:"photo"`
+	Name                  string                `json:"name" form:"name"`
+	Discount              int64                 `json:"discount" form:"discount"`
+	MinimumPurchase       int64                 `json:"minimum_purchase" form:"minimum_purchase"`
+	QuotaPerBuyer         int                   `json:"-" form:"quota_per_buyer"`
+	EffectiveStartTime    time.Time             `json:"effective_start_time" form:"-"`
+	RawEffectiveStartTime string                `json:"-" form:"effective_start_time"`
+	EffectiveEndTime      time.Time             `json:"effective_end_time" form:"-"`
+	RawEffectiveEndTime   string                `json:"-" form:"effective_end_time"`
+	EffectiveStartDate    time.Time             `json:"effective_start_date" form:"-"`
+	RawEffectiveStartDate string                `json:"-" form:"effective_start_date"`
+	EffectiveEndDate      time.Time             `json:"effective_end_date" form:"-"`
+	RawEffectiveEndDate   string                `json:"-" form:"effective_end_date"`
+	Description           string                `json:"description" form:"description"`
+	CreatedBy             uuid.UUID             `json:"-" form:"-"`
+	CreatedAt             time.Time             `json:"-" form:"-"`
+	UpdatedBy             uuid.UUID             `json:"-" form:"-"`
+	UpdatedAt             time.Time             `json:"-" form:"-"`
+	DeletedBy             *uuid.UUID            `json:"-" form:"-"`
+	DeletedAt             *time.Time            `json:"-" form:"-"`
+	DeletionReason        *string               `json:"-" form:"-"`
+	BuyerIDs              []uuid.UUID           `json:"-" form:"-"`
 }
 
 func (q *Voucher) Validate() (err error) {
@@ -341,41 +279,107 @@ func (q *Voucher) Status() string {
 	return "active"
 }
 
-func (q VoucherType) Int() int {
-	return int(q)
+type VoucherFilter struct {
+	VoucherIDs,
+	ExcludedVoucherIDs,
+	CompanyIDs,
+	BuyerIDs []uuid.UUID
+	RecordStatuses      []RecordStatus
+	VoucherTypes        []VoucherType
+	TargetAudiences     []VoucherTargetAudience
+	Codes               []string
+	TransactionDatetime time.Time
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
 }
 
-func (q VoucherType) String() string {
-	if q == VoucherTypeShoppingCost {
-		return "shopping cost"
+func NewVoucherFilter() *VoucherFilter {
+	return &VoucherFilter{
+		MapSortings: NewMap(),
+		UrlValues:   url.Values{},
 	}
-	return "delivery cost"
 }
 
-func (q VoucherTargetAudience) Equal(v VoucherTargetAudience) bool {
-	return q.Int() == v.Int()
+func (q *VoucherFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *VoucherFilter {
+	q.VoucherIDs = voucherIDs
+	return q
 }
 
-func (q VoucherTargetAudience) Int() int {
-	return int(q)
+func (q *VoucherFilter) WithExcludedVoucherIDs(excludedVoucherIDs ...uuid.UUID) *VoucherFilter {
+	q.ExcludedVoucherIDs = excludedVoucherIDs
+	return q
 }
 
-func (q VoucherTargetAudience) String() string {
-	if q == VoucherTargetAudienceNewBuyers {
-		return "new buyers"
-	}
-	if q == VoucherTargetAudienceLoyalty {
-		return "loyalty"
-	}
-	if q == VoucherTargetAudienceEarlyShopping {
-		return "belanja lebih awal"
-	}
-	if q == VoucherTargetAudienceInactiveBuyers {
-		return "inactive buyers"
-	}
-	return "all buyers"
+func (q *VoucherFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *VoucherFilter {
+	q.CompanyIDs = companyIDs
+	return q
 }
 
-func (q VoucherType) Equal(v VoucherType) bool {
-	return q.Int() == v.Int()
+func (q *VoucherFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *VoucherFilter {
+	q.BuyerIDs = buyerIDs
+	return q
+}
+
+func (q *VoucherFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *VoucherFilter {
+	q.RecordStatuses = recordStatuses
+	return q
+}
+
+func (q *VoucherFilter) WithVoucherTypes(voucherTypes ...VoucherType) *VoucherFilter {
+	q.VoucherTypes = voucherTypes
+	return q
+}
+
+func (q *VoucherFilter) WithTargetAudiences(targetAudiences ...VoucherTargetAudience) *VoucherFilter {
+	q.TargetAudiences = targetAudiences
+	return q
+}
+
+func (q *VoucherFilter) WithCodes(codes ...string) *VoucherFilter {
+	q.Codes = codes
+	return q
+}
+
+func (q *VoucherFilter) WithTransactionDatetime(transactionDatetime time.Time) *VoucherFilter {
+	q.TransactionDatetime = transactionDatetime
+	return q
+}
+
+func (q *VoucherFilter) WithKeyword(keyword string) *VoucherFilter {
+	q.Keyword = keyword
+	return q
+}
+
+func (q *VoucherFilter) WithPaginationURL(paginationURL string) *VoucherFilter {
+	q.PaginationURL = paginationURL
+	return q
+}
+
+func (q *VoucherFilter) WithSortings(sortings ...Sorting) *VoucherFilter {
+	q.Sortings = sortings
+	q.MapSortings.Clear()
+	for _, sorting := range sortings {
+		q.MapSortings.Push(strings.ToLower(helper.Sprintf("%s:%s", sorting.Field, sorting.Direction)), struct{}{})
+	}
+	return q
+}
+
+func (q *VoucherFilter) WithLimit(limit int64) *VoucherFilter {
+	q.Limit = limit
+	return q
+}
+
+func (q *VoucherFilter) WithPage(page int64) *VoucherFilter {
+	q.Page = page
+	return q
+}
+
+func (q *VoucherFilter) WithUrlValues(urlValues url.Values) *VoucherFilter {
+	q.UrlValues = urlValues
+	return q
 }

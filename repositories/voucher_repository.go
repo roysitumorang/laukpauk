@@ -83,6 +83,7 @@ func (q *voucherRepository) FindVouchers(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, record_status
 		, voucher_type
 		, target_audience
@@ -160,6 +161,7 @@ func (q *voucherRepository) FindVouchers(
 		var voucher models.Voucher
 		if err = rows.Scan(
 			&voucher.ID,
+			&voucher.CompanyID,
 			&voucher.RecordStatus,
 			&voucher.VoucherType,
 			&voucher.TargetAudience,
@@ -247,6 +249,7 @@ func (q *voucherRepository) FindVoucher(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, voucher_type
 			, target_audience
@@ -276,6 +279,7 @@ func (q *voucherRepository) FindVoucher(
 	var response models.Voucher
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.VoucherType,
 		&response.TargetAudience,
@@ -343,7 +347,8 @@ func (q *voucherRepository) CreateVoucher(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO vouchers (
-			record_status
+			company_id
+			, record_status
 			, voucher_type
 			, target_audience
 			, code
@@ -363,9 +368,10 @@ func (q *voucherRepository) CreateVoucher(
 			, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9,
-			$10, $11, $12, $13, $14, $15, $16, $17, $18
+			$10, $11, $12, $13, $14, $15, $16, $17, $18, $19
 		)
 		RETURNING id
+			, company_id
 			, record_status
 			, voucher_type
 			, target_audience
@@ -388,6 +394,7 @@ func (q *voucherRepository) CreateVoucher(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
+		request.CompanyID,
 		request.RecordStatus,
 		request.VoucherType,
 		request.TargetAudience,
@@ -408,6 +415,7 @@ func (q *voucherRepository) CreateVoucher(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.VoucherType,
 		&response.TargetAudience,
@@ -454,6 +462,7 @@ func (q *voucherRepository) UpdateVoucher(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, voucher_type
 			, target_audience
@@ -482,6 +491,7 @@ func (q *voucherRepository) UpdateVoucher(
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.VoucherType,
 		&response.TargetAudience,
@@ -682,6 +692,7 @@ func (q *voucherRepository) UpdateVoucher(
 			sb,
 			` WHERE id = $%d
 			RETURNING id
+				, company_id
 				, record_status
 				, voucher_type
 				, target_audience
@@ -708,6 +719,7 @@ func (q *voucherRepository) UpdateVoucher(
 		)
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&response.ID,
+			&response.CompanyID,
 			&response.RecordStatus,
 			&response.VoucherType,
 			&response.TargetAudience,
@@ -830,6 +842,19 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedVoucherID := range request.ExcludedVoucherIDs {
 			params = append(params, excludedVoucherID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

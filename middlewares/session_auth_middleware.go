@@ -26,7 +26,7 @@ func AdminSessionAuthMiddleware(
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
 			}
-			return flash.Redirect(c, sess.Session, "/admin/auth/login")
+			return flash.Redirect(c, sess.Session, "/admin/auth/otp/new")
 		}
 		currentAdmin, err := adminService.FindAdmin(
 			ctx,
@@ -38,7 +38,7 @@ func AdminSessionAuthMiddleware(
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
 			}
-			return flash.Redirect(c, sess.Session, "/admin/auth/login")
+			return flash.Redirect(c, sess.Session, "/admin/auth/otp/new")
 		}
 		sess.Set(models.CurrentAdmin, currentAdmin)
 		_ = sess.Session.SaveWithContext(ctx)
@@ -65,7 +65,7 @@ func SellerSessionAuthMiddleware(
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
 			}
-			return flash.Redirect(c, sess.Session, "/seller/auth/login")
+			return flash.Redirect(c, sess.Session, "/seller/auth/otp/new")
 		}
 		currentSeller, err := sellerService.FindSeller(
 			ctx,
@@ -77,7 +77,7 @@ func SellerSessionAuthMiddleware(
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
 			}
-			return flash.Redirect(c, sess.Session, "/seller/auth/login")
+			return flash.Redirect(c, sess.Session, "/seller/auth/otp/new")
 		}
 		sess.Set(models.CurrentSeller, currentSeller)
 		_ = sess.Session.SaveWithContext(ctx)

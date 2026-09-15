@@ -105,6 +105,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	request.CompanyID = currentBuyer.CompanyID
 	response, err := q.transactionService.CreateTransaction(ctx, currentBuyer, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
