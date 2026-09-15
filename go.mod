@@ -14,7 +14,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.4.0
 	github.com/gofiber/template/jet/v3 v3.0.8
-	github.com/gofiber/utils/v2 v2.5.1
+	github.com/gofiber/utils/v2 v2.5.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
@@ -27,7 +27,7 @@ require (
 	github.com/sqids/sqids-go v0.4.1
 	github.com/swaggo/swag v1.16.6
 	github.com/twmb/franz-go v1.21.6
-	github.com/urfave/cli/v3 v3.11.0
+	github.com/urfave/cli/v3 v3.12.0
 	github.com/valyala/fasthttp v1.74.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/sync v0.23.0
