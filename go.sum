@@ -100,10 +100,10 @@ github.com/gofiber/storage/testhelpers/redis v0.1.0 h1:lDUwtanDf3f5YwlDwhbqnqCtj
 github.com/gofiber/storage/testhelpers/redis v0.1.0/go.mod h1:Y1UccxbGVL04+TF5RuyCsksX+76hu6nJIWjPukBBgJ4=
 github.com/gofiber/storage/valkey v0.4.0 h1:dR5E/SpDRvDNzCOG4gB1gOSngrTIiV2ZOF8BH8nDbjg=
 github.com/gofiber/storage/valkey v0.4.0/go.mod h1:oriBnXAcDhWXLwYxIKJOerDB5bxwG1qLpTACix3F5OE=
-github.com/gofiber/template/jet/v3 v3.0.8 h1:6j3zsPqK2HsEDAiQd2gQIGci5X6UKBcZ6C85B0aGLeM=
-github.com/gofiber/template/jet/v3 v3.0.8/go.mod h1:k6PjQsMJa7VGpR9XkYdodd43l77g5taVryy0lIReYWk=
-github.com/gofiber/template/v2 v2.1.1 h1:1OKU5NGrQgtyUIuv6yffSG3+YVLBpX/vEB0z17ZImOE=
-github.com/gofiber/template/v2 v2.1.1/go.mod h1:L2UVJH2NjnfQC7Tej4l9RfyEtX8h1WnEXCK/GqTPJUg=
+github.com/gofiber/template/jet/v3 v3.0.9 h1:ypFkvpvcX34DyAc35GHTSEjqfpd9auYK+sc+ri7kM/8=
+github.com/gofiber/template/jet/v3 v3.0.9/go.mod h1:RazjIppIldohGQNInBJOLHZZe9B32DIeQreT8TnrMs0=
+github.com/gofiber/template/v2 v2.1.2 h1:fZTpavK0Yi1ehJGrL9UXzBrOnowZfPpIZwxfiIftXBs=
+github.com/gofiber/template/v2 v2.1.2/go.mod h1:h8vOKQkwFUFRNTvRcIvt/OgVUOVqHsaEviWTOAh2JqQ=
 github.com/gofiber/utils/v2 v2.5.2 h1:bX+iACKsCGm2+dW7jvkYSiWIsBaKqFy5slFSxJSIL/s=
 github.com/gofiber/utils/v2 v2.5.2/go.mod h1:EaVDjy4JJv0m0lg6x4owJ1GG8j1pMO8XriqCgVns1ZQ=
 github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
@@ -177,8 +177,8 @@ github.com/pingcap/errors v0.11.4/go.mod h1:Oi8TUi2kEtXXLMJk9l1cGmz20kV3TaQ0usTw
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 h1:jL3a8soXdzuTCcRnKhOmtcsVOObdDTFf4O2B403HPRU=
-github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
+github.com/power-devops/perfstat v0.0.0-20260916203055-22a1a467d9f0 h1:XA01Vk/wv9YikCi1V51yRzIHPMT5of9+cMpZoZvDn/M=
+github.com/power-devops/perfstat v0.0.0-20260916203055-22a1a467d9f0/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
 github.com/robfig/cron/v3 v3.0.1 h1:WdRxkvbJztn8LMz/QEvLN5sBU+xKpSqwwUO1Pjr4qDs=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/samber/slog-fiber v1.22.2 h1:eIO5KXj0jYPN5pT+vxOnArhgaHXeqroI1LSbjlHODqQ=

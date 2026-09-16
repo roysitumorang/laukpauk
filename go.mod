@@ -13,7 +13,7 @@ require (
 	github.com/gofiber/contrib/v3/swaggo v1.0.11
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.4.0
-	github.com/gofiber/template/jet/v3 v3.0.8
+	github.com/gofiber/template/jet/v3 v3.0.9
 	github.com/gofiber/utils/v2 v2.5.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
@@ -52,7 +52,7 @@ require (
 	github.com/go-openapi/swag/typeutils v0.29.2 // indirect
 	github.com/go-openapi/swag/yamlutils v0.29.2 // indirect
 	github.com/gofiber/schema v1.8.7 // indirect
-	github.com/gofiber/template/v2 v2.1.1 // indirect
+	github.com/gofiber/template/v2 v2.1.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/molecule-man/go-brrr v1.1.0 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.30 // indirect
-	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
+	github.com/power-devops/perfstat v0.0.0-20260916203055-22a1a467d9f0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.8 // indirect
 	github.com/swaggo/files/v2 v2.0.2 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
