@@ -21,16 +21,25 @@ import (
 
 type pointSpendingCapController struct {
 	sellerService           services.SellerService
+	companyService          services.CompanyService
 	pointSpendingCapService services.PointSpendingCapService
+	buyerService            services.BuyerService
+	jsonWebTokenService     services.JsonWebTokenService
 }
 
 func NewPointSpendingCapController(
 	sellerService services.SellerService,
+	companyService services.CompanyService,
 	pointSpendingCapService services.PointSpendingCapService,
+	buyerService services.BuyerService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *pointSpendingCapController {
 	return &pointSpendingCapController{
 		sellerService:           sellerService,
+		companyService:          companyService,
 		pointSpendingCapService: pointSpendingCapService,
+		buyerService:            buyerService,
+		jsonWebTokenService:     jsonWebTokenService,
 	}
 }
 
@@ -43,6 +52,10 @@ func (q *pointSpendingCapController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
+		Get("", q.V1BuyerIndex)
 }
 
 func (q *pointSpendingCapController) SellerIndex(c fiber.Ctx) (err error) {
@@ -431,4 +444,25 @@ func (q *pointSpendingCapController) SellerDelete(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("point spending cap deleted successfully").
 		Redirect(c, sess.Session, "/seller/point_spending_caps")
+}
+
+func (q *pointSpendingCapController) V1BuyerIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "PointSpendingCapController-V1BuyerIndex"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	response, _, err := q.pointSpendingCapService.FindPointSpendingCaps(
+		ctx,
+		models.NewPointSpendingCapFilter().
+			WithCompanyIDs(currentBuyer.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCaps")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
 }
