@@ -1,4 +1,9 @@
-<form method="POST" action="{{ baseURL }}/admin/point_earning_caps{{ if !pointEarningCap.New() }}/{{ pointEarningCap.ID }}{{ end }}" id="formPoin">
+{{ range type, message := flash.Data }}
+<div class="alert alert-{{ type }}">
+	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+</div>
+{{ end }}
+<form method="POST" action="{{ baseURL }}/seller/point_earning_caps{{ if !pointEarningCap.New() }}/{{ pointEarningCap.ID }}{{ end }}" id="formPoin">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !pointEarningCap.New() }}<input type="hidden" name="id" value="{{ pointEarningCap.ID }}" />{{ end }}
 	<div class="row">
@@ -45,7 +50,7 @@
 			<button type="submit" class="btn btn-success mr-1" id="btnSubmit">
 				Simpan Data Tarif Akumulasi Poin
 			</button>
-			<a href="{{ baseURL }}/admin/point_earning_caps" class="btn btn-link btn-sm">
+			<a href="{{ baseURL }}/seller/point_earning_caps" class="btn btn-link btn-sm">
 				List Tarif Akumulasi Poin
 			</a>
 		</div>

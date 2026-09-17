@@ -35,7 +35,7 @@
 									<h5 class="mb-1">Tarif Akumulasi Poin</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/point_earning_caps/new">
+									<a href="{{ baseURL }}/seller/point_earning_caps/new">
 										Tambah Tarif Akumulasi Poin
 									</a>
 								</div>
@@ -50,7 +50,7 @@
 							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 						</div>
 						{{ end }}
-						<form method="GET" action="/admin/point_earning_caps" id="search">
+						<form method="GET" action="/seller/point_earning_caps" id="search">
 							<div class="row">
 								<div class="col-sm-4 col-md-6">
 									<div class="dataTables_length" id="listBlog_length">
@@ -129,14 +129,14 @@
 									</td>
 									<td class="text-right">{{ row.EarnedPoints | Comma }}</td>
 									<td class="vam text-center">
-										<a href="{{ baseURL }}/admin/point_earning_caps/{{ row.ID }}/edit">
+										<a href="{{ baseURL }}/seller/point_earning_caps/{{ row.ID }}/edit">
 											<span class="fa fa-edit text-warning cp mr-2"
 												data-toggle="tooltip"
 												data-placement="top"
 												title="Edit Data Tarif Akumulasi Poin">
 											</span>
 										</a>
-										<form method="POST" action="{{ baseURL }}/admin/point_earning_caps/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+										<form method="POST" action="{{ baseURL }}/seller/point_earning_caps/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 											<span class="fa fa-trash text-danger cp ml-2"
 												data-toggle="tooltip"

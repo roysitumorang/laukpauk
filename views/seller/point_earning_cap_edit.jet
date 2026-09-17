@@ -5,7 +5,7 @@
 		<div class="container-fluid">
 			<div class="row mb-2">
 				<div class="col-sm-6">
-					<h1 class="m-0 text-dark">Tarif Akumulasi Poin Baru</h1>
+					<h1 class="m-0 text-dark">Edit Tarif Akumulasi Poin</h1>
 				</div>
 				<!-- /.col -->
 				<div class="col-sm-6">
@@ -34,21 +34,16 @@
 						<div class="card-header">
 							<div class="row">
 								<div class="col-lg-4">
-									<h5 class="mb-0">Tarif Akumulasi Poin Baru</h5>
+									<h5 class="mb-0">Edit Tarif Akumulasi Poin</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/point_earning_caps">
+									<a href="{{ baseURL }}/seller/point_earning_caps">
 										<button class="btn btn-link btn-sm" type="button">List Tarif Akumulasi Poin</button>
 									</a>
 								</div>
 							</div>
 						</div>
 						<div class="card-body">
-							{{ range type, message := flash.Data }}
-							<div class="alert alert-{{ type }}">
-								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
-							</div>
-							{{ end }}
 							{{ include "_point_earning_cap_form" }}
 						</div>
 					</div>
