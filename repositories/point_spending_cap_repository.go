@@ -81,6 +81,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, record_status
 		, LOWER(shopping_cost)
 		, UPPER(shopping_cost) - 1
@@ -142,6 +143,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		var pointSpendingCap models.PointSpendingCap
 		if err = rows.Scan(
 			&pointSpendingCap.ID,
+			&pointSpendingCap.CompanyID,
 			&pointSpendingCap.RecordStatus,
 			&pointSpendingCap.MinimumShoppingCost,
 			&pointSpendingCap.MaximumShoppingCost,
@@ -181,6 +183,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, LOWER(shopping_cost)
 			, UPPER(shopping_cost) - 1
@@ -199,6 +202,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 	var response models.PointSpendingCap
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.MinimumShoppingCost,
 		&response.MaximumShoppingCost,
@@ -231,15 +235,17 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO point_spending_caps (
-			record_status
+			company_id
+			, record_status
 			, shopping_cost
 			, disposable_points
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, int8range($2, $3, '[]'), $4, $5, $6, $7, $8)
+		) VALUES ($1, $2, int8range($3, $4, '[]'), $5, $6, $7, $8, $9)
 		RETURNING id
+			, company_id
 			, record_status
 			, LOWER(shopping_cost)
 			, UPPER(shopping_cost) - 1
@@ -251,6 +257,7 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
+		request.CompanyID,
 		request.RecordStatus,
 		request.MinimumShoppingCost,
 		request.MaximumShoppingCost,
@@ -261,6 +268,7 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.MinimumShoppingCost,
 		&response.MaximumShoppingCost,
@@ -297,6 +305,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, LOWER(shopping_cost)
 			, UPPER(shopping_cost) - 1
@@ -314,6 +323,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.MinimumShoppingCost,
 		&response.MaximumShoppingCost,
@@ -416,6 +426,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
+			, company_id
 			, record_status
 			, LOWER(shopping_cost)
 			, UPPER(shopping_cost) - 1
@@ -431,6 +442,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.MinimumShoppingCost,
 		&response.MaximumShoppingCost,
@@ -475,6 +487,19 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedPointSpendingCapID := range request.ExcludedPointSpendingCapIDs {
 			params = append(params, excludedPointSpendingCapID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

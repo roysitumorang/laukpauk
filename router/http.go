@@ -147,9 +147,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/points":                              "/points/admin",
 				"/admin/points/*":                            "/points/admin/$1",
 				"/admin/points/*/*":                          "/points/admin/$1/$2",
-				"/admin/point_spending_caps":                 "/point_spending_caps/admin",
-				"/admin/point_spending_caps/*":               "/point_spending_caps/admin/$1",
-				"/admin/point_spending_caps/*/*":             "/point_spending_caps/admin/$1/$2",
 				"/admin/transactions":                        "/transactions/admin",
 				"/admin/transactions/*":                      "/transactions/admin/$1",
 				"/admin/transactions/*/*":                    "/transactions/admin/$1/$2",
@@ -187,6 +184,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/point_earning_caps":                 "/point_earning_caps/seller",
 				"/seller/point_earning_caps/*":               "/point_earning_caps/seller/$1",
 				"/seller/point_earning_caps/*/*":             "/point_earning_caps/seller/$1/$2",
+				"/seller/point_spending_caps":                "/point_spending_caps/seller",
+				"/seller/point_spending_caps/*":              "/point_spending_caps/seller/$1",
+				"/seller/point_spending_caps/*/*":            "/point_spending_caps/seller/$1/$2",
 				"/seller/recipes":                            "/recipes/seller",
 				"/seller/recipes/*":                          "/recipes/seller/$1",
 				"/seller/recipes/*/*":                        "/recipes/seller/$1/$2",
@@ -347,7 +347,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.PointEarningCapService,
 	).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(
-		q.AdminService,
+		q.SellerService,
 		q.PointSpendingCapService,
 	).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(

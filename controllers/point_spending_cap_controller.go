@@ -20,36 +20,36 @@ import (
 )
 
 type pointSpendingCapController struct {
-	adminService            services.AdminService
+	sellerService           services.SellerService
 	pointSpendingCapService services.PointSpendingCapService
 }
 
 func NewPointSpendingCapController(
-	adminService services.AdminService,
+	sellerService services.SellerService,
 	pointSpendingCapService services.PointSpendingCapService,
 ) *pointSpendingCapController {
 	return &pointSpendingCapController{
-		adminService:            adminService,
+		sellerService:           sellerService,
 		pointSpendingCapService: pointSpendingCapService,
 	}
 }
 
 func (q *pointSpendingCapController) Mount(r fiber.Router) {
-	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
-	r.Group("/admin", adminSessionAuth).
-		Get("", q.AdminIndex).
-		Get("/new", q.AdminNew).
-		Post("", q.AdminCreate).
-		Get("/:id/edit", q.AdminEdit).
-		Post("/:id", q.AdminUpdate).
-		Post("/:id/delete", q.AdminDelete)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	r.Group("/seller", sellerSessionAuth).
+		Get("", q.SellerIndex).
+		Get("/new", q.SellerNew).
+		Post("", q.SellerCreate).
+		Get("/:id/edit", q.SellerEdit).
+		Post("/:id", q.SellerUpdate).
+		Post("/:id/delete", q.SellerDelete)
 }
 
-func (q *pointSpendingCapController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *pointSpendingCapController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointSpendingCapController-AdminIndex"
+	ctxt := "PointSpendingCapController-SellerIndex"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -64,7 +64,7 @@ func (q *pointSpendingCapController) AdminIndex(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Tarif Penggunaan Poin",
 		"limits", models.Limits,
 		"request", request,
@@ -87,29 +87,30 @@ func (q *pointSpendingCapController) AdminIndex(c fiber.Ctx) (err error) {
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCaps")
-		return c.Render("/admin/point_spending_cap_index", params.Push(
+		return c.Render("/seller/point_spending_cap_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if rows, pagination, err = q.pointSpendingCapService.FindPointSpendingCaps(
-		c,
-		request.WithRecordStatuses(models.RecordStatusActive),
+		ctx,
+		request.WithCompanyIDs(currentSeller.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCaps")
-		return c.Render("/admin/point_spending_cap_index", params.Push(
+		return c.Render("/seller/point_spending_cap_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return c.Render("/admin/point_spending_cap_index", params.Push(
+	return c.Render("/seller/point_spending_cap_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
-	), "admin/layouts/authenticated")
+	), "seller/layouts/authenticated")
 }
 
-func (q *pointSpendingCapController) AdminNew(c fiber.Ctx) (err error) {
+func (q *pointSpendingCapController) SellerNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -122,19 +123,19 @@ func (q *pointSpendingCapController) AdminNew(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Tambah Tarif Penggunaan Poin",
 		"request", request,
 		"pointSpendingCap", request,
 	)
-	return c.Render("/admin/point_spending_cap_new", params, "admin/layouts/authenticated")
+	return c.Render("/seller/point_spending_cap_new", params, "seller/layouts/authenticated")
 }
 
-func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *pointSpendingCapController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointSpendingCapController-AdminCreate"
+	ctxt := "PointSpendingCapController-SellerCreate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -146,7 +147,7 @@ func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Tambah Tarif Penggunaan Poin",
 		"request", request,
 		"pointSpendingCap", request,
@@ -156,12 +157,13 @@ func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointSpendingCap")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("/admin/point_spending_cap_new", params.Push(
+		return c.Render("/seller/point_spending_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	createdBy := currentAdmin.ID
+	createdBy := currentSeller.ID
 	now := time.Now()
+	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -171,19 +173,20 @@ func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost),
 	)
 	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
-		return c.Render("admin/point_spending_cap_new", params.Push(
+		return c.Render("seller/point_spending_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if pointSpendingCap != nil {
 		if pointSpendingCap.RecordStatus == models.RecordStatusActive {
-			return c.Render("admin/point_spending_cap_new", params.Push(
+			return c.Render("seller/point_spending_cap_new", params.Push(
 				"flash", flash.Danger(models.ErrPointSpendingCapShoppingCostOverlapping.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		request.ID = pointSpendingCap.ID
 		request.DeletedBy = nil
@@ -194,9 +197,9 @@ func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("/admin/point_spending_cap_new", params.Push(
+		return c.Render("/seller/point_spending_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -208,26 +211,26 @@ func (q *pointSpendingCapController) AdminCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.pointSpendingCapService.SavePointSpendingCap(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSavePointSpendingCap")
-		return c.Render("/admin/point_spending_cap_new", params.Push(
+		return c.Render("/seller/point_spending_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("/admin/point_spending_cap_new", params.Push(
+		return c.Render("/seller/point_spending_cap_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("point spending cap created successfully").
-		Redirect(c, sess.Session, "/admin/point_spending_caps")
+		Redirect(c, sess.Session, "/seller/point_spending_caps")
 }
 
-func (q *pointSpendingCapController) AdminEdit(c fiber.Ctx) (err error) {
+func (q *pointSpendingCapController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointSpendingCapController-AdminEdit"
+	ctxt := "PointSpendingCapController-SellerEdit"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -237,41 +240,40 @@ func (q *pointSpendingCapController) AdminEdit(c fiber.Ctx) (err error) {
 	pointSpendingCapID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointSpendingCapIDs(pointSpendingCapID),
 	)
-	if err != nil {
-		if !errors.Is(err, models.ErrPointSpendingCapNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
-		}
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	if pointSpendingCap == nil {
-		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Edit Tarif Penggunaan Poin",
 		"request", pointSpendingCap,
 		"pointSpendingCap", pointSpendingCap,
 	)
-	return c.Render("/admin/point_spending_cap_edit", params, "admin/layouts/authenticated")
+	return c.Render("/seller/point_spending_cap_edit", params, "seller/layouts/authenticated")
 }
 
-func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
+func (q *pointSpendingCapController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointSpendingCapController-AdminUpdate"
+	ctxt := "PointSpendingCapController-SellerUpdate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -280,27 +282,28 @@ func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
 	pointSpendingCapID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointSpendingCapIDs(pointSpendingCapID),
 	)
 	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	if pointSpendingCap == nil {
-		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Edit Tarif Penggunaan Poin",
 		"request", pointSpendingCap,
 		"pointSpendingCap", pointSpendingCap,
@@ -310,40 +313,42 @@ func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointSpendingCap")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("/admin/point_spending_cap_edit", params.Push(
+		return c.Render("/seller/point_spending_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if pointSpendingCap.MinimumShoppingCost != request.MinimumShoppingCost ||
 		pointSpendingCap.MaximumShoppingCost != request.MaximumShoppingCost {
 		otherPointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 			ctx,
 			models.NewPointSpendingCapFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
 				WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost).
 				WithExcludedPointSpendingCapIDs(pointSpendingCap.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
-			return c.Render("admin/point_spending_cap_edit", params.Push(
+			return c.Render("seller/point_spending_cap_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		if otherPointSpendingCap != nil {
-			return c.Render("admin/point_spending_cap_edit", params.Push(
+			return c.Render("seller/point_spending_cap_edit", params.Push(
 				"flash", flash.Danger(models.ErrPointSpendingCapShoppingCostOverlapping.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	request.ID = pointSpendingCap.ID
-	request.UpdatedBy = currentAdmin.ID
+	request.CompanyID = currentSeller.CompanyID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("/admin/point_spending_cap_edit", params.Push(
+		return c.Render("/seller/point_spending_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -355,26 +360,26 @@ func (q *pointSpendingCapController) AdminUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.pointSpendingCapService.UpdatePointSpendingCap(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointSpendingCap")
-		return c.Render("/admin/point_spending_cap_edit", params.Push(
+		return c.Render("/seller/point_spending_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("/admin/point_spending_cap_edit", params.Push(
+		return c.Render("/seller/point_spending_cap_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("point spending cap updated successfully").
-		Redirect(c, sess.Session, "/admin/point_spending_caps")
+		Redirect(c, sess.Session, "/seller/point_spending_caps")
 }
 
-func (q *pointSpendingCapController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *pointSpendingCapController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "PointSpendingCapController-AdminDelete"
+	ctxt := "PointSpendingCapController-SellerDelete"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -382,29 +387,30 @@ func (q *pointSpendingCapController) AdminDelete(c fiber.Ctx) (err error) {
 	pointSpendingCapID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	request, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointSpendingCapIDs(pointSpendingCapID),
 	)
 	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	if request == nil {
-		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(models.ErrPointSpendingCapNotFound.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentAdmin.ID
+	request.DeletedBy = &currentSeller.ID
 	request.DeletedAt = new(time.Now())
 	request.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -416,13 +422,13 @@ func (q *pointSpendingCapController) AdminDelete(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.pointSpendingCapService.UpdatePointSpendingCap(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointSpendingCap")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/point_spending_caps")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/point_spending_caps")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("point spending cap deleted successfully").
-		Redirect(c, sess.Session, "/admin/point_spending_caps")
+		Redirect(c, sess.Session, "/seller/point_spending_caps")
 }

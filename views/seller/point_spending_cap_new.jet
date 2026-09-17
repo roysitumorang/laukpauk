@@ -37,18 +37,13 @@
 									<h5 class="mb-0">Tarif Penggunaan Poin Baru</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/point_spending_caps">
+									<a href="{{ baseURL }}/seller/point_spending_caps">
 										<button class="btn btn-link btn-sm" type="button">List Tarif Penggunaan Poin</button>
 									</a>
 								</div>
 							</div>
 						</div>
 						<div class="card-body">
-							{{ range type, message := flash.Data }}
-							<div class="alert alert-{{ type }}">
-								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
-							</div>
-							{{ end }}
 							{{ include "_point_spending_cap_form" }}
 						</div>
 					</div>
