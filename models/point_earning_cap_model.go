@@ -21,9 +21,9 @@ type PointEarningCap struct {
 	ID                  uuid.UUID    `json:"-" form:"id"`
 	CompanyID           uuid.UUID    `json:"-" form:"-"`
 	RecordStatus        RecordStatus `json:"-" form:"-"`
-	MinimumShoppingCost int64        `json:"-" form:"minimum_shopping_cost"`
-	MaximumShoppingCost int64        `json:"-" form:"maximum_shopping_cost"`
-	EarnedPoints        int64        `json:"-" form:"earned_points"`
+	MinimumShoppingCost int64        `json:"minimum_shopping_cost" form:"minimum_shopping_cost"`
+	MaximumShoppingCost int64        `json:"maximum_shopping_cost" form:"maximum_shopping_cost"`
+	EarnedPoints        int64        `json:"earned_points" form:"earned_points"`
 	CreatedBy           uuid.UUID    `json:"-" form:"-"`
 	CreatedAt           time.Time    `json:"-" form:"-"`
 	UpdatedBy           uuid.UUID    `json:"-" form:"-"`

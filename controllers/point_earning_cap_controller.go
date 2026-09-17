@@ -21,16 +21,25 @@ import (
 
 type pointEarningCapController struct {
 	sellerService          services.SellerService
+	companyService         services.CompanyService
 	pointEarningCapService services.PointEarningCapService
+	buyerService           services.BuyerService
+	jsonWebTokenService    services.JsonWebTokenService
 }
 
 func NewPointEarningCapController(
 	sellerService services.SellerService,
+	companyService services.CompanyService,
 	pointEarningCapService services.PointEarningCapService,
+	buyerService services.BuyerService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *pointEarningCapController {
 	return &pointEarningCapController{
 		sellerService:          sellerService,
+		companyService:         companyService,
 		pointEarningCapService: pointEarningCapService,
+		buyerService:           buyerService,
+		jsonWebTokenService:    jsonWebTokenService,
 	}
 }
 
@@ -43,6 +52,10 @@ func (q *pointEarningCapController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
+		Get("", q.V1BuyerIndex)
 }
 
 func (q *pointEarningCapController) SellerIndex(c fiber.Ctx) (err error) {
@@ -433,4 +446,25 @@ func (q *pointEarningCapController) SellerDelete(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("point earning cap deleted successfully").
 		Redirect(c, sess.Session, "/seller/point_earning_caps")
+}
+
+func (q *pointEarningCapController) V1BuyerIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "PointEarningCapController-V1BuyerIndex"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	response, _, err := q.pointEarningCapService.FindPointEarningCaps(
+		ctx,
+		models.NewPointEarningCapFilter().
+			WithCompanyIDs(currentBuyer.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCaps")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
 }

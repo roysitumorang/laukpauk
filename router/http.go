@@ -208,6 +208,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/banners/*":                        "/banners/v1/buyer/$1",
 				"/v1/buyer/banners/*/*":                      "/banners/v1/buyer/$1/$2",
 				"/v1/buyer/delivery_routes":                  "/delivery_routes/v1/buyer",
+				"/v1/companies/*/buyer/point_earning_caps":   "/point_earning_caps/$1/v1/buyer",
 				"/v1/buyer/setting":                          "/setting/v1/buyer",
 				"/v1/buyer/payment_channels":                 "/payment_channels/v1/buyer",
 				"/":                                          "/home",
@@ -344,7 +345,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(
 		q.SellerService,
+		q.CompanyService,
 		q.PointEarningCapService,
+		q.BuyerService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(
 		q.SellerService,
