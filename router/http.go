@@ -199,7 +199,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/cart":                             "/cart/v1/buyer",
 				"/v1/buyer/cart/*":                           "/cart/v1/buyer/$1",
 				"/v1/buyer/cart/*/*":                         "/cart/v1/buyer/$1/$2",
-				"/v1/buyer/vouchers/*":                       "/vouchers/v1/buyer/$1",
+				"/v1/companies/*/buyer/vouchers":             "/vouchers/$1/v1/buyer",
 				"/v1/companies/*/buyer/delivery_plans/*":     "/delivery_plans/$1/v1/buyer/$2",
 				"/v1/buyer/transactions":                     "/transactions/v1/buyer",
 				"/v1/buyer/transactions/*":                   "/transactions/v1/buyer/$1",
@@ -337,6 +337,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/points"))
 	controllers.NewVoucherController(
 		q.SellerService,
+		q.CompanyService,
 		q.VoucherService,
 		q.BuyerService,
 		q.JsonWebTokenService,

@@ -22,6 +22,7 @@ import (
 
 type voucherController struct {
 	sellerService       services.SellerService
+	companyService      services.CompanyService
 	voucherService      services.VoucherService
 	buyerService        services.BuyerService
 	jsonWebTokenService services.JsonWebTokenService
@@ -29,12 +30,14 @@ type voucherController struct {
 
 func NewVoucherController(
 	sellerService services.SellerService,
+	companyService services.CompanyService,
 	voucherService services.VoucherService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *voucherController {
 	return &voucherController{
 		sellerService:       sellerService,
+		companyService:      companyService,
 		voucherService:      voucherService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
@@ -43,7 +46,6 @@ func NewVoucherController(
 
 func (q *voucherController) Mount(r fiber.Router) {
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -51,8 +53,10 @@ func (q *voucherController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	r.Group("/v1/buyer", buyerKeyAuth).
-		Get("/:id", q.V1BuyerShow)
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
+		Get("", q.V1BuyerIndex)
 }
 
 func (q *voucherController) SellerIndex(c fiber.Ctx) (err error) {
@@ -487,19 +491,19 @@ func (q *voucherController) SellerDelete(c fiber.Ctx) (err error) {
 		Redirect(c, sess.Session, "/seller/vouchers")
 }
 
-func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
+func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "VoucherController-V1BuyerShow"
+	ctxt := "VoucherController-V1BuyerIndex"
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
-	response, err := q.voucherService.FindVoucher(
+	response, _, err := q.voucherService.FindVouchers(
 		ctx,
 		models.NewVoucherFilter().
 			WithCompanyIDs(currentBuyer.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
-			WithCodes(c.Params("id")),
+			WithBuyerIDs(currentBuyer.ID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -509,7 +513,9 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrVoucherNotFound.Error()).
 			WriteResponse(c)
 	}
-	response.Photo = response.PhotoPath(c.BaseURL())
+	for i := range response {
+		response[i].Photo = response[i].PhotoPath(c.BaseURL())
+	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)

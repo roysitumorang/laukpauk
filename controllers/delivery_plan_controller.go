@@ -54,8 +54,8 @@ func (q *deliveryPlanController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
 		Get("/now", q.V1BuyerShow)
 }
@@ -469,10 +469,12 @@ func (q *deliveryPlanController) SellerDelete(c fiber.Ctx) (err error) {
 func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryPlanController-V1BuyerShow"
+	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	now := time.Now().In(time.Local)
 	response, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
+			WithCompanyIDs(currentBuyer.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now),
 	)
