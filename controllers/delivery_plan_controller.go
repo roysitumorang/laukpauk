@@ -21,49 +21,50 @@ import (
 
 type (
 	deliveryPlanController struct {
-		adminService        services.AdminService
+		sellerService       services.SellerService
+		companyService      services.CompanyService
 		deliveryPlanService services.DeliveryPlanService
-		settingService      services.SettingService
 		buyerService        services.BuyerService
 		jsonWebTokenService services.JsonWebTokenService
 	}
 )
 
 func NewDeliveryPlanController(
-	adminService services.AdminService,
+	sellerService services.SellerService,
+	companyService services.CompanyService,
 	deliveryPlanService services.DeliveryPlanService,
-	settingService services.SettingService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *deliveryPlanController {
 	return &deliveryPlanController{
-		adminService:        adminService,
+		sellerService:       sellerService,
+		companyService:      companyService,
 		deliveryPlanService: deliveryPlanService,
-		settingService:      settingService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
 	}
 }
 
 func (q *deliveryPlanController) Mount(r fiber.Router) {
-	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
-	r.Group("/admin", adminSessionAuth).
-		Get("", q.AdminIndex).
-		Get("/new", q.AdminNew).
-		Post("", q.AdminCreate).
-		Get("/:id/edit", q.AdminEdit).
-		Post("/:id", q.AdminUpdate).
-		Post("/:id/delete", q.AdminDelete)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	r.Group("/seller", sellerSessionAuth).
+		Get("", q.SellerIndex).
+		Get("/new", q.SellerNew).
+		Post("", q.SellerCreate).
+		Get("/:id/edit", q.SellerEdit).
+		Post("/:id", q.SellerUpdate).
+		Post("/:id/delete", q.SellerDelete)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", buyerKeyAuth).
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
 		Get("/now", q.V1BuyerShow)
 }
 
-func (q *deliveryPlanController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *deliveryPlanController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "DeliveryPlanController-AdminIndex"
+	ctxt := "DeliveryPlanController-SellerIndex"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -78,7 +79,7 @@ func (q *deliveryPlanController) AdminIndex(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Jadwal Delivery",
 		"limits", models.Limits,
 		"request", request,
@@ -111,30 +112,30 @@ func (q *deliveryPlanController) AdminIndex(c fiber.Ctx) (err error) {
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
-		return c.Render("admin/delivery_plan_index", params.Push(
+		return c.Render("seller/delivery_plan_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	request.WithRecordStatuses(models.RecordStatusActive)
 	if rows, pagination, err = q.deliveryPlanService.FindDeliveryPlans(
-		c,
-		request,
+		ctx,
+		request.WithCompanyIDs(currentSeller.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
-		return c.Render("admin/delivery_plan_index", params.Push(
+		return c.Render("seller/delivery_plan_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return c.Render("admin/delivery_plan_index", params.Push(
+	return c.Render("seller/delivery_plan_index", params.Push(
 		"request", request,
 		"rows", rows,
 		"pagination", pagination,
-	), "admin/layouts/authenticated")
+	), "seller/layouts/authenticated")
 }
 
-func (q *deliveryPlanController) AdminNew(c fiber.Ctx) (err error) {
+func (q *deliveryPlanController) SellerNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -147,20 +148,20 @@ func (q *deliveryPlanController) AdminNew(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
 		"deliveryPlan", request,
 		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
-	return c.Render("admin/delivery_plan_new", params, "admin/layouts/authenticated")
+	return c.Render("seller/delivery_plan_new", params, "seller/layouts/authenticated")
 }
 
-func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *deliveryPlanController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "DeliveryPlanController-AdminCreate"
+	ctxt := "DeliveryPlanController-SellerCreate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -172,51 +173,42 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Add New Jadwal Delivery",
 		"request", request,
 		"deliveryPlan", request,
 		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
-	setting, err := q.settingService.FindSetting(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return c.Render("admin/delivery_plan_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if setting == nil {
-		return c.Render("admin/delivery_plan_new", params.Push(
-			"flash", flash.Danger(models.ErrSettingNotFound.Error()),
-		), "admin/layouts/authenticated")
-	}
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/delivery_plan_new", params.Push(
+		return c.Render("seller/delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
+			WithDeliveryWeekdays(request.Weekday).
 			WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-		return c.Render("admin/delivery_plan_new", params.Push(
+		return c.Render("seller/delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if deliveryPlan != nil {
-		return c.Render("admin/delivery_plan_new", params.Push(
+		return c.Render("seller/delivery_plan_new", params.Push(
 			"flash", flash.Danger(models.ErrUniqueDeliveryPlanTransactionWindowViolation.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	now := time.Now()
-	createdBy := currentAdmin.ID
+	createdBy := currentSeller.ID
+	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -226,9 +218,9 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/delivery_plan_new", params.Push(
+		return c.Render("seller/delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -242,26 +234,26 @@ func (q *deliveryPlanController) AdminCreate(c fiber.Ctx) (err error) {
 		if !errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryPlan")
 		}
-		return c.Render("admin/delivery_plan_new", params.Push(
+		return c.Render("seller/delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/delivery_plan_new", params.Push(
+		return c.Render("seller/delivery_plan_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("delivery plan created successfully").
-		Redirect(c, sess.Session, "/admin/delivery_plans")
+		Redirect(c, sess.Session, "/seller/delivery_plans")
 }
 
-func (q *deliveryPlanController) AdminEdit(c fiber.Ctx) (err error) {
+func (q *deliveryPlanController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "DeliveryPlanController-AdminEdit"
+	ctxt := "DeliveryPlanController-SellerEdit"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -271,40 +263,41 @@ func (q *deliveryPlanController) AdminEdit(c fiber.Ctx) (err error) {
 	deliveryPlanID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithDeliveryPlanIDs(deliveryPlanID),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	if deliveryPlan == nil {
-		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Edit Data Jadwal Delivery",
 		"request", deliveryPlan,
 		"deliveryPlan", deliveryPlan,
 		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
-	return c.Render("admin/delivery_plan_edit", params, "admin/layouts/authenticated")
+	return c.Render("seller/delivery_plan_edit", params, "seller/layouts/authenticated")
 }
 
-func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
+func (q *deliveryPlanController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "DeliveryPlanController-AdminUpdate"
+	ctxt := "DeliveryPlanController-SellerUpdate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -313,76 +306,69 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 	deliveryPlanID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithDeliveryPlanIDs(deliveryPlanID),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	if deliveryPlan == nil {
-		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Edit Data Jadwal Delivery",
 		"request", deliveryPlan,
 		"deliveryPlan", deliveryPlan,
 		"deliveryWeekdays", models.DeliveryWeekdays,
 	)
-	setting, err := q.settingService.FindSetting(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return c.Render("admin/delivery_plan_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
-	}
-	if setting == nil {
-		return c.Render("admin/delivery_plan_edit", params.Push(
-			"flash", flash.Danger(models.ErrSettingNotFound.Error()),
-		), "admin/layouts/authenticated")
-	}
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/delivery_plan_edit", params.Push(
+		return c.Render("seller/delivery_plan_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	if deliveryPlan.TransactionWindowMin != request.TransactionWindowMin ||
+	if deliveryPlan.Weekday != request.Weekday ||
+		deliveryPlan.TransactionWindowMin != request.TransactionWindowMin ||
 		deliveryPlan.TransactionWindowMax != request.TransactionWindowMax {
 		otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 			ctx,
 			models.NewDeliveryPlanFilter().
+				WithCompanyIDs(currentSeller.CompanyID).
+				WithDeliveryWeekdays(request.Weekday).
 				WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax).
 				WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
 		)
 		if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-			return c.Render("admin/delivery_plan_edit", params.Push(
+			return c.Render("seller/delivery_plan_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 		if otherDeliveryPlan != nil {
-			return c.Render("admin/delivery_plan_edit", params.Push(
+			return c.Render("seller/delivery_plan_edit", params.Push(
 				"flash", flash.Danger(models.ErrUniqueDeliveryPlanTransactionWindowViolation.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	request.ID = deliveryPlan.ID
+	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = deliveryPlan.RecordStatus
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -391,9 +377,9 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/delivery_plan_edit", params.Push(
+		return c.Render("seller/delivery_plan_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -407,26 +393,26 @@ func (q *deliveryPlanController) AdminUpdate(c fiber.Ctx) (err error) {
 		if !errors.Is(err, models.ErrUniqueDeliveryPlanTransactionWindowViolation) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
 		}
-		return c.Render("admin/delivery_plan_edit", params.Push(
+		return c.Render("seller/delivery_plan_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/delivery_plan_edit", params.Push(
+		return c.Render("seller/delivery_plan_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("delivery plan updated successfully").
-		Redirect(c, sess.Session, "/admin/delivery_plans")
+		Redirect(c, sess.Session, "/seller/delivery_plans")
 }
 
-func (q *deliveryPlanController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *deliveryPlanController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "DeliveryPlanController-AdminDelete"
+	ctxt := "DeliveryPlanController-SellerDelete"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -434,30 +420,30 @@ func (q *deliveryPlanController) AdminDelete(c fiber.Ctx) (err error) {
 	deliveryPlanID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithDeliveryPlanIDs(deliveryPlanID),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	if deliveryPlan == nil {
-		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(models.ErrDeliveryPlanNotFound.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
-	request := deliveryPlan
-	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentAdmin.ID
-	request.DeletedAt = new(time.Now())
-	request.DeletionReason = nil
+	deliveryPlan.RecordStatus = models.RecordStatusDeleted
+	deliveryPlan.DeletedBy = &currentSeller.ID
+	deliveryPlan.DeletedAt = new(time.Now())
+	deliveryPlan.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -467,34 +453,22 @@ func (q *deliveryPlanController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.deliveryPlanService.UpdateDeliveryPlan(ctx, tx, request); err != nil {
+	if _, err = q.deliveryPlanService.UpdateDeliveryPlan(ctx, tx, deliveryPlan); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/delivery_plans")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/delivery_plans")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("delivery plan deleted successfully").
-		Redirect(c, sess.Session, "/admin/delivery_plans")
+		Redirect(c, sess.Session, "/seller/delivery_plans")
 }
 
 func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryPlanController-V1BuyerShow"
-	setting, err := q.settingService.FindSetting(ctx)
-	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if setting == nil {
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrSettingNotFound.Error()).
-			WriteResponse(c)
-	}
 	now := time.Now().In(time.Local)
 	response, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,

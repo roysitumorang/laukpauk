@@ -32,18 +32,12 @@
 				<div class="card-header">
 					<div class="row">
 						<div class="col-lg-4">
-							<h5>Edit Data Jadwal Delivery</h5>
-							<p class="mb-0 text-muted text-sm">{{ if deliveryPlan.Name }}{{ deliveryPlan.Name }}{{ else if deliveryPlan.Day }}{{ deliveryPlan.Day.Format("2 Jan 2006") }}{{ end }}</p>
+							<h5>Tambah Data Jadwal Delivery</h5>
 						</div>
 						<div class="col-lg-8 text-right"></div>
 					</div>
 				</div>
 				<div class="card-body">
-					{{ range type, message := flash.Data }}
-					<div class="alert alert-{{ type }}">
-						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
-					</div>
-					{{ end }}
 					{{ include "_delivery_plan_form" }}
 				</div>
 			</div>

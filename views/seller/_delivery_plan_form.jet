@@ -1,4 +1,9 @@
-<form method="POST" action="{{ baseURL }}/admin/delivery_plans{{ if !deliveryPlan.New() }}/{{ deliveryPlan.ID }}{{ end }}">
+{{ range type, message := flash.Data }}
+<div class="alert alert-{{ type }}">
+	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+</div>
+{{ end }}
+<form method="POST" action="{{ baseURL }}/seller/delivery_plans{{ if !deliveryPlan.New() }}/{{ deliveryPlan.ID }}{{ end }}">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !deliveryPlan.New() }}<input type="hidden" name="id" value="{{ deliveryPlan.ID }}" />{{ end }}
 	<div class="row">
@@ -116,7 +121,7 @@
 	<button type="submit" class="btn btn-success mr-1">
 		Simpan{{ if !deliveryPlan.New() }} Perubahan{{ end }} Data Jadwal Delivery
 	</button>
-	<a href="{{ baseURL }}/admin/delivery_plans" class="btn btn-default ml-1">
+	<a href="{{ baseURL }}/seller/delivery_plans" class="btn btn-default ml-1">
 		Back to List Jadwal Delivery
 	</a>
 </form>
@@ -130,32 +135,47 @@
 			dateFormat: "H:i:S",
 			minuteIncrement: 1,
 		});
-		document.getElementById("same_day").addEventListener("change", (event) => {
+		const sameDay = document.getElementById("same_day");
+		const sameDayWindowMin = document.getElementById("same_day_window_min");
+		const sameDayWindowMax = document.getElementById("same_day_window_max");
+		sameDay.addEventListener("change", (event) => {
 			if (event.target.checked) {
-				document.getElementById("same_day_window_min").removeAttribute("disabled");
-				document.getElementById("same_day_window_max").removeAttribute("disabled");
+				sameDayWindowMin.removeAttribute("disabled");
+				sameDayWindowMax.removeAttribute("disabled");
 				return;
 			}
-			document.getElementById("same_day_window_min").setAttribute("disabled", "disabled");
-			document.getElementById("same_day_window_max").setAttribute("disabled", "disabled");
+			sameDayWindowMin.value = "";
+			sameDayWindowMin.setAttribute("disabled", "disabled");
+			sameDayWindowMax.value = "";
+			sameDayWindowMax.setAttribute("disabled", "disabled");
 		});
-		document.getElementById("next_day").addEventListener("change", (event) => {
+		const nextDay = document.getElementById("next_day");
+		const nextDayWindowMin = document.getElementById("next_day_window_min");
+		const nextDayWindowMax = document.getElementById("next_day_window_max");
+		nextDay.addEventListener("change", (event) => {
 			if (event.target.checked) {
-				document.getElementById("next_day_window_min").removeAttribute("disabled");
-				document.getElementById("next_day_window_max").removeAttribute("disabled");
+				nextDayWindowMin.removeAttribute("disabled");
+				nextDayWindowMax.removeAttribute("disabled");
 				return;
 			}
-			document.getElementById("next_day_window_min").setAttribute("disabled", "disabled");
-			document.getElementById("next_day_window_max").setAttribute("disabled", "disabled");
+			nextDayWindowMin.value = "";
+			nextDayWindowMin.setAttribute("disabled", "disabled");
+			nextDayWindowMax.value = "";
+			nextDayWindowMax.setAttribute("disabled", "disabled");
 		});
-		document.getElementById("next_two_day").addEventListener("change", (event) => {
+		const nextTwoDay = document.getElementById("next_two_day");
+		const nextTwoDayWindowMin = document.getElementById("next_two_day_window_min");
+		const nextTwoDayWindowMax = document.getElementById("next_two_day_window_max");
+		nextTwoDay.addEventListener("change", (event) => {
 			if (event.target.checked) {
-				document.getElementById("next_two_day_window_min").removeAttribute("disabled");
-				document.getElementById("next_two_day_window_max").removeAttribute("disabled");
+				nextTwoDayWindowMin.removeAttribute("disabled");
+				nextTwoDayWindowMax.removeAttribute("disabled");
 				return;
 			}
-			document.getElementById("next_two_day_window_min").setAttribute("disabled", "disabled");
-			document.getElementById("next_two_day_window_max").setAttribute("disabled", "disabled");
+			nextTwoDayWindowMin.value = "";
+			nextTwoDayWindowMin.setAttribute("disabled", "disabled");
+			nextTwoDayWindowMax.value = "";
+			nextTwoDayWindowMax.setAttribute("disabled", "disabled");
 		});
 	});
 </script>

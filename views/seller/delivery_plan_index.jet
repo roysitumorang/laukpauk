@@ -35,7 +35,7 @@
 							<h5>Jadwal Delivery</h5>
 						</div>
 						<div class="col-lg-8 text-right">
-							<a href="{{ baseURL }}/admin/delivery_plans/new" data-toggle="tooltip"
+							<a href="{{ baseURL }}/seller/delivery_plans/new" data-toggle="tooltip"
 								data-placement="top" title="Tambah jadwal delivery">
 								Tambah Jadwal Delivery
 							</a>
@@ -49,7 +49,7 @@
 							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 						</div>
 						{{ end }}
-						<form method="GET" action="/admin/delivery_plans" id="search">
+						<form method="GET" action="/seller/delivery_plans" id="search">
 							<div class="row">
 								<div class="col-sm-4 col-md-6">
 									<div class="dataTables_length" id="listBlog_length">
@@ -140,12 +140,12 @@
 										{{ end }}
 									</td>
 									<td class="text-center vam">
-										<a href="{{ baseURL }}/admin/delivery_plans/{{ row.ID }}/edit">
+										<a href="{{ baseURL }}/seller/delivery_plans/{{ row.ID }}/edit">
 											<span class="fa fa-pen text-warning cp mr-1"
 												data-toggle="tooltip" data-placement="left"
 												title="Edit Jadwal Delivery"></span>
 										</a>
-										<form method="POST" action="{{ baseURL }}/admin/delivery_plans/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+										<form method="POST" action="{{ baseURL }}/seller/delivery_plans/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 												<span class="fa fa-trash text-danger cp ml-2"
 												data-toggle="tooltip"
