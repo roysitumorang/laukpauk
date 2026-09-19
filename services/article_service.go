@@ -11,39 +11,37 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	ArticleService interface {
-		FindArticles(
-			ctx context.Context,
-			request *models.ArticleFilter,
-		) ([]*models.Article, *models.Pagination, error)
-		FindArticle(
-			ctx context.Context,
-			request *models.ArticleFilter,
-		) (*models.Article, error)
-		CreateArticle(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Article,
-		) (*models.Article, error)
-		UpdateArticle(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Article,
-		) (*models.Article, error)
-	}
+type ArticleService interface {
+	FindArticles(
+		ctx context.Context,
+		request *models.ArticleFilter,
+	) ([]*models.Article, *models.Pagination, error)
+	FindArticle(
+		ctx context.Context,
+		request *models.ArticleFilter,
+	) (*models.Article, error)
+	CreateArticle(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Article,
+	) (*models.Article, error)
+	UpdateArticle(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Article,
+	) (*models.Article, error)
+}
 
-	articleService struct {
-		articleRepository repositories.ArticleRepository
-	}
-)
+type articleService struct {
+	articleRepository repositories.ArticleRepository
+}
 
 func NewArticleService(
 	articleRepository repositories.ArticleRepository,
 ) ArticleService {
-	return new(articleService{
+	return &articleService{
 		articleRepository: articleRepository,
-	})
+	}
 }
 
 func (q *articleService) FindArticles(

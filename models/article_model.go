@@ -11,48 +11,70 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	ErrArticleNotFound = errors.New("article not found")
-	MapArticleSortings = map[string]struct{}{
-		SortingFieldID:             {},
-		ArticleSortingFieldSubject: {},
-	}
-)
+var ErrArticleNotFound = errors.New("article not found")
+var MapArticleSortings = map[string]struct{}{
+	SortingFieldID:             {},
+	ArticleSortingFieldSubject: {},
+}
 
-const (
-	ArticleSortingFieldSubject = "subject"
-)
+const ArticleSortingFieldSubject = "subject"
 
-type (
-	Article struct {
-		RowNo          int64        `json:"-" form:"-"`
-		ID             uuid.UUID    `json:"-" form:"-"`
-		RecordStatus   RecordStatus `json:"-" form:"-"`
-		Subject        string       `json:"-" form:"subject"`
-		Body           string       `json:"-" form:"body"`
-		Photo          string       `json:"-" form:"photo"`
-		Link           string       `json:"-" form:"link"`
-		CreatedBy      uuid.UUID    `json:"-" form:"-"`
-		CreatedAt      time.Time    `json:"-" form:"-"`
-		UpdatedBy      uuid.UUID    `json:"-" form:"-"`
-		UpdatedAt      time.Time    `json:"-" form:"-"`
-		DeletedBy      *uuid.UUID   `json:"-" form:"-"`
-		DeletedAt      *time.Time   `json:"-" form:"-"`
-		DeletionReason *string      `json:"-" form:"-"`
-	}
+type Article struct {
+	RowNo          int64        `json:"-" form:"-"`
+	ID             uuid.UUID    `json:"-" form:"-"`
+	CompanyID      uuid.UUID    `json:"-" form:"-"`
+	RecordStatus   RecordStatus `json:"-" form:"-"`
+	Subject        string       `json:"-" form:"subject"`
+	Body           string       `json:"-" form:"body"`
+	Photo          string       `json:"-" form:"photo"`
+	Link           string       `json:"-" form:"link"`
+	CreatedBy      uuid.UUID    `json:"-" form:"-"`
+	CreatedAt      time.Time    `json:"-" form:"-"`
+	UpdatedBy      uuid.UUID    `json:"-" form:"-"`
+	UpdatedAt      time.Time    `json:"-" form:"-"`
+	DeletedBy      *uuid.UUID   `json:"-" form:"-"`
+	DeletedAt      *time.Time   `json:"-" form:"-"`
+	DeletionReason *string      `json:"-" form:"-"`
+}
 
-	ArticleFilter struct {
-		ArticleIDs     []uuid.UUID
-		RecordStatuses []RecordStatus
-		Keyword,
-		PaginationURL string
-		Sortings    []Sorting
-		MapSortings Map
-		Limit,
-		Page int64
-		UrlValues url.Values
+func (q *Article) Validate() error {
+	if q.Subject = strings.TrimSpace(q.Subject); q.Subject == "" {
+		return errors.New("subject: is required")
 	}
-)
+	if q.Link = strings.TrimSpace(q.Link); q.Link == "" {
+		return errors.New("link: is required")
+	}
+	if _, err := url.ParseRequestURI(q.Link); err != nil {
+		return fmt.Errorf("link: %w", err)
+	}
+	return nil
+}
+
+func (q *Article) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+func (q *Article) SetPhoto(photo string) *Article {
+	q.Photo = photo
+	return q
+}
+
+func (q *Article) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.Photo, baseURLs...)
+}
+
+type ArticleFilter struct {
+	ArticleIDs,
+	CompanyIDs []uuid.UUID
+	RecordStatuses []RecordStatus
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
 
 func NewArticleFilter() *ArticleFilter {
 	return &ArticleFilter{
@@ -63,6 +85,11 @@ func NewArticleFilter() *ArticleFilter {
 
 func (q *ArticleFilter) WithArticleIDs(articleIDs ...uuid.UUID) *ArticleFilter {
 	q.ArticleIDs = articleIDs
+	return q
+}
+
+func (q *ArticleFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *ArticleFilter {
+	q.CompanyIDs = companyIDs
 	return q
 }
 
@@ -103,30 +130,4 @@ func (q *ArticleFilter) WithPage(page int64) *ArticleFilter {
 func (q *ArticleFilter) WithUrlValues(urlValues url.Values) *ArticleFilter {
 	q.UrlValues = urlValues
 	return q
-}
-
-func (q *Article) Validate() error {
-	if q.Subject = strings.TrimSpace(q.Subject); q.Subject == "" {
-		return errors.New("subject: is required")
-	}
-	if q.Link = strings.TrimSpace(q.Link); q.Link == "" {
-		return errors.New("link: is required")
-	}
-	if _, err := url.ParseRequestURI(q.Link); err != nil {
-		return fmt.Errorf("link: %w", err)
-	}
-	return nil
-}
-
-func (q *Article) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
-}
-
-func (q *Article) SetPhoto(photo string) *Article {
-	q.Photo = photo
-	return q
-}
-
-func (q *Article) PhotoPath(baseURLs ...string) string {
-	return helper.PhotoPath(q.Photo, baseURLs...)
 }
