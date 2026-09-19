@@ -357,23 +357,21 @@ func (q *authController) SellerCreateOTP(c fiber.Ctx) error {
 			"flash", flash.Danger(err.Error()),
 		))
 	}
-	go func() {
-		if err = q.kafkaService.Publish(
-			ctx,
-			models.TopicRequest{
-				Topic: models.TopicTextMessage,
-				Messages: []models.TopicMessage{
-					{
-						Topic: models.TopicTextMessage,
-						Event: models.TopicTextMessageEventSend,
-						ID:    textMessage.ID,
-					},
+	if err = q.kafkaService.Publish(
+		ctx,
+		models.TopicRequest{
+			Topic: models.TopicTextMessage,
+			Messages: []models.TopicMessage{
+				{
+					Topic: models.TopicTextMessage,
+					Event: models.TopicTextMessageEventSend,
+					ID:    textMessage.ID,
 				},
 			},
-		); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
-		}
-	}()
+		},
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
+	}
 	return c.Render("seller/auth_login", params.Push(
 		"flash", flash.Success("please check your phone for OTP token SMS"),
 		"request", &models.OtpLoginRequest{
