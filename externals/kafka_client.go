@@ -27,7 +27,7 @@ type (
 )
 
 func NewKafkaClient(ctx context.Context, brokers []string) (*KafkaClient, error) {
-	ctxt := "KafkaClient-NewKafkaConsumer"
+	ctxt := "KafkaClient-NewKafkaClient"
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumerGroup(config.AppName),
