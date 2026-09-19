@@ -26,7 +26,7 @@ require (
 	github.com/samber/slog-fiber v1.22.2
 	github.com/sqids/sqids-go v0.4.1
 	github.com/swaggo/swag v1.16.6
-	github.com/twmb/franz-go v1.21.7
+	github.com/twmb/franz-go v1.22.0
 	github.com/urfave/cli/v3 v3.12.0
 	github.com/valyala/fasthttp v1.74.0
 	golang.org/x/crypto v0.57.0
@@ -61,7 +61,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20260802145828-341c2f0c90b5 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
-	github.com/molecule-man/go-brrr v1.1.0 // indirect
+	github.com/molecule-man/go-brrr v1.1.1 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.30 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260916203055-22a1a467d9f0 // indirect
