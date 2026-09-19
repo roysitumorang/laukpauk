@@ -10,52 +10,74 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	ErrBlogNotFound            = errors.New("blog not found")
-	ErrUniqueBlogSlugViolation = errors.New("slug: already exists")
-	MapBlogSortings            = map[string]struct{}{
-		SortingFieldID:          {},
-		BlogSortingFieldSubject: {},
-	}
-)
+var ErrBlogNotFound = errors.New("blog not found")
+var ErrUniqueBlogSlugViolation = errors.New("slug: already exists")
+var MapBlogSortings = map[string]struct{}{
+	SortingFieldID:          {},
+	BlogSortingFieldSubject: {},
+}
 
-const (
-	BlogSortingFieldSubject = "subject"
-)
+const BlogSortingFieldSubject = "subject"
 
-type (
-	Blog struct {
-		RowNo          int64        `json:"-" form:"-"`
-		ID             uuid.UUID    `json:"-" form:"-"`
-		RecordStatus   RecordStatus `json:"-" form:"-"`
-		Subject        string       `json:"-" form:"subject"`
-		Body           string       `json:"-" form:"body"`
-		Slug           *string      `json:"-" form:"slug"`
-		DeletedSlug    *string      `json:"-" form:"-"`
-		Photo          string       `json:"-" form:"photo"`
-		CreatedBy      uuid.UUID    `json:"-" form:"-"`
-		CreatedAt      time.Time    `json:"-" form:"-"`
-		UpdatedBy      uuid.UUID    `json:"-" form:"-"`
-		UpdatedAt      time.Time    `json:"-" form:"-"`
-		DeletedBy      *uuid.UUID   `json:"-" form:"-"`
-		DeletedAt      *time.Time   `json:"-" form:"-"`
-		DeletionReason *string      `json:"-" form:"-"`
-	}
+type Blog struct {
+	RowNo          int64        `json:"-" form:"-"`
+	ID             uuid.UUID    `json:"-" form:"-"`
+	CompanyID      uuid.UUID    `json:"-" form:"-"`
+	RecordStatus   RecordStatus `json:"-" form:"-"`
+	Subject        string       `json:"-" form:"subject"`
+	Body           string       `json:"-" form:"body"`
+	Slug           *string      `json:"-" form:"slug"`
+	DeletedSlug    *string      `json:"-" form:"-"`
+	Photo          string       `json:"-" form:"photo"`
+	CreatedBy      uuid.UUID    `json:"-" form:"-"`
+	CreatedAt      time.Time    `json:"-" form:"-"`
+	UpdatedBy      uuid.UUID    `json:"-" form:"-"`
+	UpdatedAt      time.Time    `json:"-" form:"-"`
+	DeletedBy      *uuid.UUID   `json:"-" form:"-"`
+	DeletedAt      *time.Time   `json:"-" form:"-"`
+	DeletionReason *string      `json:"-" form:"-"`
+}
 
-	BlogFilter struct {
-		BlogIDs,
-		ExcludedBlogIDs []uuid.UUID
-		RecordStatuses []RecordStatus
-		Slugs          []*string
-		Keyword,
-		PaginationURL string
-		Sortings    []Sorting
-		MapSortings Map
-		Limit,
-		Page int64
-		UrlValues url.Values
+func (q *Blog) Validate() error {
+	if q.Subject = strings.TrimSpace(q.Subject); q.Subject == "" {
+		return errors.New("subject: is required")
 	}
-)
+	if q.Slug == nil || strings.TrimSpace(*q.Slug) == "" {
+		return errors.New("slug: is required")
+	}
+	if !SlugRegex.MatchString(*q.Slug) {
+		return errors.New("slug: invalid characters")
+	}
+	return nil
+}
+
+func (q *Blog) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+func (q *Blog) SetPhoto(photo string) *Blog {
+	q.Photo = photo
+	return q
+}
+
+func (q *Blog) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.Photo, baseURLs...)
+}
+
+type BlogFilter struct {
+	BlogIDs,
+	ExcludedBlogIDs,
+	CompanyIDs []uuid.UUID
+	RecordStatuses []RecordStatus
+	Slugs          []*string
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
 
 func NewBlogFilter() *BlogFilter {
 	return &BlogFilter{
@@ -71,6 +93,11 @@ func (q *BlogFilter) WithBlogIDs(blogIDs ...uuid.UUID) *BlogFilter {
 
 func (q *BlogFilter) WithExcludedBlogIDs(excludedBlogIDs ...uuid.UUID) *BlogFilter {
 	q.ExcludedBlogIDs = excludedBlogIDs
+	return q
+}
+
+func (q *BlogFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *BlogFilter {
+	q.CompanyIDs = companyIDs
 	return q
 }
 
@@ -116,30 +143,4 @@ func (q *BlogFilter) WithPage(page int64) *BlogFilter {
 func (q *BlogFilter) WithUrlValues(urlValues url.Values) *BlogFilter {
 	q.UrlValues = urlValues
 	return q
-}
-
-func (q *Blog) Validate() error {
-	if q.Subject = strings.TrimSpace(q.Subject); q.Subject == "" {
-		return errors.New("subject: is required")
-	}
-	if q.Slug == nil || strings.TrimSpace(*q.Slug) == "" {
-		return errors.New("slug: is required")
-	}
-	if !SlugRegex.MatchString(*q.Slug) {
-		return errors.New("slug: invalid characters")
-	}
-	return nil
-}
-
-func (q *Blog) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
-}
-
-func (q *Blog) SetPhoto(photo string) *Blog {
-	q.Photo = photo
-	return q
-}
-
-func (q *Blog) PhotoPath(baseURLs ...string) string {
-	return helper.PhotoPath(q.Photo, baseURLs...)
 }

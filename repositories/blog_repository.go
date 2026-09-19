@@ -80,6 +80,7 @@ func (q *blogRepository) FindBlogs(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, record_status
 		, subject
 		, body
@@ -143,6 +144,7 @@ func (q *blogRepository) FindBlogs(
 		var blog models.Blog
 		if err = rows.Scan(
 			&blog.ID,
+			&blog.CompanyID,
 			&blog.RecordStatus,
 			&blog.Subject,
 			&blog.Body,
@@ -183,6 +185,7 @@ func (q *blogRepository) FindBlog(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, subject
 			, body
@@ -203,6 +206,7 @@ func (q *blogRepository) FindBlog(
 	var response models.Blog
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Subject,
 		&response.Body,
@@ -237,7 +241,8 @@ func (q *blogRepository) CreateBlog(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO blogs (
-			record_status
+			company_id
+			, record_status
 			, subject
 			, body
 			, slug
@@ -246,8 +251,9 @@ func (q *blogRepository) CreateBlog(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
+			, company_id
 			, record_status
 			, subject
 			, body
@@ -261,6 +267,7 @@ func (q *blogRepository) CreateBlog(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
+		request.CompanyID,
 		request.RecordStatus,
 		request.Subject,
 		request.Body,
@@ -272,6 +279,7 @@ func (q *blogRepository) CreateBlog(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Subject,
 		&response.Body,
@@ -288,7 +296,7 @@ func (q *blogRepository) CreateBlog(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "blogs_slug_key" {
+			pgxErr.ConstraintName == "blogs_slug_company_id_key" {
 			err = models.ErrUniqueBlogSlugViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -309,6 +317,7 @@ func (q *blogRepository) UpdateBlog(
 		ctx,
 		`SELECT
 			id
+			, company_id
 			, record_status
 			, subject
 			, body
@@ -328,6 +337,7 @@ func (q *blogRepository) UpdateBlog(
 		request.ID,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Subject,
 		&response.Body,
@@ -446,6 +456,7 @@ func (q *blogRepository) UpdateBlog(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
+			, company_id
 			, record_status
 			, subject
 			, body
@@ -463,6 +474,7 @@ func (q *blogRepository) UpdateBlog(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Subject,
 		&response.Body,
@@ -479,7 +491,7 @@ func (q *blogRepository) UpdateBlog(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "blogs_slug_key" {
+			pgxErr.ConstraintName == "blogs_slug_company_id_key" {
 			err = models.ErrUniqueBlogSlugViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -509,6 +521,19 @@ func (q *blogRepository) buildCondition(request *models.BlogFilter, sb *strings.
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedBlogID := range request.ExcludedBlogIDs {
 			params = append(params, excludedBlogID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

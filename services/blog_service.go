@@ -11,39 +11,37 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	BlogService interface {
-		FindBlogs(
-			ctx context.Context,
-			request *models.BlogFilter,
-		) ([]*models.Blog, *models.Pagination, error)
-		FindBlog(
-			ctx context.Context,
-			request *models.BlogFilter,
-		) (*models.Blog, error)
-		CreateBlog(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Blog,
-		) (*models.Blog, error)
-		UpdateBlog(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Blog,
-		) (*models.Blog, error)
-	}
+type BlogService interface {
+	FindBlogs(
+		ctx context.Context,
+		request *models.BlogFilter,
+	) ([]*models.Blog, *models.Pagination, error)
+	FindBlog(
+		ctx context.Context,
+		request *models.BlogFilter,
+	) (*models.Blog, error)
+	CreateBlog(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Blog,
+	) (*models.Blog, error)
+	UpdateBlog(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Blog,
+	) (*models.Blog, error)
+}
 
-	blogService struct {
-		blogRepository repositories.BlogRepository
-	}
-)
+type blogService struct {
+	blogRepository repositories.BlogRepository
+}
 
 func NewBlogService(
 	blogRepository repositories.BlogRepository,
 ) BlogService {
-	return new(blogService{
+	return &blogService{
 		blogRepository: blogRepository,
-	})
+	}
 }
 
 func (q *blogService) FindBlogs(

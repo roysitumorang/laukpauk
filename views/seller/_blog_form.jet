@@ -1,4 +1,9 @@
-<form method="POST" action="{{ baseURL }}/admin/blogs{{ if !blog.New() }}/{{ blog.ID }}{{ end }}" enctype="multipart/form-data">
+{{ range type, message := flash.Data }}
+<div class="alert alert-{{ type }}">
+	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+</div>
+{{ end }}
+<form method="POST" action="{{ baseURL }}/seller/blogs{{ if !blog.New() }}/{{ blog.ID }}{{ end }}" enctype="multipart/form-data">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !blog.New() }}<input type="hidden" name="id" value="{{ blog.ID }}" />{{ end }}
 	<div class="row">
@@ -44,7 +49,7 @@
 			<button type="submit" class="btn btn-success mr-1">
 				Simpan{{ if !blog.New() }} Perubahan{{ end }} Data Blog
 			</button>
-			<a href="{{ baseURL }}/admin/blogs" class="btn btn-default ml-1">
+			<a href="{{ baseURL }}/seller/blogs" class="btn btn-default ml-1">
 				Back to List Blog
 			</a>
 		</div>

@@ -3045,10 +3045,11 @@ func init() {
 			ctx,
 			`CREATE TABLE blogs (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id)
 				, record_status integer NOT NULL
 				, subject character varying NOT NULL COLLATE "natural_sort"
 				, body character varying NOT NULL
-				, slug character varying UNIQUE
+				, slug character varying
 				, deleted_slug character varying
 				, photo character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -3058,7 +3059,15 @@ func init() {
 				, deleted_by UUID REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
+				, UNIQUE (slug, company_id)
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON blogs (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

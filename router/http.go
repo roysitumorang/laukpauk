@@ -134,8 +134,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			Rules: map[string]string{
 				"/admin/auth/*":                              "/auth/admin/$1",
 				"/admin":                                     "/home/admin",
-				"/admin/blogs":                               "/blogs/admin",
-				"/admin/blogs/*":                             "/blogs/admin/$1",
 				"/admin/landing_pages/*":                     "/landing_pages/admin/$1",
 				"/admin/landing_pages/*/*":                   "/landing_pages/admin/$1/$2",
 				"/admin/landing_pages/*/*/*":                 "/landing_pages/admin/$1/$2/$3",
@@ -188,6 +186,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/articles":                           "/articles/seller",
 				"/seller/articles/*":                         "/articles/seller/$1",
 				"/seller/articles/*/*":                       "/articles/seller/$1/$2",
+				"/seller/blogs":                              "/blogs/seller",
+				"/seller/blogs/*":                            "/blogs/seller/$1",
+				"/seller/blogs/*/*":                          "/blogs/seller/$1/$2",
 				"/seller/recipes":                            "/recipes/seller",
 				"/seller/recipes/*":                          "/recipes/seller/$1",
 				"/seller/recipes/*/*":                        "/recipes/seller/$1/$2",
@@ -305,7 +306,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.SellerService,
 		q.ArticleService,
 	).Mount(app.Group("/articles"))
-	controllers.NewBlogController(q.AdminService, q.BlogService).Mount(app.Group("/blogs"))
+	controllers.NewBlogController(
+		q.SellerService,
+		q.BlogService,
+	).Mount(app.Group("/blogs"))
 	controllers.NewLandingPageController(
 		q.AdminService,
 		q.LandingPageService,
