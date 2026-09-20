@@ -27,7 +27,7 @@ require (
 	github.com/sqids/sqids-go v0.4.1
 	github.com/swaggo/swag v1.16.6
 	github.com/twmb/franz-go v1.21.7
-	github.com/urfave/cli/v3 v3.12.0
+	github.com/urfave/cli/v3 v3.13.0
 	github.com/valyala/fasthttp v1.74.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/sync v0.23.0
