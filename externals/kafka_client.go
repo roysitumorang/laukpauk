@@ -15,16 +15,14 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-type (
-	KafkaClient struct {
-		client *kgo.Client
-	}
+type KafkaClient struct {
+	client *kgo.Client
+}
 
-	KafkaTopic struct {
-		Name     string
-		Payloads []map[string]any
-	}
-)
+type KafkaTopic struct {
+	Name     string
+	Payloads []map[string]any
+}
 
 func NewKafkaClient(ctx context.Context, brokers []string) (*KafkaClient, error) {
 	ctxt := "KafkaClient-NewKafkaClient"
