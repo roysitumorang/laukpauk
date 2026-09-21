@@ -144,9 +144,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/transactions":                        "/transactions/admin",
 				"/admin/transactions/*":                      "/transactions/admin/$1",
 				"/admin/transactions/*/*":                    "/transactions/admin/$1/$2",
-				"/admin/buyers":                              "/buyers/admin",
-				"/admin/buyers/*":                            "/buyers/admin/$1",
-				"/admin/buyers/*/*":                          "/buyers/admin/$1/$2",
 				"/admin/admins":                              "/admins/admin",
 				"/admin/admins/*":                            "/admins/admin/$1",
 				"/admin/admins/*/*":                          "/admins/admin/$1/$2",
@@ -190,6 +187,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/sellers":                            "/sellers/seller",
 				"/seller/sellers/*":                          "/sellers/seller/$1",
 				"/seller/sellers/*/*":                        "/sellers/seller/$1/$2",
+				"/seller/buyers":                             "/buyers/seller",
+				"/seller/buyers/*":                           "/buyers/seller/$1",
+				"/seller/buyers/*/*":                         "/buyers/seller/$1/$2",
 				"/seller/recipes":                            "/recipes/seller",
 				"/seller/recipes/*":                          "/recipes/seller/$1",
 				"/seller/recipes/*/*":                        "/recipes/seller/$1/$2",
@@ -410,7 +410,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BannerService,
 	).Mount(app.Group("/banners"))
 	controllers.NewBuyerController(
-		q.AdminService,
+		q.SellerService,
 		q.BuyerService,
 	).Mount(app.Group("/buyers"))
 	controllers.NewAdminController(

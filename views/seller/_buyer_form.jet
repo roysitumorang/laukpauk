@@ -1,4 +1,9 @@
-<form method="POST" action="{{ baseURL }}/admin/buyers{{ if !buyer.New() }}/{{ buyer.ID }}{{ end }}" enctype="multipart/form-data">
+{{ range type, message := flash.Data }}
+<div class="alert alert-{{ type }}">
+	<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
+</div>
+{{ end }}
+<form method="POST" action="{{ baseURL }}/seller/buyers{{ if !buyer.New() }}/{{ buyer.ID }}{{ end }}" enctype="multipart/form-data">
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !buyer.New() }}<input type="hidden" name="id" value="{{ buyer.ID }}" />{{ end }}
 	<div class="row">
@@ -57,26 +62,6 @@
 						class="form-control input"
 						placeholder="Username" />
 				</div>
-				<div class="form-group">
-					<input type="checkbox" name="password_included" id="password_included" class="mr-2"{{ if request.PasswordIncluded }} checked{{ end }} />
-					<label for="password_included" class="label-title cp">Isi Password</label>
-				</div>
-				<div class="form-group col-lg-4">
-					<label for="password" class="label-title">Password</label>
-					<input type="password"
-						id="password"
-						class="form-control input"
-						placeholder="Password"{{ if !request.PasswordIncluded }} disabled{{ end }} />
-					<input type="hidden" name="password"{{ if !request.PasswordIncluded }} disabled{{ end }} />
-				</div>
-				<div class="form-group col-lg-4">
-					<label for="password_confirmation" class="label-title">Konfirmasi Password</label>
-					<input type="password"
-						id="password_confirmation"
-						class="form-control input"
-						placeholder="Konfirmasi Password"{{ if !request.PasswordIncluded }} disabled{{ end }} />
-					<input type="hidden" name="password_confirmation"{{ if !request.PasswordIncluded }} disabled{{ end }} />
-				</div>
 			</div>
 			<div class="form-group">
 				<label for="referrer_id" class="label-title">Referensi</label>
@@ -98,7 +83,7 @@
 			<button type="submit" class="btn btn-success mr-1">
 				Simpan{{ if !request.New() }} Perubahan{{ end }} Data User
 			</button>
-			<a href="{{ baseURL }}/admin/buyers" class="btn btn-default ml-1">
+			<a href="{{ baseURL }}/seller/buyers" class="btn btn-default ml-1">
 				Back to List User
 			</a>
 		</div>

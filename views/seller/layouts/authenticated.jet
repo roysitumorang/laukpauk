@@ -360,13 +360,13 @@
 								<li class="nav-item">
 									<a href="{{ baseURL }}/seller/buyers" class="nav-link">
 										<i class="fa fa-users nav-icon"></i>
-										<p>List Data User</p>
+										<p>List Data Buyer</p>
 									</a>
 								</li>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/seller/buyers/new" class="nav-link">
 										<i class="fa fa-user-plus nav-icon"></i>
-										<p>User Baru</p>
+										<p>Buyer Baru</p>
 									</a>
 								</li>
 								{{ if currentSeller.Owner() }}

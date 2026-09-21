@@ -499,10 +499,6 @@ func (q *buyerRepository) CreateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
-			, encrypted_password
-			, password_reset_at
-			, password_reset_token
-			, password_changed_at
 			, photo
 			, unread_notifications
 			, referral_code
