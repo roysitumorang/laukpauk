@@ -99,7 +99,7 @@
 							</div>
 							<div class="card-body">
 								<label class="cp label-title mb-3">
-									<a href="{{ baseURL }}/admin/recipes/{{ recipe.ID }}/items/new">
+									<a href="{{ baseURL }}/seller/recipes/{{ recipe.ID }}/items/new">
 										<span class="cp fa fa-plus-circle mr-2"></span> Tambah Resep Item Baru
 									</a>
 								</label>
@@ -134,13 +134,13 @@
 												</td>
 												<td class="vam text-left"><i class="text-muted">{{ if row.Note }}{{ row.Note }}{{ else }}Tanpa Catatan{{ end }}</i></td>
 												<td class="vam text-center">
-													<a href="{{ baseURL }}/admin/recipes/{{ row.RecipeID }}/items/{{ row.ID }}/edit">
+													<a href="{{ baseURL }}/seller/recipes/{{ row.RecipeID }}/items/{{ row.ID }}/edit">
 														<span class="fa fa-edit text-warning cp mr-2"
 														title="Edit Resep Item"
 														data-toggle="tooltip"
 														data-placement="top"></span>
 													</a>
-													<form method="POST" action="{{ baseURL }}/admin/recipes/{{ row.RecipeID }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+													<form method="POST" action="{{ baseURL }}/seller/recipes/{{ row.RecipeID }}/items/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 														<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 															<span class="fa fa-trash text-danger cp ml-2"
 																data-toggle="tooltip"
@@ -171,7 +171,7 @@
 							</div>
 							<div class="card-body">
 								<label class="cp label-title mb-3">
-									<a href="{{ baseURL }}/admin/recipes/{{ recipe.ID }}/guides/new">
+									<a href="{{ baseURL }}/seller/recipes/{{ recipe.ID }}/guides/new">
 										<span class="cp fa fa-plus-circle mr-2"></span> Tambah Langkah Masak Baru
 									</a>
 								</label>
@@ -191,13 +191,13 @@
 												<td class="py-3 vam text-center"><b>{{ row.RowNo }}.</b></td>
 												<td class="py-3 vam text-left">{{ row.Instruction }}</td>
 												<td class="py-3 vam text-center">
-													<a href="{{ baseURL }}/admin/recipes/{{ row.RecipeID }}/guides/{{ row.ID }}/edit">
+													<a href="{{ baseURL }}/seller/recipes/{{ row.RecipeID }}/guides/{{ row.ID }}/edit">
 														<span class="fa fa-edit text-warning cp mr-2"
 															title="Edit Langkah Item"
 															data-toggle="tooltip"
 															data-placement="top"></span>
 													</a>
-													<form method="POST" action="{{ baseURL }}/admin/recipes/{{ row.RecipeID }}/guides/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+													<form method="POST" action="{{ baseURL }}/seller/recipes/{{ row.RecipeID }}/guides/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 														<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 															<span class="fa fa-trash text-danger cp ml-2"
 																data-toggle="tooltip"
