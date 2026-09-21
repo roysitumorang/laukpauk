@@ -11,32 +11,30 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	BannerService interface {
-		FindBanners(
-			ctx context.Context,
-			request *models.BannerFilter,
-		) ([]*models.Banner, *models.Pagination, error)
-		FindBanner(
-			ctx context.Context,
-			request *models.BannerFilter,
-		) (*models.Banner, error)
-		CreateBanner(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Banner,
-		) (*models.Banner, error)
-		UpdateBanner(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Banner,
-		) (*models.Banner, error)
-	}
+type BannerService interface {
+	FindBanners(
+		ctx context.Context,
+		request *models.BannerFilter,
+	) ([]*models.Banner, *models.Pagination, error)
+	FindBanner(
+		ctx context.Context,
+		request *models.BannerFilter,
+	) (*models.Banner, error)
+	CreateBanner(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Banner,
+	) (*models.Banner, error)
+	UpdateBanner(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Banner,
+	) (*models.Banner, error)
+}
 
-	bannerService struct {
-		bannerRepository repositories.BannerRepository
-	}
-)
+type bannerService struct {
+	bannerRepository repositories.BannerRepository
+}
 
 func NewBannerService(
 	bannerRepository repositories.BannerRepository,

@@ -2981,6 +2981,7 @@ func init() {
 			ctx,
 			`CREATE TABLE banners (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id)
 				, record_status integer NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
@@ -2994,6 +2995,13 @@ func init() {
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON banners (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

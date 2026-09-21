@@ -20,40 +20,38 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	bannerController struct {
-		adminService  services.AdminService
-		bannerService services.BannerService
-	}
-)
+type bannerController struct {
+	sellerService services.SellerService
+	bannerService services.BannerService
+}
 
 func NewBannerController(
-	userService services.AdminService,
+	sellerService services.SellerService,
 	bannerService services.BannerService,
 ) *bannerController {
 	return &bannerController{
-		adminService:  userService,
+		sellerService: sellerService,
 		bannerService: bannerService,
 	}
 }
 
 func (q *bannerController) Mount(r fiber.Router) {
-	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
-	r.Group("/admin", adminSessionAuth).
-		Get("", q.AdminIndex).
-		Get("/new", q.AdminNew).
-		Post("", q.AdminCreate).
-		Get("/:id/edit", q.AdminEdit).
-		Post("/:id", q.AdminUpdate).
-		Post("/:id/switch", q.AdminSwitchVisibility).
-		Post("/:id/delete", q.AdminDelete)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	r.Group("/seller", sellerSessionAuth).
+		Get("", q.SellerIndex).
+		Get("/new", q.SellerNew).
+		Post("", q.SellerCreate).
+		Get("/:id/edit", q.SellerEdit).
+		Post("/:id", q.SellerUpdate).
+		Post("/:id/switch", q.SellerSwitchVisibility).
+		Post("/:id/delete", q.SellerDelete)
 }
 
-func (q *bannerController) AdminIndex(c fiber.Ctx) (err error) {
+func (q *bannerController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BannerController-AdminIndex"
+	ctxt := "BannerController-SellerIndex"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -62,13 +60,13 @@ func (q *bannerController) AdminIndex(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.BannerFilter{}
 	rows := []*models.Banner{}
-	pagination := new(models.Pagination)
+	pagination := &models.Pagination{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Data Banner",
 		"limits", models.Limits,
 		"request", request,
@@ -101,65 +99,66 @@ func (q *bannerController) AdminIndex(c fiber.Ctx) (err error) {
 	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanners")
-		return c.Render("admin/banner_index", params.Push(
+		return c.Render("seller/banner_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if rows, pagination, err = q.bannerService.FindBanners(
 		ctx,
-		request.WithRecordStatuses(models.RecordStatusActive),
+		request.WithCompanyIDs(currentSeller.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanners")
-		return c.Render("admin/banner_index", params.Push(
+		return c.Render("seller/banner_index", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
-	return c.Render("admin/banner_index", params.Push(
+	return c.Render("seller/banner_index", params.Push(
 		"rows", rows,
 		"pagination", pagination,
-	), "admin/layouts/authenticated")
+	), "seller/layouts/authenticated")
 }
 
-func (q *bannerController) AdminNew(c fiber.Ctx) (err error) {
+func (q *bannerController) SellerNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.Banner)
+	request := &models.Banner{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Add New Banner",
 		"request", request,
 		"banner", request,
 	)
-	return c.Render("admin/banner_new", params, "admin/layouts/authenticated")
+	return c.Render("seller/banner_new", params, "seller/layouts/authenticated")
 }
 
-func (q *bannerController) AdminCreate(c fiber.Ctx) (err error) {
+func (q *bannerController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BannerController-AdminCreate"
+	ctxt := "BannerController-SellerCreate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
 	csrfToken := csrf.TokenFromContext(c)
-	request := new(models.Banner)
+	request := &models.Banner{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", "Add New Banner",
 		"request", request,
 		"banner", request,
@@ -169,12 +168,13 @@ func (q *bannerController) AdminCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBanner")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/banner_new", params.Push(
+		return c.Render("seller/banner_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	now := time.Now()
-	createdBy := currentAdmin.ID
+	createdBy := currentSeller.ID
+	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -187,10 +187,10 @@ func (q *bannerController) AdminCreate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/banner_new", params.Push(
+		return c.Render("seller/banner_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(""),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -202,37 +202,37 @@ func (q *bannerController) AdminCreate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.bannerService.CreateBanner(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBanner")
-		return c.Render("admin/banner_new", params.Push(
+		return c.Render("seller/banner_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(""),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if photo != nil {
 		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/banner_new", params.Push(
+			return c.Render("seller/banner_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(""),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/banner_new", params.Push(
+		return c.Render("seller/banner_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 			"request", request.SetPhoto(""),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("banner created successfully").
-		Redirect(c, sess.Session, "/admin/banners")
+		Redirect(c, sess.Session, "/seller/banners")
 }
 
-func (q *bannerController) AdminEdit(c fiber.Ctx) (err error) {
+func (q *bannerController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BannerController-AdminEdit"
+	ctxt := "BannerController-SellerEdit"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -242,39 +242,40 @@ func (q *bannerController) AdminEdit(c fiber.Ctx) (err error) {
 	bannerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)
 	if err != nil && !errors.Is(err, models.ErrBannerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanner")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	if banner == nil {
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", helper.Sprintf("Edit Data Banner|%s", banner.Name),
 		"request", banner,
 		"banner", banner,
 	)
-	return c.Render("admin/banner_edit", params, "admin/layouts/authenticated")
+	return c.Render("seller/banner_edit", params, "seller/layouts/authenticated")
 }
 
-func (q *bannerController) AdminUpdate(c fiber.Ctx) (err error) {
+func (q *bannerController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BannerController-AdminUpdate"
+	ctxt := "BannerController-SellerUpdate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -283,27 +284,28 @@ func (q *bannerController) AdminUpdate(c fiber.Ctx) (err error) {
 	bannerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)
 	if err != nil && !errors.Is(err, models.ErrBannerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanner")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	if banner == nil {
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
+		"currentSeller", currentSeller,
 		"pageTitle", helper.Sprintf("Edit Data Banner|%s", banner.Name),
 		"request", banner,
 		"banner", banner,
@@ -316,14 +318,15 @@ func (q *bannerController) AdminUpdate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBanner")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/banner_edit", params.Push(
+		return c.Render("seller/banner_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	request.ID = banner.ID
+	request.CompanyID = banner.CompanyID
 	request.RecordStatus = banner.RecordStatus
 	request.Visible = banner.Visible
-	request.UpdatedBy = currentAdmin.ID
+	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -331,9 +334,9 @@ func (q *bannerController) AdminUpdate(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("admin/banner_edit", params.Push(
+		return c.Render("seller/banner_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -345,34 +348,34 @@ func (q *bannerController) AdminUpdate(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.bannerService.UpdateBanner(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBanner")
-		return c.Render("admin/banner_edit", params.Push(
+		return c.Render("seller/banner_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	if photo != nil {
 		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/banner_edit", params.Push(
+			return c.Render("seller/banner_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
-			), "admin/layouts/authenticated")
+			), "seller/layouts/authenticated")
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("admin/banner_edit", params.Push(
+		return c.Render("seller/banner_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
-		), "admin/layouts/authenticated")
+		), "seller/layouts/authenticated")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("banner updated successfully").
-		Redirect(c, sess.Session, "/admin/banners")
+		Redirect(c, sess.Session, "/seller/banners")
 }
 
-func (q *bannerController) AdminSwitchVisibility(c fiber.Ctx) (err error) {
+func (q *bannerController) SellerSwitchVisibility(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BannerController-AdminSwitchVisibility"
+	ctxt := "BannerController-SellerSwitchVisibility"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -380,28 +383,29 @@ func (q *bannerController) AdminSwitchVisibility(c fiber.Ctx) (err error) {
 	bannerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)
 	if err != nil && !errors.Is(err, models.ErrBannerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanner")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	if banner == nil {
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	banner.Visible = !banner.Visible
-	banner.UpdatedBy = currentAdmin.ID
+	banner.UpdatedBy = currentSeller.ID
 	banner.UpdatedAt = time.Now()
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -413,22 +417,22 @@ func (q *bannerController) AdminSwitchVisibility(c fiber.Ctx) (err error) {
 	}(ctx)
 	if _, err = q.bannerService.UpdateBanner(ctx, tx, banner); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBanner")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("banner visibility switched successfully").
-		Redirect(c, sess.Session, "/admin/banners")
+		Redirect(c, sess.Session, "/seller/banners")
 }
 
-func (q *bannerController) AdminDelete(c fiber.Ctx) (err error) {
+func (q *bannerController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BannerController-AdminDelete"
+	ctxt := "BannerController-SellerDelete"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -436,30 +440,30 @@ func (q *bannerController) AdminDelete(c fiber.Ctx) (err error) {
 	bannerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)
 	if err != nil && !errors.Is(err, models.ErrBannerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanner")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	if banner == nil {
-		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(models.ErrBannerNotFound.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
-	request := banner
-	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentAdmin.ID
-	request.DeletedAt = new(time.Now())
-	request.DeletionReason = nil
+	banner.RecordStatus = models.RecordStatusDeleted
+	banner.DeletedBy = &currentSeller.ID
+	banner.DeletedAt = new(time.Now())
+	banner.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -469,15 +473,15 @@ func (q *bannerController) AdminDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.bannerService.UpdateBanner(ctx, tx, request); err != nil {
+	if _, err = q.bannerService.UpdateBanner(ctx, tx, banner); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBanner")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/admin/banners")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/banners")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("banner deleted successfully").
-		Redirect(c, sess.Session, "/admin/banners")
+		Redirect(c, sess.Session, "/seller/banners")
 }

@@ -32,18 +32,12 @@
 				<div class="card-header">
 					<div class="row">
 						<div class="col-lg-4">
-							<h5>Edit Data Banner</h5>
-							<p class="mb-0 text-muted text-sm">{{ banner.Name }}</p>
+							<h5>Banner Baru</h5>
 						</div>
 						<div class="col-lg-8 text-right"></div>
 					</div>
 				</div>
 				<div class="card-body">
-					{{ range type, message := flash.Data }}
-					<div class="alert alert-{{ type }}">
-						<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
-					</div>
-					{{ end }}
 					{{ include "_banner_form" }}
 				</div>
 			</div>

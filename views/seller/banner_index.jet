@@ -35,7 +35,7 @@
 							<h5>Data Banner</h5>
 						</div>
 						<div class="col-lg-8 text-right">
-							<a href="{{ baseURL }}/admin/banners/new"
+							<a href="{{ baseURL }}/seller/banners/new"
 								data-toggle="tooltip"
 								data-placement="top"
 								title="Tambah Banner Baru">
@@ -51,7 +51,7 @@
 							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 						</div>
 						{{ end }}
-						<form method="GET" action="/admin/banners" id="search">
+						<form method="GET" action="/seller/banners" id="search">
 							<div class="row">
 								<div class="col-sm-4 col-md-6">
 									<div class="dataTables_length" id="listArtikel_length">
@@ -129,9 +129,9 @@
 									<td class="text-left">
 										<div class="row">
 											<div class="col-lg-4 text-center">
-												<a href="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/admin/assets/img/no-image.png{{ end }}"
+												<a href="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/seller/assets/img/no-image.png{{ end }}"
 													target="_blank">
-													<img src="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/admin/assets/img/no-image.png{{ end }}"
+													<img src="{{ if row.Photo }}{{ row.PhotoPath(baseURL) }}{{ else }}{{ baseURL}}/seller/assets/img/no-image.png{{ end }}"
 														alt="{{ row.Name }}"
 														class="img-circle"
 														style="width:50px; height:50px;" />
@@ -147,7 +147,7 @@
 									</td>
 									<td class="text-left vam">{{ if row.Description }}{{ row.Description }}{{ else }}-{{ end }}</td>
 									<td class="text-left vam">
-										<form method="POST" action="{{ baseURL }}/admin/banners/{{ row.ID }}/switch" id="switch-{{ row.ID }}">
+										<form method="POST" action="{{ baseURL }}/seller/banners/{{ row.ID }}/switch" id="switch-{{ row.ID }}">
 											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 											<span class="fa fa-eye text-{{ if row.Visible }}success{{ else }}danger{{ end }} cp ml-2"
 												data-toggle="tooltip"
@@ -158,14 +158,14 @@
 										</form>
 									</td>
 									<td class="vam text-center">
-										<a href="{{ baseURL }}/admin/banners/{{ row.ID }}/edit">
+										<a href="{{ baseURL }}/seller/banners/{{ row.ID }}/edit">
 											<span class="fa fa-edit text-warning cp mr-2"
 												data-toggle="tooltip"
 												data-placement="top"
 												title="Edit Data Artikel">
 											</span>
 										</a>
-										<form method="POST" action="{{ baseURL }}/admin/banners/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
+										<form method="POST" action="{{ baseURL }}/seller/banners/{{ row.ID }}/delete" id="delete-{{ row.ID }}">
 											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 											<span class="fa fa-trash text-danger cp ml-2"
 												data-toggle="tooltip"
