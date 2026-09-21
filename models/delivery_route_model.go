@@ -11,39 +11,51 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	ErrDeliveryRouteNotFound = errors.New("delivery route not found")
-)
+var ErrDeliveryRouteNotFound = errors.New("delivery route not found")
 
-type (
-	DeliveryRoute struct {
-		RowNo                int64           `json:"-" form:"-"`
-		ID                   uuid.UUID       `json:"id" form:"-"`
-		OriginLongitude      decimal.Decimal `json:"origin_longitude" form:"-"`
-		OriginLatitude       decimal.Decimal `json:"origin_latitude" form:"-"`
-		DestinationLongitude decimal.Decimal `json:"destination_longitude" form:"-"`
-		DestinationLatitude  decimal.Decimal `json:"destination_latitude" form:"-"`
-		DistanceMeters       int64           `json:"-" form:"-"`
-		DistanceKM           int64           `json:"distance_km" form:"-"`
-		CreatedAt            time.Time       `json:"-" form:"-"`
-		UpdatedAt            time.Time       `json:"-" form:"-"`
-	}
+type DeliveryRoute struct {
+	RowNo                int64           `json:"-" form:"-"`
+	ID                   uuid.UUID       `json:"id" form:"-"`
+	CompanyID            uuid.UUID       `json:"-" form:"-"`
+	OriginLongitude      decimal.Decimal `json:"origin_longitude" form:"-"`
+	OriginLatitude       decimal.Decimal `json:"origin_latitude" form:"-"`
+	DestinationLongitude decimal.Decimal `json:"destination_longitude" form:"-"`
+	DestinationLatitude  decimal.Decimal `json:"destination_latitude" form:"-"`
+	DistanceMeters       int64           `json:"-" form:"-"`
+	DistanceKM           int64           `json:"distance_km" form:"-"`
+	CreatedAt            time.Time       `json:"-" form:"-"`
+	UpdatedAt            time.Time       `json:"-" form:"-"`
+}
 
-	DeliveryRouteFilter struct {
-		DeliveryRouteIDs []uuid.UUID
-		OriginLongitude,
-		OriginLatitude,
-		DestinationLongitude,
-		DestinationLatitude *decimal.Decimal
-		Keyword,
-		PaginationURL string
-		Sortings    []Sorting
-		MapSortings Map
-		Limit,
-		Page int64
-		UrlValues url.Values
+func (q *DeliveryRoute) Validate() (err error) {
+	if q.DestinationLongitude.IsZero() {
+		return errors.New("destination_longitude: is required")
 	}
-)
+	if q.DestinationLatitude.IsZero() {
+		return errors.New("destination_latitude: is required")
+	}
+	return nil
+}
+
+func (q *DeliveryRoute) Populate() *DeliveryRoute {
+	return q
+}
+
+type DeliveryRouteFilter struct {
+	DeliveryRouteIDs,
+	CompanyIDs []uuid.UUID
+	OriginLongitudes,
+	OriginLatitudes,
+	DestinationLongitudes,
+	DestinationLatitudes []decimal.Decimal
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
 
 func NewDeliveryRouteFilter() *DeliveryRouteFilter {
 	return &DeliveryRouteFilter{
@@ -57,23 +69,28 @@ func (q *DeliveryRouteFilter) WithDeliveryRouteIDs(deliveryRouteIDs ...uuid.UUID
 	return q
 }
 
-func (q *DeliveryRouteFilter) WithOriginLongitude(originLongitude *decimal.Decimal) *DeliveryRouteFilter {
-	q.OriginLongitude = originLongitude
+func (q *DeliveryRouteFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *DeliveryRouteFilter {
+	q.CompanyIDs = companyIDs
 	return q
 }
 
-func (q *DeliveryRouteFilter) WithOriginLatitude(originLatitude *decimal.Decimal) *DeliveryRouteFilter {
-	q.OriginLatitude = originLatitude
+func (q *DeliveryRouteFilter) WithOriginLongitudes(originLongitudes ...decimal.Decimal) *DeliveryRouteFilter {
+	q.OriginLongitudes = originLongitudes
 	return q
 }
 
-func (q *DeliveryRouteFilter) WithDestinationLongitude(destinationLongitude *decimal.Decimal) *DeliveryRouteFilter {
-	q.DestinationLongitude = destinationLongitude
+func (q *DeliveryRouteFilter) WithOriginLatitudes(originLatitudes ...decimal.Decimal) *DeliveryRouteFilter {
+	q.OriginLatitudes = originLatitudes
 	return q
 }
 
-func (q *DeliveryRouteFilter) WithDestinationLatitude(destinationLatitude *decimal.Decimal) *DeliveryRouteFilter {
-	q.DestinationLatitude = destinationLatitude
+func (q *DeliveryRouteFilter) WithDestinationLongitudes(destinationLongitudes ...decimal.Decimal) *DeliveryRouteFilter {
+	q.DestinationLongitudes = destinationLongitudes
+	return q
+}
+
+func (q *DeliveryRouteFilter) WithDestinationLatitudes(destinationLatitudes ...decimal.Decimal) *DeliveryRouteFilter {
+	q.DestinationLatitudes = destinationLatitudes
 	return q
 }
 
@@ -108,19 +125,5 @@ func (q *DeliveryRouteFilter) WithPage(page int64) *DeliveryRouteFilter {
 
 func (q *DeliveryRouteFilter) WithUrlValues(urlValues url.Values) *DeliveryRouteFilter {
 	q.UrlValues = urlValues
-	return q
-}
-
-func (q *DeliveryRoute) Validate() (err error) {
-	if q.DestinationLongitude.IsZero() {
-		return errors.New("destination_longitude: is required")
-	}
-	if q.DestinationLatitude.IsZero() {
-		return errors.New("destination_latitude: is required")
-	}
-	return nil
-}
-
-func (q *DeliveryRoute) Populate() *DeliveryRoute {
 	return q
 }

@@ -20,7 +20,6 @@ import (
 
 type (
 	deliveryRouteController struct {
-		adminService         services.AdminService
 		buyerService         services.BuyerService
 		deliveryRouteService services.DeliveryRouteService
 		companyService       services.CompanyService
@@ -30,7 +29,6 @@ type (
 )
 
 func NewDeliveryRouteController(
-	adminService services.AdminService,
 	buyerService services.BuyerService,
 	deliveryRouteService services.DeliveryRouteService,
 	companyService services.CompanyService,
@@ -38,7 +36,6 @@ func NewDeliveryRouteController(
 	routesApiClient *externals.RoutesApiClient,
 ) *deliveryRouteController {
 	return &deliveryRouteController{
-		adminService:         adminService,
 		buyerService:         buyerService,
 		deliveryRouteService: deliveryRouteService,
 		companyService:       companyService,
@@ -48,14 +45,16 @@ func NewDeliveryRouteController(
 }
 
 func (q *deliveryRouteController) Mount(r fiber.Router) {
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", buyerKeyAuth).
+	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
 		Post("", q.V1BuyerSave)
 }
 
 func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryRouteController-V1BuyerSave"
+	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	request, statusCode, err := sanitizers.ValidateDeliveryRoute(ctx, c)
 	if err != nil {
@@ -64,29 +63,14 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	company, err := q.companyService.FindCompany(
-		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(currentBuyer.CompanyID),
-	)
-	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if company == nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrCompanyNotFound.Error()).
-			WriteResponse(c)
-	}
 	response, err := q.deliveryRouteService.FindDeliveryRoute(
 		ctx,
 		models.NewDeliveryRouteFilter().
-			WithOriginLongitude(&company.DeliveryOriginLongitude).
-			WithOriginLatitude(&company.DeliveryOriginLatitude).
-			WithDestinationLongitude(&request.DestinationLongitude).
-			WithDestinationLatitude(&request.DestinationLatitude),
+			WithCompanyIDs(currentBuyer.CompanyID).
+			WithOriginLongitudes(company.DeliveryOriginLongitude).
+			WithOriginLatitudes(company.DeliveryOriginLatitude).
+			WithDestinationLongitudes(request.DestinationLongitude).
+			WithDestinationLatitudes(request.DestinationLatitude),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryRoute")
@@ -126,6 +110,7 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	now := time.Now()
+	request.CompanyID = currentBuyer.CompanyID
 	request.OriginLongitude = company.DeliveryOriginLongitude
 	request.OriginLatitude = company.DeliveryOriginLatitude
 	request.DistanceKM, _, _ = distanceKM.Ceil(0).Int64(0)

@@ -55,8 +55,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	// Create a new engine
 	engine := jet.New("./views", ".jet")
 	engine.Debug(debug)
-	engine.ShouldReload = debug
-	engine.Verbose = debug
 	engine.AddFunc("Comma", func(v int64) string {
 		return humanize.Comma(v)
 	})
@@ -209,7 +207,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/banners":                          "/banners/v1/buyer",
 				"/v1/buyer/banners/*":                        "/banners/v1/buyer/$1",
 				"/v1/buyer/banners/*/*":                      "/banners/v1/buyer/$1/$2",
-				"/v1/buyer/delivery_routes":                  "/delivery_routes/v1/buyer",
+				"/v1/companies/*/buyer/delivery_routes":      "/delivery_routes/$1/v1/buyer",
 				"/v1/companies/*/buyer/point_earning_caps":   "/point_earning_caps/$1/v1/buyer",
 				"/v1/companies/*/buyer/point_spending_caps":  "/point_spending_caps/$1/v1/buyer",
 				"/v1/buyer/setting":                          "/setting/v1/buyer",
@@ -387,7 +385,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/cart"))
 	controllers.NewDeliveryRouteController(
-		q.AdminService,
 		q.BuyerService,
 		q.DeliveryRouteService,
 		q.CompanyService,

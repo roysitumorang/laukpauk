@@ -11,27 +11,25 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	DeliveryRouteService interface {
-		FindDeliveryRoutes(
-			ctx context.Context,
-			request *models.DeliveryRouteFilter,
-		) ([]*models.DeliveryRoute, *models.Pagination, error)
-		FindDeliveryRoute(
-			ctx context.Context,
-			request *models.DeliveryRouteFilter,
-		) (*models.DeliveryRoute, error)
-		SaveDeliveryRoute(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.DeliveryRoute,
-		) (*models.DeliveryRoute, error)
-	}
+type DeliveryRouteService interface {
+	FindDeliveryRoutes(
+		ctx context.Context,
+		request *models.DeliveryRouteFilter,
+	) ([]*models.DeliveryRoute, *models.Pagination, error)
+	FindDeliveryRoute(
+		ctx context.Context,
+		request *models.DeliveryRouteFilter,
+	) (*models.DeliveryRoute, error)
+	SaveDeliveryRoute(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.DeliveryRoute,
+	) (*models.DeliveryRoute, error)
+}
 
-	deliveryRouteService struct {
-		deliveryRouteRepository repositories.DeliveryRouteRepository
-	}
-)
+type deliveryRouteService struct {
+	deliveryRouteRepository repositories.DeliveryRouteRepository
+}
 
 func NewDeliveryRouteService(
 	deliveryRouteRepository repositories.DeliveryRouteRepository,

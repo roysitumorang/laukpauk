@@ -74,6 +74,7 @@ func (q *deliveryRouteRepository) FindDeliveryRoutes(
 		query,
 		"COUNT(1)",
 		`id
+		, company_id
 		, origin_longitude
 		, origin_latitude
 		, destination_longitude
@@ -132,6 +133,7 @@ func (q *deliveryRouteRepository) FindDeliveryRoutes(
 		var deliveryRoute models.DeliveryRoute
 		if err = rows.Scan(
 			&deliveryRoute.ID,
+			&deliveryRoute.CompanyID,
 			&deliveryRoute.OriginLongitude,
 			&deliveryRoute.OriginLatitude,
 			&deliveryRoute.DestinationLongitude,
@@ -168,6 +170,7 @@ func (q *deliveryRouteRepository) FindDeliveryRoute(
 		sb,
 		`SELECT
 			id
+			, company_id
 			, origin_longitude
 			, origin_latitude
 			, destination_longitude
@@ -182,6 +185,7 @@ func (q *deliveryRouteRepository) FindDeliveryRoute(
 	var response models.DeliveryRoute
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.OriginLongitude,
 		&response.OriginLatitude,
 		&response.DestinationLongitude,
@@ -211,7 +215,8 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO delivery_routes (
-			origin_longitude
+			company_id
+			, origin_longitude
 			, origin_latitude
 			, destination_longitude
 			, destination_latitude
@@ -219,18 +224,20 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 			, distance_km
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (
-			origin_longitude
+			company_id
+			, origin_longitude
 			, origin_latitude
 			, destination_longitude
 			, destination_latitude
 		)
 		DO UPDATE SET
-			distance_meters = $5
-			, distance_km = $6
-			, updated_at = $8
+			distance_meters = $6
+			, distance_km = $7
+			, updated_at = $9
 		RETURNING id
+			, company_id
 			, origin_longitude
 			, origin_latitude
 			, destination_longitude
@@ -239,6 +246,7 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 			, distance_km
 			, created_at
 			, updated_at`,
+		request.CompanyID,
 		request.OriginLongitude,
 		request.OriginLatitude,
 		request.DestinationLongitude,
@@ -249,6 +257,7 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.OriginLongitude,
 		&response.OriginLatitude,
 		&response.DestinationLongitude,
@@ -279,28 +288,69 @@ func (q *deliveryRouteRepository) buildCondition(request *models.DeliveryRouteFi
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if request.OriginLongitude != nil {
+	if len(request.CompanyIDs) > 0 {
 		sb.Reset()
-		params = append(params, request.OriginLongitude)
-		_, _ = fmt.Fprintf(sb, "origin_longitude = $%d", len(params))
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if request.OriginLatitude != nil {
+	if len(request.OriginLongitudes) > 0 {
 		sb.Reset()
-		params = append(params, request.OriginLatitude)
-		_, _ = fmt.Fprintf(sb, "origin_latitude = $%d", len(params))
+		_, _ = sb.WriteString("origin_longitude IN (")
+		for i, originLongitude := range request.OriginLongitudes {
+			params = append(params, originLongitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if request.DestinationLongitude != nil {
+	if len(request.OriginLatitudes) > 0 {
 		sb.Reset()
-		params = append(params, request.DestinationLongitude)
-		_, _ = fmt.Fprintf(sb, "destination_longitude = $%d", len(params))
+		_, _ = sb.WriteString("origin_latitude IN (")
+		for i, originLatitude := range request.OriginLatitudes {
+			params = append(params, originLatitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if request.DestinationLatitude != nil {
+	if len(request.DestinationLongitudes) > 0 {
 		sb.Reset()
-		params = append(params, request.DestinationLatitude)
-		_, _ = fmt.Fprintf(sb, "destination_latitude = $%d", len(params))
+		_, _ = sb.WriteString("destination_longitude IN (")
+		for i, destinationLongitude := range request.DestinationLongitudes {
+			params = append(params, destinationLongitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.DestinationLatitudes) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("destination_latitude IN (")
+		for i, destinationLatitude := range request.DestinationLatitudes {
+			params = append(params, destinationLatitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
