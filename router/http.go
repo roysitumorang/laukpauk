@@ -187,6 +187,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/banners":                            "/banners/seller",
 				"/seller/banners/*":                          "/banners/seller/$1",
 				"/seller/banners/*/*":                        "/banners/seller/$1/$2",
+				"/seller/sellers":                            "/sellers/seller",
+				"/seller/sellers/*":                          "/sellers/seller/$1",
+				"/seller/sellers/*/*":                        "/sellers/seller/$1/$2",
 				"/seller/recipes":                            "/recipes/seller",
 				"/seller/recipes/*":                          "/recipes/seller/$1",
 				"/seller/recipes/*/*":                        "/recipes/seller/$1/$2",
@@ -436,6 +439,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.SellerService,
 		q.CompanyService,
 	).Mount(app.Group("/companies"))
+	controllers.NewSellerController(
+		q.SellerService,
+	).Mount(app.Group("/sellers"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
 			return helper.NewResponse(fiber.StatusNotFound).

@@ -129,9 +129,9 @@ func (q *Seller) Owner() bool {
 }
 
 type SellerFilter struct {
-	CompanyIDs,
 	SellerIDs,
-	ExcludedSellerIDs []uuid.UUID
+	ExcludedSellerIDs,
+	CompanyIDs []uuid.UUID
 	TelegramChatIDs []int64
 	Statuses        []SellerStatus
 	Login,
@@ -162,6 +162,11 @@ func (q *SellerFilter) WithSellerIDs(sellerIDs ...uuid.UUID) *SellerFilter {
 
 func (q *SellerFilter) WithExcludedSellerIDs(excludedSellerIDs ...uuid.UUID) *SellerFilter {
 	q.ExcludedSellerIDs = excludedSellerIDs
+	return q
+}
+
+func (q *SellerFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *SellerFilter {
+	q.CompanyIDs = companyIDs
 	return q
 }
 

@@ -348,15 +348,15 @@
 								</li>
 							</ul>
 						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/buyers") || HasPrefix(path, "/seller/admins") }} menu-open{{ end }}">
+						<li class="nav-item has-treeview{{ if HasPrefix(path, "/seller/buyers") || HasPrefix(path, "/seller/sellers") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
 								<i class="nav-icon fa fa-user-circle"></i>
 								<p>
-									User{{ if currentSeller.Owner() }} & Administrator{{ end }}
+									Buyer{{ if currentSeller.Owner() }} & Seller{{ end }}
 									<i class="fas fa-angle-left right"></i>
 								</p>
 							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/buyers") || HasPrefix(path, "/seller/admins") }} style="display:block"{{ end }}>
+							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/seller/buyers") || HasPrefix(path, "/seller/sellers") }} style="display:block"{{ end }}>
 								<li class="nav-item">
 									<a href="{{ baseURL }}/seller/buyers" class="nav-link">
 										<i class="fa fa-users nav-icon"></i>
@@ -371,15 +371,15 @@
 								</li>
 								{{ if currentSeller.Owner() }}
 								<li class="nav-item">
-									<a href="{{ baseURL }}/seller/admins" class="nav-link">
+									<a href="{{ baseURL }}/seller/sellers" class="nav-link">
 										<i class="fa fa-crown nav-icon"></i>
-										<p>Administrator</p>
+										<p>Seller</p>
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="{{ baseURL }}/seller/admins/new" class="nav-link">
+									<a href="{{ baseURL }}/seller/sellers/new" class="nav-link">
 										<i class="fa fa-user-plus nav-icon"></i>
-										<p>Administrator Baru</p>
+										<p>Seller Baru</p>
 									</a>
 								</li>
 								{{ end }}

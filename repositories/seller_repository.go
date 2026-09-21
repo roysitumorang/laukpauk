@@ -282,19 +282,6 @@ func (q *sellerRepository) FindSeller(
 
 func (q *sellerRepository) buildCondition(request *models.SellerFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
 	if len(request.SellerIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
@@ -313,6 +300,19 @@ func (q *sellerRepository) buildCondition(request *models.SellerFilter, sb *stri
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedSellerID := range request.ExcludedSellerIDs {
 			params = append(params, excludedSellerID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.CompanyIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("company_id IN (")
+		for i, companyID := range request.CompanyIDs {
+			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

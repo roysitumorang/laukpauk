@@ -11,32 +11,30 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	SellerService interface {
-		FindSellers(
-			ctx context.Context,
-			request *models.SellerFilter,
-		) ([]*models.Seller, *models.Pagination, error)
-		FindSeller(
-			ctx context.Context,
-			request *models.SellerFilter,
-		) (*models.Seller, error)
-		CreateSeller(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Seller,
-		) (*models.Seller, error)
-		UpdateSeller(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Seller,
-		) (*models.Seller, error)
-	}
+type SellerService interface {
+	FindSellers(
+		ctx context.Context,
+		request *models.SellerFilter,
+	) ([]*models.Seller, *models.Pagination, error)
+	FindSeller(
+		ctx context.Context,
+		request *models.SellerFilter,
+	) (*models.Seller, error)
+	CreateSeller(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Seller,
+	) (*models.Seller, error)
+	UpdateSeller(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Seller,
+	) (*models.Seller, error)
+}
 
-	sellerService struct {
-		sellerRepository repositories.SellerRepository
-	}
-)
+type sellerService struct {
+	sellerRepository repositories.SellerRepository
+}
 
 func NewSellerService(
 	sellerRepository repositories.SellerRepository,
