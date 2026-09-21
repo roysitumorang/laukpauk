@@ -10,75 +10,119 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	ErrPointNotFound = errors.New("point not found")
-
-	PointTypes    = []PointType{PointTypeReferral, PointTypeReward}
-	MapPointTypes = map[PointType]struct{}{
-		PointTypeReferral: {},
-		PointTypeReward:   {},
-	}
-	MapRewardPointSortings = map[string]struct{}{
-		SortingFieldID: {},
-	}
-)
+var ErrPointNotFound = errors.New("point not found")
+var PointTypes = []PointType{
+	PointTypeReferral,
+	PointTypeReward,
+}
+var MapPointTypes = map[PointType]struct{}{
+	PointTypeReferral: {},
+	PointTypeReward:   {},
+}
+var MapRewardPointSortings = map[string]struct{}{
+	SortingFieldID: {},
+}
 
 const (
 	PointTypeReferral PointType = iota
 	PointTypeReward
 )
 
-type (
-	PointType int
+type PointType int
 
-	Point struct {
-		RowNo                      int64        `json:"-" form:"-"`
-		ID                         uuid.UUID    `json:"-" form:"id"`
-		RecordStatus               RecordStatus `json:"-" form:"-"`
-		PointType                  PointType    `json:"-" form:"point_type"`
-		BuyerID                    uuid.UUID    `json:"-" form:"buyer_id"`
-		BuyerName                  string       `json:"-" form:"-"`
-		BuyerUsername              string       `json:"-" form:"-"`
-		BuyerMobilePhone           string       `json:"-" form:"-"`
-		BuyerReferralCode          string       `json:"-" form:"-"`
-		Amount                     int64        `json:"-" form:"amount"`
-		TransactionID              *uuid.UUID   `json:"-" form:"-"`
-		TransactionReferenceNumber *string      `json:"-" form:"-"`
-		Description                string       `json:"-" form:"description"`
-		CreatedBy                  *uuid.UUID   `json:"-" form:"-"`
-		CreatedAt                  time.Time    `json:"-" form:"-"`
-		UpdatedBy                  *uuid.UUID   `json:"-" form:"-"`
-		UpdatedAt                  time.Time    `json:"-" form:"-"`
-		DeletedBy                  *uuid.UUID   `json:"-" form:"-"`
-		DeletedAt                  *time.Time   `json:"-" form:"-"`
-		DeletionReason             *string      `json:"-" form:"-"`
-	}
+func (q PointType) Int() int {
+	return int(q)
+}
 
-	PointFilter struct {
-		PointIDs,
-		BuyerIDs,
-		TransactionIDs []uuid.UUID
-		RecordStatuses []RecordStatus
-		PointTypes     []PointType
-		Keyword,
-		PaginationURL string
-		Sortings    []Sorting
-		MapSortings Map
-		Limit,
-		Page int64
-		UrlValues url.Values
+func (q PointType) String() string {
+	if q == PointTypeReward {
+		return "reward"
 	}
-)
+	return "referral"
+}
+
+func (q PointType) Equal(v PointType) bool {
+	return q.Int() == v.Int()
+}
+
+type Point struct {
+	RowNo                      int64        `json:"-" form:"-"`
+	ID                         uuid.UUID    `json:"-" form:"id"`
+	CompanyID                  uuid.UUID    `json:"-" form:"-"`
+	RecordStatus               RecordStatus `json:"-" form:"-"`
+	PointType                  PointType    `json:"-" form:"point_type"`
+	BuyerID                    uuid.UUID    `json:"-" form:"buyer_id"`
+	BuyerName                  string       `json:"-" form:"-"`
+	BuyerUsername              string       `json:"-" form:"-"`
+	BuyerMobilePhone           string       `json:"-" form:"-"`
+	BuyerReferralCode          string       `json:"-" form:"-"`
+	Amount                     int64        `json:"-" form:"amount"`
+	TransactionID              *uuid.UUID   `json:"-" form:"-"`
+	TransactionReferenceNumber *string      `json:"-" form:"-"`
+	Description                string       `json:"-" form:"description"`
+	CreatedBy                  *uuid.UUID   `json:"-" form:"-"`
+	CreatedAt                  time.Time    `json:"-" form:"-"`
+	UpdatedBy                  *uuid.UUID   `json:"-" form:"-"`
+	UpdatedAt                  time.Time    `json:"-" form:"-"`
+	DeletedBy                  *uuid.UUID   `json:"-" form:"-"`
+	DeletedAt                  *time.Time   `json:"-" form:"-"`
+	DeletionReason             *string      `json:"-" form:"-"`
+}
+
+func (q *Point) Validate() error {
+	if _, ok := MapPointTypes[q.PointType]; !ok {
+		return errors.New("point_type: not found")
+	}
+	if q.BuyerID.Compare(uuid.Nil()) == 0 {
+		return errors.New("buyer_id: is required")
+	}
+	if q.Amount < 1 {
+		return errors.New("amount: requires a positive integer")
+	}
+	if q.Description = strings.TrimSpace(q.Description); q.Description == "" {
+		return errors.New("description: is required")
+	}
+	return nil
+}
+
+func (q *Point) New() bool {
+	return q.ID.Compare(uuid.Nil()) == 0
+}
+
+func (q *Point) Spendable() bool {
+	return q.PointType.Equal(PointTypeReward)
+}
+
+type PointFilter struct {
+	PointIDs,
+	CompanyIDs,
+	BuyerIDs,
+	TransactionIDs []uuid.UUID
+	RecordStatuses []RecordStatus
+	PointTypes     []PointType
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
 
 func NewPointFilter() *PointFilter {
-	return new(PointFilter{
+	return &PointFilter{
 		MapSortings: NewMap(),
 		UrlValues:   url.Values{},
-	})
+	}
 }
 
 func (q *PointFilter) WithPointIDs(pointIDs ...uuid.UUID) *PointFilter {
 	q.PointIDs = pointIDs
+	return q
+}
+
+func (q *PointFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *PointFilter {
+	q.CompanyIDs = companyIDs
 	return q
 }
 
@@ -134,43 +178,4 @@ func (q *PointFilter) WithPage(page int64) *PointFilter {
 func (q *PointFilter) WithUrlValues(urlValues url.Values) *PointFilter {
 	q.UrlValues = urlValues
 	return q
-}
-
-func (q *Point) Validate() error {
-	if _, ok := MapPointTypes[q.PointType]; !ok {
-		return errors.New("point_type: not found")
-	}
-	if q.BuyerID.Compare(uuid.Nil()) == 0 {
-		return errors.New("buyer_id: is required")
-	}
-	if q.Amount < 1 {
-		return errors.New("amount: requires a positive integer")
-	}
-	if q.Description = strings.TrimSpace(q.Description); q.Description == "" {
-		return errors.New("description: is required")
-	}
-	return nil
-}
-
-func (q *Point) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
-}
-
-func (q *Point) Spendable() bool {
-	return q.PointType.Equal(PointTypeReward)
-}
-
-func (q PointType) Int() int {
-	return int(q)
-}
-
-func (q PointType) String() string {
-	if q == PointTypeReward {
-		return "reward"
-	}
-	return "referral"
-}
-
-func (q PointType) Equal(v PointType) bool {
-	return q.Int() == v.Int()
 }

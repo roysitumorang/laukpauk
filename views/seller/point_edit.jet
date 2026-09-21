@@ -5,7 +5,7 @@
 		<div class="container-fluid">
 			<div class="row mb-2">
 				<div class="col-sm-6">
-					<h1 class="m-0 text-dark">Poin Baru</h1>
+					<h1 class="m-0 text-dark">Edit Poin</h1>
 				</div>
 				<!-- /.col -->
 				<div class="col-sm-6">
@@ -34,21 +34,16 @@
 						<div class="card-header">
 							<div class="row">
 								<div class="col-lg-4">
-									<h5 class="mb-0">Poin Baru</h5>
+									<h5 class='mb-0'>Edit Poin</h5>
 								</div>
 								<div class="col-lg-8 text-right">
-									<a href="{{ baseURL }}/admin/points">
+									<a href="{{ baseURL }}/seller/points">
 										<button class="btn btn-link btn-sm" type="button">List Poin User</button>
 									</a>
 								</div>
 							</div>
 						</div>
 						<div class="card-body">
-							{{ range type, message := flash.Data }}
-							<div class="alert alert-{{ type }}">
-								<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
-							</div>
-							{{ end }}
 							{{ include "_point_form" }}
 						</div>
 					</div>
@@ -60,4 +55,3 @@
 	<!-- /.content -->
 </div>
 <!-- /.content-wrapper -->
-

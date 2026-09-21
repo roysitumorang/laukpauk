@@ -138,9 +138,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/admin/settings":                            "/settings/admin",
 				"/admin/settings/*":                          "/settings/admin/$1",
 				"/admin/settings/*/*":                        "/settings/admin/$1/$2",
-				"/admin/points":                              "/points/admin",
-				"/admin/points/*":                            "/points/admin/$1",
-				"/admin/points/*/*":                          "/points/admin/$1/$2",
 				"/admin/transactions":                        "/transactions/admin",
 				"/admin/transactions/*":                      "/transactions/admin/$1",
 				"/admin/transactions/*/*":                    "/transactions/admin/$1/$2",
@@ -193,6 +190,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/seller/recipes":                            "/recipes/seller",
 				"/seller/recipes/*":                          "/recipes/seller/$1",
 				"/seller/recipes/*/*":                        "/recipes/seller/$1/$2",
+				"/seller/points":                             "/points/seller",
+				"/seller/points/*":                           "/points/seller/$1",
+				"/seller/points/*/*":                         "/points/seller/$1/$2",
 				"/seller/notification_targets":               "/notification_targets/seller",
 				"/v1/companies/*/buyer/auth/*":               "/auth/$1/v1/buyer/$2",
 				"/v1/companies/*/buyer/notification_targets": "/notification_targets/$1/v1/buyer",
@@ -342,7 +342,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/delivery_plans"))
 	controllers.NewPointController(
-		q.AdminService,
+		q.SellerService,
 		q.BuyerService,
 		q.PointService,
 	).Mount(app.Group("/points"))
