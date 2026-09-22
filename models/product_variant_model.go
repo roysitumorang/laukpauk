@@ -23,6 +23,7 @@ type ProductVariant struct {
 	ProductCategoryName     string       `json:"-" form:"-"`
 	ProductID               uuid.UUID    `json:"-" form:"-"`
 	ProductName             string       `json:"-" form:"-"`
+	ProductPhoto            string       `json:"-" form:"-"`
 	ProductReadyStock       bool         `json:"-" form:"-"`
 	StockUnit               string       `json:"stock_unit" form:"stock_unit"`
 	BasePrice               int64        `json:"-" form:"base_price"`

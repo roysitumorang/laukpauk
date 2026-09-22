@@ -296,6 +296,7 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		productVariant.ProductCategoryID = response.ProductCategoryID
 		productVariant.ProductCategoryName = response.ProductCategoryName
 		productVariant.ProductName = response.Name
+		productVariant.ProductPhoto = response.Photo
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
@@ -540,6 +541,7 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 		productVariant.ProductCategoryID = response.ProductCategoryID
 		productVariant.ProductCategoryName = response.ProductCategoryName
 		productVariant.ProductName = response.Name
+		productVariant.ProductPhoto = response.Photo
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
@@ -690,6 +692,7 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 	request.ProductCategoryName = product.ProductCategoryName
 	request.ProductID = product.ID
 	request.ProductName = product.Name
+	request.ProductPhoto = product.Photo
 	request.ProductReadyStock = product.ReadyStock
 	request.CreatedBy = currentSeller.ID
 	request.CreatedAt = now
@@ -820,6 +823,7 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 	request.ProductCategoryName = product.ProductCategoryName
 	request.ProductID = product.ID
 	request.ProductName = product.Name
+	request.ProductPhoto = product.Photo
 	request.ProductReadyStock = productVariant.ProductReadyStock
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()

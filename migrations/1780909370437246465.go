@@ -991,6 +991,7 @@ func init() {
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_name character varying NOT NULL COLLATE "natural_sort"
+				, product_photo character varying NOT NULL
 				, product_ready_stock bool NOT NULL
 				, stock_unit character varying NOT NULL COLLATE "natural_sort"
 				, base_price bigint NOT NULL
@@ -3521,7 +3522,9 @@ func init() {
 				, product_name character varying NOT NULL
 				, product_photo character varying NOT NULL
 				, product_ready_stock BOOLEAN NOT NULL
-				, dose character varying NOT NULL
+				, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, product_variant_stock_unit character varying NOT NULL
+				, amount integer NOT NULL
 				, note character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
@@ -3573,6 +3576,13 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON recipe_items (product_ready_stock);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON recipe_items (product_variant_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

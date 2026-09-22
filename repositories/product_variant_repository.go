@@ -87,6 +87,7 @@ func (q *productVariantRepository) FindProductVariants(
 		, product_category_name
 		, product_id
 		, product_name
+		, product_photo
 		, product_ready_stock
 		, stock_unit
 		, base_price
@@ -160,6 +161,7 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ProductCategoryName,
 			&productVariant.ProductID,
 			&productVariant.ProductName,
+			&productVariant.ProductPhoto,
 			&productVariant.ProductReadyStock,
 			&productVariant.StockUnit,
 			&productVariant.BasePrice,
@@ -211,6 +213,7 @@ func (q *productVariantRepository) FindProductVariant(
 			, product_category_name
 			, product_id
 			, product_name
+			, produc_photo
 			, product_ready_stock
 			, stock_unit
 			, base_price
@@ -240,6 +243,7 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.ProductCategoryName,
 		&response.ProductID,
 		&response.ProductName,
+		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
 		&response.BasePrice,
@@ -284,6 +288,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, product_category_name
 			, product_id
 			, product_name
+			, product_photo
 			, product_ready_stock
 			, stock_unit
 			, base_price
@@ -298,7 +303,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 		RETURNING id
 			, company_id
 			, record_status
@@ -306,6 +311,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, product_category_name
 			, product_id
 			, product_name
+			, product_photo
 			, product_ready_stock
 			, stock_unit
 			, base_price
@@ -329,6 +335,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		request.ProductCategoryName,
 		request.ProductID,
 		request.ProductName,
+		request.ProductPhoto,
 		request.ProductReadyStock,
 		request.StockUnit,
 		request.BasePrice,
@@ -351,6 +358,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ProductCategoryName,
 		&response.ProductID,
 		&response.ProductName,
+		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
 		&response.BasePrice,
@@ -398,6 +406,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, product_category_name
 			, product_id
 			, product_name
+			, produc_photo
 			, product_ready_stock
 			, stock_unit
 			, base_price
@@ -427,6 +436,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductCategoryName,
 		&response.ProductID,
 		&response.ProductName,
+		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
 		&response.BasePrice,
@@ -495,6 +505,13 @@ func (q *productVariantRepository) UpdateProductVariant(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " product_name = $%d", n)
+	}
+	if response.ProductPhoto != request.ProductPhoto {
+		params = append(params, request.ProductPhoto)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " product_photo = $%d", n)
 	}
 	if response.ProductReadyStock != request.ProductReadyStock {
 		params = append(params, request.ProductReadyStock)
@@ -624,6 +641,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, product_category_name
 			, product_id
 			, product_name
+			, product_photo
 			, product_ready_stock
 			, stock_unit
 			, base_price
@@ -651,6 +669,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductCategoryName,
 		&response.ProductID,
 		&response.ProductName,
+		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
 		&response.BasePrice,

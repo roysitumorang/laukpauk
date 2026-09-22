@@ -22,12 +22,13 @@ import (
 )
 
 type recipeController struct {
-	sellerService      services.SellerService
-	buyerService       services.BuyerService
-	recipeService      services.RecipeService
-	recipeGuideService services.RecipeGuideService
-	recipeItemService  services.RecipeItemService
-	productService     services.ProductService
+	sellerService         services.SellerService
+	buyerService          services.BuyerService
+	recipeService         services.RecipeService
+	recipeGuideService    services.RecipeGuideService
+	recipeItemService     services.RecipeItemService
+	productService        services.ProductService
+	productVariantService services.ProductVariantService
 }
 
 func NewRecipeController(
@@ -37,14 +38,16 @@ func NewRecipeController(
 	recipeGuideService services.RecipeGuideService,
 	recipeItemService services.RecipeItemService,
 	productService services.ProductService,
+	productVariantService services.ProductVariantService,
 ) *recipeController {
 	return &recipeController{
-		sellerService:      sellerService,
-		buyerService:       buyerService,
-		recipeService:      recipeService,
-		recipeGuideService: recipeGuideService,
-		recipeItemService:  recipeItemService,
-		productService:     productService,
+		sellerService:         sellerService,
+		buyerService:          buyerService,
+		recipeService:         recipeService,
+		recipeGuideService:    recipeGuideService,
+		recipeItemService:     recipeItemService,
+		productService:        productService,
+		productVariantService: productVariantService,
 	}
 }
 
@@ -720,19 +723,23 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "seller/layouts/authenticated")
 	}
-	mapProducts := make(map[uuid.UUID]*models.Product, len(products))
+	mapVariants := map[uuid.UUID]*models.ProductVariant{}
 	for _, product := range products {
-		mapProducts[product.ID] = product
+		for _, variant := range product.Variants {
+			mapVariants[variant.ID] = variant
+		}
 	}
 	var recipeItem *models.RecipeItem
-	product, ok := mapProducts[request.ProductID]
+	variant, ok := mapVariants[request.ProductVariantID]
 	if !ok {
 		return c.Render("seller/recipe_item_new", params.Push(
-			"flash", flash.Danger("product_id: not found"),
+			"flash", flash.Danger("product_variant_id: not found"),
 		), "seller/layouts/authenticated")
 	}
-	request.ProductName = product.Name
-	request.ProductPhoto = product.Photo
+	request.ProductID = variant.ProductID
+	request.ProductName = variant.ProductName
+	request.ProductPhoto = variant.ProductPhoto
+	request.ProductVariantStockUnit = variant.StockUnit
 	if recipeItem, err = q.recipeItemService.FindRecipeItem(
 		ctx,
 		models.NewRecipeItemFilter().
@@ -840,17 +847,21 @@ func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "seller/layouts/authenticated")
 	}
-	mapProducts := make(map[uuid.UUID]*models.Product, len(products))
+	mapVariants := map[uuid.UUID]*models.ProductVariant{}
 	for _, product := range products {
-		mapProducts[product.ID] = product
+		for _, variant := range product.Variants {
+			mapVariants[variant.ID] = variant
+		}
 	}
-	if product, ok := mapProducts[recipeItem.ProductID]; ok {
-		request.ProductName = product.Name
-		request.ProductPhoto = product.Photo
+	if variant, ok := mapVariants[recipeItem.ProductVariantID]; ok {
+		request.ProductID = variant.ProductID
+		request.ProductName = variant.ProductName
+		request.ProductPhoto = variant.ProductPhoto
+		request.ProductVariantStockUnit = variant.StockUnit
 	}
 	request.ID = recipeItem.ID
 	request.CompanyID = recipeItem.CompanyID
-	request.ProductID = recipeItem.ProductID
+	request.ProductVariantID = recipeItem.ProductVariantID
 	request.RecordStatus = recipeItem.RecordStatus
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
@@ -1266,6 +1277,27 @@ func (q *recipeController) prepareRecipeItem(
 			}),
 	); err != nil {
 		return nil, nil, nil, nil, err
+	}
+	productIDs = make([]uuid.UUID, len(products))
+	for i := range products {
+		productIDs[i] = products[i].ID
+	}
+	variants, _, err := q.productVariantService.FindProductVariants(
+		ctx,
+		models.NewProductVariantFilter().
+			WithCompanyIDs(currentSeller.CompanyID).
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductIDs(productIDs...),
+	)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	mapProductVariants := map[uuid.UUID][]*models.ProductVariant{}
+	for _, variant := range variants {
+		mapProductVariants[variant.ProductID] = append(mapProductVariants[variant.ProductID], variant)
+	}
+	for i := range products {
+		products[i].Variants = mapProductVariants[products[i].ID]
 	}
 	if withParams && params.Size() > 0 {
 		params.Push("products", products)

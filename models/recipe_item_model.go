@@ -17,32 +17,34 @@ var MapRecipeItemSortings = map[string]struct{}{
 }
 
 type RecipeItem struct {
-	RowNo             int64        `json:"-" form:"-"`
-	ID                uuid.UUID    `json:"-" form:"id"`
-	CompanyID         uuid.UUID    `json:"-" form:"-"`
-	RecordStatus      RecordStatus `json:"-" form:"-"`
-	RecipeID          uuid.UUID    `json:"-" form:"-"`
-	ProductID         uuid.UUID    `json:"-" form:"product_id"`
-	ProductName       string       `json:"-" form:"-"`
-	ProductPhoto      string       `json:"-" form:"-"`
-	ProductReadyStock bool         `json:"-" form:"-"`
-	Dose              string       `json:"-" form:"dose"`
-	Note              string       `json:"-" form:"note"`
-	CreatedBy         uuid.UUID    `json:"-" form:"-"`
-	CreatedAt         time.Time    `json:"-" form:"-"`
-	UpdatedBy         uuid.UUID    `json:"-" form:"-"`
-	UpdatedAt         time.Time    `json:"-" form:"-"`
-	DeletedBy         *uuid.UUID   `json:"-" form:"-"`
-	DeletedAt         *time.Time   `json:"-" form:"-"`
-	DeletionReason    *string      `json:"-" form:"-"`
+	RowNo                   int64        `json:"-" form:"-"`
+	ID                      uuid.UUID    `json:"-" form:"id"`
+	CompanyID               uuid.UUID    `json:"-" form:"-"`
+	RecordStatus            RecordStatus `json:"-" form:"-"`
+	RecipeID                uuid.UUID    `json:"-" form:"-"`
+	ProductID               uuid.UUID    `json:"-" form:"-"`
+	ProductName             string       `json:"-" form:"-"`
+	ProductPhoto            string       `json:"-" form:"-"`
+	ProductReadyStock       bool         `json:"-" form:"-"`
+	ProductVariantID        uuid.UUID    `json:"-" form:"product_variant_id"`
+	ProductVariantStockUnit string       `json:"-" form:"-"`
+	Amount                  int          `json:"-" form:"amount"`
+	Note                    string       `json:"-" form:"note"`
+	CreatedBy               uuid.UUID    `json:"-" form:"-"`
+	CreatedAt               time.Time    `json:"-" form:"-"`
+	UpdatedBy               uuid.UUID    `json:"-" form:"-"`
+	UpdatedAt               time.Time    `json:"-" form:"-"`
+	DeletedBy               *uuid.UUID   `json:"-" form:"-"`
+	DeletedAt               *time.Time   `json:"-" form:"-"`
+	DeletionReason          *string      `json:"-" form:"-"`
 }
 
 func (q *RecipeItem) Validate() error {
-	if q.ProductID.Compare(uuid.Nil()) == 0 {
-		return errors.New("product_id: is required")
+	if q.ProductVariantID.Compare(uuid.Nil()) == 0 {
+		return errors.New("product_variant_id: is required")
 	}
-	if q.Dose = strings.TrimSpace(q.Dose); q.Dose == "" {
-		return errors.New("dose: is required")
+	if q.Amount < 1 {
+		return errors.New("amount: is required")
 	}
 	q.Note = strings.TrimSpace(q.Note)
 	return nil
@@ -60,6 +62,7 @@ type RecipeItemFilter struct {
 	RecipeIDs,
 	CompanyIDs,
 	ProductIDs,
+	ProductVariantIDs,
 	RecipeItemIDs,
 	ExcludedRecipeItemIDs []uuid.UUID
 	ProductReadyStock *bool
@@ -91,6 +94,11 @@ func (q *RecipeItemFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *RecipeItemFi
 
 func (q *RecipeItemFilter) WithProductIDs(productIDs ...uuid.UUID) *RecipeItemFilter {
 	q.ProductIDs = productIDs
+	return q
+}
+
+func (q *RecipeItemFilter) WithProductVariantIDs(productVariantIDs ...uuid.UUID) *RecipeItemFilter {
+	q.ProductVariantIDs = productVariantIDs
 	return q
 }
 

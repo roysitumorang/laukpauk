@@ -7,26 +7,29 @@
 	<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 	{{ if !recipeItem.New() }}
 	<input type="hidden" name="id" value="{{ recipeItem.ID }}" />
-	<input type="hidden" name="product_id" value="{{ recipeItem.ProductID }}" />
+	<input type="hidden" name="product_variant_id" value="{{ recipeItem.ProductVariantID }}" />
 	{{ end }}
 	<div class="row">
 		<div class="form-group col-lg-4">
-			<label for="product_id" class="label-title">Produk</label>
-			<select name="product_id" id="product_id" class="form-control" {{ if !recipeItem.New() }}disabled{{ else }}required{{ end }}>
+			<label for="product_variant_id" class="label-title">Produk</label>
+			<select name="product_variant_id" id="product_variant_id" class="form-control" {{ if !recipeItem.New() }}disabled{{ else }}required{{ end }}>
 				<option value="" disabled>- Pilih Produk -</option>
 				{{ range _, product := products }}
-				<option value="{{ product.ID }}"{{ if request.ProductID && request.ProductID.Compare(product.ID) == 0 }} selected{{ end }}>{{ product.Name }}</option>
+				{{ range _, variant := product.Variants }}
+				<option value="{{ variant.ID }}"{{ if request.ProductVariantID.Compare(variant.ID) == 0 }} selected{{ end }}>{{ variant.ProductName }} - {{ variant.StockUnit }}</option>
+				{{ end }}
 				{{ end }}
 			</select>
 		</div>
 		<div class="form-group col-lg-4">
 			<label for="dose" class="label-title">Takaran</label>
-			<input type="text"
-				name="dose"
-				value="{{ request.Dose }}"
-				id="dose"
-				placeholder="Takaran Satuan Bebas (mis. 10 biji)"
-				class="form-control" />
+			<input type="number"
+				name="amount"
+				value="{{ request.Amount }}"
+				id="amount"
+				placeholder="Takaran Satuan (mis. 10)"
+				class="form-control"
+				min="1" />
 		</div>
 		<div class="form-group col-lg-12">
 			<label for="note" class="label-title">Catatan Tambahan</label>

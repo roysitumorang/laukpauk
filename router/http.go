@@ -433,6 +433,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.RecipeGuideService,
 		q.RecipeItemService,
 		q.ProductService,
+		q.ProductVariantService,
 	).Mount(app.Group("/recipes"))
 	controllers.NewCompanyController(
 		q.AdminService,
