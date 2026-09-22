@@ -96,10 +96,11 @@ func (m *Migration) Migrate(ctx context.Context) error {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommit")
 		return err
 	}
+	clear(Migrations)
 	return nil
 }
 
-func (m *Migration) CreateMigrationFile(_ context.Context) error {
+func (m *Migration) CreateMigrationFile() error {
 	now := time.Now().UTC().UnixNano()
 	filepath := helper.Sprintf("./migration/%d.go", now)
 	content := helper.Sprintf(

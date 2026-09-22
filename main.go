@@ -179,7 +179,7 @@ func main() {
 					var activity string
 					switch cmd.Args().First() {
 					case "new":
-						if err = service.Migration.CreateMigrationFile(ctx); err != nil {
+						if err = service.Migration.CreateMigrationFile(); err != nil {
 							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCreateMigrationFile")
 							return err
 						}
