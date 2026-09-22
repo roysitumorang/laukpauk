@@ -4,18 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 	"uuid"
 
+	"github.com/coregx/coregex"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 var ErrVoucherNotFound = errors.New("voucher not found")
 var ErrUniqueVoucherCodeViolation = errors.New("code: already exists")
 
-var VoucherCodeRegex = regexp.MustCompile("^[a-zA-Z0-9-]+$")
+var VoucherCodeRegex = coregex.MustCompile("^[a-zA-Z0-9-]+$")
 
 type VoucherType int
 

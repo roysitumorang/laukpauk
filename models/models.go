@@ -2,10 +2,10 @@ package models
 
 import (
 	"errors"
-	"regexp"
 	"strings"
 	"uuid"
 
+	"github.com/coregx/coregex"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -130,9 +130,9 @@ const SortingDirectionDesc SortingDirection = "DESC"
 var ErrAccessDenied = errors.New("access denied")
 var MapLimits = map[int64]struct{}{10: {}, 25: {}, 50: {}, 100: {}}
 var Limits = []int64{10, 25, 50, 100}
-var PhoneNumberRegex = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
-var UsernameRegex = regexp.MustCompile("[^a-z0-9]+")
-var SlugRegex = regexp.MustCompile("^[a-z0-9-]+$")
+var PhoneNumberRegex = coregex.MustCompile(`^\+[1-9]\d{1,14}$`)
+var UsernameRegex = coregex.MustCompile("[^a-z0-9]+")
+var SlugRegex = coregex.MustCompile("^[a-z0-9-]+$")
 var SliceTopics = []string{
 	TopicTextMessage.String(),
 }
