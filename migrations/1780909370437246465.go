@@ -2644,6 +2644,7 @@ func init() {
 			ctx,
 			`CREATE TABLE point_earnings (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, start_date timestamp with time zone NOT NULL
 				, end_date timestamp with time zone NOT NULL
@@ -2652,6 +2653,13 @@ func init() {
 				, updated_at timestamp with time zone NOT NULL
 				, UNIQUE (buyer_id, start_date, end_date)
 			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON point_earnings (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

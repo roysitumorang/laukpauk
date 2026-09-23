@@ -66,6 +66,7 @@ type (
 		CompanyService            services.CompanyService
 		SellerService             services.SellerService
 		OneTimePasswordService    services.OneTimePasswordService
+		PointEarningService       services.PointEarningService
 	}
 )
 
@@ -167,6 +168,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	companyRepository := repositories.NewCompanyRepository(dbRead, dbWrite)
 	sellerRepository := repositories.NewSellerRepository(dbRead, dbWrite)
 	oneTimePasswordRepository := repositories.NewOneTimePasswordRepository(dbRead, dbWrite)
+	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -222,6 +224,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	companyService := services.NewCompanyService(companyRepository)
 	sellerService := services.NewSellerService(sellerRepository)
 	oneTimePasswordService := services.NewOneTimePasswordService(oneTimePasswordRepository)
+	pointEarningService := services.NewPointEarningService(pointEarningRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migration:                 migration,
@@ -264,6 +267,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		CompanyService:            companyService,
 		SellerService:             sellerService,
 		OneTimePasswordService:    oneTimePasswordService,
+		PointEarningService:       pointEarningService,
 	}, nil
 }
 
