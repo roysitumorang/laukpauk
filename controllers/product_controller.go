@@ -816,6 +816,17 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 			), "seller/layouts/authenticated")
 		}
 	}
+	recipeItems, _, err := q.recipeItemService.FindRecipeItems(
+		ctx,
+		models.NewRecipeItemFilter().
+			WithProductVariantIDs(productVariant.ID),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
+		return c.Render("seller/product_variant_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "seller/layouts/authenticated")
+	}
 	request.ID = productVariant.ID
 	request.CompanyID = productVariant.CompanyID
 	request.RecordStatus = productVariant.RecordStatus
@@ -845,7 +856,8 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, request); err != nil {
+	response, err := q.productVariantService.UpdateProductVariant(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
 		return c.Render("seller/product_variant_edit", params.Push(
 			"flash", flash.Danger(err.Error()),
@@ -855,6 +867,15 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 		product.LowestSellingPrice = request.SellingPrice
 		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
+			return c.Render("seller/product_variant_edit", params.Push(
+				"flash", flash.Danger(err.Error()),
+			), "seller/layouts/authenticated")
+		}
+	}
+	for _, recipeItem := range recipeItems {
+		recipeItem.ProductVariantStockUnit = response.StockUnit
+		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 			return c.Render("seller/product_variant_edit", params.Push(
 				"flash", flash.Danger(err.Error()),
 			), "seller/layouts/authenticated")

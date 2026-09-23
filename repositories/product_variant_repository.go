@@ -213,7 +213,7 @@ func (q *productVariantRepository) FindProductVariant(
 			, product_category_name
 			, product_id
 			, product_name
-			, produc_photo
+			, product_photo
 			, product_ready_stock
 			, stock_unit
 			, base_price
@@ -406,7 +406,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, product_category_name
 			, product_id
 			, product_name
-			, produc_photo
+			, product_photo
 			, product_ready_stock
 			, stock_unit
 			, base_price
