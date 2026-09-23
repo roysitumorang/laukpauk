@@ -18,58 +18,57 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	TransactionService interface {
-		FindTransactions(
-			ctx context.Context,
-			request *models.TransactionFilter,
-		) ([]*models.Transaction, *models.Pagination, error)
-		FindTransaction(
-			ctx context.Context,
-			request *models.TransactionFilter,
-		) (*models.Transaction, error)
-		CreateTransaction(
-			ctx context.Context,
-			buyer *models.Buyer,
-			request *models.Transaction,
-		) (*models.Transaction, error)
-		UpdateTransaction(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Transaction,
-		) (*models.Transaction, error)
-		AutoCancelOverdueTransactions(ctx context.Context) error
-		RequestWithdrawal(
-			ctx context.Context,
-			request *models.Transaction,
-		) (*models.Transaction, error)
-		WithdrawTransaction(
-			ctx context.Context,
-			request *models.Transaction,
-		) (*models.Transaction, error)
-		CompleteTransaction(
-			ctx context.Context,
-			request *models.Transaction,
-		) (*models.Transaction, error)
-		AutoCompleteTransactions(ctx context.Context) error
-	}
+type TransactionService interface {
+	FindTransactions(
+		ctx context.Context,
+		request *models.TransactionFilter,
+	) ([]*models.Transaction, *models.Pagination, error)
+	FindTransaction(
+		ctx context.Context,
+		request *models.TransactionFilter,
+	) (*models.Transaction, error)
+	CreateTransaction(
+		ctx context.Context,
+		company *models.Company,
+		buyer *models.Buyer,
+		request *models.Transaction,
+	) (*models.Transaction, error)
+	UpdateTransaction(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Transaction,
+	) (*models.Transaction, error)
+	AutoCancelOverdueTransactions(ctx context.Context) error
+	RequestWithdrawal(
+		ctx context.Context,
+		request *models.Transaction,
+	) (*models.Transaction, error)
+	WithdrawTransaction(
+		ctx context.Context,
+		request *models.Transaction,
+	) (*models.Transaction, error)
+	CompleteTransaction(
+		ctx context.Context,
+		request *models.Transaction,
+	) (*models.Transaction, error)
+	AutoCompleteTransactions(ctx context.Context) error
+}
 
-	transactionService struct {
-		transactionRepository        repositories.TransactionRepository
-		buyerRepository              repositories.BuyerRepository
-		transactionCounterRepository repositories.TransactionCounterRepository
-		cartRepository               repositories.CartRepository
-		deliveryPlanRepository       repositories.DeliveryPlanRepository
-		deliveryRouteRepository      repositories.DeliveryRouteRepository
-		companyRepository            repositories.CompanyRepository
-		voucherRepository            repositories.VoucherRepository
-		pointSpendingCapRepository   repositories.PointSpendingCapRepository
-		pointRepository              repositories.PointRepository
-		productVariantRepository     repositories.ProductVariantRepository
-		paymentChannelRepository     repositories.PaymentChannelRepository
-		xenditClient                 *externals.XenditClient
-	}
-)
+type transactionService struct {
+	transactionRepository        repositories.TransactionRepository
+	buyerRepository              repositories.BuyerRepository
+	transactionCounterRepository repositories.TransactionCounterRepository
+	cartRepository               repositories.CartRepository
+	deliveryPlanRepository       repositories.DeliveryPlanRepository
+	deliveryRouteRepository      repositories.DeliveryRouteRepository
+	companyRepository            repositories.CompanyRepository
+	voucherRepository            repositories.VoucherRepository
+	pointSpendingCapRepository   repositories.PointSpendingCapRepository
+	pointRepository              repositories.PointRepository
+	productVariantRepository     repositories.ProductVariantRepository
+	paymentChannelRepository     repositories.PaymentChannelRepository
+	xenditClient                 *externals.XenditClient
+}
 
 func NewTransactionService(
 	transactionRepository repositories.TransactionRepository,
@@ -147,6 +146,7 @@ func (q *transactionService) FindTransaction(
 
 func (q *transactionService) CreateTransaction(
 	ctx context.Context,
+	company *models.Company,
 	buyer *models.Buyer,
 	request *models.Transaction,
 ) (*models.Transaction, error) {
@@ -170,6 +170,7 @@ func (q *transactionService) CreateTransaction(
 	deliveryRoute, err := q.deliveryRouteRepository.FindDeliveryRoute(
 		ctx,
 		models.NewDeliveryRouteFilter().
+			WithCompanyIDs(company.ID).
 			WithDeliveryRouteIDs(request.DeliveryRouteID),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
@@ -182,22 +183,11 @@ func (q *transactionService) CreateTransaction(
 	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
 	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
 	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
-	company, err := q.companyRepository.FindCompany(
-		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(request.CompanyID),
-	)
-	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompany")
-		return nil, err
-	}
-	if company == nil {
-		return nil, models.ErrCompanyNotFound
-	}
 	now := time.Now().In(time.Local)
 	deliveryPlan, err := q.deliveryPlanRepository.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
+			WithCompanyIDs(company.ID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now),
 	)
@@ -235,6 +225,7 @@ func (q *transactionService) CreateTransaction(
 		productVariants, _, _, err := q.productVariantRepository.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
+				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductVariantIDs(productVariantIDs...),
 		)
@@ -269,6 +260,7 @@ func (q *transactionService) CreateTransaction(
 			referrer, err := q.buyerRepository.FindBuyer(
 				ctx,
 				models.NewBuyerFilter().
+					WithCompanyIDs(company.ID).
 					WithReferralCodes(*request.ReferralCode),
 			)
 			if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -281,7 +273,8 @@ func (q *transactionService) CreateTransaction(
 			_, total, _, err := q.transactionRepository.FindTransactions(
 				ctx,
 				models.NewTransactionFilter().
-					WithBuyerIDs(request.BuyerID).
+					WithCompanyIDs(company.ID).
+					WithBuyerIDs(buyer.ID).
 					WithExcludedTransactionStatuses(
 						models.TransactionStatusCancelled,
 						models.TransactionStatusWithdrawalPending,
@@ -311,6 +304,7 @@ func (q *transactionService) CreateTransaction(
 		pointSpendingCap, err := q.pointSpendingCapRepository.FindPointSpendingCap(
 			ctx,
 			models.NewPointSpendingCapFilter().
+				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithShoppingCost(request.ShoppingCost, request.ShoppingCost),
 		)
@@ -326,11 +320,11 @@ func (q *transactionService) CreateTransaction(
 			voucher, err := q.voucherRepository.FindVoucher(
 				ctx,
 				models.NewVoucherFilter().
-					WithCompanyIDs(request.CompanyID).
+					WithCompanyIDs(company.ID).
 					WithRecordStatuses(models.RecordStatusActive).
 					WithCodes(*request.VoucherCode).
 					WithTransactionDatetime(now).
-					WithBuyerIDs(request.BuyerID),
+					WithBuyerIDs(buyer.ID),
 			)
 			if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
@@ -343,7 +337,8 @@ func (q *transactionService) CreateTransaction(
 				_, total, _, err := q.transactionRepository.FindTransactions(
 					ctx,
 					models.NewTransactionFilter().
-						WithBuyerIDs(request.BuyerID).
+						WithCompanyIDs(company.ID).
+						WithBuyerIDs(buyer.ID).
 						WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
 						WithVoucherIDs(voucher.ID).
 						WithReturnCountOnly(true),
@@ -399,7 +394,6 @@ func (q *transactionService) CreateTransaction(
 		request.Status = models.TransactionStatusPaid
 		request.PaidAt = &now
 	}
-	request.BuyerID = buyer.ID
 	request.ReferenceNumber = sb.String()
 	request.CreatedAt = now
 	request.UpdatedAt = now
@@ -471,7 +465,7 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	cart.BuyerID = nil
-	cart.DeletedBuyerID = &request.BuyerID
+	cart.DeletedBuyerID = &buyer.ID
 	cart.UpdatedAt = now
 	cart.Items = nil
 	if _, err = q.cartRepository.SaveCart(ctx, tx, cart); err != nil {

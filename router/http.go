@@ -204,9 +204,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"/v1/buyer/cart/*/*":                         "/cart/v1/buyer/$1/$2",
 				"/v1/companies/*/buyer/vouchers":             "/vouchers/$1/v1/buyer",
 				"/v1/companies/*/buyer/delivery_plans/*":     "/delivery_plans/$1/v1/buyer/$2",
-				"/v1/buyer/transactions":                     "/transactions/v1/buyer",
-				"/v1/buyer/transactions/*":                   "/transactions/v1/buyer/$1",
-				"/v1/buyer/transactions/*/*":                 "/transactions/v1/buyer/$1/$2",
+				"/v1/companies/*/buyer/transactions":         "/transactions/$1/v1/buyer",
+				"/v1/companies/*/buyer/transactions/*":       "/transactions/$1/v1/buyer/$2",
+				"/v1/companies/*/buyer/transactions/*/*":     "/transactions/$1/v1/buyer/$2/$3",
 				"/v1/buyer/banners":                          "/banners/v1/buyer",
 				"/v1/buyer/banners/*":                        "/banners/v1/buyer/$1",
 				"/v1/buyer/banners/*/*":                      "/banners/v1/buyer/$1/$2",
@@ -368,7 +368,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(
-		q.AdminService,
+		q.CompanyService,
+		q.SellerService,
 		q.BuyerService,
 		q.TransactionService,
 		q.JsonWebTokenService,
