@@ -2458,10 +2458,12 @@ func init() {
 			ctx,
 			`CREATE TABLE transaction_counters (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, transaction_window character varying NOT NULL UNIQUE
+				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE CASCADE
+				, transaction_window character varying NOT NULL
 				, hits bigint NOT NULL CHECK (hits >= 0)
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
+				, UNIQUE (company_id, transaction_window)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

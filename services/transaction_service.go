@@ -371,6 +371,7 @@ func (q *transactionService) CreateTransaction(
 	counter, err := q.transactionCounterRepository.SaveTransactionCounter(
 		ctx,
 		&models.TransactionCounter{
+			CompanyID:         company.ID,
 			TransactionWindow: sb.String(),
 			CreatedAt:         now,
 			UpdatedAt:         now,

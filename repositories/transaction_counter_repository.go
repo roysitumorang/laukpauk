@@ -40,24 +40,28 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 	if err := q.dbWrite.QueryRow(
 		ctx,
 		`INSERT INTO transaction_counters (
-			transaction_window
+			company_id
+			, transaction_window
 			, hits
 			, created_at
 			, updated_at
-		) VALUES ($1, 1, $2, $3)
-		ON CONFLICT (transaction_window) DO UPDATE SET
+		) VALUES ($1, $2, 1, $3, $4)
+		ON CONFLICT (company_id, transaction_window) DO UPDATE SET
 			hits = transaction_counters.hits + 1
-			, updated_at = $3
+			, updated_at = $4
 		RETURNING id
+			, company_id
 			, transaction_window
 			, hits
 			, created_at
 			, updated_at`,
+		request.CompanyID,
 		request.TransactionWindow,
 		request.CreatedAt,
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
+		&response.CompanyID,
 		&response.TransactionWindow,
 		&response.Hits,
 		&response.CreatedAt,
