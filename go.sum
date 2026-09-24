@@ -104,8 +104,8 @@ github.com/gofiber/template/jet/v3 v3.0.9 h1:ypFkvpvcX34DyAc35GHTSEjqfpd9auYK+sc
 github.com/gofiber/template/jet/v3 v3.0.9/go.mod h1:RazjIppIldohGQNInBJOLHZZe9B32DIeQreT8TnrMs0=
 github.com/gofiber/template/v2 v2.1.2 h1:fZTpavK0Yi1ehJGrL9UXzBrOnowZfPpIZwxfiIftXBs=
 github.com/gofiber/template/v2 v2.1.2/go.mod h1:h8vOKQkwFUFRNTvRcIvt/OgVUOVqHsaEviWTOAh2JqQ=
-github.com/gofiber/utils/v2 v2.5.3 h1:8bOn+DSKeANT8R/eqm+g2FHU/8uuE4Ed2IXOrijS0yw=
-github.com/gofiber/utils/v2 v2.5.3/go.mod h1:tc9KqdRAQZRD/u0mN2d1ZHROGheSZv+0FcC9cg5OEdw=
+github.com/gofiber/utils/v2 v2.6.0 h1:irTtj/gCDH/y8yzEQrPOx03t6ODeVd6EO9i6RnQlGe4=
+github.com/gofiber/utils/v2 v2.6.0/go.mod h1:tc9KqdRAQZRD/u0mN2d1ZHROGheSZv+0FcC9cg5OEdw=
 github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
 github.com/golang-jwt/jwt/v5 v5.3.1/go.mod h1:fxCRLWMO43lRc8nhHWY6LGqRcf+1gQWArsqaEUEa5bE=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
