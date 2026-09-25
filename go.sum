@@ -5,8 +5,8 @@ github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c/go.mod h1:xomTg6
 github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53/go.mod h1:+3IMCy2vIlbG1XG/0ggNQv0SvxCAIpPM5b1nCz56Xno=
 github.com/CloudyKit/fastprinter v0.0.0-20251202014920-1725d2651bd4 h1:DQ1+lDdBve+u+aovjh4wV6sYnvZKH0Hx8GaQOi4vYl8=
 github.com/CloudyKit/fastprinter v0.0.0-20251202014920-1725d2651bd4/go.mod h1:eauGmjfZG874MOAEPVeqg21mZCbTOLW+tFe8F7NpfnY=
-github.com/CloudyKit/jet/v6 v6.3.2 h1:BPaX0lnXTZ9TniICiiK/0iJqzeGJ2ibvB4DjAqLMBSM=
-github.com/CloudyKit/jet/v6 v6.3.2/go.mod h1:lf8ksdNsxZt7/yH/3n4vJQWA9RUq4wpaHtArHhGVMOw=
+github.com/CloudyKit/jet/v6 v6.3.3 h1:a3EUQtQFmNDTw+dVpwyyWb04l/TxU5VfJ+hiGsws1sQ=
+github.com/CloudyKit/jet/v6 v6.3.3/go.mod h1:lf8ksdNsxZt7/yH/3n4vJQWA9RUq4wpaHtArHhGVMOw=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
@@ -59,8 +59,8 @@ github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre
 github.com/go-ole/go-ole v1.2.6/go.mod h1:pprOEPIfldk/42T2oK7lQ4v4JSDwmV0As9GaiUsvbm0=
 github.com/go-ole/go-ole v1.3.0 h1:Dt6ye7+vXGIKZ7Xtk4s6/xVdGDQynvom7xCFEdWr6uE=
 github.com/go-ole/go-ole v1.3.0/go.mod h1:5LS6F96DhAwUc7C+1HLexzMXY1xGRSryjyPPKW6zv78=
-github.com/go-openapi/jsonpointer v1.0.1 h1:2KxywRmNwJkT/FMBa3iRNHEaAxSJvjqoufQZy3au1Mg=
-github.com/go-openapi/jsonpointer v1.0.1/go.mod h1:wI7ZYsFmbIi9nBXOZqgDaS/bqOchRGZjqxFli7FBYxY=
+github.com/go-openapi/jsonpointer v1.0.2 h1:NbW7xT2b+l7x+JefiPGDsZWsrLk1ogrz4AHK1TTzMt8=
+github.com/go-openapi/jsonpointer v1.0.2/go.mod h1:N0rI4MbNKD7xAFTiHtB+5Nhrg2j/wwYg7m7Fmb4/jk8=
 github.com/go-openapi/jsonreference v1.0.2 h1:oS4et8FOf3p3UQxEo4Xt0esijmBUM+F259Xl72OSZsc=
 github.com/go-openapi/jsonreference v1.0.2/go.mod h1:TbUNSOo+fcorZjFaNoiSDSoaNnnZtqJtLGR1PuvE/Cs=
 github.com/go-openapi/spec v1.0.1 h1:lj2vdGpNDcVgwRc6qXdw6qt/KQpCtSa9tnUH6vpDPDk=
@@ -84,8 +84,8 @@ github.com/go-openapi/swag/yamlutils v0.29.2 h1:IFKFFeDnuIwzfsuWRQU+rI8iL3g4XyAY
 github.com/go-openapi/swag/yamlutils v0.29.2/go.mod h1:7MGqtcrK73sxQ4ceiyIf8qiXS/s09JLMdR5esK5euYQ=
 github.com/go-openapi/testify/enable/yaml/v2 v2.7.0 h1:wPW6YRgx3+SID1yUy/Xwa17L8kFEaEKod2VRbJDZNUs=
 github.com/go-openapi/testify/enable/yaml/v2 v2.7.0/go.mod h1:mI1M88etYbc3PhgHsWQK2kwvNwW5aGFqMPbmib+SGIs=
-github.com/go-openapi/testify/v2 v2.7.0 h1:bycOreEj6wfBvijg3YFogZ/sFjTCDmQnwSodSzHa3X8=
-github.com/go-openapi/testify/v2 v2.7.0/go.mod h1:SgsVHtfooshd0tublTtJ50FPKhujf47YRqauXXOUxfw=
+github.com/go-openapi/testify/v2 v2.8.0 h1:19QDx5b57p8KjO2E4sgs/woL4Akp+FGLRlVm2xn0Rho=
+github.com/go-openapi/testify/v2 v2.8.0/go.mod h1:4gUN8jC+RqOE2qjW/vDmfyTvl5BCht4qL7oca0odrak=
 github.com/gofiber/contrib/v3/monitor v1.2.1 h1:EDZVv930/6OxuvElbk5Xk1Y+WFu1LAC725VoxbnOdcs=
 github.com/gofiber/contrib/v3/monitor v1.2.1/go.mod h1:wHsbKFwjfdA1MOXP/Hk+C9lHdyLAJ3D9XUA38MYeI9A=
 github.com/gofiber/contrib/v3/sentry v1.1.11 h1:h44IDlxfp/X+kcNg6tLtywgwR+/jssHiiRtY9ugrQVk=
@@ -94,8 +94,8 @@ github.com/gofiber/contrib/v3/swaggo v1.0.11 h1:1p3Bo6zb4jCWQoT4A4KliDmjmpIw6coo
 github.com/gofiber/contrib/v3/swaggo v1.0.11/go.mod h1:vchYSzcGth8lFtJsvTU+q0E9OUki2G/kGcVgnY34JBQ=
 github.com/gofiber/fiber/v3 v3.5.0 h1:dk7TOUH6DXJGtOLsN2XEG+0ZML7cznzHILTVozbNEK8=
 github.com/gofiber/fiber/v3 v3.5.0/go.mod h1:GOVDTW+gjJvfe0iJyVujbQ1Lnx+JUjFySJRI/9/xX/w=
-github.com/gofiber/schema v1.8.7 h1:7cSagr2ObiUVFuitCOqjKMqIhV+oVbkanP4Ge/wHsnI=
-github.com/gofiber/schema v1.8.7/go.mod h1:fBz4T6uOepH3L+dYlz/yzQ0bFHPnfExkp/B3Qrk2VBI=
+github.com/gofiber/schema v1.8.8 h1:md5t65+Z9LttOuj7FdMcQ63D2+6GniT2ganLXwvTJM4=
+github.com/gofiber/schema v1.8.8/go.mod h1:Hzf0L/fTPP1IwOAwKipKflm9C2722aebnSKJCMOgb1I=
 github.com/gofiber/storage/testhelpers/redis v0.1.0 h1:lDUwtanDf3f5YwlDwhbqnqCtj9Y/xc8ctxRE6HpQcws=
 github.com/gofiber/storage/testhelpers/redis v0.1.0/go.mod h1:Y1UccxbGVL04+TF5RuyCsksX+76hu6nJIWjPukBBgJ4=
 github.com/gofiber/storage/valkey v0.4.1 h1:3iml6K9Ew8oFTdwA9i26R1f19U6pkLeCVfgFIc6jSgQ=
@@ -104,8 +104,8 @@ github.com/gofiber/template/jet/v3 v3.0.9 h1:ypFkvpvcX34DyAc35GHTSEjqfpd9auYK+sc
 github.com/gofiber/template/jet/v3 v3.0.9/go.mod h1:RazjIppIldohGQNInBJOLHZZe9B32DIeQreT8TnrMs0=
 github.com/gofiber/template/v2 v2.1.2 h1:fZTpavK0Yi1ehJGrL9UXzBrOnowZfPpIZwxfiIftXBs=
 github.com/gofiber/template/v2 v2.1.2/go.mod h1:h8vOKQkwFUFRNTvRcIvt/OgVUOVqHsaEviWTOAh2JqQ=
-github.com/gofiber/utils/v2 v2.6.0 h1:irTtj/gCDH/y8yzEQrPOx03t6ODeVd6EO9i6RnQlGe4=
-github.com/gofiber/utils/v2 v2.6.0/go.mod h1:tc9KqdRAQZRD/u0mN2d1ZHROGheSZv+0FcC9cg5OEdw=
+github.com/gofiber/utils/v2 v2.6.1 h1:x3zsS/oUQz0ia2Zx8XXtG/7naR5a+/95FRO8mwQ5QQ4=
+github.com/gofiber/utils/v2 v2.6.1/go.mod h1:tc9KqdRAQZRD/u0mN2d1ZHROGheSZv+0FcC9cg5OEdw=
 github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
 github.com/golang-jwt/jwt/v5 v5.3.1/go.mod h1:fxCRLWMO43lRc8nhHWY6LGqRcf+1gQWArsqaEUEa5bE=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
