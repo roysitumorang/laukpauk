@@ -23,8 +23,8 @@ import (
 	"unsafe"
 	"uuid"
 
-	"github.com/bwmarrin/snowflake"
 	"github.com/goccy/go-json"
+	"github.com/godruoyi/go-snowflake"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/kolesa-team/go-webp/encoder"
@@ -49,7 +49,6 @@ var (
 	accessTokenAge time.Duration
 	shortUniqueIDs *sqids.Sqids
 	privateKey     *rsa.PrivateKey
-	snowflakeNode  *snowflake.Node
 	InitHelper     = sync.OnceValue(func() (err error) {
 		location, ok := os.LookupEnv("TZ")
 		if !ok || location == "" {
@@ -109,10 +108,7 @@ var (
 		if accessTokenAge, err = time.ParseDuration(envAccesTokenAge); err != nil {
 			return
 		}
-		if privateKey, err = keys.InitPrivateKey(); err != nil {
-			return
-		}
-		snowflakeNode, err = snowflake.NewNode(1)
+		privateKey, err = keys.InitPrivateKey()
 		return
 	})
 )
@@ -125,23 +121,19 @@ func ByteSlice2String(bs []byte) string {
 	return *(*string)(unsafe.Pointer(&bs))
 }
 
-func GenerateSnowflakeID() int64 {
-	return snowflakeNode.Generate().Int64()
+func GenerateSnowflakeID() uint64 {
+	return snowflake.ID()
 }
 
-func EncodeShortUniqueIDs(numbers ...int64) (string, error) {
+func EncodeShortUniqueIDs(numbers ...uint64) (string, error) {
 	n := len(numbers)
 	if n == 0 {
 		return "", nil
 	}
-	unsignedNumbers := make([]uint64, n)
-	for i := range numbers {
-		unsignedNumbers[i] = uint64(numbers[i])
-	}
-	return shortUniqueIDs.Encode(unsignedNumbers)
+	return shortUniqueIDs.Encode(numbers)
 }
 
-func DecodeShortUniqueIDs(id string) int64 {
+func DecodeShortUniqueIDs(id string) uint64 {
 	if id == "" {
 		return 0
 	}
@@ -149,7 +141,7 @@ func DecodeShortUniqueIDs(id string) int64 {
 	if len(unsignedNumbers) == 0 {
 		return 0
 	}
-	return int64(unsignedNumbers[0])
+	return unsignedNumbers[0]
 }
 
 func GenerateUniqueID() string {
