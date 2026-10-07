@@ -86,6 +86,8 @@ github.com/go-openapi/testify/enable/yaml/v2 v2.7.0 h1:wPW6YRgx3+SID1yUy/Xwa17L8
 github.com/go-openapi/testify/enable/yaml/v2 v2.7.0/go.mod h1:mI1M88etYbc3PhgHsWQK2kwvNwW5aGFqMPbmib+SGIs=
 github.com/go-openapi/testify/v2 v2.8.0 h1:19QDx5b57p8KjO2E4sgs/woL4Akp+FGLRlVm2xn0Rho=
 github.com/go-openapi/testify/v2 v2.8.0/go.mod h1:4gUN8jC+RqOE2qjW/vDmfyTvl5BCht4qL7oca0odrak=
+github.com/goccy/go-json v0.11.2 h1:jdZv93Tt4ioR8yW1CoNsvSxrcZlCXAUU1aZXN7gpXUA=
+github.com/goccy/go-json v0.11.2/go.mod h1:3NdmfEkZlB7YI5UFw/qdFKq8XN1aiWR0YyRPWZNQltY=
 github.com/gofiber/contrib/v3/monitor v1.2.2 h1:TLld7FppW5LLiV4QwdEhG8fWSbkfMbO+6pG1HCEa5tM=
 github.com/gofiber/contrib/v3/monitor v1.2.2/go.mod h1:uBWvxXxIS+ozaCtb1C9o+NJjghptiDi6ShWFTbUGcfY=
 github.com/gofiber/contrib/v3/sentry v1.1.12 h1:sFnsnmkWZNFoe42gXpUEpeEsp/+ohWnkyhi4RE8l/k0=

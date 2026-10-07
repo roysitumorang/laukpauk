@@ -2,13 +2,13 @@ package externals
 
 import (
 	"context"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/pools"

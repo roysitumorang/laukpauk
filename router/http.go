@@ -2,7 +2,6 @@ package router
 
 import (
 	"context"
-	"encoding/json/v2"
 	"errors"
 	"log/slog"
 	"math"
@@ -17,6 +16,7 @@ import (
 	"github.com/coregx/coregex"
 	"github.com/dustin/go-humanize"
 	"github.com/getsentry/sentry-go"
+	"github.com/goccy/go-json"
 	"github.com/gofiber/contrib/v3/monitor"
 	fibersentry "github.com/gofiber/contrib/v3/sentry"
 	"github.com/gofiber/contrib/v3/swaggo"
@@ -43,7 +43,6 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
-	"github.com/roysitumorang/laukpauk/pools"
 	slogfiber "github.com/samber/slog-fiber"
 )
 
@@ -73,22 +72,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
-		JSONEncoder: func(v any) ([]byte, error) {
-			buffer := pools.BufferPool.Get()
-			defer func() {
-				buffer.Reset()
-				pools.BufferPool.Put(buffer)
-			}()
-			buffer.Reset()
-			if err := json.MarshalWrite(buffer, v); err != nil {
-				return nil, err
-			}
-			return buffer.Bytes(), nil
-		},
-		JSONDecoder: func(data []byte, v any) error {
-			return json.Unmarshal(data, v)
-		},
-		Views: engine,
+		JSONEncoder:   json.Marshal,
+		JSONDecoder:   json.Unmarshal,
+		Views:         engine,
 		ErrorHandler: func(ctx fiber.Ctx, err error) error {
 			statusCode := fiber.StatusInternalServerError
 			if e, ok := errors.AsType[*fiber.Error](err); ok {

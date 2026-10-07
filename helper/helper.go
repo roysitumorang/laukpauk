@@ -1,13 +1,11 @@
 package helper
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"image/jpeg"
@@ -26,6 +24,7 @@ import (
 	"uuid"
 
 	"github.com/bwmarrin/snowflake"
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/kolesa-team/go-webp/encoder"
@@ -162,11 +161,11 @@ func GetEnv() string {
 }
 
 func Transcode(input, output any) error {
-	buffer := new(bytes.Buffer)
-	if err := json.MarshalWrite(buffer, input); err != nil {
+	buffer, err := json.Marshal(input)
+	if err != nil {
 		return err
 	}
-	return json.UnmarshalRead(buffer, output)
+	return json.Unmarshal(buffer, output)
 }
 
 func GetJwtIssuer() string {
