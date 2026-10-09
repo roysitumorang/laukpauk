@@ -3,7 +3,7 @@ module github.com/roysitumorang/laukpauk
 go 1.27.1
 
 require (
-	github.com/coregx/coregex v0.12.26
+	github.com/coregx/coregex v0.12.27
 	github.com/dustin/go-humanize v1.1.0
 	github.com/gabriel-vasile/mimetype v1.4.15
 	github.com/getsentry/sentry-go v0.50.0

@@ -25,8 +25,8 @@ github.com/containerd/platforms v0.2.1 h1:zvwtM3rz2YHPQsF2CHYM8+KtB5dvhISiXh5ZpS
 github.com/containerd/platforms v0.2.1/go.mod h1:XHCb+2/hzowdiut9rkudds9bE5yJ7npe7dG/wG+uFPw=
 github.com/coregx/ahocorasick v0.3.1 h1:1kG0szrBH+HBUaG6bRm2TWdJ+x6yJivmBsv6dfzk7ss=
 github.com/coregx/ahocorasick v0.3.1/go.mod h1:SDcS9KTiwLP8FHNpYSO3Q3mRqrK8SYJAYpygrhcIils=
-github.com/coregx/coregex v0.12.26 h1:h/D0YWPEMHWskkwnm9xwC1yBVcfy/BlaKh/1AqyXQEA=
-github.com/coregx/coregex v0.12.26/go.mod h1:NoNLGw2x6oaJzZwNYzMgyWDkRpQHLbG3K31P2bFMQkA=
+github.com/coregx/coregex v0.12.27 h1:i+t1zj/p5YKWvk0SvtgYsIZD77XAnxPTKiYtMWIp480=
+github.com/coregx/coregex v0.12.27/go.mod h1:NoNLGw2x6oaJzZwNYzMgyWDkRpQHLbG3K31P2bFMQkA=
 github.com/cpuguy83/dockercfg v0.3.2 h1:DlJTyZGBDlXqUZ2Dk2Q3xHs/FtnooJJVaad2S9GKorA=
 github.com/cpuguy83/dockercfg v0.3.2/go.mod h1:sugsbF4//dDlL/i+S+rtpIWp+5h0BHJHfjj5/jFyUJc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
