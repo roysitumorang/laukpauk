@@ -95,7 +95,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 		, product_ready_stock
 		, product_variant_id
 		, product_variant_stock_unit
-		, amount
+		, quantity
 		, note
 		, created_by
 		, created_at
@@ -163,7 +163,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 			&recipeItem.ProductReadyStock,
 			&recipeItem.ProductVariantID,
 			&recipeItem.ProductVariantStockUnit,
-			&recipeItem.Amount,
+			&recipeItem.Quantity,
 			&recipeItem.Note,
 			&recipeItem.CreatedBy,
 			&recipeItem.CreatedAt,
@@ -209,7 +209,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 			, product_ready_stock
 			, product_variant_id
 			, product_variant_stock_unit
-			, amount
+			, quantity
 			, note
 			, created_by
 			, created_at
@@ -233,7 +233,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 		&response.ProductReadyStock,
 		&response.ProductVariantID,
 		&response.ProductVariantStockUnit,
-		&response.Amount,
+		&response.Quantity,
 		&response.Note,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -272,7 +272,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			, product_ready_stock
 			, product_variant_id
 			, product_variant_stock_unit
-			, amount
+			, quantity
 			, note
 			, created_by
 			, created_at
@@ -289,7 +289,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			, product_ready_stock
 			, product_variant_id
 			, product_variant_stock_unit
-			, amount
+			, quantity
 			, note
 			, created_by
 			, created_at
@@ -307,7 +307,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		request.ProductReadyStock,
 		request.ProductVariantID,
 		request.ProductVariantStockUnit,
-		request.Amount,
+		request.Quantity,
 		request.Note,
 		request.CreatedBy,
 		request.CreatedAt,
@@ -324,7 +324,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		&response.ProductReadyStock,
 		&response.ProductVariantID,
 		&response.ProductVariantStockUnit,
-		&response.Amount,
+		&response.Quantity,
 		&response.Note,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -366,7 +366,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, product_ready_stock
 			, product_variant_id
 			, product_variant_stock_unit
-			, amount
+			, quantity
 			, note
 			, created_by
 			, created_at
@@ -390,7 +390,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.ProductReadyStock,
 		&response.ProductVariantID,
 		&response.ProductVariantStockUnit,
-		&response.Amount,
+		&response.Quantity,
 		&response.Note,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -465,12 +465,12 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		}
 		_, _ = fmt.Fprintf(sb, " product_variant_stock_unit = $%d", n)
 	}
-	if response.Amount != request.Amount {
-		params = append(params, request.Amount)
+	if response.Quantity != request.Quantity {
+		params = append(params, request.Quantity)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " amount = $%d", n)
+		_, _ = fmt.Fprintf(sb, " quantity = $%d", n)
 	}
 	if response.Note != request.Note {
 		params = append(params, request.Note)
@@ -540,7 +540,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, product_ready_stock
 			, product_variant_id
 			, product_variant_stock_unit
-			, amount
+			, quantity
 			, note
 			, created_by
 			, created_at
@@ -562,7 +562,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.ProductReadyStock,
 		&response.ProductVariantID,
 		&response.ProductVariantStockUnit,
-		&response.Amount,
+		&response.Quantity,
 		&response.Note,
 		&response.CreatedBy,
 		&response.CreatedAt,

@@ -25,15 +25,15 @@ var MapProductSortings = map[string]struct{}{
 	SortingFieldName: {},
 }
 
+type ProductType uint8
+
 const (
 	ProductTypeStandalone ProductType = iota
 	ProductTypeBundled
 )
 
-type ProductType int
-
-func (q ProductType) Int() int {
-	return int(q)
+func (q ProductType) Int() uint8 {
+	return uint8(q)
 }
 
 func (q ProductType) String() string {

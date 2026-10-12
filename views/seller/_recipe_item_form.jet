@@ -24,9 +24,9 @@
 		<div class="form-group col-lg-4">
 			<label for="dose" class="label-title">Takaran</label>
 			<input type="number"
-				name="amount"
-				value="{{ request.Amount }}"
-				id="amount"
+				name="quantity"
+				value="{{ request.Quantity }}"
+				id="quantity"
 				placeholder="Takaran Satuan (mis. 10)"
 				class="form-control"
 				min="1" />

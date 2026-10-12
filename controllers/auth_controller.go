@@ -475,7 +475,8 @@ func (q *authController) SellerCreateSession(c fiber.Ctx) error {
 	oneTimePassword.AttemptsCount++
 	oneTimePassword.Valid = false
 	if !matched {
-		otpMaxAttempts, _ := strconv.Atoi(os.Getenv("OTP_MAX_ATTEMPTS"))
+		otpMaxAttempts64, _ := strconv.ParseUint(os.Getenv("OTP_MAX_ATTEMPTS"), 10, 8)
+		otpMaxAttempts := uint8(otpMaxAttempts64)
 		oneTimePassword.Valid = oneTimePassword.AttemptsCount < otpMaxAttempts
 	}
 	if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
@@ -737,7 +738,8 @@ func (q *authController) V1BuyerLogin(c fiber.Ctx) error {
 	oneTimePassword.AttemptsCount++
 	oneTimePassword.Valid = false
 	if !matched {
-		otpMaxAttempts, _ := strconv.Atoi(os.Getenv("OTP_MAX_ATTEMPTS"))
+		otpMaxAttempts64, _ := strconv.ParseUint(os.Getenv("OTP_MAX_ATTEMPTS"), 10, 8)
+		otpMaxAttempts := uint8(otpMaxAttempts64)
 		oneTimePassword.Valid = oneTimePassword.AttemptsCount < otpMaxAttempts
 	}
 	tx, err := repositories.BeginTx(ctx)

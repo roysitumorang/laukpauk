@@ -17,12 +17,27 @@ var ErrUniqueVoucherCodeViolation = errors.New("code: already exists")
 
 var VoucherCodeRegex = coregex.MustCompile("^[a-zA-Z0-9-]+$")
 
-type VoucherType int
+type VoucherType uint8
 
 const (
 	VoucherTypeDeliveryCost VoucherType = iota
 	VoucherTypeShoppingCost
 )
+
+func (q VoucherType) String() string {
+	if q == VoucherTypeShoppingCost {
+		return "shopping cost"
+	}
+	return "delivery cost"
+}
+
+func (q VoucherType) Int() uint8 {
+	return uint8(q)
+}
+
+func (q VoucherType) Equal(v VoucherType) bool {
+	return q.Int() == v.Int()
+}
 
 var VoucherTypes = []VoucherType{
 	VoucherTypeDeliveryCost,
@@ -33,22 +48,7 @@ var MapVoucherTypes = map[VoucherType]struct{}{
 	VoucherTypeShoppingCost: {},
 }
 
-func (q VoucherType) String() string {
-	if q == VoucherTypeShoppingCost {
-		return "shopping cost"
-	}
-	return "delivery cost"
-}
-
-func (q VoucherType) Int() int {
-	return int(q)
-}
-
-func (q VoucherType) Equal(v VoucherType) bool {
-	return q.Int() == v.Int()
-}
-
-type VoucherTargetAudience int
+type VoucherTargetAudience uint8
 
 const (
 	VoucherTargetAudienceAllBuyers VoucherTargetAudience = iota
@@ -62,23 +62,8 @@ func (q VoucherTargetAudience) Equal(v VoucherTargetAudience) bool {
 	return q.Int() == v.Int()
 }
 
-func (q VoucherTargetAudience) Int() int {
-	return int(q)
-}
-
-var VoucherTargetAudiences = []VoucherTargetAudience{
-	VoucherTargetAudienceAllBuyers,
-	VoucherTargetAudienceNewBuyers,
-	VoucherTargetAudienceLoyalty,
-	VoucherTargetAudienceEarlyShopping,
-	VoucherTargetAudienceInactiveBuyers,
-}
-var MapVoucherTargetAudiences = map[VoucherTargetAudience]struct{}{
-	VoucherTargetAudienceAllBuyers:      {},
-	VoucherTargetAudienceNewBuyers:      {},
-	VoucherTargetAudienceLoyalty:        {},
-	VoucherTargetAudienceEarlyShopping:  {},
-	VoucherTargetAudienceInactiveBuyers: {},
+func (q VoucherTargetAudience) Int() uint8 {
+	return uint8(q)
 }
 
 func (q VoucherTargetAudience) String() string {
@@ -95,6 +80,21 @@ func (q VoucherTargetAudience) String() string {
 		return "inactive buyers"
 	}
 	return "all buyers"
+}
+
+var VoucherTargetAudiences = []VoucherTargetAudience{
+	VoucherTargetAudienceAllBuyers,
+	VoucherTargetAudienceNewBuyers,
+	VoucherTargetAudienceLoyalty,
+	VoucherTargetAudienceEarlyShopping,
+	VoucherTargetAudienceInactiveBuyers,
+}
+var MapVoucherTargetAudiences = map[VoucherTargetAudience]struct{}{
+	VoucherTargetAudienceAllBuyers:      {},
+	VoucherTargetAudienceNewBuyers:      {},
+	VoucherTargetAudienceLoyalty:        {},
+	VoucherTargetAudienceEarlyShopping:  {},
+	VoucherTargetAudienceInactiveBuyers: {},
 }
 
 const VoucherSortingFieldName = "name"

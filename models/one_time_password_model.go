@@ -21,7 +21,7 @@ type OneTimePassword struct {
 	BuyerID       uuid.UUID `json:"-" form:"-"`
 	Hash          string    `json:"-" form:"-"`
 	TrackingID    uuid.UUID `json:"tracking_id" form:"-"`
-	AttemptsCount int       `json:"-" form:"-"`
+	AttemptsCount uint8     `json:"-" form:"-"`
 	Valid         bool      `json:"-" form:"-"`
 	CreatedAt     time.Time `json:"-" form:"-"`
 	ExpiredAt     time.Time `json:"-" form:"-"`

@@ -28,7 +28,7 @@ type RecipeItem struct {
 	ProductReadyStock       bool         `json:"-" form:"-"`
 	ProductVariantID        uuid.UUID    `json:"-" form:"product_variant_id"`
 	ProductVariantStockUnit string       `json:"-" form:"-"`
-	Amount                  int          `json:"-" form:"amount"`
+	Quantity                int64        `json:"-" form:"quantity"`
 	Note                    string       `json:"-" form:"note"`
 	CreatedBy               uuid.UUID    `json:"-" form:"-"`
 	CreatedAt               time.Time    `json:"-" form:"-"`
@@ -43,8 +43,8 @@ func (q *RecipeItem) Validate() error {
 	if q.ProductVariantID.Compare(uuid.Nil()) == 0 {
 		return errors.New("product_variant_id: is required")
 	}
-	if q.Amount < 1 {
-		return errors.New("amount: is required")
+	if q.Quantity < 1 {
+		return errors.New("quantity: is required")
 	}
 	q.Note = strings.TrimSpace(q.Note)
 	return nil

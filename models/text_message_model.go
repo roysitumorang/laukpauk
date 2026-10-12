@@ -26,10 +26,10 @@ const (
 	TopicTextMessageEventCheckReport TopicEvent = "check_report"
 )
 
-type TextMessageType int
+type TextMessageType uint8
 
-func (q TextMessageType) Int() int {
-	return int(q)
+func (q TextMessageType) Int() uint8 {
+	return uint8(q)
 }
 
 func (q TextMessageType) String() string {

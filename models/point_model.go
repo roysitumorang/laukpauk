@@ -11,27 +11,16 @@ import (
 )
 
 var ErrPointNotFound = errors.New("point not found")
-var PointTypes = []PointType{
-	PointTypeReferral,
-	PointTypeReward,
-}
-var MapPointTypes = map[PointType]struct{}{
-	PointTypeReferral: {},
-	PointTypeReward:   {},
-}
-var MapRewardPointSortings = map[string]struct{}{
-	SortingFieldID: {},
-}
+
+type PointType uint8
 
 const (
 	PointTypeReferral PointType = iota
 	PointTypeReward
 )
 
-type PointType int
-
-func (q PointType) Int() int {
-	return int(q)
+func (q PointType) Int() uint8 {
+	return uint8(q)
 }
 
 func (q PointType) String() string {
@@ -43,6 +32,19 @@ func (q PointType) String() string {
 
 func (q PointType) Equal(v PointType) bool {
 	return q.Int() == v.Int()
+}
+
+var PointTypes = []PointType{
+	PointTypeReferral,
+	PointTypeReward,
+}
+var MapPointTypes = map[PointType]struct{}{
+	PointTypeReferral: {},
+	PointTypeReward:   {},
+}
+
+var MapRewardPointSortings = map[string]struct{}{
+	SortingFieldID: {},
 }
 
 type Point struct {

@@ -188,7 +188,7 @@ func init() {
 				, android BOOLEAN NOT NULL
 				, slug character varying NOT NULL UNIQUE
 				, billed BOOLEAN NOT NULL
-				, billing_interval integer
+				, billing_interval smallint
 				, subscription_status smallint NOT NULL
 				, subscription_start_date timestamp with time zone
 				, subscription_end_date timestamp with time zone
@@ -773,7 +773,7 @@ func init() {
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, hash character varying NOT NULL
 				, tracking_id UUID NOT NULL UNIQUE
-				, attempts_count integer NOT NULL
+				, attempts_count smallint NOT NULL
 				, valid BOOLEAN NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, expired_at timestamp with time zone NOT NULL
@@ -883,7 +883,7 @@ func init() {
 				, record_status smallint NOT NULL
 				, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
-				, product_type integer NOT NULL
+				, product_type smallint NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, photo character varying NOT NULL
 				, description character varying NOT NULL
@@ -1222,10 +1222,10 @@ func init() {
 			`CREATE TABLE setting (
 				id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY CHECK (id = 1)
 				, maintenance_mode BOOLEAN NOT NULL
-				, subscription_trial_period integer NOT NULL
+				, subscription_trial_period smallint NOT NULL
 				, monthly_billing_amount bigint NOT NULL
 				, annual_billing_amount bigint NOT NULL
-				, billing_grace_period integer NOT NULL
+				, billing_grace_period smallint NOT NULL
 				, created_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID NOT NULL REFERENCES admins (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -1283,7 +1283,7 @@ func init() {
 				, seller_id UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, mobile_phone character varying NOT NULL
-				, message_type integer NOT NULL
+				, message_type smallint NOT NULL
 				, body character varying NOT NULL
 				, delivery_status character varying
 				, message_id bigint
@@ -1733,8 +1733,8 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status smallint NOT NULL
-				, voucher_type integer NOT NULL
-				, target_audience integer NOT NULL
+				, voucher_type smallint NOT NULL
+				, target_audience smallint NOT NULL
 				, code character varying
 				, deleted_code character varying
 				, photo character varying NOT NULL
@@ -2207,7 +2207,7 @@ func init() {
 				, referral_code character varying
 				, referral_points bigint NOT NULL
 				, voucher_id UUID REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, voucher_type integer
+				, voucher_type smallint
 				, voucher_code character varying
 				, voucher_discount bigint NOT NULL
 				, reward_points_discounted BOOLEAN NOT NULL
@@ -2823,7 +2823,7 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status smallint NOT NULL
-				, point_type integer NOT NULL
+				, point_type smallint NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
 				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -2909,7 +2909,7 @@ func init() {
 			`CREATE TABLE wallets (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, wallet_transfer_type integer NOT NULL
+				, wallet_transfer_type smallint NOT NULL
 				, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
 				, created_at timestamp with time zone NOT NULL
@@ -3534,7 +3534,7 @@ func init() {
 				, product_ready_stock BOOLEAN NOT NULL
 				, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_variant_stock_unit character varying NOT NULL
-				, amount integer NOT NULL
+				, quantity bigint NOT NULL
 				, note character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
