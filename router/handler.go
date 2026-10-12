@@ -72,14 +72,23 @@ type (
 
 func MakeHandler(ctx context.Context) (*Service, error) {
 	ctxt := "Router-MakeHandler"
-	dbRead, err := config.GetDbReadOnly(ctx)
+	maxConns64, err := strconv.ParseInt(os.Getenv("DB_MAX_CONNECTIONS"), 10, 32)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrGetDbReadOnly")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrParseInt")
 		return nil, err
 	}
-	dbWrite, err := config.GetDbWriteOnly(ctx)
+	if maxConns64 < 1 {
+		return nil, errors.New("db: env DB_MAX_CONNECTIONS requires a positive integer")
+	}
+	maxConns := int32(maxConns64)
+	dbRead, err := config.CreateDbConnection(ctx, os.Getenv("DB_READ_URL"), maxConns)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrGetDbWriteOnly")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCreateDbConnection")
+		return nil, err
+	}
+	dbWrite, err := config.CreateDbConnection(ctx, os.Getenv("DB_WRITE_URL"), maxConns)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCreateDbConnection")
 		return nil, err
 	}
 	migration := migrations.NewMigration(dbWrite)
