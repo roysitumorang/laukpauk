@@ -23,7 +23,7 @@ var MapTransactionSortings = map[string]struct{}{
 
 const TransactionReferenceNumberFormat = "LP%s%03d%s"
 
-type TransactionStatus int
+type TransactionStatus uint8
 
 const (
 	TransactionStatusPending TransactionStatus = iota
@@ -37,8 +37,8 @@ const (
 	TransactionStatusCompleted
 )
 
-func (q TransactionStatus) Int() int {
-	return int(q)
+func (q TransactionStatus) Int() uint8 {
+	return uint8(q)
 }
 
 func (q TransactionStatus) String() string {

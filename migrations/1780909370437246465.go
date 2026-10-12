@@ -2197,7 +2197,7 @@ func init() {
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 				, reference_number character varying NOT NULL
-				, status integer NOT NULL
+				, status smallint NOT NULL
 				, recipient_name character varying NOT NULL
 				, recipient_mobile_phone character varying NOT NULL
 				, buyer_note character varying NOT NULL
