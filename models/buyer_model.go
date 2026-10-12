@@ -26,7 +26,7 @@ var MapBuyerSortings = map[string]struct{}{
 
 const BuyerSortingFieldName = "name"
 
-type BuyerStatus int
+type BuyerStatus uint8
 
 const (
 	BuyerStatusActive BuyerStatus = iota
