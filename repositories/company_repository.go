@@ -742,6 +742,9 @@ func (q *companyRepository) UpdateCompany(
 		_, _ = fmt.Fprintf(sb, " referral_points_per_referee = $%d", n)
 	}
 	if slices.Compare(response.ReferralPointsSlots, request.ReferralPointsSlots) != 0 {
+		if request.ReferralPointsSlots == nil {
+			request.ReferralPointsSlots = []int64{}
+		}
 		params = append(params, request.ReferralPointsSlots)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -803,13 +806,6 @@ func (q *companyRepository) UpdateCompany(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " maximum_delivery_time = $%d", n)
-	}
-	if response.TransactionAutoWithdrawalEnabled != request.TransactionAutoWithdrawalEnabled {
-		params = append(params, request.TransactionAutoWithdrawalEnabled)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_enabled = $%d", n)
 	}
 	if response.TransactionAutoWithdrawalEnabled != request.TransactionAutoWithdrawalEnabled {
 		params = append(params, request.TransactionAutoWithdrawalEnabled)
