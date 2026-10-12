@@ -130,7 +130,7 @@ func (q *LandingPageItem) Validate() error {
 		if _, err := url.ParseRequestURI(*q.LinkURL); err != nil {
 			return errors.New("link_url: invalid URL")
 		}
-		if q.ID == uuid.Nil() &&
+		if q.ID.Compare(uuid.Nil()) == 0 &&
 			(q.Photo == nil ||
 				*q.Photo == "") {
 			return errors.New("photo: is required")
@@ -144,7 +144,7 @@ func (q *LandingPageItem) Validate() error {
 		}
 		q.LinkText = nil
 		q.LinkURL = nil
-		if q.ID == uuid.Nil() &&
+		if q.ID.Compare(uuid.Nil()) == 0 &&
 			(q.Photo == nil ||
 				*q.Photo == "") {
 			return errors.New("photo: is required")
