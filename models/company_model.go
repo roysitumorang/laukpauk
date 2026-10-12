@@ -23,14 +23,15 @@ var MapCompanySortings = map[string]struct{}{
 }
 
 const CompanySortingFieldName = "name"
+
+type SubscriptionStatus uint8
+
 const (
 	SubscriptionStatusTrial SubscriptionStatus = iota
 	SubscriptionStatusExpired
 	SubscriptionStatusActive
 	SubscriptionStatusCancelled
 )
-
-type SubscriptionStatus int
 
 func (q SubscriptionStatus) String() string {
 	if q == SubscriptionStatusExpired {
@@ -45,12 +46,12 @@ func (q SubscriptionStatus) String() string {
 	return "trial"
 }
 
+type BillingInterval uint8
+
 const (
 	BillingIntervalMonthly BillingInterval = iota
 	BillingIntervalAnnual
 )
-
-type BillingInterval int
 
 func (q *BillingInterval) String() *string {
 	if *q == BillingIntervalAnnual {

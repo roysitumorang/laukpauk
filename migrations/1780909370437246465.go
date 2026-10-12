@@ -189,7 +189,7 @@ func init() {
 				, slug character varying NOT NULL UNIQUE
 				, billed BOOLEAN NOT NULL
 				, billing_interval integer
-				, subscription_status integer NOT NULL
+				, subscription_status smallint NOT NULL
 				, subscription_start_date timestamp with time zone
 				, subscription_end_date timestamp with time zone
 				, telegram_bot_token character varying UNIQUE
