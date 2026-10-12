@@ -24,7 +24,7 @@ var MapAdminSortings = map[string]struct{}{
 
 const AdminSortingFieldName = "name"
 
-type AdminLevel int
+type AdminLevel uint8
 
 const (
 	AdminLevelSuperAdmin AdminLevel = iota
@@ -42,8 +42,8 @@ func (q AdminLevel) String() string {
 	return "admin"
 }
 
-func (q AdminLevel) Int() int {
-	return int(q)
+func (q AdminLevel) Int() uint8 {
+	return uint8(q)
 }
 
 var AdminLevels = []AdminLevel{AdminLevelAdmin, AdminLevelSuperAdmin}
@@ -52,7 +52,7 @@ var MapAdminLevels = map[AdminLevel]struct{}{
 	AdminLevelSuperAdmin: {},
 }
 
-type AdminStatus int
+type AdminStatus uint8
 
 const (
 	AdminStatusActive AdminStatus = iota

@@ -39,8 +39,8 @@ func init() {
 			ctx,
 			`CREATE TABLE admins (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, status integer NOT NULL
-				, admin_level integer NOT NULL
+				, status smallint NOT NULL
+				, admin_level smallint NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, unconfirmed_mobile_phone character varying
 				, mobile_phone_confirmation_sent_at timestamp with time zone
