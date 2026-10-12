@@ -28,6 +28,13 @@ type TopicRequest struct {
 	Messages []TopicMessage
 }
 
+var SliceTopics = []string{
+	TopicTextMessage.String(),
+}
+var MapTopics = map[Topic]struct{}{
+	TopicTextMessage: {},
+}
+
 type Map map[string]any
 
 func NewMap() Map {
@@ -65,7 +72,12 @@ func (q Map) Clear() {
 	clear(q)
 }
 
-type RecordStatus int
+type RecordStatus uint8
+
+const (
+	RecordStatusActive RecordStatus = iota
+	RecordStatusDeleted
+)
 
 func (q RecordStatus) String() string {
 	if q == RecordStatusDeleted {
@@ -74,10 +86,15 @@ func (q RecordStatus) String() string {
 	return "active"
 }
 
-type DiscountType int
+type DiscountType uint8
 
-func (q DiscountType) Int() int {
-	return int(q)
+const (
+	DiscountTypeFixedAmount DiscountType = iota
+	DiscountTypePercentage
+)
+
+func (q DiscountType) Int() uint8 {
+	return uint8(q)
 }
 
 func (q DiscountType) String() string {
@@ -91,7 +108,19 @@ func (q DiscountType) Equal(v DiscountType) bool {
 	return q.Int() == v.Int()
 }
 
+var DiscountTypes = []DiscountType{
+	DiscountTypeFixedAmount,
+	DiscountTypePercentage,
+}
+var MapDiscountTypes = map[DiscountType]struct{}{
+	DiscountTypeFixedAmount: {},
+	DiscountTypePercentage:  {},
+}
+
 type SortingDirection string
+
+const SortingDirectionAsc SortingDirection = "ASC"
+const SortingDirectionDesc SortingDirection = "DESC"
 
 func (q SortingDirection) String() string {
 	return string(q)
@@ -111,34 +140,9 @@ func (q Sorting) String() string {
 	return helper.Sprintf("%s:%s", q.Field, strings.ToLower(q.Direction.String()))
 }
 
-const (
-	RecordStatusActive RecordStatus = iota
-	RecordStatusDeleted
-)
-
-const (
-	DiscountTypeFixedAmount DiscountType = iota
-	DiscountTypePercentage
-)
-
 const SortingFieldID = "id"
 const SortingFieldName = "name"
 
-const SortingDirectionAsc SortingDirection = "ASC"
-const SortingDirectionDesc SortingDirection = "DESC"
-
-var ErrAccessDenied = errors.New("access denied")
-var MapLimits = map[int64]struct{}{10: {}, 25: {}, 50: {}, 100: {}}
-var Limits = []int64{10, 25, 50, 100}
-var PhoneNumberRegex = coregex.MustCompile(`^\+[1-9]\d{1,14}$`)
-var UsernameRegex = coregex.MustCompile("[^a-z0-9]+")
-var SlugRegex = coregex.MustCompile("^[a-z0-9-]+$")
-var SliceTopics = []string{
-	TopicTextMessage.String(),
-}
-var MapTopics = map[Topic]struct{}{
-	TopicTextMessage: {},
-}
 var DefaultSortBy = Sorting{
 	Field:     SortingFieldID,
 	Direction: SortingDirectionDesc,
@@ -147,11 +151,10 @@ var DefaultAscendingSortBy = Sorting{
 	Field:     SortingFieldID,
 	Direction: SortingDirectionAsc,
 }
-var DiscountTypes = []DiscountType{
-	DiscountTypeFixedAmount,
-	DiscountTypePercentage,
-}
-var MapDiscountTypes = map[DiscountType]struct{}{
-	DiscountTypeFixedAmount: {},
-	DiscountTypePercentage:  {},
-}
+
+var ErrAccessDenied = errors.New("access denied")
+var MapLimits = map[int64]struct{}{10: {}, 25: {}, 50: {}, 100: {}}
+var Limits = []int64{10, 25, 50, 100}
+var PhoneNumberRegex = coregex.MustCompile(`^\+[1-9]\d{1,14}$`)
+var UsernameRegex = coregex.MustCompile("[^a-z0-9]+")
+var SlugRegex = coregex.MustCompile("^[a-z0-9-]+$")

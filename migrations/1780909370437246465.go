@@ -816,7 +816,7 @@ func init() {
 			`CREATE TABLE product_categories (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
@@ -880,7 +880,7 @@ func init() {
 			`CREATE TABLE products (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
 				, product_type integer NOT NULL
@@ -986,7 +986,7 @@ func init() {
 			`CREATE TABLE product_variants (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, product_category_id UUID NOT NULL REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -996,7 +996,7 @@ func init() {
 				, stock_unit character varying NOT NULL COLLATE "natural_sort"
 				, base_price bigint NOT NULL
 				, selling_price bigint NOT NULL
-				, discount_type integer NOT NULL
+				, discount_type smallint NOT NULL
 				, discount_rate bigint NOT NULL
 				, discount_minimum_quantity bigint NOT NULL
 				, discount_amount bigint NOT NULL
@@ -1351,7 +1351,7 @@ func init() {
 			`CREATE TABLE delivery_plans (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, name character varying COLLATE "natural_sort"
 				, weekday bigint NOT NULL
 				, transaction_window TSTZRANGE NOT NULL
@@ -1732,7 +1732,7 @@ func init() {
 			`CREATE TABLE vouchers (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, voucher_type integer NOT NULL
 				, target_audience integer NOT NULL
 				, code character varying
@@ -2475,7 +2475,7 @@ func init() {
 			`CREATE TABLE point_earning_caps (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, shopping_cost int8range NOT NULL
 				, earned_points bigint NOT NULL
 				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -2693,7 +2693,7 @@ func init() {
 			`CREATE TABLE point_spending_caps (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, shopping_cost int8range NOT NULL
 				, disposable_points bigint NOT NULL
 				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -2822,7 +2822,7 @@ func init() {
 			`CREATE TABLE points (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, point_type integer NOT NULL
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, amount bigint NOT NULL
@@ -2945,7 +2945,7 @@ func init() {
 			`CREATE TABLE articles (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, subject character varying NOT NULL COLLATE "natural_sort"
 				, body character varying NOT NULL
 				, photo character varying NOT NULL
@@ -3010,7 +3010,7 @@ func init() {
 			`CREATE TABLE banners (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, description character varying NOT NULL
 				, photo character varying NOT NULL
@@ -3082,7 +3082,7 @@ func init() {
 			`CREATE TABLE blogs (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, subject character varying NOT NULL COLLATE "natural_sort"
 				, body character varying NOT NULL
 				, slug character varying
@@ -3148,7 +3148,7 @@ func init() {
 			ctx,
 			`CREATE TABLE landing_pages (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, name character varying NOT NULL UNIQUE
 				, custom_attributes JSONB NOT NULL
 				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -3196,7 +3196,7 @@ func init() {
 			ctx,
 			`CREATE TABLE landing_page_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, landing_page_name character varying NOT NULL REFERENCES landing_pages (name) ON UPDATE CASCADE ON DELETE RESTRICT
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
@@ -3389,7 +3389,7 @@ func init() {
 			`CREATE TABLE recipes (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, name character varying
 				, deleted_name character varying
 				, photo character varying NOT NULL
@@ -3463,7 +3463,7 @@ func init() {
 			`CREATE TABLE recipe_guides (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, instruction character varying NOT NULL
 				, created_by UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -3526,7 +3526,7 @@ func init() {
 			`CREATE TABLE recipe_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, record_status integer NOT NULL
+				, record_status smallint NOT NULL
 				, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_name character varying NOT NULL
