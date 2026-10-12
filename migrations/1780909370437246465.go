@@ -489,8 +489,8 @@ func init() {
 			`CREATE TABLE sellers (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, status integer NOT NULL
-				, seller_level integer NOT NULL
+				, status smallint NOT NULL
+				, seller_level smallint NOT NULL
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, unconfirmed_mobile_phone character varying
 				, mobile_phone_confirmation_sent_at timestamp with time zone

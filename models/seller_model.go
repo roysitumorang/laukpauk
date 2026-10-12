@@ -24,14 +24,14 @@ var MapSellerSortings = map[string]struct{}{
 
 const SellerSortingFieldName = "name"
 
-type SellerStatus int
+type SellerStatus uint8
 
 const (
 	SellerStatusActive SellerStatus = iota
 	SellerStatusDeactivated
 )
 
-type SellerLevel int
+type SellerLevel uint8
 
 const (
 	SellerLevelOwner SellerLevel = iota
@@ -55,8 +55,8 @@ func (q SellerLevel) String() string {
 	return "owner"
 }
 
-func (q SellerLevel) Int() int {
-	return int(q)
+func (q SellerLevel) Int() uint8 {
+	return uint8(q)
 }
 
 type Seller struct {
