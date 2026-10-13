@@ -139,10 +139,10 @@
 								</table>
 							</div>
 							<hr class="mb-3 mt-0" />
-							<a href="{{ baseURL }}/admin/transactions/{{ transaction.ID }}/invoice" class="btn btn-info" target="_blank">
+							<a href="{{ baseURL }}/seller/transactions/{{ transaction.ID }}/invoice" class="btn btn-info" target="_blank">
 								Print Invoice
 							</a>
-							<a href="{{ baseURL }}/admin/transactions" class="btn btn-default">
+							<a href="{{ baseURL }}/seller/transactions" class="btn btn-default">
 								Kembali ke Daftar Belanja
 							</a>
 						</div>

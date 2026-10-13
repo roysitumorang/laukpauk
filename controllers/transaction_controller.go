@@ -286,9 +286,9 @@ func (q *transactionController) SellerIndex(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerIndex"
 	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request := new(models.TransactionFilter)
+	request := &models.TransactionFilter{}
 	rows := []*models.Transaction{}
-	pagination := new(models.Pagination)
+	pagination := &models.Pagination{}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,

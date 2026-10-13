@@ -44,7 +44,7 @@
 							<a class="close" href="#" data-dismiss="alert">x</a>{{ message }}
 						</div>
 						{{ end }}
-						<form method="GET" action="/admin/transactions" id="search">
+						<form method="GET" action="/seller/transactions" id="search">
 							<div class="row">
 								<div class="col-sm-4 col-md-6">
 									<div class="dataTables_length" id="listBlog_length">
@@ -140,11 +140,11 @@
 										<b class="text-success">Rp. {{ row.ShoppingCost | Comma }}</b>
 									</td>
 									<td class="vam text-center">
-										<a href="{{ baseURL }}/admin/transactions/{{ row.ID }}">
+										<a href="{{ baseURL }}/seller/transactions/{{ row.ID }}">
 											<span class="fa fa-list text-primary cp" data-toggle="tooltip"
 												data-placement="top" title="Detail Transaksi"></span>
 										</a>
-										<a href="{{ baseURL }}/admin/transactions/{{ row.ID }}/invoice" target="_blank">
+										<a href="{{ baseURL }}/seller/transactions/{{ row.ID }}/invoice" target="_blank">
 											<span class="fa fa-file text-info cp ml-3" data-toggle="tooltip"
 												data-placement="top" title="Print Invoice"></span>
 										</a>
