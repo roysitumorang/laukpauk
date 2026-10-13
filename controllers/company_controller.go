@@ -46,6 +46,10 @@ func (q *companyController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
 		Post("/:id/delete", q.AdminDelete)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	r.Group("/seller", sellerSessionAuth).
+		Get("/mine", q.SellerEdit).
+		Post("/mine", q.SellerUpdate)
 }
 
 func (q *companyController) AdminIndex(c fiber.Ctx) (err error) {
@@ -415,4 +419,127 @@ func (q *companyController) AdminDelete(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("company deactivated successfully").
 		Redirect(c, sess.Session, "/admin/companies")
+}
+
+func (q *companyController) SellerEdit(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "CompanyController-SellerEdit"
+	sess := session.FromContext(c)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	defer flash.Clear(c, sess.Session)
+	csrfToken := csrf.TokenFromContext(c)
+	company, err := q.companyService.FindCompany(
+		ctx,
+		models.NewCompanyFilter().
+			WithCompanyIDs(currentSeller.CompanyID),
+	)
+	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompany")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/companies/mine")
+	}
+	if company == nil {
+		return flash.Danger(models.ErrCompanyNotFound.Error()).Redirect(c, sess.Session, "/seller/companies/mine")
+	}
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentSeller", currentSeller,
+		"pageTitle", helper.Sprintf("Edit Data Company|%s", company.Name),
+		"request", company,
+		"company", company,
+	)
+	return c.Render("seller/company_edit", params, "seller/layouts/authenticated")
+}
+
+func (q *companyController) SellerUpdate(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "CompanyController-SellerUpdate"
+	sess := session.FromContext(c)
+	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
+	if !ok {
+		flash = helper.NewFlashMessage()
+	}
+	csrfToken := csrf.TokenFromContext(c)
+	company, err := q.companyService.FindCompany(
+		ctx,
+		models.NewCompanyFilter().
+			WithCompanyIDs(currentSeller.CompanyID),
+	)
+	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompany")
+		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/companies/mine")
+	}
+	if company == nil {
+		return flash.Danger(models.ErrCompanyNotFound.Error()).Redirect(c, sess.Session, "/seller/companies/mine")
+	}
+	params := models.NewMap().Push(
+		"baseURL", c.BaseURL(),
+		"flash", flash,
+		"path", c.OriginalURL(),
+		"csrfToken", csrfToken,
+		"currentSeller", currentSeller,
+		"pageTitle", helper.Sprintf("Edit Data Company|%s", company.Name),
+		"request", company,
+		"company", company,
+	)
+	request, statusCode, err := sanitizers.ValidateCompany(ctx, c, true)
+	params.Push("request", request)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateCompany")
+		c.Response().SetStatusCode(statusCode)
+		return c.Render("seller/company_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "seller/layouts/authenticated")
+	}
+	request.ID = company.ID
+	request.Android = company.Android
+	request.Billed = company.Billed
+	request.BillingInterval = company.BillingInterval
+	request.SubscriptionStatus = company.SubscriptionStatus
+	request.SubscriptionStartDate = company.SubscriptionStartDate
+	request.SubscriptionEndDate = company.SubscriptionEndDate
+	request.TelegramBotToken = company.TelegramBotToken
+	request.UpdatedBy = currentSeller.ID
+	request.UpdatedAt = time.Now()
+	request.DeactivatedBy = nil
+	request.DeactivatedAt = nil
+	request.DeactivationReason = nil
+	params.Push("request", request)
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return c.Render("seller/company_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "seller/layouts/authenticated")
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	if _, err = q.companyService.UpdateCompany(ctx, tx, request); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCompany")
+		return c.Render("seller/company_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "seller/layouts/authenticated")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return c.Render("seller/company_edit", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "seller/layouts/authenticated")
+	}
+	return flash.Clear(c, sess.Session).
+		Success("company updated successfully").
+		Redirect(c, sess.Session, "/seller/companies/mine")
 }

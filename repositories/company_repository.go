@@ -335,7 +335,7 @@ func (q *companyRepository) FindCompany(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *companyRepository) CreateCompany(
@@ -514,7 +514,7 @@ func (q *companyRepository) CreateCompany(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *companyRepository) UpdateCompany(
@@ -850,7 +850,7 @@ func (q *companyRepository) UpdateCompany(
 		_, _ = fmt.Fprintf(sb, " owner_id = $%d", n)
 	}
 	if len(params) == 0 {
-		return &response, nil
+		return (&response).Populate(), nil
 	}
 	params = append(params, request.UpdatedBy, request.UpdatedAt, request.ID)
 	n = len(params)
@@ -954,7 +954,7 @@ func (q *companyRepository) UpdateCompany(
 		}
 		return nil, err
 	}
-	return &response, nil
+	return (&response).Populate(), nil
 }
 
 func (q *companyRepository) AddReferralPointsExpense(

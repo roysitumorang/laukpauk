@@ -68,7 +68,7 @@ func FindCompanies(ctx context.Context, c fiber.Ctx) (*models.CompanyFilter, err
 	return response, nil
 }
 
-func ValidateCompany(ctx context.Context, c fiber.Ctx) (*models.Company, int, error) {
+func ValidateCompany(ctx context.Context, c fiber.Ctx, includeSetting ...bool) (*models.Company, int, error) {
 	ctxt := "CompanySanitizer-ValidateCompany"
 	var response models.Company
 	err := c.Bind().Body(&response)
@@ -76,7 +76,7 @@ func ValidateCompany(ctx context.Context, c fiber.Ctx) (*models.Company, int, er
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, fiberErr.Code, err
 	}
-	if err = (&response).Validate(false); err != nil {
+	if err = (&response).Validate(includeSetting...); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, fiber.StatusBadRequest, err
 	}

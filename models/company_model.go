@@ -75,8 +75,10 @@ type Company struct {
 	SubscriptionEndDate                   *time.Time         `json:"-" form:"subscription_end_date"`
 	TelegramBotToken                      *string            `json:"-" form:"-"`
 	VacationMode                          bool               `json:"vacation_mode" form:"vacation_mode"`
-	VacationStartDate                     *time.Time         `json:"vacation_start_date" form:"vacation_start_date"`
-	VacationEndDate                       *time.Time         `json:"vacation_end_date" form:"vacation_end_date"`
+	VacationStartDate                     *time.Time         `json:"vacation_start_date" form:"-"`
+	RawVacationStartDate                  string             `json:"-" form:"vacation_start_date"`
+	VacationEndDate                       *time.Time         `json:"vacation_end_date" form:"-"`
+	RawVacationEndDate                    string             `json:"-" form:"vacation_end_date"`
 	VoucherEnabled                        bool               `json:"voucher_enabled" form:"voucher_enabled"`
 	ReferralPointsEnabled                 bool               `json:"referral_points_enabled" form:"referral_points_enabled"`
 	ReferralPointsMinimumShoppingCost     int64              `json:"referral_points_minimum_shopping_cost" form:"referral_points_minimum_shopping_cost"`
@@ -89,10 +91,10 @@ type Company struct {
 	DeliveryCostPerKM                     int64              `json:"delivery_cost_per_km" form:"delivery_cost_per_km"`
 	DeliveryMaxDistanceKM                 int64              `json:"delivery_max_distance_km" form:"delivery_max_distance_km"`
 	WhatsappPhoneNumber                   string             `json:"whatsapp_phone_number" form:"whatsapp_phone_number"`
-	PaymentTerms                          time.Duration      `json:"-" form:"payment_terms"`
-	RawPaymentTerms                       string             `json:"payment_terms" form:"-"`
-	MaximumDeliveryTime                   time.Duration      `json:"-" form:"maximum_delivery_time"`
-	RawMaximumDeliveryTime                string             `json:"maximum_delivery_time" form:"-"`
+	PaymentTerms                          time.Duration      `json:"payment_terms" form:""`
+	RawPaymentTerms                       string             `json:"-" form:"payment_terms"`
+	MaximumDeliveryTime                   time.Duration      `json:"maximum_delivery_time" form:"-"`
+	RawMaximumDeliveryTime                string             `json:"-" form:"maximum_delivery_time"`
 	TransactionAutoWithdrawalEnabled      bool               `json:"-" form:"transaction_auto_withdrawal_enabled"`
 	TransactionAutoWithdrawalWindowMin    *time.Time         `json:"transaction_auto_withdrawal_window_min" form:"-"`
 	RawTransactionAutoWithdrawalWindowMin *string            `json:"-" form:"transaction_auto_withdrawal_window_min"`
@@ -133,15 +135,25 @@ func (q *Company) Validate(includeSetting ...bool) error {
 	}
 	now := time.Now().In(time.Local)
 	if q.VacationMode {
-		if q.VacationStartDate == nil {
+		if q.RawVacationStartDate = strings.TrimSpace(q.RawVacationStartDate); q.RawVacationStartDate == "" {
 			return errors.New("vacation_start_date: is required")
 		}
-		if q.VacationStartDate.Before(time.Now()) {
+		vacationStartDate, err := time.Parse(time.RFC3339, helper.Sprintf("%sT00:00:00%s", q.RawVacationStartDate, now.Format("Z07:00")))
+		if err != nil {
+			return fmt.Errorf("vacation_start_date: should use format '%s'", time.DateOnly)
+		}
+		q.VacationStartDate = &vacationStartDate
+		if q.VacationStartDate.Before(now) {
 			return errors.New("vacation_start_date: should equal or exceed current date")
 		}
-		if q.VacationEndDate == nil {
+		if q.RawVacationEndDate = strings.TrimSpace(q.RawVacationEndDate); q.RawVacationEndDate == "" {
 			return errors.New("vacation_end_date: is required")
 		}
+		vacationEndDate, err := time.Parse(time.RFC3339, helper.Sprintf("%sT23:59:59%s", q.RawVacationEndDate, now.Format("Z07:00")))
+		if err != nil {
+			return fmt.Errorf("vacation_end_date: should use format '%s'", time.DateOnly)
+		}
+		q.VacationEndDate = &vacationEndDate
 		if q.VacationEndDate.Before(*q.VacationStartDate) {
 			return errors.New("vacation_end_date: should equal or exceed vacation_start_date")
 		}
@@ -149,11 +161,17 @@ func (q *Company) Validate(includeSetting ...bool) error {
 		q.VacationStartDate = nil
 		q.VacationEndDate = nil
 	}
-	if q.PaymentTerms == 0 {
+	if q.RawPaymentTerms = strings.TrimSpace(q.RawPaymentTerms); q.RawPaymentTerms == "" {
 		return errors.New("payment_terms: is required")
 	}
-	if q.MaximumDeliveryTime == 0 {
+	if q.PaymentTerms, err = time.ParseDuration(q.RawPaymentTerms); err != nil || q.PaymentTerms < 1 {
+		return errors.New("payment_terms: is invalid")
+	}
+	if q.RawMaximumDeliveryTime = strings.TrimSpace(q.RawMaximumDeliveryTime); q.RawMaximumDeliveryTime == "" {
 		return errors.New("maximum_delivery_time: is required")
+	}
+	if q.MaximumDeliveryTime, err = time.ParseDuration(q.RawMaximumDeliveryTime); err != nil || q.MaximumDeliveryTime < 1 {
+		return errors.New("maximum_delivery_time: is invalid")
 	}
 	if q.TransactionAutoWithdrawalEnabled {
 		if q.TransactionAutoWithdrawalWindowMin == nil {
@@ -197,6 +215,12 @@ func (q *Company) Populate() *Company {
 		q.RawBillingInterval = q.BillingInterval.String()
 	}
 	q.RawSubscriptionStatus = q.SubscriptionStatus.String()
+	if q.VacationStartDate != nil {
+		q.RawVacationStartDate = q.VacationStartDate.In(time.Local).Format(time.DateOnly)
+	}
+	if q.VacationEndDate != nil {
+		q.RawVacationEndDate = q.VacationEndDate.In(time.Local).Format(time.DateOnly)
+	}
 	q.RawPaymentTerms = q.PaymentTerms.String()
 	q.RawMaximumDeliveryTime = q.MaximumDeliveryTime.String()
 	if q.TransactionAutoWithdrawalWindowMin != nil {

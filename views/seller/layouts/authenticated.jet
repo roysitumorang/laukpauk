@@ -629,7 +629,7 @@
 							</ul>
 						</li>
 						<li class="nav-item">
-							<a href="{{ baseURL }}/seller/settings" class="nav-link">
+							<a href="{{ baseURL }}/seller/companies/mine" class="nav-link">
 								<i class="nav-icon fa fa-wrench"></i>
 								<p>Pengaturan</p>
 							</a>
