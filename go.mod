@@ -27,7 +27,7 @@ require (
 	github.com/samber/slog-fiber v1.22.2
 	github.com/sqids/sqids-go v0.4.1
 	github.com/swaggo/swag v1.16.6
-	github.com/twmb/franz-go v1.22.1
+	github.com/twmb/franz-go v1.22.2
 	github.com/urfave/cli/v3 v3.14.0
 	github.com/valyala/fasthttp v1.75.0
 	golang.org/x/crypto v0.58.0
