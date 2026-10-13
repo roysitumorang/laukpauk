@@ -49,7 +49,7 @@ func NewTransactionController(
 func (q *transactionController) Mount(r fiber.Router) {
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/:slug/v1/buyer", companyVerify).
+	r.Group("/v1/buyer", companyVerify).
 		Get("", buyerKeyAuth, q.V1BuyerIndex).
 		Post("", buyerKeyAuth, q.V1BuyerCreate).
 		Get("/:id", buyerKeyAuth, q.V1BuyerShow).

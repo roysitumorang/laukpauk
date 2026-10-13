@@ -74,7 +74,7 @@ func (q *authController) Mount(r fiber.Router) {
 		Post("/login", q.SellerCreateSession).
 		Get("/me", sellerSessionAuth, q.SellerProfile).
 		Get("/logout", q.SellerLogout)
-	r.Group("/:slug/v1/buyer", companyVerify).
+	r.Group("/v1/buyer", companyVerify).
 		Post("/otp", q.V1BuyerCreateOTP).
 		Post("/login", q.V1BuyerLogin).
 		Get("/me", buyerKeyAuth, q.V1BuyerProfile)

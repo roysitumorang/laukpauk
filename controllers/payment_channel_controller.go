@@ -13,6 +13,7 @@ import (
 type (
 	paymentChannelController struct {
 		buyerService          services.BuyerService
+		companyService        services.CompanyService
 		paymentChannelService services.PaymentChannelService
 		jsonWebTokenService   services.JsonWebTokenService
 	}
@@ -20,11 +21,13 @@ type (
 
 func NewPaymentChannelController(
 	buyerService services.BuyerService,
+	companyService services.CompanyService,
 	paymentChannelService services.PaymentChannelService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *paymentChannelController {
 	return &paymentChannelController{
 		buyerService:          buyerService,
+		companyService:        companyService,
 		paymentChannelService: paymentChannelService,
 		jsonWebTokenService:   jsonWebTokenService,
 	}
@@ -32,8 +35,9 @@ func NewPaymentChannelController(
 
 func (q *paymentChannelController) Mount(r fiber.Router) {
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer").
-		Get("", buyerKeyAuth, q.V1BuyerIndex)
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+		Get("", q.V1BuyerIndex)
 }
 
 func (q *paymentChannelController) V1BuyerIndex(c fiber.Ctx) (err error) {

@@ -93,7 +93,7 @@ func (q *companyRepository) FindCompanies(
 		`id
 		, name
 		, android
-		, slug
+		, subdomain
 		, billed
 		, billing_interval
 		, subscription_status
@@ -184,7 +184,7 @@ func (q *companyRepository) FindCompanies(
 			&company.ID,
 			&company.Name,
 			&company.Android,
-			&company.Slug,
+			&company.Subdomain,
 			&company.Billed,
 			&company.BillingInterval,
 			&company.SubscriptionStatus,
@@ -248,7 +248,7 @@ func (q *companyRepository) FindCompany(
 			id
 			, name
 			, android
-			, slug
+			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
@@ -292,7 +292,7 @@ func (q *companyRepository) FindCompany(
 		&response.ID,
 		&response.Name,
 		&response.Android,
-		&response.Slug,
+		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -350,7 +350,7 @@ func (q *companyRepository) CreateCompany(
 		`INSERT INTO companies (
 			name
 			, android
-			, slug
+			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
@@ -390,7 +390,7 @@ func (q *companyRepository) CreateCompany(
 		RETURNING id
 			, name
 			, android
-			, slug
+			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
@@ -427,7 +427,7 @@ func (q *companyRepository) CreateCompany(
 			, deactivation_reason`,
 		request.Name,
 		request.Android,
-		request.Slug,
+		request.Subdomain,
 		request.Billed,
 		request.BillingInterval,
 		request.SubscriptionStatus,
@@ -463,7 +463,7 @@ func (q *companyRepository) CreateCompany(
 		&response.ID,
 		&response.Name,
 		&response.Android,
-		&response.Slug,
+		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -502,8 +502,8 @@ func (q *companyRepository) CreateCompany(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "companies_slug_key":
-				err = models.ErrUniqueCompanySlugViolation
+			case "companies_subdomain_key":
+				err = models.ErrUniqueCompanySubdomainViolation
 			case "companies_telegram_bot_token_key":
 				err = models.ErrUniqueCompanyTelegramBotTokenViolation
 			case "companies_whatsapp_phone_number_key":
@@ -530,7 +530,7 @@ func (q *companyRepository) UpdateCompany(
 			id
 			, name
 			, android
-			, slug
+			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
@@ -573,7 +573,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.ID,
 		&response.Name,
 		&response.Android,
-		&response.Slug,
+		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -638,12 +638,12 @@ func (q *companyRepository) UpdateCompany(
 		}
 		_, _ = fmt.Fprintf(sb, " android = $%d", n)
 	}
-	if response.Slug != request.Slug {
-		params = append(params, request.Slug)
+	if response.Subdomain != request.Subdomain {
+		params = append(params, request.Subdomain)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " slug = $%d", n)
+		_, _ = fmt.Fprintf(sb, " subdomain = $%d", n)
 	}
 	if response.Billed != request.Billed {
 		params = append(params, request.Billed)
@@ -862,7 +862,7 @@ func (q *companyRepository) UpdateCompany(
 		RETURNING id
 			, name
 			, android
-			, slug
+			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
@@ -903,7 +903,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.ID,
 		&response.Name,
 		&response.Android,
-		&response.Slug,
+		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -942,8 +942,8 @@ func (q *companyRepository) UpdateCompany(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "companies_slug_key":
-				err = models.ErrUniqueCompanySlugViolation
+			case "companies_subdomain_key":
+				err = models.ErrUniqueCompanySubdomainViolation
 			case "companies_telegram_bot_token_key":
 				err = models.ErrUniqueCompanyTelegramBotTokenViolation
 			case "companies_whatsapp_phone_number_key":
@@ -973,7 +973,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			id
 			, name
 			, android
-			, slug
+			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
@@ -1016,7 +1016,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.ID,
 		&response.Name,
 		&response.Android,
-		&response.Slug,
+		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -1069,7 +1069,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		RETURNING id
 			, name
 			, android
-			, slug
+			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
@@ -1112,7 +1112,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.ID,
 		&response.Name,
 		&response.Android,
-		&response.Slug,
+		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
@@ -1182,11 +1182,11 @@ func (q *companyRepository) buildCondition(request *models.CompanyFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.Slugs) > 0 {
+	if len(request.Subdomains) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("slug IN (")
-		for i, slug := range request.Slugs {
-			params = append(params, slug)
+		_, _ = sb.WriteString("subdomain IN (")
+		for i, subdomain := range request.Subdomains {
+			params = append(params, subdomain)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

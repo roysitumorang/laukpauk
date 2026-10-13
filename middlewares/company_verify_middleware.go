@@ -1,6 +1,9 @@
 package middlewares
 
 import (
+	"os"
+	"strings"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -12,10 +15,11 @@ func CompanyVerifyMiddleware(
 ) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		ctx := c.Context()
+		subdomain := strings.ReplaceAll(c.Hostname(), helper.Sprintf(".%s", os.Getenv("DOMAIN")), "")
 		company, err := companyService.FindCompany(
 			ctx,
 			models.NewCompanyFilter().
-				WithSlugs(c.Params("slug")),
+				WithSubdomains(subdomain),
 		)
 		if err != nil {
 			return helper.NewResponse(fiber.StatusBadRequest).

@@ -54,7 +54,7 @@ func (q *productCategoryController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	r.Group("/:slug/v1/buyer", companyVerify).
+	r.Group("/v1/buyer", companyVerify).
 		Get("", q.V1BuyerIndex)
 }
 

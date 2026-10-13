@@ -14,7 +14,7 @@ import (
 )
 
 var ErrCompanyNotFound = errors.New("company not found")
-var ErrUniqueCompanySlugViolation = errors.New("slug: already exists")
+var ErrUniqueCompanySubdomainViolation = errors.New("subdomain: already exists")
 var ErrUniqueCompanyTelegramBotTokenViolation = errors.New("telegram_bot_token: already exists")
 var ErrUniqueCompanyWhatsappPhoneNumberViolation = errors.New("whatsapp_phone_number: already exists")
 var MapCompanySortings = map[string]struct{}{
@@ -65,7 +65,7 @@ type Company struct {
 	ID                                    uuid.UUID          `json:"-" form:"-"`
 	Name                                  string             `json:"-" form:"name"`
 	Android                               bool               `json:"-" form:"android"`
-	Slug                                  string             `json:"-" form:"slug"`
+	Subdomain                             string             `json:"-" form:"subdomain"`
 	Billed                                bool               `json:"-" form:"billed"`
 	BillingInterval                       *BillingInterval   `json:"-" form:"billing_interval"`
 	RawBillingInterval                    *string            `json:"billing_interval" form:"-"`
@@ -112,7 +112,7 @@ func (q *Company) Validate(includeSetting ...bool) error {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
-	if q.Slug = strings.ToLower(strings.TrimSpace(q.Slug)); q.Slug == "" {
+	if q.Subdomain = strings.ToLower(strings.TrimSpace(q.Subdomain)); q.Subdomain == "" {
 		return errors.New("slug: is required")
 	}
 	if q.WhatsappPhoneNumber = strings.TrimSpace(q.WhatsappPhoneNumber); q.WhatsappPhoneNumber == "" {
@@ -219,7 +219,7 @@ func (q *Company) New() bool {
 type CompanyFilter struct {
 	CompanyIDs,
 	ExcludedCompanyIDs []uuid.UUID
-	Slugs []string
+	Subdomains []string
 	Keyword,
 	PaginationURL string
 	Sortings    []Sorting
@@ -246,8 +246,8 @@ func (q *CompanyFilter) WithExcludedCompanyIDs(excludedCompanyIDs ...uuid.UUID) 
 	return q
 }
 
-func (q *CompanyFilter) WithSlugs(slugs ...string) *CompanyFilter {
-	q.Slugs = slugs
+func (q *CompanyFilter) WithSubdomains(subdomains ...string) *CompanyFilter {
+	q.Subdomains = subdomains
 	return q
 }
 

@@ -16,6 +16,7 @@ type (
 		adminService        services.AdminService
 		buyerService        services.BuyerService
 		settingService      services.SettingService
+		companyService      services.CompanyService
 		jsonWebTokenService services.JsonWebTokenService
 	}
 )
@@ -23,12 +24,14 @@ type (
 func NewSettingController(
 	adminService services.AdminService,
 	buyerService services.BuyerService,
+	companyService services.CompanyService,
 	settingService services.SettingService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *settingController {
 	return &settingController{
 		adminService:        adminService,
 		buyerService:        buyerService,
+		companyService:      companyService,
 		settingService:      settingService,
 		jsonWebTokenService: jsonWebTokenService,
 	}
@@ -36,7 +39,8 @@ func NewSettingController(
 
 func (q *settingController) Mount(r fiber.Router) {
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", buyerKeyAuth).
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
 		Get("", q.V1BuyerShow)
 }
 

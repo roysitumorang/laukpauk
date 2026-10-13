@@ -22,13 +22,13 @@
 				<label for="android" class="label-title cp">Android</label>
 			</div>
 			<div class="form-group">
-				<label for="slug" class="label-title">Slug</label>
+				<label for="subdomain" class="label-title">Subdomain</label>
 				<input type="text"
-					name="slug"
-					value="{{ if request.Slug }}{{ request.Slug }}{{ end }}"
-					id="slug"
+					name="subdomain"
+					value="{{ if request.Subdomain }}{{ request.Subdomain }}{{ end }}"
+					id="subdomain"
 					class="form-control"
-					placeholder="Slug" />
+					placeholder="Subdomain" />
 			</div>
 			<div class="form-group">
 				<input type="checkbox" name="billed" id="billed" class="mr-2"{{ if request.Billed }} checked{{ end }} />

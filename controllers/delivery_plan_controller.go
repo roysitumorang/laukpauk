@@ -56,7 +56,7 @@ func (q *deliveryPlanController) Mount(r fiber.Router) {
 		Post("/:id/delete", q.SellerDelete)
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
 		Get("/now", q.V1BuyerShow)
 }
 

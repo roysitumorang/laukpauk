@@ -186,7 +186,7 @@ func init() {
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, name character varying NOT NULL COLLATE "natural_sort"
 				, android BOOLEAN NOT NULL
-				, slug character varying NOT NULL UNIQUE
+				, subdomain character varying NOT NULL UNIQUE
 				, billed BOOLEAN NOT NULL
 				, billing_interval smallint
 				, subscription_status smallint NOT NULL
@@ -293,7 +293,7 @@ func init() {
 				id
 				, name
 				, android
-				, slug
+				, subdomain
 				, billed
 				, subscription_status
 				, telegram_bot_token
@@ -331,7 +331,7 @@ func init() {
 			uuid.Nil(),
 			company.Name,
 			company.Android,
-			company.Slug,
+			company.Subdomain,
 			company.Billed,
 			company.SubscriptionStatus,
 			company.TelegramBotToken,
@@ -368,7 +368,7 @@ func init() {
 		company = models.Company{
 			Name:                                 "Laukpauk",
 			Android:                              true,
-			Slug:                                 "laukpauk",
+			Subdomain:                            "laukpauk",
 			Billed:                               false,
 			SubscriptionStatus:                   models.SubscriptionStatusActive,
 			TelegramBotToken:                     new("7895135905:AAGh8uCKeDniAQdJ0sh2PZh1YO2afkAto5Y"),
@@ -413,7 +413,7 @@ func init() {
 			`INSERT INTO companies (
 				name
 				, android
-				, slug
+				, subdomain
 				, billed
 				, subscription_status
 				, telegram_bot_token
@@ -450,7 +450,7 @@ func init() {
 			RETURNING id`,
 			company.Name,
 			company.Android,
-			company.Slug,
+			company.Subdomain,
 			company.Billed,
 			company.SubscriptionStatus,
 			company.TelegramBotToken,

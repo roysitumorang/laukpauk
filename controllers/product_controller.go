@@ -69,7 +69,7 @@ func (q *productController) Mount(r fiber.Router) {
 		Get("/:id/variants/:product_variant_id/edit", q.SellerEditVariant).
 		Post("/:id/variants/:product_variant_id", q.SellerUpdateVariant).
 		Post("/:id/variants/:product_variant_id/delete", q.SellerDeleteVariant)
-	r.Group("/:slug/v1/buyer", companyVerify).
+	r.Group("/v1/buyer", companyVerify).
 		Get("", q.V1BuyerIndex).
 		Get("/:id", q.V1BuyerShow)
 }

@@ -47,7 +47,7 @@ func NewDeliveryRouteController(
 func (q *deliveryRouteController) Mount(r fiber.Router) {
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/:slug/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
 		Post("", q.V1BuyerSave)
 }
 

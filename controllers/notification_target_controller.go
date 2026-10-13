@@ -56,8 +56,8 @@ func (q *notificationTargetController) Mount(r fiber.Router) {
 		Post("", q.AdminCreate)
 	r.Group("/seller", sellerSessionAuth).
 		Post("", q.SellerCreate)
-	r.Group("/:slug/v1/buyer", companyVerify).
-		Post("", buyerKeyAuth, q.V1BuyerSave)
+	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+		Post("", q.V1BuyerSave)
 }
 
 func (q *notificationTargetController) AdminCreate(c fiber.Ctx) (err error) {

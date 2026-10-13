@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"encoding/json/v2"
 	"errors"
 	"log/slog"
 	"math"
@@ -16,7 +17,6 @@ import (
 	"github.com/coregx/coregex"
 	"github.com/dustin/go-humanize"
 	"github.com/getsentry/sentry-go"
-	"github.com/goccy/go-json"
 	"github.com/gofiber/contrib/v3/monitor"
 	fibersentry "github.com/gofiber/contrib/v3/sentry"
 	"github.com/gofiber/contrib/v3/swaggo"
@@ -43,6 +43,7 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 	slogfiber "github.com/samber/slog-fiber"
 )
 
@@ -72,9 +73,21 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
-		JSONEncoder:   json.Marshal,
-		JSONDecoder:   json.Unmarshal,
-		Views:         engine,
+		JSONEncoder: func(v any) ([]byte, error) {
+			buffer := pools.BufferPool.Get()
+			defer func() {
+				buffer.Reset()
+				pools.BufferPool.Put(buffer)
+			}()
+			if err := json.MarshalWrite(buffer, v); err != nil {
+				return nil, err
+			}
+			return buffer.Bytes(), nil
+		},
+		JSONDecoder: func(data []byte, v any) error {
+			return json.Unmarshal(data, v)
+		},
+		Views: engine,
 		ErrorHandler: func(ctx fiber.Ctx, err error) error {
 			statusCode := fiber.StatusInternalServerError
 			if e, ok := errors.AsType[*fiber.Error](err); ok {
@@ -115,99 +128,99 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		}),
 		compress.New(),
 		rewrite.New(rewrite.Config{
-			Rules: map[string]string{
-				"/admin/auth/*":                              "/auth/admin/$1",
-				"/admin":                                     "/home/admin",
-				"/admin/landing_pages/*":                     "/landing_pages/admin/$1",
-				"/admin/landing_pages/*/*":                   "/landing_pages/admin/$1/$2",
-				"/admin/landing_pages/*/*/*":                 "/landing_pages/admin/$1/$2/$3",
-				"/admin/settings":                            "/settings/admin",
-				"/admin/settings/*":                          "/settings/admin/$1",
-				"/admin/settings/*/*":                        "/settings/admin/$1/$2",
-				"/admin/transactions":                        "/transactions/admin",
-				"/admin/transactions/*":                      "/transactions/admin/$1",
-				"/admin/transactions/*/*":                    "/transactions/admin/$1/$2",
-				"/admin/admins":                              "/admins/admin",
-				"/admin/admins/*":                            "/admins/admin/$1",
-				"/admin/admins/*/*":                          "/admins/admin/$1/$2",
-				"/admin/notification_targets":                "/notification_targets/admin",
-				"/admin/text_messages":                       "/text_messages/admin",
-				"/admin/text_messages/*":                     "/text_messages/admin/$1",
-				"/admin/notifications":                       "/notifications/admin",
-				"/admin/notifications/*":                     "/notifications/admin/$1",
-				"/admin/companies":                           "/companies/admin",
-				"/admin/companies/*":                         "/companies/admin/$1",
-				"/admin/companies/*/*":                       "/companies/admin/$1/$2",
-				"/seller/auth/*":                             "/auth/seller/$1",
-				"/seller":                                    "/home/seller",
-				"/seller/product_categories":                 "/product_categories/seller",
-				"/seller/product_categories/*":               "/product_categories/seller/$1",
-				"/seller/product_categories/*/*":             "/product_categories/seller/$1/$2",
-				"/seller/products":                           "/products/seller",
-				"/seller/products/*":                         "/products/seller/$1",
-				"/seller/products/*/*":                       "/products/seller/$1/$2",
-				"/seller/vouchers":                           "/vouchers/seller",
-				"/seller/vouchers/*":                         "/vouchers/seller/$1",
-				"/seller/vouchers/*/*":                       "/vouchers/seller/$1/$2",
-				"/seller/delivery_plans":                     "/delivery_plans/seller",
-				"/seller/delivery_plans/*":                   "/delivery_plans/seller/$1",
-				"/seller/delivery_plans/*/*":                 "/delivery_plans/seller/$1/$2",
-				"/seller/point_earning_caps":                 "/point_earning_caps/seller",
-				"/seller/point_earning_caps/*":               "/point_earning_caps/seller/$1",
-				"/seller/point_earning_caps/*/*":             "/point_earning_caps/seller/$1/$2",
-				"/seller/point_spending_caps":                "/point_spending_caps/seller",
-				"/seller/point_spending_caps/*":              "/point_spending_caps/seller/$1",
-				"/seller/point_spending_caps/*/*":            "/point_spending_caps/seller/$1/$2",
-				"/seller/articles":                           "/articles/seller",
-				"/seller/articles/*":                         "/articles/seller/$1",
-				"/seller/articles/*/*":                       "/articles/seller/$1/$2",
-				"/seller/blogs":                              "/blogs/seller",
-				"/seller/blogs/*":                            "/blogs/seller/$1",
-				"/seller/blogs/*/*":                          "/blogs/seller/$1/$2",
-				"/seller/banners":                            "/banners/seller",
-				"/seller/banners/*":                          "/banners/seller/$1",
-				"/seller/banners/*/*":                        "/banners/seller/$1/$2",
-				"/seller/sellers":                            "/sellers/seller",
-				"/seller/sellers/*":                          "/sellers/seller/$1",
-				"/seller/sellers/*/*":                        "/sellers/seller/$1/$2",
-				"/seller/buyers":                             "/buyers/seller",
-				"/seller/buyers/*":                           "/buyers/seller/$1",
-				"/seller/buyers/*/*":                         "/buyers/seller/$1/$2",
-				"/seller/recipes":                            "/recipes/seller",
-				"/seller/recipes/*":                          "/recipes/seller/$1",
-				"/seller/recipes/*/*":                        "/recipes/seller/$1/$2",
-				"/seller/points":                             "/points/seller",
-				"/seller/points/*":                           "/points/seller/$1",
-				"/seller/points/*/*":                         "/points/seller/$1/$2",
-				"/seller/notification_targets":               "/notification_targets/seller",
-				"/v1/companies/*/buyer/auth/*":               "/auth/$1/v1/buyer/$2",
-				"/v1/companies/*/buyer/notification_targets": "/notification_targets/$1/v1/buyer",
-				"/v1/companies/*/buyer/product_categories":   "/product_categories/$1/v1/buyer",
-				"/v1/companies/*/buyer/products":             "/products/$1/v1/buyer",
-				"/v1/companies/*/buyer/products/*":           "/products/$1/v1/buyer/$2",
-				"/v1/buyer/cart":                             "/cart/v1/buyer",
-				"/v1/buyer/cart/*":                           "/cart/v1/buyer/$1",
-				"/v1/buyer/cart/*/*":                         "/cart/v1/buyer/$1/$2",
-				"/v1/companies/*/buyer/vouchers":             "/vouchers/$1/v1/buyer",
-				"/v1/companies/*/buyer/delivery_plans/*":     "/delivery_plans/$1/v1/buyer/$2",
-				"/v1/companies/*/buyer/transactions":         "/transactions/$1/v1/buyer",
-				"/v1/companies/*/buyer/transactions/*":       "/transactions/$1/v1/buyer/$2",
-				"/v1/companies/*/buyer/transactions/*/*":     "/transactions/$1/v1/buyer/$2/$3",
-				"/v1/buyer/banners":                          "/banners/v1/buyer",
-				"/v1/buyer/banners/*":                        "/banners/v1/buyer/$1",
-				"/v1/buyer/banners/*/*":                      "/banners/v1/buyer/$1/$2",
-				"/v1/companies/*/buyer/delivery_routes":      "/delivery_routes/$1/v1/buyer",
-				"/v1/companies/*/buyer/point_earning_caps":   "/point_earning_caps/$1/v1/buyer",
-				"/v1/companies/*/buyer/point_spending_caps":  "/point_spending_caps/$1/v1/buyer",
-				"/v1/buyer/setting":                          "/setting/v1/buyer",
-				"/v1/buyer/payment_channels":                 "/payment_channels/v1/buyer",
-				"/":                                          "/home",
-				"/blogs":                                     "/home/blogs",
-				"/read/*":                                    "/home/blogs/$1",
-				"/contact-us":                                "/home/contact-us",
-				"/faq":                                       "/home/faq",
-				"/privacy-policy":                            "/home/privacy-policy",
-				"/firebase-messaging-sw.js":                  "/assets/js/firebase-messaging-sw.js",
+			RuleList: []rewrite.Rule{
+				{From: "/admin/auth/*", To: "/auth/admin/$1"},
+				{From: "/admin", To: "/home/admin"},
+				{From: "/admin/landing_pages/*", To: "/landing_pages/admin/$1"},
+				{From: "/admin/landing_pages/*/*", To: "/landing_pages/admin/$1/$2"},
+				{From: "/admin/landing_pages/*/*/*", To: "/landing_pages/admin/$1/$2/$3"},
+				{From: "/admin/settings", To: "/settings/admin"},
+				{From: "/admin/settings/*", To: "/settings/admin/$1"},
+				{From: "/admin/settings/*/*", To: "/settings/admin/$1/$2"},
+				{From: "/admin/transactions", To: "/transactions/admin"},
+				{From: "/admin/transactions/*", To: "/transactions/admin/$1"},
+				{From: "/admin/transactions/*/*", To: "/transactions/admin/$1/$2"},
+				{From: "/admin/admins", To: "/admins/admin"},
+				{From: "/admin/admins/*", To: "/admins/admin/$1"},
+				{From: "/admin/admins/*/*", To: "/admins/admin/$1/$2"},
+				{From: "/admin/notification_targets", To: "/notification_targets/admin"},
+				{From: "/admin/text_messages", To: "/text_messages/admin"},
+				{From: "/admin/text_messages/*", To: "/text_messages/admin/$1"},
+				{From: "/admin/notifications", To: "/notifications/admin"},
+				{From: "/admin/notifications/*", To: "/notifications/admin/$1"},
+				{From: "/admin/companies", To: "/companies/admin"},
+				{From: "/admin/companies/*", To: "/companies/admin/$1"},
+				{From: "/admin/companies/*/*", To: "/companies/admin/$1/$2"},
+				{From: "/seller/auth/*", To: "/auth/seller/$1"},
+				{From: "/seller", To: "/home/seller"},
+				{From: "/seller/product_categories", To: "/product_categories/seller"},
+				{From: "/seller/product_categories/*", To: "/product_categories/seller/$1"},
+				{From: "/seller/product_categories/*/*", To: "/product_categories/seller/$1/$2"},
+				{From: "/seller/products", To: "/products/seller"},
+				{From: "/seller/products/*", To: "/products/seller/$1"},
+				{From: "/seller/products/*/*", To: "/products/seller/$1/$2"},
+				{From: "/seller/vouchers", To: "/vouchers/seller"},
+				{From: "/seller/vouchers/*", To: "/vouchers/seller/$1"},
+				{From: "/seller/vouchers/*/*", To: "/vouchers/seller/$1/$2"},
+				{From: "/seller/delivery_plans", To: "/delivery_plans/seller"},
+				{From: "/seller/delivery_plans/*", To: "/delivery_plans/seller/$1"},
+				{From: "/seller/delivery_plans/*/*", To: "/delivery_plans/seller/$1/$2"},
+				{From: "/seller/point_earning_caps", To: "/point_earning_caps/seller"},
+				{From: "/seller/point_earning_caps/*", To: "/point_earning_caps/seller/$1"},
+				{From: "/seller/point_earning_caps/*/*", To: "/point_earning_caps/seller/$1/$2"},
+				{From: "/seller/point_spending_caps", To: "/point_spending_caps/seller"},
+				{From: "/seller/point_spending_caps/*", To: "/point_spending_caps/seller/$1"},
+				{From: "/seller/point_spending_caps/*/*", To: "/point_spending_caps/seller/$1/$2"},
+				{From: "/seller/articles", To: "/articles/seller"},
+				{From: "/seller/articles/*", To: "/articles/seller/$1"},
+				{From: "/seller/articles/*/*", To: "/articles/seller/$1/$2"},
+				{From: "/seller/blogs", To: "/blogs/seller"},
+				{From: "/seller/blogs/*", To: "/blogs/seller/$1"},
+				{From: "/seller/blogs/*/*", To: "/blogs/seller/$1/$2"},
+				{From: "/seller/banners", To: "/banners/seller"},
+				{From: "/seller/banners/*", To: "/banners/seller/$1"},
+				{From: "/seller/banners/*/*", To: "/banners/seller/$1/$2"},
+				{From: "/seller/sellers", To: "/sellers/seller"},
+				{From: "/seller/sellers/*", To: "/sellers/seller/$1"},
+				{From: "/seller/sellers/*/*", To: "/sellers/seller/$1/$2"},
+				{From: "/seller/buyers", To: "/buyers/seller"},
+				{From: "/seller/buyers/*", To: "/buyers/seller/$1"},
+				{From: "/seller/buyers/*/*", To: "/buyers/seller/$1/$2"},
+				{From: "/seller/recipes", To: "/recipes/seller"},
+				{From: "/seller/recipes/*", To: "/recipes/seller/$1"},
+				{From: "/seller/recipes/*/*", To: "/recipes/seller/$1/$2"},
+				{From: "/seller/points", To: "/points/seller"},
+				{From: "/seller/points/*", To: "/points/seller/$1"},
+				{From: "/seller/points/*/*", To: "/points/seller/$1/$2"},
+				{From: "/seller/notification_targets", To: "/notification_targets/seller"},
+				{From: "/v1/buyer/auth/*", To: "/auth/v1/buyer/$1"},
+				{From: "/v1/buyer/notification_targets", To: "/notification_targets/v1/buyer"},
+				{From: "/v1/buyer/product_categories", To: "/product_categories/v1/buyer"},
+				{From: "/v1/buyer/products", To: "/products/v1/buyer"},
+				{From: "/v1/buyer/products/*", To: "/products/v1/buyer/$1"},
+				{From: "/v1/buyer/cart", To: "/cart/v1/buyer"},
+				{From: "/v1/buyer/cart/*", To: "/cart/v1/buyer/$1"},
+				{From: "/v1/buyer/cart/*/*", To: "/cart/v1/buyer/$1/$2"},
+				{From: "/v1/buyer/vouchers", To: "/vouchers/v1/buyer"},
+				{From: "/v1/buyer/delivery_plans/*", To: "/delivery_plans/v1/buyer/$1"},
+				{From: "/v1/buyer/transactions", To: "/transactions/v1/buyer"},
+				{From: "/v1/buyer/transactions/*", To: "/transactions/v1/buyer/$1"},
+				{From: "/v1/buyer/transactions/*/*", To: "/transactions/v1/buyer/$1/$2"},
+				{From: "/v1/buyer/banners", To: "/banners/v1/buyer"},
+				{From: "/v1/buyer/banners/*", To: "/banners/v1/buyer/$1"},
+				{From: "/v1/buyer/banners/*/*", To: "/banners/v1/buyer/$1/$2"},
+				{From: "/v1/buyer/delivery_routes", To: "/delivery_routes/v1/buyer"},
+				{From: "/v1/buyer/point_earning_caps", To: "/point_earning_caps/v1/buyer"},
+				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
+				{From: "/v1/buyer/setting", To: "/setting/v1/buyer"},
+				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
+				{From: "/", To: "/home"},
+				{From: "/blogs", To: "/home/blogs"},
+				{From: "/read/*", To: "/home/blogs/$1"},
+				{From: "/contact-us", To: "/home/contact-us"},
+				{From: "/faq", To: "/home/faq"},
+				{From: "/privacy-policy", To: "/home/privacy-policy"},
+				{From: "/firebase-messaging-sw.js", To: "/assets/js/firebase-messaging-sw.js"},
 			},
 		}),
 		cors.New(),
@@ -371,6 +384,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewCartController(
 		q.BuyerService,
 		q.ProductVariantService,
+		q.CompanyService,
 		q.CartService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/cart"))
@@ -384,11 +398,13 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewSettingController(
 		q.AdminService,
 		q.BuyerService,
+		q.CompanyService,
 		q.SettingService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/setting"))
 	controllers.NewPaymentChannelController(
 		q.BuyerService,
+		q.CompanyService,
 		q.PaymentChannelService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/payment_channels"))
