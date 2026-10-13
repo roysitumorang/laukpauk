@@ -15,52 +15,61 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+type ZenzivaMessageType uint8
+
 const (
 	ZenzivaMessageTypeSms ZenzivaMessageType = iota
 	ZenzivaMessageTypeOtp
 )
 
-type (
-	ZenzivaMessageType int
+func (q ZenzivaMessageType) Int() uint8 {
+	return uint8(q)
+}
 
-	ZenzivaClient struct {
-		baseURL,
-		userKey,
-		apiKey string
-		messageMaxLength int
-		client           *fasthttp.Client
+func (q ZenzivaMessageType) String() string {
+	if q == ZenzivaMessageTypeOtp {
+		return "sendOTP"
 	}
+	return "sendsms"
+}
 
-	ZenzivaRequest struct {
-		UserKey string `json:"userkey"`
-		PassKey string `json:"passkey"`
-		To      string `json:"to"`
-		Message string `json:"message"`
-	}
+type ZenzivaRequest struct {
+	UserKey string `json:"userkey"`
+	PassKey string `json:"passkey"`
+	To      string `json:"to"`
+	Message string `json:"message"`
+}
 
-	ZenzivaResponse struct {
-		MessageID string `json:"messageId"`
-		To        string `json:"to"`
-		Status    string `json:"status"`
-		Text      string `json:"text"`
-	}
+type ZenzivaResponse struct {
+	MessageID string `json:"messageId"`
+	To        string `json:"to"`
+	Status    string `json:"status"`
+	Text      string `json:"text"`
+}
 
-	ZenzivaReport struct {
-		Status         int    `json:"status,string"`
-		MessageID      int64  `json:"messageId,string"`
-		Date           string `json:"date"`
-		Time           string `json:"time"`
-		Dest           string `json:"dest"`
-		Message        string `json:"msg"`
-		DeliveryStatus string `json:"msg-status"`
-	}
+type ZenzivaReport struct {
+	Status         int    `json:"status,string"`
+	MessageID      int64  `json:"messageId,string"`
+	Date           string `json:"date"`
+	Time           string `json:"time"`
+	Dest           string `json:"dest"`
+	Message        string `json:"msg"`
+	DeliveryStatus string `json:"msg-status"`
+}
 
-	ZenzivaBalance struct {
-		Balance int64  `json:"balance,string"`
-		Status  int    `json:"status,string"`
-		Text    string `json:"text"`
-	}
-)
+type ZenzivaBalance struct {
+	Balance int64  `json:"balance,string"`
+	Status  int    `json:"status,string"`
+	Text    string `json:"text"`
+}
+
+type ZenzivaClient struct {
+	baseURL,
+	userKey,
+	apiKey string
+	messageMaxLength int
+	client           *fasthttp.Client
+}
 
 func NewZenzivaClient(
 	baseURL,
@@ -195,15 +204,4 @@ func (q *ZenzivaClient) CheckBalance(ctx context.Context) (*ZenzivaBalance, erro
 		return nil, err
 	}
 	return &response, nil
-}
-
-func (q ZenzivaMessageType) Int() int {
-	return int(q)
-}
-
-func (q ZenzivaMessageType) String() string {
-	if q == ZenzivaMessageTypeOtp {
-		return "sendOTP"
-	}
-	return "sendsms"
 }
