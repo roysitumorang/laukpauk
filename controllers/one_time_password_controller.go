@@ -222,7 +222,7 @@ func (q *oneTimePasswordController) SellerCreate(c fiber.Ctx) error {
 	}
 	sess.Set(models.CurrentOtpTrackingID, oneTimePassword.TrackingID)
 	return flash.Success("please check your phone for OTP token SMS").
-		Redirect(c, sess.Session, helper.Sprintf("/seller/auth/login?login=%s", request.Login))
+		Redirect(c, sess.Session, helper.Sprintf("/seller/sessions/new?login=%s", request.Login))
 }
 
 func (q *oneTimePasswordController) V1BuyerCreate(c fiber.Ctx) error {

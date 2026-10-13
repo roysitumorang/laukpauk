@@ -235,7 +235,7 @@
            	btnSubmit.prop("disabled", true).text("Processing ..");
 
            	$.ajax({
-          		url: "{{ baseURL }}/admin/auth/login",
+          		url: "{{ baseURL }}/admin/sessions",
           		data: formData,
           		type: "POST",
           		success: function(responseFromServer) {
@@ -246,7 +246,7 @@
         				let _urlSP = new URLSearchParams(location.search);
         				let _afterLogin = _urlSP.get("afterLogin");
 
-        				let _to = "{{ baseURL }}/admin/auth/me";
+        				let _to = "{{ baseURL }}/admin/sessions/mine";
         				if (_afterLogin != null) {
            					_to = _afterLogin;
         				}

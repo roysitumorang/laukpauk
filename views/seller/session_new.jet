@@ -72,11 +72,12 @@
 		<div class="card">
 			<div class="card-body login-card-body">
 				<p class="login-box-msg">Sign in to start your session</p>
-				<form method="POST" action="{{ baseURL }}/admin/auth/login" id="formLogin">
+				<form method="POST" action="{{ baseURL }}/seller/sessions">
 					<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-					<input type="hidden" name="password" id="password" value="" />
+					<input type="hidden" name="otp_token" id="otp_token" value="" />
+					<input type="hidden" name="tracking_id" value="{{ request.TrackingID }}" />
 					<div class="input-group mb-3">
-						<input type="text" name="login" id="login" value="{{ request.Login }}" placeholder="Email or Username" class="form-control" />
+						<input type="text" name="login" id="login" value="{{ request.Login }}" placeholder="Email / Username / Mobile Phone" class="form-control" />
 						<div class="input-group-append">
 							<div class="input-group-text">
 								<span class="fas fa-envelope"></span>
@@ -84,17 +85,17 @@
 						</div>
 					</div>
 					<div class="input-group mb-3">
-						<input type="password" placeholder="Password" class="form-control" onchange="document.getElementById('password').value=btoa(this.value)" />
+						<input type="password" placeholder="OTP" class="form-control" onchange="document.getElementById('otp_token').value=btoa(this.value)" />
 						<div class="input-group-append">
 							<div class="input-group-text">
 								<span class="fas fa-lock"></span>
 							</div>
 						</div>
 					</div>
-					<button type="submit" id="btnSubmit" class="btn btn-primary btn-block">Login</button>
-					<p class="mb-1 mt-4 text-center">
-						<a href="{{ baseURL }}/admin/auth/password/forgot">I forgot my password</a>
-					</p>
+					<button type="submit" class="btn btn-primary btn-block">Login</button>
+					<a href="{{ baseURL }}/seller/otp/new{{ if request.Login }}?login={{ request.Login }}{{ end }}" class="btn btn-default ml-1">
+						Request New OTP Code
+					</a>
 				</form>
 			</div>
 			<!-- /.login-card-body -->
@@ -113,40 +114,6 @@
 	<!-- OPTIONAL SCRIPTS -->
 	<script>
 		$("body").addClass("layout-fixed layout-navbar-fixed layout-footer-fixed");
-		/*
-		let btnSubmit = $("#btnSubmit");
-		let btnSubmitText = btnSubmit.text();
-		$("#formLogin").on("submit", function(e) {
-			e.preventDefault();
-			let formData = $(this).serialize();
-			btnSubmit.prop("disabled", true).text("Processing ..");
-			$.ajax({
-				url: "{{ baseURL }}/admin/auth/login",
-				data: formData,
-				type: "POST",
-				success: function(responseFromServer) {
-					responseFromServer = JSON.parse(responseFromServer);
-					let statusLogin = responseFromServer.statusLogin;
-					if (statusLogin) {
-						let _urlSP = new URLSearchParams(location.search);
-						let _afterLogin = _urlSP.get("afterLogin");
-						let _to = "{{ baseURL }}/admin/auth/me";
-						if (_afterLogin != null) {
-							_to = _afterLogin;
-						}
-						location.href = _to;
-					} else {
-						Swal.fire({
-							title: `Autentikasi Login`,
-							html: "Kombinasi username dan password tidak sesuai !",
-							type: "error"
-						});
-						btnSubmit.prop("disabled", false).text(btnSubmitText);
-					}
-				}
-			})
-		});
-		*/
 	</script>
 	<script src="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.js"></script>
 	<link rel="stylesheet" href="{{ baseURL }}/assets/plugins/sweetalert2/sweetalert2.min.css" />

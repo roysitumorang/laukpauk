@@ -129,7 +129,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		compress.New(),
 		rewrite.New(rewrite.Config{
 			RuleList: []rewrite.Rule{
-				{From: "/admin/auth/*", To: "/auth/admin/$1"},
+				{From: "/admin/sessions", To: "/sessions/admin"},
+				{From: "/admin/sessions/*", To: "/sessions/admin/$1"},
 				{From: "/admin", To: "/home/admin"},
 				{From: "/admin/landing_pages/*", To: "/landing_pages/admin/$1"},
 				{From: "/admin/landing_pages/*/*", To: "/landing_pages/admin/$1/$2"},
@@ -150,7 +151,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/companies/*/*", To: "/companies/admin/$1/$2"},
 				{From: "/seller/otp", To: "/otp/seller"},
 				{From: "/seller/otp/*", To: "/otp/seller/$1"},
-				{From: "/seller/auth/*", To: "/auth/seller/$1"},
+				{From: "/seller/sessions", To: "/sessions/seller"},
+				{From: "/seller/sessions/*", To: "/sessions/seller/$1"},
 				{From: "/seller", To: "/home/seller"},
 				{From: "/seller/product_categories", To: "/product_categories/seller"},
 				{From: "/seller/product_categories/*", To: "/product_categories/seller/$1"},
@@ -197,7 +199,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/transactions/*/*", To: "/transactions/seller/$1/$2"},
 				{From: "/seller/companies/*", To: "/companies/seller/$1"},
 				{From: "/v1/buyer/otp", To: "/otp/buyer"},
-				{From: "/v1/buyer/auth/*", To: "/auth/v1/buyer/$1"},
+				{From: "/v1/buyer/sessions/*", To: "/sessions/v1/buyer/$1"},
 				{From: "/v1/buyer/notification_targets", To: "/notification_targets/v1/buyer"},
 				{From: "/v1/buyer/product_categories", To: "/product_categories/v1/buyer"},
 				{From: "/v1/buyer/products", To: "/products/v1/buyer"},
@@ -296,7 +298,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TextMessageService,
 		q.KafkaClient,
 	).Mount(app.Group("/otp"))
-	controllers.NewAuthController(
+	controllers.NewSessionController(
 		q.AdminService,
 		q.SellerService,
 		q.BuyerService,
@@ -305,7 +307,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.OneTimePasswordService,
 		q.TextMessageService,
 		q.KafkaClient,
-	).Mount(app.Group("/auth"))
+	).Mount(app.Group("/sessions"))
 	controllers.NewHomeController(
 		q.AdminService,
 		q.SellerService,
