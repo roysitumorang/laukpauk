@@ -148,6 +148,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/companies", To: "/companies/admin"},
 				{From: "/admin/companies/*", To: "/companies/admin/$1"},
 				{From: "/admin/companies/*/*", To: "/companies/admin/$1/$2"},
+				{From: "/seller/otp", To: "/otp/seller"},
+				{From: "/seller/otp/*", To: "/otp/seller/$1"},
 				{From: "/seller/auth/*", To: "/auth/seller/$1"},
 				{From: "/seller", To: "/home/seller"},
 				{From: "/seller/product_categories", To: "/product_categories/seller"},
@@ -194,6 +196,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/transactions/*", To: "/transactions/seller/$1"},
 				{From: "/seller/transactions/*/*", To: "/transactions/seller/$1/$2"},
 				{From: "/seller/companies/*", To: "/companies/seller/$1"},
+				{From: "/v1/buyer/otp", To: "/otp/buyer"},
 				{From: "/v1/buyer/auth/*", To: "/auth/v1/buyer/$1"},
 				{From: "/v1/buyer/notification_targets", To: "/notification_targets/v1/buyer"},
 				{From: "/v1/buyer/product_categories", To: "/product_categories/v1/buyer"},
@@ -285,6 +288,14 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		Get("/images*", static.New("", static.Config{
 			FS: os.DirFS("images"),
 		}))
+	controllers.NewOneTimePasswordController(
+		q.SellerService,
+		q.BuyerService,
+		q.CompanyService,
+		q.OneTimePasswordService,
+		q.TextMessageService,
+		q.KafkaClient,
+	).Mount(app.Group("/otp"))
 	controllers.NewAuthController(
 		q.AdminService,
 		q.SellerService,

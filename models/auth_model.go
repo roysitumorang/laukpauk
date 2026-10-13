@@ -12,23 +12,13 @@ import (
 
 var ErrLoginNotFound = errors.New("login: not found")
 
-type OtpRequest struct {
-	Login string `json:"login" form:"login"`
-}
-
-func (q *OtpRequest) Validate() error {
-	if q.Login = strings.TrimSpace(q.Login); q.Login == "" {
-		return errors.New("login: is required")
-	}
-	return nil
-}
-
 const CurrentAdmin = "current_admin"
 const CurrentSeller = "current_seller"
 const CurrentBuyer = "current_buyer"
 const CurrentJsonWebToken = "current_jwt"
 const CurrentCompany = "current_company"
 const CurrentSubdomain = "current_subdomain"
+const CurrentOtpTrackingID = "current_otp_tracking_id"
 const AdminID = "admin_id"
 const SellerID = "seller_id"
 const BuyerID = "buyer_id"

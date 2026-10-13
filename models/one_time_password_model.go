@@ -101,3 +101,14 @@ func (q *OneTimePasswordFilter) WithUrlValues(urlValues url.Values) *OneTimePass
 	q.UrlValues = urlValues
 	return q
 }
+
+type OtpRequest struct {
+	Login string `json:"login" form:"login"`
+}
+
+func (q *OtpRequest) Validate() error {
+	if q.Login = strings.TrimSpace(q.Login); q.Login == "" {
+		return errors.New("login: is required")
+	}
+	return nil
+}
