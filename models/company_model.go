@@ -73,10 +73,8 @@ type Company struct {
 	RawSubscriptionStatus                 string             `json:"subscription_status" form:"-"`
 	SubscriptionStartDate                 *time.Time         `json:"-" form:"subscription_start_date"`
 	SubscriptionEndDate                   *time.Time         `json:"-" form:"subscription_end_date"`
-	TelegramBotToken                      *string            `json:"-" form:"-"`
+	TelegramBotToken                      *string            `json:"-" form:"telegram_bot_token"`
 	VacationMode                          bool               `json:"vacation_mode" form:"vacation_mode"`
-	VacationStartDate                     *time.Time         `json:"vacation_start_date" form:"-"`
-	RawVacationStartDate                  string             `json:"-" form:"vacation_start_date"`
 	VacationEndDate                       *time.Time         `json:"vacation_end_date" form:"-"`
 	RawVacationEndDate                    string             `json:"-" form:"vacation_end_date"`
 	VoucherEnabled                        bool               `json:"voucher_enabled" form:"voucher_enabled"`
@@ -135,17 +133,6 @@ func (q *Company) Validate(includeSetting ...bool) error {
 	}
 	now := time.Now().In(time.Local)
 	if q.VacationMode {
-		if q.RawVacationStartDate = strings.TrimSpace(q.RawVacationStartDate); q.RawVacationStartDate == "" {
-			return errors.New("vacation_start_date: is required")
-		}
-		vacationStartDate, err := time.Parse(time.RFC3339, helper.Sprintf("%sT00:00:00%s", q.RawVacationStartDate, now.Format("Z07:00")))
-		if err != nil {
-			return fmt.Errorf("vacation_start_date: should use format '%s'", time.DateOnly)
-		}
-		q.VacationStartDate = &vacationStartDate
-		if q.VacationStartDate.Before(now) {
-			return errors.New("vacation_start_date: should equal or exceed current date")
-		}
 		if q.RawVacationEndDate = strings.TrimSpace(q.RawVacationEndDate); q.RawVacationEndDate == "" {
 			return errors.New("vacation_end_date: is required")
 		}
@@ -154,11 +141,10 @@ func (q *Company) Validate(includeSetting ...bool) error {
 			return fmt.Errorf("vacation_end_date: should use format '%s'", time.DateOnly)
 		}
 		q.VacationEndDate = &vacationEndDate
-		if q.VacationEndDate.Before(*q.VacationStartDate) {
+		if q.VacationEndDate.Before(now) {
 			return errors.New("vacation_end_date: should equal or exceed vacation_start_date")
 		}
 	} else {
-		q.VacationStartDate = nil
 		q.VacationEndDate = nil
 	}
 	if q.RawPaymentTerms = strings.TrimSpace(q.RawPaymentTerms); q.RawPaymentTerms == "" {
@@ -215,9 +201,6 @@ func (q *Company) Populate() *Company {
 		q.RawBillingInterval = q.BillingInterval.String()
 	}
 	q.RawSubscriptionStatus = q.SubscriptionStatus.String()
-	if q.VacationStartDate != nil {
-		q.RawVacationStartDate = q.VacationStartDate.In(time.Local).Format(time.DateOnly)
-	}
 	if q.VacationEndDate != nil {
 		q.RawVacationEndDate = q.VacationEndDate.In(time.Local).Format(time.DateOnly)
 	}

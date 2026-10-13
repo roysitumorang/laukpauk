@@ -194,7 +194,6 @@ func init() {
 				, subscription_end_date timestamp with time zone
 				, telegram_bot_token character varying UNIQUE
 				, vacation_mode BOOLEAN NOT NULL
-				, vacation_start_date timestamp with time zone
 				, vacation_end_date timestamp with time zone
 				, voucher_enabled BOOLEAN NOT NULL
 				, referral_points_enabled BOOLEAN NOT NULL
@@ -298,7 +297,6 @@ func init() {
 				, subscription_status
 				, telegram_bot_token
 				, vacation_mode
-				, vacation_start_date
 				, vacation_end_date
 				, voucher_enabled
 				, referral_points_enabled
@@ -325,8 +323,8 @@ func init() {
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-				, $21, $22, $23, $24, $25, tstzrange($26, $27, '[]'), $28, $29, $30
-				, $31, $32, $33
+				, $21, $22, $23, $24, tstzrange($25, $26, '[]'), $27, $28, $29, $30
+				, $31, $32
 			)`,
 			uuid.Nil(),
 			company.Name,
@@ -336,7 +334,6 @@ func init() {
 			company.SubscriptionStatus,
 			company.TelegramBotToken,
 			company.VacationMode,
-			company.VacationStartDate,
 			company.VacationEndDate,
 			company.VoucherEnabled,
 			company.ReferralPointsEnabled,
@@ -418,7 +415,6 @@ func init() {
 				, subscription_status
 				, telegram_bot_token
 				, vacation_mode
-				, vacation_start_date
 				, vacation_end_date
 				, voucher_enabled
 				, referral_points_enabled
@@ -444,8 +440,7 @@ func init() {
 			) VALUES (
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-				, $21, $22, $23, $24, tstzrange($25, $26, '[]'), $27, $28, $29, $30
-				, $31
+				, $21, $22, $23, tstzrange($24, $25, '[]'), $26, $27, $28, $29, $30
 			)
 			RETURNING id`,
 			company.Name,
@@ -455,7 +450,6 @@ func init() {
 			company.SubscriptionStatus,
 			company.TelegramBotToken,
 			company.VacationMode,
-			company.VacationStartDate,
 			company.VacationEndDate,
 			company.VoucherEnabled,
 			company.ReferralPointsEnabled,

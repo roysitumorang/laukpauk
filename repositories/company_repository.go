@@ -101,7 +101,6 @@ func (q *companyRepository) FindCompanies(
 		, subscription_end_date
 		, telegram_bot_token
 		, vacation_mode
-		, vacation_start_date
 		, vacation_end_date
 		, voucher_enabled
 		, referral_points_enabled
@@ -192,7 +191,6 @@ func (q *companyRepository) FindCompanies(
 			&company.SubscriptionEndDate,
 			&company.TelegramBotToken,
 			&company.VacationMode,
-			&company.VacationStartDate,
 			&company.VacationEndDate,
 			&company.VoucherEnabled,
 			&company.ReferralPointsEnabled,
@@ -256,7 +254,6 @@ func (q *companyRepository) FindCompany(
 			, subscription_end_date
 			, telegram_bot_token
 			, vacation_mode
-			, vacation_start_date
 			, vacation_end_date
 			, voucher_enabled
 			, referral_points_enabled
@@ -300,7 +297,6 @@ func (q *companyRepository) FindCompany(
 		&response.SubscriptionEndDate,
 		&response.TelegramBotToken,
 		&response.VacationMode,
-		&response.VacationStartDate,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
@@ -358,7 +354,6 @@ func (q *companyRepository) CreateCompany(
 			, subscription_end_date
 			, telegram_bot_token
 			, vacation_mode
-			, vacation_start_date
 			, vacation_end_date
 			, voucher_enabled
 			, referral_points_enabled
@@ -384,8 +379,8 @@ func (q *companyRepository) CreateCompany(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27, tstzrange($28, $29, '[]'), $30
-			, $31, $32, $33, $34
+			, $21, $22, $23, $24, $25, $26, tstzrange($27, $28, '[]'), $29, $30
+			, $31, $32, $33
 		)
 		RETURNING id
 			, name
@@ -398,7 +393,6 @@ func (q *companyRepository) CreateCompany(
 			, subscription_end_date
 			, telegram_bot_token
 			, vacation_mode
-			, vacation_start_date
 			, vacation_end_date
 			, voucher_enabled
 			, referral_points_enabled
@@ -435,7 +429,6 @@ func (q *companyRepository) CreateCompany(
 		request.SubscriptionEndDate,
 		request.TelegramBotToken,
 		request.VacationMode,
-		request.VacationStartDate,
 		request.VacationEndDate,
 		request.VoucherEnabled,
 		request.ReferralPointsEnabled,
@@ -471,7 +464,6 @@ func (q *companyRepository) CreateCompany(
 		&response.SubscriptionEndDate,
 		&response.TelegramBotToken,
 		&response.VacationMode,
-		&response.VacationStartDate,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
@@ -538,7 +530,6 @@ func (q *companyRepository) UpdateCompany(
 			, subscription_end_date
 			, telegram_bot_token
 			, vacation_mode
-			, vacation_start_date
 			, vacation_end_date
 			, voucher_enabled
 			, referral_points_enabled
@@ -581,7 +572,6 @@ func (q *companyRepository) UpdateCompany(
 		&response.SubscriptionEndDate,
 		&response.TelegramBotToken,
 		&response.VacationMode,
-		&response.VacationStartDate,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
@@ -680,25 +670,25 @@ func (q *companyRepository) UpdateCompany(
 		}
 		_, _ = fmt.Fprintf(sb, " subscription_end_date = $%d", n)
 	}
+	if (response.TelegramBotToken == nil &&
+		request.TelegramBotToken != nil) ||
+		(response.TelegramBotToken != nil &&
+			request.TelegramBotToken == nil) ||
+		(response.TelegramBotToken != nil &&
+			request.TelegramBotToken != nil &&
+			*response.TelegramBotToken != *request.TelegramBotToken) {
+		params = append(params, request.TelegramBotToken)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " telegram_bot_token = $%d", n)
+	}
 	if response.VacationMode != request.VacationMode {
 		params = append(params, request.VacationMode)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " vacation_mode = $%d", n)
-	}
-	if (response.VacationStartDate == nil &&
-		request.VacationStartDate != nil) ||
-		(response.VacationStartDate != nil &&
-			request.VacationStartDate == nil) ||
-		(response.VacationStartDate != nil &&
-			request.VacationStartDate != nil &&
-			!response.VacationStartDate.Equal(*request.VacationStartDate)) {
-		params = append(params, request.VacationStartDate)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " vacation_start_date = $%d", n)
 	}
 	if (response.VacationEndDate == nil &&
 		request.VacationEndDate != nil) ||
@@ -870,7 +860,6 @@ func (q *companyRepository) UpdateCompany(
 			, subscription_end_date
 			, telegram_bot_token
 			, vacation_mode
-			, vacation_start_date
 			, vacation_end_date
 			, voucher_enabled
 			, referral_points_enabled
@@ -911,7 +900,6 @@ func (q *companyRepository) UpdateCompany(
 		&response.SubscriptionEndDate,
 		&response.TelegramBotToken,
 		&response.VacationMode,
-		&response.VacationStartDate,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
@@ -981,7 +969,6 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, subscription_end_date
 			, telegram_bot_token
 			, vacation_mode
-			, vacation_start_date
 			, vacation_end_date
 			, voucher_enabled
 			, referral_points_enabled
@@ -1024,7 +1011,6 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.SubscriptionEndDate,
 		&response.TelegramBotToken,
 		&response.VacationMode,
-		&response.VacationStartDate,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
@@ -1077,7 +1063,6 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, subscription_end_date
 			, telegram_bot_token
 			, vacation_mode
-			, vacation_start_date
 			, vacation_end_date
 			, voucher_enabled
 			, referral_points_enabled
@@ -1120,7 +1105,6 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.SubscriptionEndDate,
 		&response.TelegramBotToken,
 		&response.VacationMode,
-		&response.VacationStartDate,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,

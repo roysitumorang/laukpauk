@@ -328,11 +328,16 @@ func (q *companyController) AdminUpdate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	request.ID = company.ID
-	request.UpdatedAt = time.Now()
-	request.DeactivatedBy = nil
-	request.DeactivatedAt = nil
-	request.DeactivationReason = nil
+	company.Name = request.Name
+	company.Android = request.Android
+	company.Subdomain = request.Subdomain
+	company.Billed = request.Billed
+	company.TelegramBotToken = request.TelegramBotToken
+	company.WhatsappPhoneNumber = request.WhatsappPhoneNumber
+	company.UpdatedAt = time.Now()
+	company.DeactivatedBy = nil
+	company.DeactivatedAt = nil
+	company.DeactivationReason = nil
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -349,7 +354,7 @@ func (q *companyController) AdminUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.companyService.UpdateCompany(ctx, tx, request); err != nil {
+	if _, err = q.companyService.UpdateCompany(ctx, tx, company); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateCompany")
 		return c.Render("admin/company_edit", params.Push(
 			"flash", flash.Danger(err.Error()),

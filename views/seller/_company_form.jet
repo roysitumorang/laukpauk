@@ -57,13 +57,9 @@
 				<label for="vacation_mode" class="label-title cp">Vacation Mode</label>
 			</div>
 			<div class="form-group">
-				<label for="vacation_date" class="label-title">Masa Berlaku (Berlaku Mulai - Berlaku Sampai)</label>
-				<div class="input-group" id="vacation_date">
-					<input type="date" name="vacation_start_date" value="{{ request.RawVacationStartDate }}" id="vacation_start_date"
-						class="form-control date-picker" />
-					<input type="date" name="vacation_end_date" value="{{ request.RawVacationEndDate }}" id="vacation_end_date"
-						class="form-control date-picker" />
-				</div>
+				<label for="vacation_end_date" class="label-title">Tanggal Terakhir Libur</label>
+				<input type="date" name="vacation_end_date" value="{{ if request.VacationMode }}{{ request.RawVacationEndDate }}{{ end }}" id="vacation_end_date"
+					class="form-control date-picker"{{ if !request.VacationMode }} disabled{{ end }} />
 			</div>
 			<div class="form-group">
 				<input type="checkbox" name="voucher_enabled" id="voucher_enabled" class="mr-2"{{ if request.VoucherEnabled }} checked{{ end }} />
@@ -132,6 +128,20 @@
 			altInput: true,
 			altFormat: "j F Y",
 			dateFormat: "Y-m-d",
+		});
+		const vacationMode = document.getElementById("vacation_mode");
+		const vacationEndDate = document.getElementById("vacation_end_date");
+		const nextSibling = vacationEndDate.nextElementSibling
+		vacationMode.addEventListener("change", (event) => {
+			if (event.target.checked) {
+				vacationEndDate.removeAttribute("disabled");
+				nextSibling.removeAttribute("disabled");
+				return;
+			}
+			vacationEndDate.value = "";
+			vacationEndDate.setAttribute("disabled", "disabled");
+			nextSibling.value = "";
+			nextSibling.setAttribute("disabled", "disabled");
 		});
 	});
 </script>
