@@ -198,7 +198,7 @@ func init() {
 				, voucher_enabled BOOLEAN NOT NULL
 				, referral_points_enabled BOOLEAN NOT NULL
 				, referral_points_minimum_shopping_cost bigint NOT NULL
-				, referral_points_per_referee bigint NOT NULL
+				, referral_points_amount bigint NOT NULL
 				, referral_points_slots bigint[] NOT NULL
 				, referral_points_expense bigint NOT NULL
 				, reward_points_accumulation_window_in_days smallint NOT NULL
@@ -301,7 +301,7 @@ func init() {
 				, voucher_enabled
 				, referral_points_enabled
 				, referral_points_minimum_shopping_cost
-				, referral_points_per_referee
+				, referral_points_amount
 				, referral_points_slots
 				, referral_points_expense
 				, reward_points_accumulation_window_in_days
@@ -338,7 +338,7 @@ func init() {
 			company.VoucherEnabled,
 			company.ReferralPointsEnabled,
 			company.ReferralPointsMinimumShoppingCost,
-			company.ReferralPointsPerReferee,
+			company.ReferralPointsAmount,
 			company.ReferralPointsSlots,
 			company.ReferralPointsExpense,
 			company.RewardPointsAccumulationWindowInDays,
@@ -372,7 +372,7 @@ func init() {
 			VoucherEnabled:                       true,
 			ReferralPointsEnabled:                true,
 			ReferralPointsMinimumShoppingCost:    60_000,
-			ReferralPointsPerReferee:             25_000,
+			ReferralPointsAmount:                 25_000,
 			ReferralPointsSlots:                  []int64{10_000, 15_000},
 			RewardPointsAccumulationWindowInDays: 30,
 			DeliveryOriginLongitude:              longitude,
@@ -419,7 +419,7 @@ func init() {
 				, voucher_enabled
 				, referral_points_enabled
 				, referral_points_minimum_shopping_cost
-				, referral_points_per_referee
+				, referral_points_amount
 				, referral_points_slots
 				, referral_points_expense
 				, reward_points_accumulation_window_in_days
@@ -454,7 +454,7 @@ func init() {
 			company.VoucherEnabled,
 			company.ReferralPointsEnabled,
 			company.ReferralPointsMinimumShoppingCost,
-			company.ReferralPointsPerReferee,
+			company.ReferralPointsAmount,
 			company.ReferralPointsSlots,
 			company.ReferralPointsExpense,
 			company.RewardPointsAccumulationWindowInDays,

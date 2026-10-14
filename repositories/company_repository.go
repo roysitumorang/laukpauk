@@ -105,7 +105,7 @@ func (q *companyRepository) FindCompanies(
 		, voucher_enabled
 		, referral_points_enabled
 		, referral_points_minimum_shopping_cost
-		, referral_points_per_referee
+		, referral_points_amount
 		, referral_points_slots
 		, referral_points_expense
 		, reward_points_accumulation_window_in_days
@@ -195,7 +195,7 @@ func (q *companyRepository) FindCompanies(
 			&company.VoucherEnabled,
 			&company.ReferralPointsEnabled,
 			&company.ReferralPointsMinimumShoppingCost,
-			&company.ReferralPointsPerReferee,
+			&company.ReferralPointsAmount,
 			&company.ReferralPointsSlots,
 			&company.ReferralPointsExpense,
 			&company.RewardPointsAccumulationWindowInDays,
@@ -258,7 +258,7 @@ func (q *companyRepository) FindCompany(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
+			, referral_points_amount
 			, referral_points_slots
 			, referral_points_expense
 			, reward_points_accumulation_window_in_days
@@ -301,7 +301,7 @@ func (q *companyRepository) FindCompany(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
+		&response.ReferralPointsAmount,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsExpense,
 		&response.RewardPointsAccumulationWindowInDays,
@@ -358,7 +358,7 @@ func (q *companyRepository) CreateCompany(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
+			, referral_points_amount
 			, referral_points_slots
 			, referral_points_expense
 			, reward_points_accumulation_window_in_days
@@ -397,7 +397,7 @@ func (q *companyRepository) CreateCompany(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
+			, referral_points_amount
 			, referral_points_slots
 			, referral_points_expense
 			, reward_points_accumulation_window_in_days
@@ -433,7 +433,7 @@ func (q *companyRepository) CreateCompany(
 		request.VoucherEnabled,
 		request.ReferralPointsEnabled,
 		request.ReferralPointsMinimumShoppingCost,
-		request.ReferralPointsPerReferee,
+		request.ReferralPointsAmount,
 		request.ReferralPointsSlots,
 		request.ReferralPointsExpense,
 		request.RewardPointsAccumulationWindowInDays,
@@ -468,7 +468,7 @@ func (q *companyRepository) CreateCompany(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
+		&response.ReferralPointsAmount,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsExpense,
 		&response.RewardPointsAccumulationWindowInDays,
@@ -534,7 +534,7 @@ func (q *companyRepository) UpdateCompany(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
+			, referral_points_amount
 			, referral_points_slots
 			, referral_points_expense
 			, reward_points_accumulation_window_in_days
@@ -576,7 +576,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
+		&response.ReferralPointsAmount,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsExpense,
 		&response.RewardPointsAccumulationWindowInDays,
@@ -724,12 +724,12 @@ func (q *companyRepository) UpdateCompany(
 		}
 		_, _ = fmt.Fprintf(sb, " referral_points_minimum_shopping_cost = $%d", n)
 	}
-	if response.ReferralPointsPerReferee != request.ReferralPointsPerReferee {
-		params = append(params, request.ReferralPointsPerReferee)
+	if response.ReferralPointsAmount != request.ReferralPointsAmount {
+		params = append(params, request.ReferralPointsAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " referral_points_per_referee = $%d", n)
+		_, _ = fmt.Fprintf(sb, " referral_points_amount = $%d", n)
 	}
 	if slices.Compare(response.ReferralPointsSlots, request.ReferralPointsSlots) != 0 {
 		if request.ReferralPointsSlots == nil {
@@ -864,7 +864,7 @@ func (q *companyRepository) UpdateCompany(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
+			, referral_points_amount
 			, referral_points_slots
 			, referral_points_expense
 			, reward_points_accumulation_window_in_days
@@ -904,7 +904,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
+		&response.ReferralPointsAmount,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsExpense,
 		&response.RewardPointsAccumulationWindowInDays,
@@ -973,7 +973,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
+			, referral_points_amount
 			, referral_points_slots
 			, referral_points_expense
 			, reward_points_accumulation_window_in_days
@@ -1015,7 +1015,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
+		&response.ReferralPointsAmount,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsExpense,
 		&response.RewardPointsAccumulationWindowInDays,
@@ -1067,7 +1067,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, voucher_enabled
 			, referral_points_enabled
 			, referral_points_minimum_shopping_cost
-			, referral_points_per_referee
+			, referral_points_amount
 			, referral_points_slots
 			, referral_points_expense
 			, reward_points_accumulation_window_in_days
@@ -1109,7 +1109,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.VoucherEnabled,
 		&response.ReferralPointsEnabled,
 		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsPerReferee,
+		&response.ReferralPointsAmount,
 		&response.ReferralPointsSlots,
 		&response.ReferralPointsExpense,
 		&response.RewardPointsAccumulationWindowInDays,

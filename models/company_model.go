@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"uuid"
@@ -11,6 +12,7 @@ import (
 	"github.com/govalues/decimal"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 var ErrCompanyNotFound = errors.New("company not found")
@@ -80,8 +82,9 @@ type Company struct {
 	VoucherEnabled                        bool               `json:"voucher_enabled" form:"voucher_enabled"`
 	ReferralPointsEnabled                 bool               `json:"referral_points_enabled" form:"referral_points_enabled"`
 	ReferralPointsMinimumShoppingCost     int64              `json:"referral_points_minimum_shopping_cost" form:"referral_points_minimum_shopping_cost"`
-	ReferralPointsPerReferee              int64              `json:"referral_points_per_referee" form:"referral_points_per_referee"`
-	ReferralPointsSlots                   []int64            `json:"referral_points_slots" form:"referral_points_slots"`
+	ReferralPointsAmount                  int64              `json:"referral_points_amount" form:"referral_points_amount"`
+	ReferralPointsSlots                   []int64            `json:"referral_points_slots" form:"-"`
+	RawReferralPointsSlots                string             `json:"-" form:"referral_points_slots"`
 	ReferralPointsExpense                 int64              `json:"referral_points_expense" form:"referral_points_expense"`
 	RewardPointsAccumulationWindowInDays  int16              `json:"reward_points_accumulation_window_in_days" form:"reward_points_accumulation_window_in_days"`
 	DeliveryOriginLongitude               decimal.Decimal    `json:"delivery_origin_longitude" form:"delivery_origin_longitude"`
@@ -95,9 +98,9 @@ type Company struct {
 	RawMaximumDeliveryTime                string             `json:"-" form:"maximum_delivery_time"`
 	TransactionAutoWithdrawalEnabled      bool               `json:"-" form:"transaction_auto_withdrawal_enabled"`
 	TransactionAutoWithdrawalWindowMin    *time.Time         `json:"transaction_auto_withdrawal_window_min" form:"-"`
-	RawTransactionAutoWithdrawalWindowMin *string            `json:"-" form:"transaction_auto_withdrawal_window_min"`
+	RawTransactionAutoWithdrawalWindowMin string             `json:"-" form:"transaction_auto_withdrawal_window_min"`
 	TransactionAutoWithdrawalWindowMax    *time.Time         `json:"transaction_auto_withdrawal_window_max" form:"-"`
-	RawTransactionAutoWithdrawalWindowMax *string            `json:"-" form:"transaction_auto_withdrawal_window_max"`
+	RawTransactionAutoWithdrawalWindowMax string             `json:"-" form:"transaction_auto_withdrawal_window_max"`
 	OwnerID                               uuid.UUID          `json:"-" form:"-"`
 	CreatedBy                             uuid.UUID          `json:"-" form:"-"`
 	CreatedAt                             time.Time          `json:"-" form:"-"`
@@ -142,10 +145,28 @@ func (q *Company) Validate(includeSetting ...bool) error {
 		}
 		q.VacationEndDate = &vacationEndDate
 		if q.VacationEndDate.Before(now) {
-			return errors.New("vacation_end_date: should equal or exceed vacation_start_date")
+			return errors.New("vacation_end_date: should equal or exceed current date")
 		}
 	} else {
 		q.VacationEndDate = nil
+	}
+	q.ReferralPointsSlots = []int64{}
+	if q.ReferralPointsEnabled {
+		var referralPointsSlots int64
+		var referralPointSlot int64
+		q.RawReferralPointsSlots = strings.TrimSpace(q.RawReferralPointsSlots)
+		if rawReferralPointsSlots := strings.Split(q.RawReferralPointsSlots, ","); len(rawReferralPointsSlots) > 0 && rawReferralPointsSlots[0] != "" {
+			for i := range rawReferralPointsSlots {
+				if referralPointSlot, err = strconv.ParseInt(rawReferralPointsSlots[i], 10, 64); err != nil || referralPointSlot < 1 {
+					return errors.New("referral_points_slots: is invalid")
+				}
+				q.ReferralPointsSlots = append(q.ReferralPointsSlots, referralPointSlot)
+				referralPointsSlots += referralPointSlot
+			}
+		}
+		if q.ReferralPointsAmount != referralPointsSlots {
+			return errors.New("referral_points_slots: should match referral_points_amount")
+		}
 	}
 	if q.RawPaymentTerms = strings.TrimSpace(q.RawPaymentTerms); q.RawPaymentTerms == "" {
 		return errors.New("payment_terms: is required")
@@ -160,34 +181,42 @@ func (q *Company) Validate(includeSetting ...bool) error {
 		return errors.New("maximum_delivery_time: is invalid")
 	}
 	if q.TransactionAutoWithdrawalEnabled {
-		if q.TransactionAutoWithdrawalWindowMin == nil {
+		if q.RawTransactionAutoWithdrawalWindowMin = strings.TrimSpace(q.RawTransactionAutoWithdrawalWindowMin); q.RawTransactionAutoWithdrawalWindowMin == "" {
 			return errors.New("transaction_auto_withdrawal_window_min: is required")
 		}
-		if q.TransactionAutoWithdrawalWindowMax == nil {
+		transactionAutoWithdrawalWindowMin, err := time.ParseInLocation(time.TimeOnly, q.RawTransactionAutoWithdrawalWindowMin, time.Local)
+		if err != nil {
+			return fmt.Errorf("transaction_auto_withdrawal_window_min: should use format '%s'", time.TimeOnly)
+		}
+		if q.RawTransactionAutoWithdrawalWindowMax = strings.TrimSpace(q.RawTransactionAutoWithdrawalWindowMax); q.RawTransactionAutoWithdrawalWindowMax == "" {
 			return errors.New("transaction_auto_withdrawal_window_max: is required")
 		}
-		if !q.TransactionAutoWithdrawalWindowMax.After(*q.TransactionAutoWithdrawalWindowMin) {
+		transactionAutoWithdrawalWindowMax, err := time.ParseInLocation(time.TimeOnly, q.RawTransactionAutoWithdrawalWindowMax, time.Local)
+		if err != nil {
+			return fmt.Errorf("transaction_auto_withdrawal_window_max: should use format '%s'", time.TimeOnly)
+		}
+		if !transactionAutoWithdrawalWindowMax.After(transactionAutoWithdrawalWindowMin) {
 			return errors.New("transaction_auto_withdrawal_window_max: should exceed transaction_auto_withdrawal_window_min")
 		}
 		q.TransactionAutoWithdrawalWindowMin = new(time.Date(
 			now.Year(),
 			now.Month(),
 			now.Day(),
-			q.TransactionAutoWithdrawalWindowMin.Hour(),
-			q.TransactionAutoWithdrawalWindowMin.Minute(),
-			q.TransactionAutoWithdrawalWindowMin.Second(),
-			q.TransactionAutoWithdrawalWindowMin.Nanosecond(),
-			q.TransactionAutoWithdrawalWindowMin.Location(),
+			transactionAutoWithdrawalWindowMin.Hour(),
+			transactionAutoWithdrawalWindowMin.Minute(),
+			transactionAutoWithdrawalWindowMin.Second(),
+			transactionAutoWithdrawalWindowMin.Nanosecond(),
+			transactionAutoWithdrawalWindowMin.Location(),
 		))
 		q.TransactionAutoWithdrawalWindowMax = new(time.Date(
 			now.Year(),
 			now.Month(),
 			now.Day(),
-			q.TransactionAutoWithdrawalWindowMax.Hour(),
-			q.TransactionAutoWithdrawalWindowMax.Minute(),
-			q.TransactionAutoWithdrawalWindowMax.Second(),
-			q.TransactionAutoWithdrawalWindowMax.Nanosecond(),
-			q.TransactionAutoWithdrawalWindowMax.Location(),
+			transactionAutoWithdrawalWindowMax.Hour(),
+			transactionAutoWithdrawalWindowMax.Minute(),
+			transactionAutoWithdrawalWindowMax.Second(),
+			transactionAutoWithdrawalWindowMax.Nanosecond(),
+			transactionAutoWithdrawalWindowMax.Location(),
 		))
 	} else {
 		q.TransactionAutoWithdrawalWindowMin = nil
@@ -204,17 +233,31 @@ func (q *Company) Populate() *Company {
 	if q.VacationEndDate != nil {
 		q.RawVacationEndDate = q.VacationEndDate.In(time.Local).Format(time.DateOnly)
 	}
+	if len(q.ReferralPointsSlots) > 0 {
+		sb := pools.BuilderPool.Get()
+		defer func() {
+			sb.Reset()
+			pools.BuilderPool.Put(sb)
+		}()
+		for i := range q.ReferralPointsSlots {
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "%d", q.ReferralPointsSlots[i])
+		}
+		q.RawReferralPointsSlots = sb.String()
+	}
 	q.RawPaymentTerms = q.PaymentTerms.String()
 	q.RawMaximumDeliveryTime = q.MaximumDeliveryTime.String()
 	if q.TransactionAutoWithdrawalWindowMin != nil {
-		q.RawTransactionAutoWithdrawalWindowMin = new(q.TransactionAutoWithdrawalWindowMin.
+		q.RawTransactionAutoWithdrawalWindowMin = q.TransactionAutoWithdrawalWindowMin.
 			In(time.Local).
-			Format(time.TimeOnly))
+			Format(time.TimeOnly)
 	}
 	if q.TransactionAutoWithdrawalWindowMax != nil {
-		q.RawTransactionAutoWithdrawalWindowMax = new(q.TransactionAutoWithdrawalWindowMax.
+		q.RawTransactionAutoWithdrawalWindowMax = q.TransactionAutoWithdrawalWindowMax.
 			In(time.Local).
-			Format(time.TimeOnly))
+			Format(time.TimeOnly)
 	}
 	return q
 }

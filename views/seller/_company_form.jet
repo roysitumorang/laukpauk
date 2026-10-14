@@ -70,6 +70,46 @@
 				<label for="referral_points_enabled" class="label-title cp">Referral Points Enabled</label>
 			</div>
 			<div class="form-group">
+				<label for="referral_points_minimum_shopping_cost" class="label-title">Referral Points Minimum Shopping Cost (IDR)</label>
+				<input type="number"
+					name="referral_points_minimum_shopping_cost"
+					value="{{ request.ReferralPointsMinimumShoppingCost }}"
+					id="referral_points_minimum_shopping_cost"
+					class="form-control"
+					placeholder="Referral Points Minimum Shopping Cost"
+					min="0" />
+			</div>
+			<div class="form-group">
+				<label for="referral_points_amount" class="label-title">Referral Points Amount</label>
+				<input type="number"
+					name="referral_points_amount"
+					value="{{ request.ReferralPointsAmount }}"
+					id="referral_points_amount"
+					class="form-control"
+					placeholder="Referral Points Amount"
+					min="0" />
+			</div>
+			<div class="form-group">
+				<label for="referral_points_slots" class="label-title">Referral Points Slots (separated by comma)</label>
+				<input type="text"
+					name="referral_points_slots"
+					value="{{ request.RawReferralPointsSlots }}"
+					id="referral_points_slots"
+					class="form-control"
+					placeholder="Referral Points Slots"
+					min="0" />
+			</div>
+			<div class="form-group">
+				<label for="reward_points_accumulation_window_in_days" class="label-title">Reward Points Accumulation Window (in days)</label>
+				<input type="number"
+					name="reward_points_accumulation_window_in_days"
+					value="{{ request.RewardPointsAccumulationWindowInDays }}"
+					id="reward_points_accumulation_window_in_days"
+					class="form-control"
+					placeholder="Reward Points Accumulation Window"
+					min="0" />
+			</div>
+			<div class="form-group">
 				<label for="delivery_origin" class="label-title">Delivery Origin (Longitude - Latitude)</label>
 				<div class="input-group" id="delivery_origin">
 					<input type="text" name="delivery_origin_longitude" value="{{ request.DeliveryOriginLongitude }}" id="delivery_origin_longitude"
@@ -116,6 +156,19 @@
 					class="form-control"
 					placeholder="2h" />
 			</div>
+			<div class="form-group">
+				<input type="checkbox" name="transaction_auto_withdrawal_enabled" id="transaction_auto_withdrawal_enabled" class="mr-2"{{ if request.TransactionAutoWithdrawalEnabled }} checked{{ end }} />
+				<label for="transaction_auto_withdrawal_enabled" class="label-title cp">Transaction Auto Withdrawal Enabled</label>
+			</div>
+			<div class="form-group">
+				<label for="transaction_auto_withdrawal_window" class="label-title">Transaction Auto Withdrawal Effective Window (Mulai - Sampai)</label>
+				<div class="input-group" id="transaction_auto_withdrawal_window">
+					<input type="time" name="transaction_auto_withdrawal_window_min" value="{{ request.RawTransactionAutoWithdrawalWindowMin }}" id="transaction_auto_withdrawal_window_min"
+						step="1" class="form-control time-picker" required />
+					<input type="time" name="transaction_auto_withdrawal_window_max" value="{{ request.RawTransactionAutoWithdrawalWindowMax }}" id="transaction_auto_withdrawal_window_max"
+						step="1" class="form-control time-picker" required />
+				</div>
+			</div>
 			<button type="submit" class="btn btn-success mr-1">
 				Simpan Perubahan Data Company
 			</button>
@@ -129,19 +182,49 @@
 			altFormat: "j F Y",
 			dateFormat: "Y-m-d",
 		});
+		flatpickr(".time-picker", {
+			noCalendar: true,
+			enableTime: true,
+			enableSeconds: true,
+			time_24hr: true,
+			dateFormat: "H:i:S",
+			minuteIncrement: 1,
+		});
 		const vacationMode = document.getElementById("vacation_mode");
 		const vacationEndDate = document.getElementById("vacation_end_date");
-		const nextSibling = vacationEndDate.nextElementSibling
+		const vacationEndDateNextSibling = vacationEndDate.nextElementSibling
 		vacationMode.addEventListener("change", (event) => {
 			if (event.target.checked) {
 				vacationEndDate.removeAttribute("disabled");
-				nextSibling.removeAttribute("disabled");
+				vacationEndDateNextSibling.removeAttribute("disabled");
 				return;
 			}
 			vacationEndDate.value = "";
 			vacationEndDate.setAttribute("disabled", "disabled");
-			nextSibling.value = "";
-			nextSibling.setAttribute("disabled", "disabled");
+			vacationEndDateNextSibling.value = "";
+			vacationEndDateNextSibling.setAttribute("disabled", "disabled");
+		});
+		const transactionAutoWithdrawalEnabled = document.getElementById("transaction_auto_withdrawal_enabled");
+		const transactionAutoWithdrawalWindowMin = document.getElementById("transaction_auto_withdrawal_window_min");
+		const transactionAutoWithdrawalWindowMinNextSibling = transactionAutoWithdrawalWindowMin.nextElementSibling;
+		const transactionAutoWithdrawalWindowMax = document.getElementById("transaction_auto_withdrawal_window_max");
+		const transactionAutoWithdrawalWindowMaxNextSibling = transactionAutoWithdrawalWindowMax.nextElementSibling;
+		transactionAutoWithdrawalEnabled.addEventListener("change", (event) => {
+			if (event.target.checked) {
+				transactionAutoWithdrawalWindowMin.removeAttribute("disabled");
+				transactionAutoWithdrawalWindowMinNextSibling.removeAttribute("disabled");
+				transactionAutoWithdrawalWindowMax.removeAttribute("disabled");
+				transactionAutoWithdrawalWindowMaxNextSibling.removeAttribute("disabled");
+				return;
+			}
+			transactionAutoWithdrawalWindowMin.value = "";
+			transactionAutoWithdrawalWindowMin.setAttribute("disabled", "disabled");
+			transactionAutoWithdrawalWindowMinNextSibling.value = "";
+			transactionAutoWithdrawalWindowMinNextSibling.setAttribute("disabled", "disabled");
+			transactionAutoWithdrawalWindowMax.value = "";
+			transactionAutoWithdrawalWindowMax.setAttribute("disabled", "disabled");
+			transactionAutoWithdrawalWindowMaxNextSibling.value = "";
+			transactionAutoWithdrawalWindowMaxNextSibling.setAttribute("disabled", "disabled");
 		});
 	});
 </script>
