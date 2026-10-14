@@ -81,13 +81,13 @@
 									<tr class="text-sm">
 										<td class="border-top-0 text-left">Status Transaksi</td>
 										<td class="border-top-0 text-left">
-											{{ transaction.TransactionStatus.String() }}
+											{{ transaction.Status.String() }}
 										</td>
 									</tr>
 									<tr class="text-sm">
 										<td class="border-top-0 text-left">Ongkos Kirim</td>
 										<td class="border-top-0 text-left">
-											<b class="text-sm text-info">Rp. {{ transaction.DeliveryCost | Comma }}</b>
+											<b class="text-sm text-info">Rp. {{ transaction.DeliveryEstimatedCost | Comma }}</b>
 										</td>
 									</tr>
 									<tr class="text-sm">

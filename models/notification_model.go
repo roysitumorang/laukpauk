@@ -35,6 +35,10 @@ type Notification struct {
 	SellerID          uuid.UUID         `json:"-" form:"seller_id"`
 	BuyerID           uuid.UUID         `json:"-" form:"buyer_id"`
 	NotificationType  NotificationType  `json:"-" form:"-"`
+	AdminLink         *string           `json:"-" form:"-"`
+	SellerLink        *string           `json:"-" form:"-"`
+	BuyerLink         *string           `json:"-" form:"-"`
+	LinkID            *uuid.UUID        `json:"-" form:"-"`
 	Subject           string            `json:"-" form:"subject"`
 	Body              string            `json:"-" form:"body"`
 	Photo             *string           `json:"-" form:"photo"`

@@ -497,6 +497,8 @@ func (q *transactionService) CreateTransaction(
 			&models.Notification{
 				SellerID:         seller.ID,
 				NotificationType: models.NotificationTypeTransaction,
+				SellerLink:       new(helper.Sprintf("/sellers/transactions/%s", response.ID.String())),
+				LinkID:           &response.ID,
 				Subject:          "New Order",
 				Body:             helper.Sprintf(`New Order Reference No "%s"`, response.ReferenceNumber),
 				Params: map[string]string{

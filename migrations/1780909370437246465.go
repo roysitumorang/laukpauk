@@ -1155,6 +1155,10 @@ func init() {
 				, seller_id UUID NOT NULL REFERENCES sellers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, buyer_id UUID NOT NULL REFERENCES buyers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, notification_type character varying NOT NULL
+				, admin_link character varying
+				, seller_link character varying
+				, buyer_link character varying
+				, link_id UUID
 				, subject character varying NOT NULL
 				, body character varying NOT NULL
 				, photo character varying

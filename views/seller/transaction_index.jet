@@ -131,7 +131,7 @@
 									</td>
 									<td class="vam text-left">{{ if row.BuyerNote }}{{ row.BuyerNote }}{{ else }}-{{ end }}</td>
 									<td class="vam text-left">
-										<span class="badge badge-primary">{{ row.TransactionStatus.String() }}</span>
+										<span class="badge badge-primary">{{ row.Status.String() }}</span>
 									</td>
 									<td class="vam text-right">
 										<b class="text-success">Rp. {{ if row.RevisedPaymentAmount }}{{ row.RevisedPaymentAmount | Comma }}{{ else }}0{{ end }}</b>

@@ -347,6 +347,7 @@ func (q *transactionRepository) FindTransactions(
 			return nil, 0, 0, err
 		}
 		i = mapTransactionIDs[transactionItem.TransactionID]
+		transactionItem.RowNo = int64(len(response[i].Items) + 1)
 		response[i].Items = append(response[i].Items, &transactionItem)
 	}
 	return response, total, pages, nil
@@ -575,6 +576,7 @@ func (q *transactionRepository) FindTransaction(
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
+		transactionItem.RowNo = int64(len(response.Items) + 1)
 		response.Items = append(response.Items, &transactionItem)
 	}
 	return &response, nil

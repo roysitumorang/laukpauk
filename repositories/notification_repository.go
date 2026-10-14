@@ -83,6 +83,10 @@ func (q *notificationRepository) FindNotifications(
 		, seller_id
 		, buyer_id
 		, notification_type
+		, admin_link
+		, seller_link
+		, buyer_link
+		, link_id
 		, subject
 		, body
 		, photo
@@ -146,6 +150,10 @@ func (q *notificationRepository) FindNotifications(
 			&notification.SellerID,
 			&notification.BuyerID,
 			&notification.NotificationType,
+			&notification.AdminLink,
+			&notification.SellerLink,
+			&notification.BuyerLink,
+			&notification.LinkID,
 			&notification.Subject,
 			&notification.Body,
 			&notification.Photo,
@@ -187,6 +195,10 @@ func (q *notificationRepository) FindNotification(
 			, seller_id
 			, buyer_id
 			, notification_type
+			, admin_link
+			, seller_link
+			, buyer_link
+			, link_id
 			, subject
 			, body
 			, photo
@@ -206,6 +218,10 @@ func (q *notificationRepository) FindNotification(
 		&response.SellerID,
 		&response.BuyerID,
 		&response.NotificationType,
+		&response.AdminLink,
+		&response.SellerLink,
+		&response.BuyerLink,
+		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
@@ -240,6 +256,10 @@ func (q *notificationRepository) CreateNotification(
 			, seller_id
 			, buyer_id
 			, notification_type
+			, admin_link
+			, seller_link
+			, buyer_link
+			, link_id
 			, subject
 			, body
 			, photo
@@ -248,12 +268,16 @@ func (q *notificationRepository) CreateNotification(
 			, created_by_seller_id
 			, created_by_buyer_id
 			, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id
 			, admin_id
 			, seller_id
 			, buyer_id
 			, notification_type
+			, admin_link
+			, seller_link
+			, buyer_link
+			, link_id
 			, subject
 			, body
 			, photo
@@ -268,6 +292,10 @@ func (q *notificationRepository) CreateNotification(
 		request.SellerID,
 		request.BuyerID,
 		request.NotificationType,
+		request.AdminLink,
+		request.SellerLink,
+		request.BuyerLink,
+		request.LinkID,
 		request.Subject,
 		request.Body,
 		request.Photo,
@@ -282,6 +310,10 @@ func (q *notificationRepository) CreateNotification(
 		&response.SellerID,
 		&response.BuyerID,
 		&response.NotificationType,
+		&response.AdminLink,
+		&response.SellerLink,
+		&response.BuyerLink,
+		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
@@ -314,6 +346,10 @@ func (q *notificationRepository) UpdateNotification(
 			, seller_id
 			, buyer_id
 			, notification_type
+			, admin_link
+			, seller_link
+			, buyer_link
+			, link_id
 			, subject
 			, body
 			, photo
@@ -334,6 +370,10 @@ func (q *notificationRepository) UpdateNotification(
 		&response.SellerID,
 		&response.BuyerID,
 		&response.NotificationType,
+		&response.AdminLink,
+		&response.SellerLink,
+		&response.BuyerLink,
+		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
@@ -393,6 +433,10 @@ func (q *notificationRepository) UpdateNotification(
 			, seller_id
 			, buyer_id
 			, notification_type
+			, admin_link
+			, seller_link
+			, buyer_link
+			, link_id
 			, subject
 			, body
 			, photo
@@ -411,6 +455,10 @@ func (q *notificationRepository) UpdateNotification(
 		&response.SellerID,
 		&response.BuyerID,
 		&response.NotificationType,
+		&response.AdminLink,
+		&response.SellerLink,
+		&response.BuyerLink,
+		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
