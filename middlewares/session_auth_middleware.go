@@ -40,7 +40,7 @@ func AdminSessionAuthMiddleware(
 			}
 			return flash.Redirect(c, sess.Session, "/admin/sessions/new")
 		}
-		sess.Set(models.CurrentAdmin, currentAdmin)
+		c.Locals(models.CurrentAdmin, currentAdmin)
 		_ = sess.Session.SaveWithContext(ctx)
 		if len(adminLevels) > 0 && currentAdmin.AdminLevel != adminLevels[0] {
 			return flash.Danger(models.ErrAccessDenied.Error()).Redirect(c, sess.Session, "/admin")
@@ -51,6 +51,7 @@ func AdminSessionAuthMiddleware(
 
 func SellerSessionAuthMiddleware(
 	sellerService services.SellerService,
+	notificationService services.NotificationService,
 	sellerLevels ...models.SellerLevel,
 ) fiber.Handler {
 	return func(c fiber.Ctx) error {
@@ -79,7 +80,21 @@ func SellerSessionAuthMiddleware(
 			}
 			return flash.Redirect(c, sess.Session, "/seller/otp/new")
 		}
-		sess.Set(models.CurrentSeller, currentSeller)
+		notifications, _, err := notificationService.FindNotifications(
+			ctx,
+			models.NewNotificationFilter().
+				WithSellerIDs(currentSeller.ID).
+				WithReadAtBlank(new(true)),
+		)
+		if err != nil {
+			_ = sess.ResetWithContext(ctx)
+			if c.Method() == fiber.MethodGet {
+				sess.Set("next", c.OriginalURL())
+			}
+			return flash.Redirect(c, sess.Session, "/seller/otp/new")
+		}
+		c.Locals(models.CurrentSeller, currentSeller)
+		c.Locals(models.CurrentNotifications, notifications)
 		_ = sess.Session.SaveWithContext(ctx)
 		if len(sellerLevels) > 0 && currentSeller.SellerLevel != sellerLevels[0] {
 			return flash.Danger(models.ErrAccessDenied.Error()).Redirect(c, sess.Session, "/seller")

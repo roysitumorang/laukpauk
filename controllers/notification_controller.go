@@ -52,7 +52,7 @@ func (q *notificationController) Mount(r fiber.Router) {
 		Get("", q.AdminIndex).
 		Get("/new", q.AdminNew).
 		Post("", q.AdminCreate)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -64,7 +64,7 @@ func (q *notificationController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationController-AdminIndex"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -126,7 +126,7 @@ func (q *notificationController) AdminNew(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationController-AdminNew"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -166,7 +166,7 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationController-AdminCreate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -283,7 +283,8 @@ func (q *notificationController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationController-SellerIndex"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -299,6 +300,7 @@ func (q *notificationController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Push Notifikasi",
 		"limits", models.Limits,
 		"request", request,
@@ -345,7 +347,8 @@ func (q *notificationController) SellerNew(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationController-SellerNew"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -360,6 +363,7 @@ func (q *notificationController) SellerNew(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Kirim Notifikasi",
 		"request", request,
 		"notification", request,
@@ -386,7 +390,8 @@ func (q *notificationController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationController-SellerCreate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -400,6 +405,7 @@ func (q *notificationController) SellerCreate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Kirim Notifikasi",
 		"request", request,
 		"notification", request,
@@ -504,7 +510,7 @@ func (q *notificationController) SellerRead(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationController-SellerRead"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()

@@ -21,22 +21,25 @@ import (
 )
 
 type buyerController struct {
-	sellerService services.SellerService
-	buyerService  services.BuyerService
+	sellerService       services.SellerService
+	buyerService        services.BuyerService
+	notificationService services.NotificationService
 }
 
 func NewBuyerController(
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
+	notificationService services.NotificationService,
 ) *buyerController {
 	return &buyerController{
-		sellerService: sellerService,
-		buyerService:  buyerService,
+		sellerService:       sellerService,
+		buyerService:        buyerService,
+		notificationService: notificationService,
 	}
 }
 
 func (q *buyerController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -50,7 +53,8 @@ func (q *buyerController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-SellerIndex"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -66,6 +70,7 @@ func (q *buyerController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Buyer Laukpauk",
 		"limits", models.Limits,
 		"request", request,
@@ -121,7 +126,8 @@ func (q *buyerController) SellerIndex(c fiber.Ctx) (err error) {
 func (q *buyerController) SellerNew(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -136,6 +142,7 @@ func (q *buyerController) SellerNew(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Add New Buyer",
 		"request", request,
 		"buyer", request,
@@ -162,7 +169,8 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-SellerCreate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -176,6 +184,7 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Add New Buyer",
 		"request", request,
 		"buyer", request,
@@ -323,7 +332,8 @@ func (q *buyerController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-SellerEdit"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -356,6 +366,7 @@ func (q *buyerController) SellerEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", helper.Sprintf("Edit Data Buyer|%s", buyer.Name),
 		"request", buyer,
 		"buyer", buyer,
@@ -383,7 +394,8 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-SellerUpdate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -415,6 +427,7 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", helper.Sprintf("Edit Data Buyer|%s", buyer.Name),
 		"request", buyer,
 		"buyer", buyer,
@@ -568,7 +581,7 @@ func (q *buyerController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-SellerDelete"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()

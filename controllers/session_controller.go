@@ -31,6 +31,7 @@ type sessionController struct {
 	jsonWebTokenService    services.JsonWebTokenService
 	oneTimePasswordService services.OneTimePasswordService
 	textMessageService     services.TextMessageService
+	notificationService    services.NotificationService
 	kafkaClient            *externals.KafkaClient
 }
 
@@ -42,6 +43,7 @@ func NewSessionController(
 	jsonWebTokenService services.JsonWebTokenService,
 	oneTimePasswordService services.OneTimePasswordService,
 	textMessageService services.TextMessageService,
+	notificationService services.NotificationService,
 	kafkaClient *externals.KafkaClient,
 ) *sessionController {
 	return &sessionController{
@@ -52,6 +54,7 @@ func NewSessionController(
 		jsonWebTokenService:    jsonWebTokenService,
 		oneTimePasswordService: oneTimePasswordService,
 		textMessageService:     textMessageService,
+		notificationService:    notificationService,
 		kafkaClient:            kafkaClient,
 	}
 }
@@ -63,7 +66,7 @@ func (q *sessionController) Mount(r fiber.Router) {
 		Post("", q.AdminCreate).
 		Get("/mine", adminSessionAuth, q.AdminShow).
 		Get("/logout", q.AdminLogout)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller").
 		Get("/new", q.SellerNew).
 		Post("", q.SellerCreate).
@@ -172,7 +175,7 @@ func (q *sessionController) AdminCreate(c fiber.Ctx) error {
 
 func (q *sessionController) AdminShow(c fiber.Ctx) error {
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -370,7 +373,8 @@ func (q *sessionController) SellerCreate(c fiber.Ctx) error {
 
 func (q *sessionController) SellerShow(c fiber.Ctx) error {
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -383,6 +387,7 @@ func (q *sessionController) SellerShow(c fiber.Ctx) error {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 	)
 	return c.Render("seller/session_show", params)
 }

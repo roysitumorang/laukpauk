@@ -25,6 +25,7 @@ type companyController struct {
 	buyerService        services.BuyerService
 	companyService      services.CompanyService
 	jsonWebTokenService services.JsonWebTokenService
+	notificationService services.NotificationService
 }
 
 func NewCompanyController(
@@ -33,6 +34,7 @@ func NewCompanyController(
 	buyerService services.BuyerService,
 	companyService services.CompanyService,
 	jsonWebTokenService services.JsonWebTokenService,
+	notificationService services.NotificationService,
 ) *companyController {
 	return &companyController{
 		adminService:        adminService,
@@ -40,6 +42,7 @@ func NewCompanyController(
 		buyerService:        buyerService,
 		companyService:      companyService,
 		jsonWebTokenService: jsonWebTokenService,
+		notificationService: notificationService,
 	}
 }
 
@@ -52,7 +55,7 @@ func (q *companyController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.AdminEdit).
 		Post("/:id", q.AdminUpdate).
 		Post("/:id/delete", q.AdminDelete)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("/mine", q.SellerEdit).
 		Post("/mine", q.SellerUpdate)
@@ -66,7 +69,7 @@ func (q *companyController) AdminIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CompanyController-AdminIndex"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -135,7 +138,7 @@ func (q *companyController) AdminIndex(c fiber.Ctx) (err error) {
 
 func (q *companyController) AdminNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -160,7 +163,7 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CompanyController-AdminCreate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -257,7 +260,7 @@ func (q *companyController) AdminEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CompanyController-AdminEdit"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -298,7 +301,7 @@ func (q *companyController) AdminUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CompanyController-AdminUpdate"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -387,7 +390,7 @@ func (q *companyController) AdminDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CompanyController-AdminDelete"
 	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -442,7 +445,8 @@ func (q *companyController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CompanyController-SellerEdit"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -467,6 +471,7 @@ func (q *companyController) SellerEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", helper.Sprintf("Edit Data Company|%s", company.Name),
 		"request", company,
 		"company", company,
@@ -478,7 +483,8 @@ func (q *companyController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CompanyController-SellerUpdate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -502,6 +508,7 @@ func (q *companyController) SellerUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", helper.Sprintf("Edit Data Company|%s", company.Name),
 		"request", company,
 		"company", company,

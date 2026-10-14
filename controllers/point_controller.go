@@ -20,25 +20,28 @@ import (
 )
 
 type pointController struct {
-	sellerService services.SellerService
-	buyerService  services.BuyerService
-	pointService  services.PointService
+	sellerService       services.SellerService
+	buyerService        services.BuyerService
+	pointService        services.PointService
+	notificationService services.NotificationService
 }
 
 func NewPointController(
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
 	pointService services.PointService,
+	notificationService services.NotificationService,
 ) *pointController {
 	return &pointController{
-		sellerService: sellerService,
-		buyerService:  buyerService,
-		pointService:  pointService,
+		sellerService:       sellerService,
+		buyerService:        buyerService,
+		pointService:        pointService,
+		notificationService: notificationService,
 	}
 }
 
 func (q *pointController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -52,7 +55,8 @@ func (q *pointController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-SellerIndex"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -68,6 +72,7 @@ func (q *pointController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Histori Point User",
 		"limits", models.Limits,
 		"request", request,
@@ -115,7 +120,8 @@ func (q *pointController) SellerNew(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-SellerNew"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -130,6 +136,7 @@ func (q *pointController) SellerNew(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Tambah Point User",
 		"request", request,
 		"point", request,
@@ -153,7 +160,8 @@ func (q *pointController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-SellerCreate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -167,6 +175,7 @@ func (q *pointController) SellerCreate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Tambah Point User",
 		"request", request,
 		"point", request,
@@ -247,7 +256,8 @@ func (q *pointController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-SellerEdit"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -280,6 +290,7 @@ func (q *pointController) SellerEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Edit Data Poin User",
 		"request", point,
 		"point", point,
@@ -304,7 +315,8 @@ func (q *pointController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-SellerUpdate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -336,6 +348,7 @@ func (q *pointController) SellerUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Edit Data Poin User",
 		"request", point,
 		"point", point,
@@ -410,7 +423,7 @@ func (q *pointController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-SellerDelete"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()

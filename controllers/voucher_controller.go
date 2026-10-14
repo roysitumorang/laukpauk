@@ -26,6 +26,7 @@ type voucherController struct {
 	voucherService      services.VoucherService
 	buyerService        services.BuyerService
 	jsonWebTokenService services.JsonWebTokenService
+	notificationService services.NotificationService
 }
 
 func NewVoucherController(
@@ -34,6 +35,7 @@ func NewVoucherController(
 	voucherService services.VoucherService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
+	notificationService services.NotificationService,
 ) *voucherController {
 	return &voucherController{
 		sellerService:       sellerService,
@@ -41,11 +43,12 @@ func NewVoucherController(
 		voucherService:      voucherService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
+		notificationService: notificationService,
 	}
 }
 
 func (q *voucherController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -63,8 +66,8 @@ func (q *voucherController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "VoucherController-SellerIndex"
 	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.VoucherFilter)
 	rows := []*models.Voucher{}
@@ -75,6 +78,7 @@ func (q *voucherController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Data Voucher",
 		"limits", models.Limits,
 		"request", request,
@@ -128,8 +132,8 @@ func (q *voucherController) SellerIndex(c fiber.Ctx) (err error) {
 
 func (q *voucherController) SellerNew(c fiber.Ctx) (err error) {
 	flash := helper.NewFlashMessage()
-	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
 	now := time.Now().In(time.Local)
 	t := time.Date(
@@ -154,6 +158,7 @@ func (q *voucherController) SellerNew(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Add New Voucher",
 		"request", request,
 		"voucher", request,
@@ -168,7 +173,8 @@ func (q *voucherController) SellerCreate(c fiber.Ctx) (err error) {
 	ctxt := "VoucherController-SellerCreate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
 	now := time.Now().In(time.Local)
 	t := time.Date(
@@ -193,6 +199,7 @@ func (q *voucherController) SellerCreate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Add New Voucher",
 		"voucher", request,
 		"voucherTypes", models.VoucherTypes,
@@ -277,7 +284,8 @@ func (q *voucherController) SellerEdit(c fiber.Ctx) (err error) {
 	ctxt := "VoucherController-SellerEdit"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
 	voucherID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -304,6 +312,7 @@ func (q *voucherController) SellerEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", helper.Sprintf("Edit Data Voucher|%s", voucher.Name),
 		"request", voucher,
 		"voucher", voucher,
@@ -318,7 +327,8 @@ func (q *voucherController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctxt := "VoucherController-SellerUpdate"
 	flash := helper.NewFlashMessage()
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
 	voucherID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -345,6 +355,7 @@ func (q *voucherController) SellerUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", helper.Sprintf("Edit Data Voucher|%s", voucher.Name),
 		"request", voucher,
 		"voucher", voucher,
@@ -432,7 +443,7 @@ func (q *voucherController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "VoucherController-SellerDelete"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()

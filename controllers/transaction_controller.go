@@ -27,6 +27,7 @@ type transactionController struct {
 	buyerService        services.BuyerService
 	transactionService  services.TransactionService
 	jsonWebTokenService services.JsonWebTokenService
+	notificationService services.NotificationService
 	kafkaClient         *externals.KafkaClient
 }
 
@@ -36,6 +37,7 @@ func NewTransactionController(
 	buyerService services.BuyerService,
 	transactionService services.TransactionService,
 	jsonWebTokenService services.JsonWebTokenService,
+	notificationService services.NotificationService,
 	kafkaClient *externals.KafkaClient,
 ) *transactionController {
 	return &transactionController{
@@ -44,6 +46,7 @@ func NewTransactionController(
 		buyerService:        buyerService,
 		transactionService:  transactionService,
 		jsonWebTokenService: jsonWebTokenService,
+		notificationService: notificationService,
 		kafkaClient:         kafkaClient,
 	}
 }
@@ -57,7 +60,7 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Get("/:id", buyerKeyAuth, q.V1BuyerShow).
 		Post("/pay", q.V1Pay).
 		Post("/:id/withdraw", buyerKeyAuth, q.V1BuyerWithdraw)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/:id", q.SellerShow).
@@ -297,7 +300,7 @@ func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 
 func (q *transactionController) SellerIndex(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerIndex"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	request := &models.TransactionFilter{}
 	rows := []*models.Transaction{}
@@ -308,6 +311,7 @@ func (q *transactionController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Data Transaction",
 		"limits", models.Limits,
 		"request", request,
@@ -350,7 +354,7 @@ func (q *transactionController) SellerIndex(c fiber.Ctx) (err error) {
 
 func (q *transactionController) SellerShow(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerShow"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, params, err := q.prepareTransaction(
 		ctx,
@@ -358,6 +362,7 @@ func (q *transactionController) SellerShow(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -369,7 +374,7 @@ func (q *transactionController) SellerShow(c fiber.Ctx) (err error) {
 
 func (q *transactionController) SellerEdit(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerEdit"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	transaction, params, err := q.prepareTransaction(
 		ctx,
@@ -377,6 +382,7 @@ func (q *transactionController) SellerEdit(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -392,7 +398,7 @@ func (q *transactionController) SellerEdit(c fiber.Ctx) (err error) {
 
 func (q *transactionController) SellerWithdraw(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerWithdraw"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	request, _, err := q.prepareTransaction(
 		ctx,
@@ -400,6 +406,7 @@ func (q *transactionController) SellerWithdraw(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		false,
 		models.TransactionStatusWithdrawalPending,
 	)
@@ -422,7 +429,7 @@ func (q *transactionController) SellerWithdraw(c fiber.Ctx) (err error) {
 
 func (q *transactionController) SellerProcess(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerProcess"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	transaction, params, err := q.prepareTransaction(
 		ctx,
@@ -430,6 +437,7 @@ func (q *transactionController) SellerProcess(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 		models.TransactionStatusPaid,
 	)
@@ -517,7 +525,7 @@ func (q *transactionController) SellerProcess(c fiber.Ctx) (err error) {
 
 func (q *transactionController) SellerShip(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerShip"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	transaction, _, err := q.prepareTransaction(
 		ctx,
@@ -525,6 +533,7 @@ func (q *transactionController) SellerShip(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		nil,
 		false,
 		models.TransactionStatusProcessed,
 	)
@@ -572,7 +581,7 @@ func (q *transactionController) SellerShip(c fiber.Ctx) (err error) {
 
 func (q *transactionController) SellerComplete(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-SellerComplete"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	transaction, _, err := q.prepareTransaction(
 		ctx,
@@ -580,6 +589,7 @@ func (q *transactionController) SellerComplete(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		nil,
 		false,
 		models.TransactionStatusShipped,
 	)
@@ -603,6 +613,7 @@ func (q *transactionController) prepare(c fiber.Ctx) (
 	*helper.FlashMessage,
 	*models.Seller,
 	string,
+	[]*models.Notification,
 ) {
 	ctx := c.Context()
 	sess := session.FromContext(c)
@@ -610,9 +621,10 @@ func (q *transactionController) prepare(c fiber.Ctx) (
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentSeller, csrfToken
+	return ctx, sess, flash, currentSeller, csrfToken, notifications
 }
 
 func (q *transactionController) prepareTransaction(
@@ -621,6 +633,7 @@ func (q *transactionController) prepareTransaction(
 	flash *helper.FlashMessage,
 	currentSeller *models.Seller,
 	csrfToken string,
+	notifications []*models.Notification,
 	withParams bool,
 	transactionStatuses ...models.TransactionStatus,
 ) (
@@ -653,6 +666,7 @@ func (q *transactionController) prepareTransaction(
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentSeller", currentSeller,
+			"notifications", notifications,
 			"pageTitle", helper.Sprintf("Detail Data Transaction|%s", transaction.ReferenceNumber),
 			"transaction", transaction,
 			"request", transaction,

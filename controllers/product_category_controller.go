@@ -26,6 +26,7 @@ type productCategoryController struct {
 	productCategoryService services.ProductCategoryService
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
+	notificationService    services.NotificationService
 }
 
 func NewProductCategoryController(
@@ -34,6 +35,7 @@ func NewProductCategoryController(
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
+	notificationService services.NotificationService,
 ) *productCategoryController {
 	return &productCategoryController{
 		sellerService:          sellerService,
@@ -41,11 +43,12 @@ func NewProductCategoryController(
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
+		notificationService:    notificationService,
 	}
 }
 
 func (q *productCategoryController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
@@ -60,7 +63,7 @@ func (q *productCategoryController) Mount(r fiber.Router) {
 
 func (q *productCategoryController) SellerIndex(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-SellerIndex"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	request := &models.ProductCategoryFilter{}
 	rows := []*models.ProductCategory{}
@@ -71,6 +74,7 @@ func (q *productCategoryController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Data Kategori Produk",
 		"limits", models.Limits,
 		"request", request,
@@ -124,17 +128,17 @@ func (q *productCategoryController) SellerIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *productCategoryController) SellerNew(c fiber.Ctx) (err error) {
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, _ := q.prepareProductCategory(ctx, c, flash, currentSeller, csrfToken, true)
+	_, params, _ := q.prepareProductCategory(ctx, c, flash, currentSeller, csrfToken, notifications, true)
 	return c.Render("seller/product_category_new", params, "seller/layouts/authenticated")
 }
 
 func (q *productCategoryController) SellerCreate(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-SellerCreate"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, _ := q.prepareProductCategory(ctx, c, flash, currentSeller, csrfToken, true)
+	_, params, _ := q.prepareProductCategory(ctx, c, flash, currentSeller, csrfToken, notifications, true)
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	if photo == nil {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
@@ -315,7 +319,7 @@ func (q *productCategoryController) SellerCreate(c fiber.Ctx) (err error) {
 
 func (q *productCategoryController) SellerEdit(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-SellerEdit"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, params, err := q.prepareProductCategory(
 		ctx,
@@ -323,6 +327,7 @@ func (q *productCategoryController) SellerEdit(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -334,7 +339,7 @@ func (q *productCategoryController) SellerEdit(c fiber.Ctx) (err error) {
 
 func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-SellerUpdate"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	productCategory, params, err := q.prepareProductCategory(
 		ctx,
@@ -342,6 +347,7 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -493,7 +499,7 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 
 func (q *productCategoryController) SellerDelete(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-SellerDelete"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	productCategory, _, err := q.prepareProductCategory(
 		ctx,
@@ -501,6 +507,7 @@ func (q *productCategoryController) SellerDelete(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		false,
 	)
 	if err != nil {
@@ -541,6 +548,7 @@ func (q *productCategoryController) prepare(c fiber.Ctx) (
 	*helper.FlashMessage,
 	*models.Seller,
 	string,
+	[]*models.Notification,
 ) {
 	ctx := c.Context()
 	sess := session.FromContext(c)
@@ -548,9 +556,10 @@ func (q *productCategoryController) prepare(c fiber.Ctx) (
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentSeller, csrfToken
+	return ctx, sess, flash, currentSeller, csrfToken, notifications
 }
 
 func (q *productCategoryController) prepareProductCategory(
@@ -559,6 +568,7 @@ func (q *productCategoryController) prepareProductCategory(
 	flash *helper.FlashMessage,
 	currentSeller *models.Seller,
 	csrfToken string,
+	notifications []*models.Notification,
 	withParams bool,
 ) (
 	*models.ProductCategory,
@@ -575,6 +585,7 @@ func (q *productCategoryController) prepareProductCategory(
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentSeller", currentSeller,
+			"notifications", notifications,
 			"pageTitle", "Kategori Produk Baru",
 			"request", productCategory,
 			"productCategory", productCategory,

@@ -98,7 +98,7 @@ func (q *landingPageController) AdminHeroSliderItemIndex(c fiber.Ctx) (err error
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.LandingPageItemFilter)
 	rows := []*models.LandingPageItem{}
@@ -157,7 +157,7 @@ func (q *landingPageController) AdminHeroSliderItemNew(c fiber.Ctx) (err error) 
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{
 		LinkText: new(""),
@@ -184,7 +184,7 @@ func (q *landingPageController) AdminHeroSliderItemCreate(c fiber.Ctx) (err erro
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{
 		LinkText: new(""),
@@ -268,7 +268,7 @@ func (q *landingPageController) AdminHeroSliderItemEdit(c fiber.Ctx) (err error)
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -310,7 +310,7 @@ func (q *landingPageController) AdminHeroSliderItemUpdate(c fiber.Ctx) (err erro
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -406,7 +406,7 @@ func (q *landingPageController) AdminHeroSliderItemDelete(c fiber.Ctx) (err erro
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -463,7 +463,7 @@ func (q *landingPageController) AdminFeatureItemIndex(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	paginationRequest := &models.LandingPageItemFilter{}
 	rows := []*models.LandingPageItem{}
@@ -548,7 +548,7 @@ func (q *landingPageController) AdminFeatureUpdate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	landingPage, err := q.landingPageService.FindLandingPage(
 		ctx,
 		models.NewLandingPageFilter().
@@ -604,7 +604,7 @@ func (q *landingPageController) AdminFeatureItemNew(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -628,7 +628,7 @@ func (q *landingPageController) AdminFeatureItemCreate(c fiber.Ctx) (err error) 
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -712,7 +712,7 @@ func (q *landingPageController) AdminFeatureItemEdit(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -754,7 +754,7 @@ func (q *landingPageController) AdminFeatureItemUpdate(c fiber.Ctx) (err error) 
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -854,7 +854,7 @@ func (q *landingPageController) AdminFeatureItemDelete(c fiber.Ctx) (err error) 
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -911,7 +911,7 @@ func (q *landingPageController) AdminWhyItemIndex(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	paginationRequest := &models.LandingPageItemFilter{}
 	rows := []*models.LandingPageItem{}
@@ -997,7 +997,7 @@ func (q *landingPageController) AdminWhyUpdate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	landingPage, err := q.landingPageService.FindLandingPage(
 		ctx,
 		models.NewLandingPageFilter().
@@ -1053,7 +1053,7 @@ func (q *landingPageController) AdminWhyItemNew(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -1077,7 +1077,7 @@ func (q *landingPageController) AdminWhyItemCreate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -1161,7 +1161,7 @@ func (q *landingPageController) AdminWhyItemEdit(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -1203,7 +1203,7 @@ func (q *landingPageController) AdminWhyItemUpdate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
@@ -1302,7 +1302,7 @@ func (q *landingPageController) AdminWhyItemDelete(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -1359,7 +1359,7 @@ func (q *landingPageController) AdminCommitmentIndex(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPage{
 		CustomAttributes: map[string]string{},
@@ -1405,7 +1405,7 @@ func (q *landingPageController) AdminCommitmentUpdate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPage{
 		CustomAttributes: map[string]string{},
@@ -1495,7 +1495,7 @@ func (q *landingPageController) AdminFreeShoppingIndex(c fiber.Ctx) (err error) 
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPage{
 		CustomAttributes: map[string]string{},
@@ -1541,7 +1541,7 @@ func (q *landingPageController) AdminFreeShoppingUpdate(c fiber.Ctx) (err error)
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPage{
 		CustomAttributes: map[string]string{},
@@ -1646,7 +1646,7 @@ func (q *landingPageController) AdminKitchenHeroIndex(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPage{
 		CustomAttributes: map[string]string{},
@@ -1692,7 +1692,7 @@ func (q *landingPageController) AdminKitchenHeroUpdate(c fiber.Ctx) (err error) 
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPage{
 		CustomAttributes: map[string]string{},
@@ -1794,7 +1794,7 @@ func (q *landingPageController) AdminFaqItemIndex(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	paginationRequest := &models.LandingPageItemFilter{}
 	rows := []*models.LandingPageItem{}
@@ -1880,7 +1880,7 @@ func (q *landingPageController) AdminFaqItemNew(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -1904,7 +1904,7 @@ func (q *landingPageController) AdminFaqItemCreate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -1988,7 +1988,7 @@ func (q *landingPageController) AdminFaqItemEdit(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -2037,7 +2037,7 @@ func (q *landingPageController) AdminFaqItemUpdate(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.LandingPageItem{}
 	params := models.NewMap().Push(
@@ -2141,7 +2141,7 @@ func (q *landingPageController) AdminFaqItemDelete(c fiber.Ctx) (err error) {
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	landingPageItemID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")

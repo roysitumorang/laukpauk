@@ -30,6 +30,7 @@ type productController struct {
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
 	recipeItemService      services.RecipeItemService
+	notificationService    services.NotificationService
 	storage                fiber.Storage
 }
 
@@ -40,6 +41,7 @@ func NewProductController(
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
 	recipeItemService services.RecipeItemService,
+	notificationService services.NotificationService,
 	storage fiber.Storage,
 ) *productController {
 	return &productController{
@@ -49,12 +51,13 @@ func NewProductController(
 		productService:         productService,
 		productVariantService:  productVariantService,
 		recipeItemService:      recipeItemService,
+		notificationService:    notificationService,
 		storage:                storage,
 	}
 }
 
 func (q *productController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
@@ -76,9 +79,9 @@ func (q *productController) Mount(r fiber.Router) {
 
 func (q *productController) SellerIndex(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerIndex"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request := new(models.ProductFilter)
+	request := &models.ProductFilter{}
 	rows := []*models.Product{}
 	pagination := &models.Pagination{}
 	params := models.NewMap().Push(
@@ -87,6 +90,7 @@ func (q *productController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Data Produk",
 		"limits", models.Limits,
 		"request", request,
@@ -140,9 +144,9 @@ func (q *productController) SellerIndex(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerNew(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerNew"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, _, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, true, true)
+	_, params, _, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, notifications, true, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return c.Render("seller/product_new", params.Push(
@@ -154,9 +158,9 @@ func (q *productController) SellerNew(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerCreate"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, true, true)
+	_, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, notifications, true, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
 		return c.Render("seller/product_new", params.Push(
@@ -358,7 +362,7 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerShow(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerShow"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
@@ -375,6 +379,7 @@ func (q *productController) SellerShow(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 		"product", product,
 		"productVariants", productVariants,
@@ -398,7 +403,7 @@ func (q *productController) SellerShow(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerEdit(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerEdit"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, params, _, err := q.prepareProduct(
 		ctx,
@@ -406,6 +411,7 @@ func (q *productController) SellerEdit(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 		true,
 	)
@@ -418,7 +424,7 @@ func (q *productController) SellerEdit(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerUpdate"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, params, mapProductCategoryNames, err := q.prepareProduct(
 		ctx,
@@ -426,6 +432,7 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 		true,
 	)
@@ -592,7 +599,7 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerDelete(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerDelete"
-	ctx, sess, flash, currentSeller, _ := q.prepare(c)
+	ctx, sess, flash, currentSeller, _, _ := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	request, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
@@ -632,7 +639,7 @@ func (q *productController) SellerDelete(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerNewVariant(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerNewVariant"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, params, err := q.prepareProductVariant(
 		ctx,
@@ -640,6 +647,7 @@ func (q *productController) SellerNewVariant(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -651,7 +659,7 @@ func (q *productController) SellerNewVariant(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerCreateVariant"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, _, params, err := q.prepareProductVariant(
 		ctx,
@@ -659,6 +667,7 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -753,7 +762,7 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerEditVariant(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerEditVariant"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, params, err := q.prepareProductVariant(
 		ctx,
@@ -761,6 +770,7 @@ func (q *productController) SellerEditVariant(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -772,7 +782,7 @@ func (q *productController) SellerEditVariant(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerUpdateVariant"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, productVariant, params, err := q.prepareProductVariant(
 		ctx,
@@ -780,6 +790,7 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -892,7 +903,7 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 
 func (q *productController) SellerDeleteVariant(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerDeleteVariant"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	product, productVariant, _, err := q.prepareProductVariant(
 		ctx,
@@ -900,6 +911,7 @@ func (q *productController) SellerDeleteVariant(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		false,
 	)
 	if err != nil {
@@ -940,6 +952,7 @@ func (q *productController) prepare(c fiber.Ctx) (
 	*helper.FlashMessage,
 	*models.Seller,
 	string,
+	[]*models.Notification,
 ) {
 	ctx := c.Context()
 	sess := session.FromContext(c)
@@ -947,9 +960,10 @@ func (q *productController) prepare(c fiber.Ctx) (
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentSeller, csrfToken
+	return ctx, sess, flash, currentSeller, csrfToken, notifications
 }
 
 func (q *productController) prepareProductByID(
@@ -986,6 +1000,7 @@ func (q *productController) prepareProduct(
 	flash *helper.FlashMessage,
 	currentSeller *models.Seller,
 	csrfToken string,
+	notifications []*models.Notification,
 	withParams,
 	withProductCategories bool,
 ) (
@@ -1003,6 +1018,7 @@ func (q *productController) prepareProduct(
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentSeller", currentSeller,
+			"notifications", notifications,
 			"pageTitle", "Produk Baru",
 			"request", product,
 			"product", product,
@@ -1056,6 +1072,7 @@ func (q *productController) prepareProductVariant(
 	flash *helper.FlashMessage,
 	currentSeller *models.Seller,
 	csrfToken string,
+	notifications []*models.Notification,
 	withParams bool,
 ) (
 	*models.Product,
@@ -1076,6 +1093,7 @@ func (q *productController) prepareProductVariant(
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentSeller", currentSeller,
+			"notifications", notifications,
 			"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
 			"product", product,
 			"productVariant", productVariant,

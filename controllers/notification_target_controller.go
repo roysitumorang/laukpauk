@@ -8,7 +8,6 @@ import (
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
@@ -26,6 +25,7 @@ type (
 		companyService            services.CompanyService
 		notificationTargetService services.NotificationTargetService
 		jsonWebTokenService       services.JsonWebTokenService
+		notificationService       services.NotificationService
 	}
 )
 
@@ -36,6 +36,7 @@ func NewNotificationTargetController(
 	companyService services.CompanyService,
 	notificationTargetService services.NotificationTargetService,
 	jsonWebTokenService services.JsonWebTokenService,
+	notificationService services.NotificationService,
 ) *notificationTargetController {
 	return &notificationTargetController{
 		adminService:              adminService,
@@ -44,12 +45,13 @@ func NewNotificationTargetController(
 		companyService:            companyService,
 		notificationTargetService: notificationTargetService,
 		jsonWebTokenService:       jsonWebTokenService,
+		notificationService:       notificationService,
 	}
 }
 
 func (q *notificationTargetController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	r.Group("/admin", adminSessionAuth).
@@ -63,8 +65,7 @@ func (q *notificationTargetController) Mount(r fiber.Router) {
 func (q *notificationTargetController) AdminCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationTargetController-AdminCreate"
-	sess := session.FromContext(c)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	request, statusCode, err := sanitizers.ValidateNotificationTarget(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNotificationTarget")
@@ -114,8 +115,7 @@ func (q *notificationTargetController) AdminCreate(c fiber.Ctx) (err error) {
 func (q *notificationTargetController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationTargetController-SellerCreate"
-	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
 	request, statusCode, err := sanitizers.ValidateNotificationTarget(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNotificationTarget")

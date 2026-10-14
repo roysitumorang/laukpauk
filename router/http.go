@@ -308,6 +308,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 		q.OneTimePasswordService,
 		q.TextMessageService,
+		q.NotificationService,
 		q.KafkaClient,
 	).Mount(app.Group("/sessions"))
 	controllers.NewHomeController(
@@ -317,14 +318,17 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.LandingPageItemService,
 		q.BlogService,
 		q.MessageService,
+		q.NotificationService,
 	).Mount(app.Group("/home"))
 	controllers.NewArticleController(
 		q.SellerService,
 		q.ArticleService,
+		q.NotificationService,
 	).Mount(app.Group("/articles"))
 	controllers.NewBlogController(
 		q.SellerService,
 		q.BlogService,
+		q.NotificationService,
 	).Mount(app.Group("/blogs"))
 	controllers.NewLandingPageController(
 		q.AdminService,
@@ -339,6 +343,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,
+		q.NotificationService,
 	).Mount(app.Group("/product_categories"))
 	controllers.NewProductController(
 		q.SellerService,
@@ -347,6 +352,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.ProductService,
 		q.ProductVariantService,
 		q.RecipeItemService,
+		q.NotificationService,
 		q.Storage,
 	).Mount(app.Group("/products"))
 	controllers.NewDeliveryPlanController(
@@ -355,11 +361,13 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.DeliveryPlanService,
 		q.BuyerService,
 		q.JsonWebTokenService,
+		q.NotificationService,
 	).Mount(app.Group("/delivery_plans"))
 	controllers.NewPointController(
 		q.SellerService,
 		q.BuyerService,
 		q.PointService,
+		q.NotificationService,
 	).Mount(app.Group("/points"))
 	controllers.NewVoucherController(
 		q.SellerService,
@@ -367,6 +375,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.VoucherService,
 		q.BuyerService,
 		q.JsonWebTokenService,
+		q.NotificationService,
 	).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(
 		q.SellerService,
@@ -374,6 +383,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.PointEarningCapService,
 		q.BuyerService,
 		q.JsonWebTokenService,
+		q.NotificationService,
 	).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(
 		q.SellerService,
@@ -381,6 +391,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.PointSpendingCapService,
 		q.BuyerService,
 		q.JsonWebTokenService,
+		q.NotificationService,
 	).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(
 		q.CompanyService,
@@ -388,6 +399,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BuyerService,
 		q.TransactionService,
 		q.JsonWebTokenService,
+		q.NotificationService,
 		q.KafkaClient,
 	).Mount(app.Group("/transactions"))
 	controllers.NewNotificationTargetController(
@@ -397,6 +409,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.CompanyService,
 		q.NotificationTargetService,
 		q.JsonWebTokenService,
+		q.NotificationService,
 	).Mount(app.Group("/notification_targets"))
 	controllers.NewCartController(
 		q.BuyerService,
@@ -425,10 +438,12 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewBannerController(
 		q.SellerService,
 		q.BannerService,
+		q.NotificationService,
 	).Mount(app.Group("/banners"))
 	controllers.NewBuyerController(
 		q.SellerService,
 		q.BuyerService,
+		q.NotificationService,
 	).Mount(app.Group("/buyers"))
 	controllers.NewAdminController(
 		q.AdminService,
@@ -453,6 +468,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.RecipeItemService,
 		q.ProductService,
 		q.ProductVariantService,
+		q.NotificationService,
 	).Mount(app.Group("/recipes"))
 	controllers.NewCompanyController(
 		q.AdminService,
@@ -460,9 +476,11 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BuyerService,
 		q.CompanyService,
 		q.JsonWebTokenService,
+		q.NotificationService,
 	).Mount(app.Group("/companies"))
 	controllers.NewSellerController(
 		q.SellerService,
+		q.NotificationService,
 	).Mount(app.Group("/sellers"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {

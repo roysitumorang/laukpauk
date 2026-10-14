@@ -29,6 +29,7 @@ type recipeController struct {
 	recipeItemService     services.RecipeItemService
 	productService        services.ProductService
 	productVariantService services.ProductVariantService
+	notificationService   services.NotificationService
 }
 
 func NewRecipeController(
@@ -39,6 +40,7 @@ func NewRecipeController(
 	recipeItemService services.RecipeItemService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
+	notificationService services.NotificationService,
 ) *recipeController {
 	return &recipeController{
 		sellerService:         sellerService,
@@ -48,11 +50,12 @@ func NewRecipeController(
 		recipeItemService:     recipeItemService,
 		productService:        productService,
 		productVariantService: productVariantService,
+		notificationService:   notificationService,
 	}
 }
 
 func (q *recipeController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -75,7 +78,7 @@ func (q *recipeController) Mount(r fiber.Router) {
 
 func (q *recipeController) SellerIndex(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerIndex"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	request := &models.RecipeFilter{}
 	rows := []*models.Recipe{}
@@ -86,6 +89,7 @@ func (q *recipeController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Data Resep",
 		"limits", models.Limits,
 		"request", request,
@@ -139,17 +143,17 @@ func (q *recipeController) SellerIndex(c fiber.Ctx) (err error) {
 }
 
 func (q *recipeController) SellerNew(c fiber.Ctx) (err error) {
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, _ := q.prepareRecipe(ctx, c, flash, currentSeller, csrfToken, true)
+	_, params, _ := q.prepareRecipe(ctx, c, flash, currentSeller, csrfToken, notifications, true)
 	return c.Render("seller/recipe_new", params, "seller/layouts/authenticated")
 }
 
 func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerCreate"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	_, params, _ := q.prepareRecipe(ctx, c, flash, currentSeller, csrfToken, true)
+	_, params, _ := q.prepareRecipe(ctx, c, flash, currentSeller, csrfToken, notifications, true)
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateRecipe(ctx, c)
 	if photo == nil {
 		request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
@@ -277,7 +281,7 @@ func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerShow(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerShow"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, params, err := q.prepareRecipe(
 		ctx,
@@ -285,6 +289,7 @@ func (q *recipeController) SellerShow(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -296,7 +301,7 @@ func (q *recipeController) SellerShow(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerEdit(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerEdit"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, params, err := q.prepareRecipe(
 		ctx,
@@ -304,6 +309,7 @@ func (q *recipeController) SellerEdit(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -315,7 +321,7 @@ func (q *recipeController) SellerEdit(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerUpdate"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, params, err := q.prepareRecipe(
 		ctx,
@@ -323,6 +329,7 @@ func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -425,7 +432,7 @@ func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerDelete(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerDelete"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, _, err := q.prepareRecipe(
 		ctx,
@@ -433,6 +440,7 @@ func (q *recipeController) SellerDelete(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		nil,
 		false,
 	)
 	if err != nil {
@@ -473,7 +481,7 @@ func (q *recipeController) SellerDelete(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerNewGuide(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerNewGuide"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, params, err := q.prepareRecipeGuide(
 		ctx,
@@ -481,6 +489,7 @@ func (q *recipeController) SellerNewGuide(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -492,7 +501,7 @@ func (q *recipeController) SellerNewGuide(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerCreateGuide(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerCreateGuide"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, _, params, err := q.prepareRecipeGuide(
 		ctx,
@@ -500,6 +509,7 @@ func (q *recipeController) SellerCreateGuide(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -555,7 +565,7 @@ func (q *recipeController) SellerCreateGuide(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerEditGuide(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerEditGuide"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, params, err := q.prepareRecipeGuide(
 		ctx,
@@ -563,6 +573,7 @@ func (q *recipeController) SellerEditGuide(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -574,7 +585,7 @@ func (q *recipeController) SellerEditGuide(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerUpdateGuide(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerUpdateGuide"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, recipeGuide, params, err := q.prepareRecipeGuide(
 		ctx,
@@ -582,6 +593,7 @@ func (q *recipeController) SellerUpdateGuide(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -637,7 +649,7 @@ func (q *recipeController) SellerUpdateGuide(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerDeleteGuide(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerDeleteGuide"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, recipeGuide, _, err := q.prepareRecipeGuide(
 		ctx,
@@ -645,6 +657,7 @@ func (q *recipeController) SellerDeleteGuide(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		false,
 	)
 	if err != nil {
@@ -681,7 +694,7 @@ func (q *recipeController) SellerDeleteGuide(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerNewItem(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerNewItem"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, _, params, err := q.prepareRecipeItem(
 		ctx,
@@ -689,6 +702,7 @@ func (q *recipeController) SellerNewItem(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -700,7 +714,7 @@ func (q *recipeController) SellerNewItem(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerCreateItem"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, _, products, params, err := q.prepareRecipeItem(
 		ctx,
@@ -708,6 +722,7 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -805,7 +820,7 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerEditItem(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerEditItem"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	_, _, _, params, err := q.prepareRecipeItem(
 		ctx,
@@ -813,6 +828,7 @@ func (q *recipeController) SellerEditItem(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -824,7 +840,7 @@ func (q *recipeController) SellerEditItem(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerUpdateItem"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, recipeItem, products, params, err := q.prepareRecipeItem(
 		ctx,
@@ -832,6 +848,7 @@ func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		notifications,
 		true,
 	)
 	if err != nil {
@@ -900,7 +917,7 @@ func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 
 func (q *recipeController) SellerDeleteItem(c fiber.Ctx) (err error) {
 	ctxt := "RecipeController-SellerDeleteItem"
-	ctx, sess, flash, currentSeller, csrfToken := q.prepare(c)
+	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
 	recipe, recipeItem, _, _, err := q.prepareRecipeItem(
 		ctx,
@@ -908,6 +925,7 @@ func (q *recipeController) SellerDeleteItem(c fiber.Ctx) (err error) {
 		flash,
 		currentSeller,
 		csrfToken,
+		nil,
 		false,
 	)
 	if err != nil {
@@ -948,6 +966,7 @@ func (q *recipeController) prepare(c fiber.Ctx) (
 	*helper.FlashMessage,
 	*models.Seller,
 	string,
+	[]*models.Notification,
 ) {
 	ctx := c.Context()
 	sess := session.FromContext(c)
@@ -955,9 +974,10 @@ func (q *recipeController) prepare(c fiber.Ctx) (
 	if !ok {
 		flash = helper.NewFlashMessage()
 	}
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentSeller, csrfToken
+	return ctx, sess, flash, currentSeller, csrfToken, notifications
 }
 
 func (q *recipeController) prepareRecipe(
@@ -966,6 +986,7 @@ func (q *recipeController) prepareRecipe(
 	flash *helper.FlashMessage,
 	currentSeller *models.Seller,
 	csrfToken string,
+	notifications []*models.Notification,
 	withParams bool,
 ) (
 	*models.Recipe,
@@ -984,6 +1005,7 @@ func (q *recipeController) prepareRecipe(
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentSeller", currentSeller,
+			"notifications", notifications,
 			"pageTitle", "Add New Resep",
 			"request", recipe,
 			"recipe", recipe,
@@ -1082,6 +1104,7 @@ func (q *recipeController) prepareRecipeGuide(
 	flash *helper.FlashMessage,
 	currentSeller *models.Seller,
 	csrfToken string,
+	notifications []*models.Notification,
 	withParams bool,
 ) (
 	*models.Recipe,
@@ -1104,6 +1127,7 @@ func (q *recipeController) prepareRecipeGuide(
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentSeller", currentSeller,
+			"notifications", notifications,
 			"pageTitle", helper.Sprintf("Detail Resep|%s", *recipe.Name),
 			"recipe", recipe,
 			"recipeGuide", recipeGuide,
@@ -1170,6 +1194,7 @@ func (q *recipeController) prepareRecipeItem(
 	flash *helper.FlashMessage,
 	currentSeller *models.Seller,
 	csrfToken string,
+	notifications []*models.Notification,
 	withParams bool,
 ) (
 	*models.Recipe,
@@ -1195,6 +1220,7 @@ func (q *recipeController) prepareRecipeItem(
 			"path", c.OriginalURL(),
 			"csrfToken", csrfToken,
 			"currentSeller", currentSeller,
+			"notifications", notifications,
 			"pageTitle", helper.Sprintf("Detail Resep|%s", *recipe.Name),
 			"recipe", recipe,
 			"recipeItem", recipeItem,

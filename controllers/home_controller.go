@@ -27,6 +27,7 @@ type (
 		landingPageItemService services.LandingPageItemService
 		blogService            services.BlogService
 		messageService         services.MessageService
+		notificationService    services.NotificationService
 	}
 )
 
@@ -37,6 +38,7 @@ func NewHomeController(
 	landingPageItemService services.LandingPageItemService,
 	blogService services.BlogService,
 	messageService services.MessageService,
+	notificationService services.NotificationService,
 ) *homeController {
 	return &homeController{
 		adminService:           adminService,
@@ -45,12 +47,13 @@ func NewHomeController(
 		landingPageItemService: landingPageItemService,
 		blogService:            blogService,
 		messageService:         messageService,
+		notificationService:    notificationService,
 	}
 }
 
 func (q *homeController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Get("", q.Index).
 		Get("/blogs", q.BlogIndex).
 		Get("/blogs/:id", q.BlogShow).
@@ -143,7 +146,7 @@ func (q *homeController) BlogIndex(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.BlogFilter{}
 	rows := []*models.Blog{}
@@ -192,7 +195,7 @@ func (q *homeController) BlogShow(c fiber.Ctx) (err error) {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	var blog *models.Blog
 	params := models.NewMap().Push(
@@ -356,7 +359,7 @@ func (q *homeController) AdminIndex(c fiber.Ctx) error {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := sess.Get(models.CurrentAdmin).(*models.Admin)
+	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	csrfToken := csrf.TokenFromContext(c)
 	return c.Render("admin/home_index", models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -375,7 +378,8 @@ func (q *homeController) SellerIndex(c fiber.Ctx) error {
 		flash = helper.NewFlashMessage()
 	}
 	defer flash.Clear(c, sess.Session)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	csrfToken := csrf.TokenFromContext(c)
 	return c.Render("seller/home_index", models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -383,6 +387,7 @@ func (q *homeController) SellerIndex(c fiber.Ctx) error {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Dashboard Lauk Pauk",
 	), "seller/layouts/authenticated")
 }

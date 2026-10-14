@@ -107,8 +107,26 @@
 						<span class="badge badge-primary navbar-badge" id="jumlahNotifikasi">{{ currentSeller.UnreadNotifications }}</span>
 					</a>
 					<div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-						<span class="dropdown-item dropdown-header">0 Newest of 0 Notifications</span>
+						<span class="dropdown-item dropdown-header">0 Newest of {{ currentSeller.UnreadNotifications }} Notifications</span>
 						<div id="notifikasi">
+							{{ if len(notifications) > 0 }}
+							{{ range _, row := notifications }}
+							<div class="dropdown-divider"></div>
+							<a href="{{ baseURL }}{{ row.SellerLink }}" class="notifikasi-item">
+								<div class="dropdown-item">
+									<div class="row">
+										<div class="col-lg-2 text-center">
+											<span class="fa fa-bell"></span>
+										</div>
+										<div class="col-lg-10">
+											<p class="text-primary mb-1" class="word-break:break-all;">{{ row.Subject }}</p>
+											<span class="text-muted" style="font-size:.75em">Pada {{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}</span>
+										</div>
+									</div>
+								</div>
+							</a>
+							{{ end }}
+							{{ else }}
 							<div class="col text-center mb-4">
 								<h2 class="text-danger mb-3 animate__animated animate__fadeInDown"
 									style="font-weight:550;">Notifikasi</h2>
@@ -124,6 +142,7 @@
 									$("#imgNotFound").removeClass("animate__fadeInUp").addClass("animate__headShake animate__infinite");
 								}, 2000);
 							</script>
+							{{ end }}
 						</div>
 						<div class="dropdown-divider"></div>
 						<a href="{{ baseURL }}/seller/notifications" class="dropdown-item dropdown-footer">Lihat Semua Notifikasi</a>

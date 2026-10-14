@@ -25,6 +25,7 @@ type pointSpendingCapController struct {
 	pointSpendingCapService services.PointSpendingCapService
 	buyerService            services.BuyerService
 	jsonWebTokenService     services.JsonWebTokenService
+	notificationService     services.NotificationService
 }
 
 func NewPointSpendingCapController(
@@ -33,6 +34,7 @@ func NewPointSpendingCapController(
 	pointSpendingCapService services.PointSpendingCapService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
+	notificationService services.NotificationService,
 ) *pointSpendingCapController {
 	return &pointSpendingCapController{
 		sellerService:           sellerService,
@@ -40,11 +42,12 @@ func NewPointSpendingCapController(
 		pointSpendingCapService: pointSpendingCapService,
 		buyerService:            buyerService,
 		jsonWebTokenService:     jsonWebTokenService,
+		notificationService:     notificationService,
 	}
 }
 
 func (q *pointSpendingCapController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService)
+	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -62,7 +65,8 @@ func (q *pointSpendingCapController) SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointSpendingCapController-SellerIndex"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -78,6 +82,7 @@ func (q *pointSpendingCapController) SellerIndex(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Tarif Penggunaan Poin",
 		"limits", models.Limits,
 		"request", request,
@@ -123,7 +128,8 @@ func (q *pointSpendingCapController) SellerIndex(c fiber.Ctx) (err error) {
 
 func (q *pointSpendingCapController) SellerNew(c fiber.Ctx) (err error) {
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -137,6 +143,7 @@ func (q *pointSpendingCapController) SellerNew(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Tambah Tarif Penggunaan Poin",
 		"request", request,
 		"pointSpendingCap", request,
@@ -148,7 +155,8 @@ func (q *pointSpendingCapController) SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointSpendingCapController-SellerCreate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -161,6 +169,7 @@ func (q *pointSpendingCapController) SellerCreate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Tambah Tarif Penggunaan Poin",
 		"request", request,
 		"pointSpendingCap", request,
@@ -243,7 +252,8 @@ func (q *pointSpendingCapController) SellerEdit(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointSpendingCapController-SellerEdit"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -275,6 +285,7 @@ func (q *pointSpendingCapController) SellerEdit(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Edit Tarif Penggunaan Poin",
 		"request", pointSpendingCap,
 		"pointSpendingCap", pointSpendingCap,
@@ -286,7 +297,8 @@ func (q *pointSpendingCapController) SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointSpendingCapController-SellerUpdate"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
@@ -317,6 +329,7 @@ func (q *pointSpendingCapController) SellerUpdate(c fiber.Ctx) (err error) {
 		"path", c.OriginalURL(),
 		"csrfToken", csrfToken,
 		"currentSeller", currentSeller,
+		"notifications", notifications,
 		"pageTitle", "Edit Tarif Penggunaan Poin",
 		"request", pointSpendingCap,
 		"pointSpendingCap", pointSpendingCap,
@@ -392,7 +405,7 @@ func (q *pointSpendingCapController) SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointSpendingCapController-SellerDelete"
 	sess := session.FromContext(c)
-	currentSeller, _ := sess.Get(models.CurrentSeller).(*models.Seller)
+	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
 		flash = helper.NewFlashMessage()
