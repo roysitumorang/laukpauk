@@ -439,6 +439,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.AdminService,
 		q.BuyerService,
 		q.NotificationService,
+		q.KafkaClient,
 	).Mount(app.Group("/notifications"))
 	controllers.NewRecipeController(
 		q.SellerService,

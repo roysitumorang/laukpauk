@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
@@ -24,6 +25,7 @@ type (
 		adminService        services.AdminService
 		buyerService        services.BuyerService
 		notificationService services.NotificationService
+		kafkaClient         *externals.KafkaClient
 	}
 )
 
@@ -31,11 +33,13 @@ func NewNotificationController(
 	adminService services.AdminService,
 	buyerService services.BuyerService,
 	notificationService services.NotificationService,
+	kafkaClient *externals.KafkaClient,
 ) *notificationController {
 	return &notificationController{
 		adminService:        adminService,
 		buyerService:        buyerService,
 		notificationService: notificationService,
+		kafkaClient:         kafkaClient,
 	}
 }
 
@@ -95,7 +99,7 @@ func (q *notificationController) AdminIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.notificationService.FindNotifications(
 		ctx,
-		request,
+		request.WithAdminIDs(currentAdmin.ID),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNotifications")
 		return c.Render("/admin/notification_index", params.Push(
@@ -186,9 +190,9 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	params.Push("buyers", buyers)
-	mapBuyerIDs := map[uuid.UUID]struct{}{}
+	mapBuyerIDs := map[uuid.UUID]*models.Buyer{}
 	for _, buyer := range buyers {
-		mapBuyerIDs[buyer.ID] = struct{}{}
+		mapBuyerIDs[buyer.ID] = buyer
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateNotification(ctx, c)
 	params.Push("request", request)
@@ -199,7 +203,8 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	if _, ok := mapBuyerIDs[request.BuyerID]; !ok {
+	buyer, ok := mapBuyerIDs[request.BuyerID]
+	if !ok {
 		return c.Render("/admin/notification_new", params.Push(
 			"flash", flash.Danger("buyer_id: not found"),
 		), "admin/layouts/authenticated")
@@ -224,8 +229,16 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.notificationService.CreateNotification(ctx, tx, request); err != nil {
+	notification, err := q.notificationService.CreateNotification(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateNotification")
+		return c.Render("/admin/notification_new", params.Push(
+			"flash", flash.Danger(err.Error()),
+		), "admin/layouts/authenticated")
+	}
+	buyer.UnreadNotifications = 1
+	if _, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
 		return c.Render("/admin/notification_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -233,7 +246,7 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("admin/blog_new", params.Push(
+			return c.Render("admin/notification_new", params.Push(
 				"flash", flash.Danger(err.Error()),
 				"request", request.SetPhoto(nil),
 			), "admin/layouts/authenticated")
@@ -244,6 +257,13 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 		return c.Render("/admin/notification_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
+	}
+	if err = q.kafkaClient.Publish(ctx, models.TopicMessage{
+		Topic: models.TopicNotification,
+		Event: models.TopicNotificationEventSend,
+		ID:    notification.ID,
+	}); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
 	}
 	return flash.Clear(c, sess.Session).
 		Success("push notification created successfully").

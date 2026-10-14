@@ -63,10 +63,10 @@
 									<div class="col-lg-8">
 										<div class="form-group">
 											<label for="user_id" class="label-title">Penerima Notifikasi</label>
-											<select name="user_id" id="user_id" class="form-control" required>
+											<select name="buyer_id" id="buyer_id" class="form-control" required>
 												<option value="" disabled>- Pilih Penerima -</option>
 												{{ range _, buyer := buyers }}
-												<option value="{{ buyer.ID }}"{{ if request.UserID.Compare(buyer.ID) == 0 }} selected{{ end }}>{{ buyer.Name }}</option>
+												<option value="{{ buyer.ID }}"{{ if request.BuyerID.Compare(buyer.ID) == 0 }} selected{{ end }}>{{ buyer.Name }}</option>
 												{{ end }}
 											</select>
 										</div>
