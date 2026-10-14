@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"image/jpeg"
@@ -23,7 +24,6 @@ import (
 	"unsafe"
 	"uuid"
 
-	"github.com/goccy/go-json"
 	"github.com/godruoyi/go-snowflake"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"

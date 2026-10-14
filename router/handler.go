@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/storage/valkey"
 	"github.com/jackc/pgx/v5/pgxpool"
