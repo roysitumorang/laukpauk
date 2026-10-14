@@ -23,52 +23,50 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	Service struct {
-		DbWrite                   *pgxpool.Pool
-		Migration                 *migrations.Migration
-		KafkaClient               *externals.KafkaClient
-		FcmClient                 *externals.FcmClient
-		ZenzivaClient             *externals.ZenzivaClient
-		RoutesApiClient           *externals.RoutesApiClient
-		XenditClient              *externals.XenditClient
-		TelegramBotClient         *externals.TelegramBotClient
-		Storage                   fiber.Storage
-		AdminService              services.AdminService
-		BuyerService              services.BuyerService
-		ArticleService            services.ArticleService
-		BlogService               services.BlogService
-		LandingPageService        services.LandingPageService
-		LandingPageItemService    services.LandingPageItemService
-		MessageService            services.MessageService
-		ProductCategoryService    services.ProductCategoryService
-		ProductService            services.ProductService
-		ProductVariantService     services.ProductVariantService
-		TextMessageService        services.TextMessageService
-		SettingService            services.SettingService
-		DeliveryPlanService       services.DeliveryPlanService
-		PointService              services.PointService
-		VoucherService            services.VoucherService
-		PointEarningCapService    services.PointEarningCapService
-		PointSpendingCapService   services.PointSpendingCapService
-		TransactionService        services.TransactionService
-		JsonWebTokenService       services.JsonWebTokenService
-		NotificationTargetService services.NotificationTargetService
-		CartService               services.CartService
-		TransactionCounterService services.TransactionCounterService
-		DeliveryRouteService      services.DeliveryRouteService
-		PaymentChannelService     services.PaymentChannelService
-		BannerService             services.BannerService
-		NotificationService       services.NotificationService
-		RecipeService             services.RecipeService
-		RecipeGuideService        services.RecipeGuideService
-		RecipeItemService         services.RecipeItemService
-		CompanyService            services.CompanyService
-		SellerService             services.SellerService
-		OneTimePasswordService    services.OneTimePasswordService
-		PointEarningService       services.PointEarningService
-	}
-)
+type Service struct {
+	DbWrite                   *pgxpool.Pool
+	Migration                 *migrations.Migration
+	KafkaClient               *externals.KafkaClient
+	FcmClient                 *externals.FcmClient
+	ZenzivaClient             *externals.ZenzivaClient
+	RoutesApiClient           *externals.RoutesApiClient
+	XenditClient              *externals.XenditClient
+	TelegramBotClient         *externals.TelegramBotClient
+	Storage                   fiber.Storage
+	AdminService              services.AdminService
+	BuyerService              services.BuyerService
+	ArticleService            services.ArticleService
+	BlogService               services.BlogService
+	LandingPageService        services.LandingPageService
+	LandingPageItemService    services.LandingPageItemService
+	MessageService            services.MessageService
+	ProductCategoryService    services.ProductCategoryService
+	ProductService            services.ProductService
+	ProductVariantService     services.ProductVariantService
+	TextMessageService        services.TextMessageService
+	SettingService            services.SettingService
+	DeliveryPlanService       services.DeliveryPlanService
+	PointService              services.PointService
+	VoucherService            services.VoucherService
+	PointEarningCapService    services.PointEarningCapService
+	PointSpendingCapService   services.PointSpendingCapService
+	TransactionService        services.TransactionService
+	JsonWebTokenService       services.JsonWebTokenService
+	NotificationTargetService services.NotificationTargetService
+	CartService               services.CartService
+	TransactionCounterService services.TransactionCounterService
+	DeliveryRouteService      services.DeliveryRouteService
+	PaymentChannelService     services.PaymentChannelService
+	BannerService             services.BannerService
+	NotificationService       services.NotificationService
+	RecipeService             services.RecipeService
+	RecipeGuideService        services.RecipeGuideService
+	RecipeItemService         services.RecipeItemService
+	CompanyService            services.CompanyService
+	SellerService             services.SellerService
+	OneTimePasswordService    services.OneTimePasswordService
+	PointEarningService       services.PointEarningService
+}
 
 func MakeHandler(ctx context.Context) (*Service, error) {
 	ctxt := "Router-MakeHandler"
@@ -101,14 +99,16 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPing")
 		return nil, err
 	}
-	topics := make([]models.TopicRequest, len(models.SliceTopics))
+	messages := make([]models.TopicMessage, len(models.SliceTopics))
 	for i, topic := range models.SliceTopics {
-		topics[i] = models.TopicRequest{
-			Topic:    models.Topic(topic),
-			Messages: []models.TopicMessage{},
+		messages[i] = models.TopicMessage{
+			Topic: models.Topic(topic),
 		}
 	}
-	_ = kafkaClient.Publish(ctx, topics...)
+	if err = kafkaClient.Publish(ctx, messages...); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrPublish")
+		return nil, err
+	}
 	externalApiCallTimeoutDuration, err := time.ParseDuration(os.Getenv("EXTERNAL_API_CALL_TIMEOUT_DURATION"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseDuration")
@@ -212,6 +212,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		pointRepository,
 		productVariantRepository,
 		paymentChannelRepository,
+		sellerRepository,
+		notificationRepository,
 		xenditClient,
 	)
 	jsonWebTokenService := services.NewJsonWebTokenService(jsonWebTokenRepository)
@@ -315,6 +317,9 @@ func (q *Service) Consume(ctx context.Context) error {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUnmarshal")
 			} else {
 				if err = q.TextMessageService.ConsumeMessage(ctx, message.Topic, message); err != nil {
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrConsumeMessage")
+				}
+				if err = q.NotificationService.ConsumeMessage(ctx, message.Topic, message); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrConsumeMessage")
 				}
 			}

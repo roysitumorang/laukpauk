@@ -26,16 +26,13 @@ type TopicMessage struct {
 	ID    uuid.UUID  `json:"id"`
 }
 
-type TopicRequest struct {
-	Topic    Topic
-	Messages []TopicMessage
-}
-
 var SliceTopics = []string{
 	TopicTextMessage.String(),
+	TopicNotification.String(),
 }
 var MapTopics = map[Topic]struct{}{
-	TopicTextMessage: {},
+	TopicTextMessage:  {},
+	TopicNotification: {},
 }
 
 type Map map[string]any

@@ -385,6 +385,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.BuyerService,
 		q.TransactionService,
 		q.JsonWebTokenService,
+		q.KafkaClient,
 	).Mount(app.Group("/transactions"))
 	controllers.NewNotificationTargetController(
 		q.AdminService,

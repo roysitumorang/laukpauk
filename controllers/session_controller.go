@@ -23,18 +23,16 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	sessionController struct {
-		adminService           services.AdminService
-		sellerService          services.SellerService
-		buyerService           services.BuyerService
-		companyService         services.CompanyService
-		jsonWebTokenService    services.JsonWebTokenService
-		oneTimePasswordService services.OneTimePasswordService
-		textMessageService     services.TextMessageService
-		kafkaService           *externals.KafkaClient
-	}
-)
+type sessionController struct {
+	adminService           services.AdminService
+	sellerService          services.SellerService
+	buyerService           services.BuyerService
+	companyService         services.CompanyService
+	jsonWebTokenService    services.JsonWebTokenService
+	oneTimePasswordService services.OneTimePasswordService
+	textMessageService     services.TextMessageService
+	kafkaClient            *externals.KafkaClient
+}
 
 func NewSessionController(
 	adminService services.AdminService,
@@ -44,7 +42,7 @@ func NewSessionController(
 	jsonWebTokenService services.JsonWebTokenService,
 	oneTimePasswordService services.OneTimePasswordService,
 	textMessageService services.TextMessageService,
-	kafkaService *externals.KafkaClient,
+	kafkaClient *externals.KafkaClient,
 ) *sessionController {
 	return &sessionController{
 		adminService:           adminService,
@@ -54,7 +52,7 @@ func NewSessionController(
 		jsonWebTokenService:    jsonWebTokenService,
 		oneTimePasswordService: oneTimePasswordService,
 		textMessageService:     textMessageService,
-		kafkaService:           kafkaService,
+		kafkaClient:            kafkaClient,
 	}
 }
 

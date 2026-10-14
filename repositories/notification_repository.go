@@ -87,7 +87,9 @@ func (q *notificationRepository) FindNotifications(
 		, body
 		, photo
 		, params
-		, created_by
+		, created_by_admin_id
+		, created_by_seller_id
+		, created_by_buyer_id
 		, created_at
 		, read_at`,
 	)
@@ -148,7 +150,9 @@ func (q *notificationRepository) FindNotifications(
 			&notification.Body,
 			&notification.Photo,
 			&notification.Params,
-			&notification.CreatedBy,
+			&notification.CreatedByAdminID,
+			&notification.CreatedBySellerID,
+			&notification.CreatedByBuyerID,
 			&notification.CreatedAt,
 			&notification.ReadAt,
 		); err != nil {
@@ -187,7 +191,9 @@ func (q *notificationRepository) FindNotification(
 			, body
 			, photo
 			, params
-			, created_by
+			, created_by_admin_id
+			, created_by_seller_id
+			, created_by_buyer_id
 			, created_at
 			, read_at
 		FROM notifications %s`,
@@ -204,7 +210,9 @@ func (q *notificationRepository) FindNotification(
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedBy,
+		&response.CreatedByAdminID,
+		&response.CreatedByBuyerID,
+		&response.CreatedBySellerID,
 		&response.CreatedAt,
 		&response.ReadAt,
 	)
@@ -236,9 +244,11 @@ func (q *notificationRepository) CreateNotification(
 			, body
 			, photo
 			, params
-			, created_by
+			, created_by_admin_id
+			, created_by_seller_id
+			, created_by_buyer_id
 			, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id
 			, admin_id
 			, seller_id
@@ -248,7 +258,9 @@ func (q *notificationRepository) CreateNotification(
 			, body
 			, photo
 			, params
-			, created_by
+			, created_by_admin_id
+			, created_by_seller_id
+			, created_by_buyer_id
 			, created_at
 			, sent_at
 			, read_at`,
@@ -260,7 +272,9 @@ func (q *notificationRepository) CreateNotification(
 		request.Body,
 		request.Photo,
 		request.Params,
-		request.CreatedBy,
+		request.CreatedByAdminID,
+		request.CreatedBySellerID,
+		request.CreatedByBuyerID,
 		request.CreatedAt,
 	).Scan(
 		&response.ID,
@@ -272,7 +286,9 @@ func (q *notificationRepository) CreateNotification(
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedBy,
+		&response.CreatedByAdminID,
+		&response.CreatedBySellerID,
+		&response.CreatedByBuyerID,
 		&response.CreatedAt,
 		&response.SentAt,
 		&response.ReadAt,
@@ -302,7 +318,9 @@ func (q *notificationRepository) UpdateNotification(
 			, body
 			, photo
 			, params
-			, created_by
+			, created_by_admin_id
+			, created_by_seller_id
+			, created_by_buyer_id
 			, created_at
 			, sent_at
 			, read_at
@@ -320,7 +338,9 @@ func (q *notificationRepository) UpdateNotification(
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedBy,
+		&response.CreatedByAdminID,
+		&response.CreatedBySellerID,
+		&response.CreatedByBuyerID,
 		&response.CreatedAt,
 		&response.SentAt,
 		&response.ReadAt,
@@ -377,7 +397,9 @@ func (q *notificationRepository) UpdateNotification(
 			, body
 			, photo
 			, params
-			, created_by
+			, created_by_admin_id
+			, created_by_seller_id
+			, created_by_buyer_id
 			, created_at
 			, sent_at
 			, read_at`,
@@ -393,7 +415,9 @@ func (q *notificationRepository) UpdateNotification(
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedBy,
+		&response.CreatedByAdminID,
+		&response.CreatedBySellerID,
+		&response.CreatedByBuyerID,
 		&response.CreatedAt,
 		&response.SentAt,
 		&response.ReadAt,

@@ -51,10 +51,9 @@ func (s *KafkaClient) Ping(ctx context.Context) (err error) {
 	return
 }
 
-func (s *KafkaClient) Publish(ctx context.Context, request ...models.TopicRequest) (err error) {
+func (s *KafkaClient) Publish(ctx context.Context, request ...models.TopicMessage) (err error) {
 	ctxt := "KafkaClient-Publish"
-	n := len(request)
-	if n == 0 {
+	if len(request) == 0 {
 		return
 	}
 	sb := pools.BuilderPool.Get()
@@ -64,29 +63,27 @@ func (s *KafkaClient) Publish(ctx context.Context, request ...models.TopicReques
 	}()
 	now := time.Now()
 	var wg sync.WaitGroup
-	for _, topic := range request {
-		for _, payload := range topic.Messages {
-			payloadJSON, err := json.Marshal(payload)
-			if err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMarshal")
-				return err
-			}
-			wg.Add(1)
-			record := &kgo.Record{
-				Topic: topic.Topic.String(),
-				Value: payloadJSON,
-			}
-			s.client.Produce(ctx, record, func(result *kgo.Record, err error) {
-				defer wg.Done()
-				if err != nil {
-					helper.Capture(ctx, slog.LevelError, fmt.Errorf("publish message failed: %v", err), ctxt, "ErrProduce")
-					return
-				}
-				sb.Reset()
-				_, _ = fmt.Fprintf(sb, "published message to topic %s[%d]@%d: %s in %s", result.Topic, result.Partition, result.Offset, result.Value, time.Since(now).String())
-				helper.Log(ctx, slog.LevelInfo, sb.String(), ctxt, "")
-			})
+	for _, message := range request {
+		payload, err := json.Marshal(message)
+		if err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMarshal")
+			return err
 		}
+		wg.Add(1)
+		record := &kgo.Record{
+			Topic: message.Topic.String(),
+			Value: payload,
+		}
+		s.client.Produce(ctx, record, func(result *kgo.Record, err error) {
+			defer wg.Done()
+			if err != nil {
+				helper.Capture(ctx, slog.LevelError, fmt.Errorf("publish message failed: %v", err), ctxt, "ErrProduce")
+				return
+			}
+			sb.Reset()
+			_, _ = fmt.Fprintf(sb, "published message to topic %s[%d]@%d: %s in %s", result.Topic, result.Partition, result.Offset, result.Value, time.Since(now).String())
+			helper.Log(ctx, slog.LevelInfo, sb.String(), ctxt, "")
+		})
 	}
 	wg.Wait()
 	if err = s.client.Flush(ctx); err != nil {

@@ -109,13 +109,7 @@ func main() {
 									ID:    textMessage.ID,
 								}
 							}
-							if err = service.KafkaClient.Publish(
-								ctx,
-								models.TopicRequest{
-									Topic:    models.TopicTextMessage,
-									Messages: messages,
-								},
-							); err != nil {
+							if err = service.KafkaClient.Publish(ctx, messages...); err != nil {
 								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
 								return
 							}

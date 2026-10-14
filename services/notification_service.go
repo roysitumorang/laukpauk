@@ -159,9 +159,9 @@ func (q *notificationService) ConsumeMessage(
 		if notification.AdminID.Compare(uuid.Nil()) != 0 {
 			notificationTargetFilter.WithAdminIDs(notification.AdminID)
 		} else if notification.SellerID.Compare(uuid.Nil()) != 0 {
-			notificationTargetFilter.WithAdminIDs(notification.SellerID)
+			notificationTargetFilter.WithSellerIDs(notification.SellerID)
 		} else if notification.BuyerID.Compare(uuid.Nil()) != 0 {
-			notificationTargetFilter.WithAdminIDs(notification.BuyerID)
+			notificationTargetFilter.WithBuyerIDs(notification.BuyerID)
 		}
 		notificationTargets, _, _, err := q.notificationTargetRepository.FindNotificationTargets(
 			ctx,

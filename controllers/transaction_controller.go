@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
@@ -20,15 +21,14 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	transactionController struct {
-		companyService      services.CompanyService
-		sellerService       services.SellerService
-		buyerService        services.BuyerService
-		transactionService  services.TransactionService
-		jsonWebTokenService services.JsonWebTokenService
-	}
-)
+type transactionController struct {
+	companyService      services.CompanyService
+	sellerService       services.SellerService
+	buyerService        services.BuyerService
+	transactionService  services.TransactionService
+	jsonWebTokenService services.JsonWebTokenService
+	kafkaClient         *externals.KafkaClient
+}
 
 func NewTransactionController(
 	companyService services.CompanyService,
@@ -36,6 +36,7 @@ func NewTransactionController(
 	buyerService services.BuyerService,
 	transactionService services.TransactionService,
 	jsonWebTokenService services.JsonWebTokenService,
+	kafkaClient *externals.KafkaClient,
 ) *transactionController {
 	return &transactionController{
 		companyService:      companyService,
@@ -43,6 +44,7 @@ func NewTransactionController(
 		buyerService:        buyerService,
 		transactionService:  transactionService,
 		jsonWebTokenService: jsonWebTokenService,
+		kafkaClient:         kafkaClient,
 	}
 }
 
@@ -114,12 +116,23 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	}
 	request.CompanyID = company.ID
 	request.BuyerID = currentBuyer.ID
-	response, err := q.transactionService.CreateTransaction(ctx, company, currentBuyer, request)
+	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, company, currentBuyer, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
+	}
+	messages := make([]models.TopicMessage, len(notificationIDs))
+	for i := range notificationIDs {
+		messages[i] = models.TopicMessage{
+			Topic: models.TopicNotification,
+			Event: models.TopicNotificationEventSend,
+			ID:    notificationIDs[i],
+		}
+	}
+	if err = q.kafkaClient.Publish(ctx, messages...); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
 	}
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("transaction created successfully").

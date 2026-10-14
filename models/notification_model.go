@@ -29,20 +29,22 @@ const TopicNotification Topic = "notification"
 const TopicNotificationEventSend TopicEvent = "send"
 
 type Notification struct {
-	RowNo            int64             `json:"-" form:"-"`
-	ID               uuid.UUID         `json:"-" form:"-"`
-	AdminID          uuid.UUID         `json:"-" form:"admin_id"`
-	SellerID         uuid.UUID         `json:"-" form:"seller_id"`
-	BuyerID          uuid.UUID         `json:"-" form:"buyer_id"`
-	NotificationType NotificationType  `json:"-" form:"-"`
-	Subject          string            `json:"-" form:"subject"`
-	Body             string            `json:"-" form:"body"`
-	Photo            *string           `json:"-" form:"photo"`
-	Params           map[string]string `json:"-" form:"-"`
-	CreatedBy        *uuid.UUID        `json:"-" form:"-"`
-	CreatedAt        time.Time         `json:"-" form:"-"`
-	SentAt           *time.Time        `json:"-" form:"-"`
-	ReadAt           *time.Time        `json:"-" form:"-"`
+	RowNo             int64             `json:"-" form:"-"`
+	ID                uuid.UUID         `json:"-" form:"-"`
+	AdminID           uuid.UUID         `json:"-" form:"admin_id"`
+	SellerID          uuid.UUID         `json:"-" form:"seller_id"`
+	BuyerID           uuid.UUID         `json:"-" form:"buyer_id"`
+	NotificationType  NotificationType  `json:"-" form:"-"`
+	Subject           string            `json:"-" form:"subject"`
+	Body              string            `json:"-" form:"body"`
+	Photo             *string           `json:"-" form:"photo"`
+	Params            map[string]string `json:"-" form:"-"`
+	CreatedByAdminID  uuid.UUID         `json:"-" form:"-"`
+	CreatedBySellerID uuid.UUID         `json:"-" form:"-"`
+	CreatedByBuyerID  uuid.UUID         `json:"-" form:"-"`
+	CreatedAt         time.Time         `json:"-" form:"-"`
+	SentAt            *time.Time        `json:"-" form:"-"`
+	ReadAt            *time.Time        `json:"-" form:"-"`
 }
 
 func (q *Notification) New() bool {

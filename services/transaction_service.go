@@ -32,7 +32,7 @@ type TransactionService interface {
 		company *models.Company,
 		buyer *models.Buyer,
 		request *models.Transaction,
-	) (*models.Transaction, error)
+	) (*models.Transaction, []uuid.UUID, error)
 	UpdateTransaction(
 		ctx context.Context,
 		tx pgx.Tx,
@@ -67,6 +67,8 @@ type transactionService struct {
 	pointRepository              repositories.PointRepository
 	productVariantRepository     repositories.ProductVariantRepository
 	paymentChannelRepository     repositories.PaymentChannelRepository
+	sellerRepository             repositories.SellerRepository
+	notificationRepository       repositories.NotificationRepository
 	xenditClient                 *externals.XenditClient
 }
 
@@ -83,6 +85,8 @@ func NewTransactionService(
 	pointRepository repositories.PointRepository,
 	productVariantRepository repositories.ProductVariantRepository,
 	paymentChannelRepository repositories.PaymentChannelRepository,
+	sellerRepository repositories.SellerRepository,
+	notificationRepository repositories.NotificationRepository,
 	xenditClient *externals.XenditClient,
 ) TransactionService {
 	return &transactionService{
@@ -98,6 +102,8 @@ func NewTransactionService(
 		pointRepository:              pointRepository,
 		productVariantRepository:     productVariantRepository,
 		paymentChannelRepository:     paymentChannelRepository,
+		sellerRepository:             sellerRepository,
+		notificationRepository:       notificationRepository,
 		xenditClient:                 xenditClient,
 	}
 }
@@ -149,7 +155,7 @@ func (q *transactionService) CreateTransaction(
 	company *models.Company,
 	buyer *models.Buyer,
 	request *models.Transaction,
-) (*models.Transaction, error) {
+) (*models.Transaction, []uuid.UUID, error) {
 	ctxt := "TransactionService-CreateTransaction"
 	cart, err := q.cartRepository.FindCart(
 		ctx,
@@ -158,10 +164,10 @@ func (q *transactionService) CreateTransaction(
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
-		return nil, err
+		return nil, nil, err
 	}
 	if cart == nil || request.CartID == nil || request.CartID.Compare(cart.ID) != 0 {
-		return nil, errors.New("cart_id: not found")
+		return nil, nil, errors.New("cart_id: not found")
 	}
 	mapCartItems := map[uuid.UUID]*models.CartItem{}
 	for _, cartItem := range cart.Items {
@@ -175,10 +181,10 @@ func (q *transactionService) CreateTransaction(
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryRoute")
-		return nil, err
+		return nil, nil, err
 	}
 	if deliveryRoute == nil {
-		return nil, errors.New("delivery_route_id: not found")
+		return nil, nil, errors.New("delivery_route_id: not found")
 	}
 	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
 	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
@@ -193,13 +199,13 @@ func (q *transactionService) CreateTransaction(
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
-		return nil, err
+		return nil, nil, err
 	}
 	if deliveryPlan == nil {
-		return nil, models.ErrDeliveryPlanNotFound
+		return nil, nil, models.ErrDeliveryPlanNotFound
 	}
 	if _, ok := deliveryPlan.MapDeliveryTimes[request.DeliveryDatetime.UnixNano()]; !ok {
-		return nil, errors.New("delivery_time: not found")
+		return nil, nil, errors.New("delivery_time: not found")
 	}
 	request.DeliveryEstimatedCost = request.DeliveryDistanceKM * company.DeliveryCostPerKM
 	if n := len(request.Items); n > 0 {
@@ -207,14 +213,14 @@ func (q *transactionService) CreateTransaction(
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
 		for i, item := range request.Items {
 			if item.CartItemID == nil {
-				return nil, fmt.Errorf("items[%d].cart_item_id: is required", i)
+				return nil, nil, fmt.Errorf("items[%d].cart_item_id: is required", i)
 			}
 			cartItem, ok := mapCartItems[*item.CartItemID]
 			if !ok {
-				return nil, fmt.Errorf("items[%d].cart_item_id: not found in your cart", i)
+				return nil, nil, fmt.Errorf("items[%d].cart_item_id: not found in your cart", i)
 			}
 			if _, ok = mapCartItemIDs[*item.CartItemID]; ok {
-				return nil, fmt.Errorf("items[%d].cart_item_id: duplicated", i)
+				return nil, nil, fmt.Errorf("items[%d].cart_item_id: duplicated", i)
 			}
 			mapCartItemIDs[*item.CartItemID] = struct{}{}
 			item.ProductVariantID = cartItem.ProductVariantID
@@ -231,7 +237,7 @@ func (q *transactionService) CreateTransaction(
 		)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-			return nil, err
+			return nil, nil, err
 		}
 		mapProductVariants := make(map[uuid.UUID]*models.ProductVariant, len(productVariants))
 		for _, productVariant := range productVariants {
@@ -240,7 +246,7 @@ func (q *transactionService) CreateTransaction(
 		for i, item := range request.Items {
 			productVariant, ok := mapProductVariants[item.ProductVariantID]
 			if !ok || !productVariant.ProductReadyStock {
-				return nil, fmt.Errorf("items[%d].product_variant_id: not found or out of stock", i)
+				return nil, nil, fmt.Errorf("items[%d].product_variant_id: not found or out of stock", i)
 			}
 			item.ProductID = productVariant.ProductID
 			item.ProductName = productVariant.ProductName
@@ -255,7 +261,7 @@ func (q *transactionService) CreateTransaction(
 	if company.ReferralPointsEnabled {
 		if request.ReferralCode != nil {
 			if request.ShoppingCost < company.ReferralPointsMinimumShoppingCost {
-				return nil, fmt.Errorf("referral_code: requires shopping cost minimum %s", humanize.Comma(company.ReferralPointsMinimumShoppingCost))
+				return nil, nil, fmt.Errorf("referral_code: requires shopping cost minimum %s", humanize.Comma(company.ReferralPointsMinimumShoppingCost))
 			}
 			referrer, err := q.buyerRepository.FindBuyer(
 				ctx,
@@ -265,10 +271,10 @@ func (q *transactionService) CreateTransaction(
 			)
 			if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-				return nil, err
+				return nil, nil, err
 			}
 			if referrer == nil {
-				return nil, errors.New("referral_code: is invalid")
+				return nil, nil, errors.New("referral_code: is invalid")
 			}
 			_, total, _, err := q.transactionRepository.FindTransactions(
 				ctx,
@@ -285,12 +291,12 @@ func (q *transactionService) CreateTransaction(
 			)
 			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-				return nil, err
+				return nil, nil, err
 			}
 			if (buyer.ReferrerID != nil &&
 				buyer.ReferrerID.Compare(referrer.ID) != 0) ||
 				int(total) >= len(company.ReferralPointsSlots) {
-				return nil, errors.New("referral_code: is invalid")
+				return nil, nil, errors.New("referral_code: is invalid")
 			}
 			request.ReferrerID = &referrer.ID
 			request.ReferralPoints = company.ReferralPointsSlots[total]
@@ -310,7 +316,7 @@ func (q *transactionService) CreateTransaction(
 		)
 		if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
-			return nil, err
+			return nil, nil, err
 		}
 		if pointSpendingCap != nil {
 			request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
@@ -328,10 +334,10 @@ func (q *transactionService) CreateTransaction(
 			)
 			if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
-				return nil, err
+				return nil, nil, err
 			}
 			if voucher == nil {
-				return nil, models.ErrVoucherNotFound
+				return nil, nil, models.ErrVoucherNotFound
 			}
 			if voucher.QuotaPerBuyer > 0 {
 				_, total, _, err := q.transactionRepository.FindTransactions(
@@ -345,10 +351,10 @@ func (q *transactionService) CreateTransaction(
 				)
 				if err != nil {
 					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-					return nil, err
+					return nil, nil, err
 				}
-				if total >= int64(voucher.QuotaPerBuyer) {
-					return nil, errors.New("voucher_code: quota exceeded")
+				if total >= voucher.QuotaPerBuyer {
+					return nil, nil, errors.New("voucher_code: quota exceeded")
 				}
 			}
 			request.VoucherID = &voucher.ID
@@ -361,6 +367,16 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	request.CalculateDiscount()
+	sellers, _, _, err := q.sellerRepository.FindSellers(
+		ctx,
+		models.NewSellerFilter().
+			WithCompanyIDs(company.ID).
+			WithStatuses(models.SellerStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSellers")
+		return nil, nil, err
+	}
 	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
@@ -379,7 +395,7 @@ func (q *transactionService) CreateTransaction(
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveTransactionCounter")
-		return nil, err
+		return nil, nil, err
 	}
 	sb.Reset()
 	_, _ = fmt.Fprintf(
@@ -401,7 +417,7 @@ func (q *transactionService) CreateTransaction(
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return nil, err
+		return nil, nil, err
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -414,11 +430,11 @@ func (q *transactionService) CreateTransaction(
 	response, err := q.transactionRepository.CreateTransaction(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
-		return nil, err
+		return nil, nil, err
 	}
 	if request.PaymentAmount > 0 {
 		if request.PaymentChannelID == nil || request.PaymentChannelID.Compare(uuid.Nil()) == 0 {
-			return nil, errors.New("payment_channel_id: is required")
+			return nil, nil, errors.New("payment_channel_id: is required")
 		}
 		paymentChannel, err := q.paymentChannelRepository.FindPaymentChannel(
 			ctx,
@@ -428,10 +444,10 @@ func (q *transactionService) CreateTransaction(
 		)
 		if err != nil && !errors.Is(err, models.ErrPaymentChannelNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannel")
-			return nil, err
+			return nil, nil, err
 		}
 		if paymentChannel == nil {
-			return nil, errors.New("payment_channel_id: not found")
+			return nil, nil, errors.New("payment_channel_id: not found")
 		}
 		paymentRequestID, paymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, err := q.xenditClient.CreatePaymentRequest(
 			ctx,
@@ -447,7 +463,7 @@ func (q *transactionService) CreateTransaction(
 		)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePaymentRequest")
-			return nil, err
+			return nil, nil, err
 		}
 		duration := company.PaymentTerms
 		if virtualAccountExpiredAt != nil {
@@ -462,7 +478,7 @@ func (q *transactionService) CreateTransaction(
 		response.PaymentVirtualAccountExpiredAt = virtualAccountExpiredAt
 		if response, err = q.transactionRepository.UpdateTransaction(ctx, tx, response); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	cart.BuyerID = nil
@@ -471,13 +487,41 @@ func (q *transactionService) CreateTransaction(
 	cart.Items = nil
 	if _, err = q.cartRepository.SaveCart(ctx, tx, cart); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
-		return nil, err
+		return nil, nil, err
+	}
+	notificationIDs := make([]uuid.UUID, len(sellers))
+	for i, seller := range sellers {
+		notification, err := q.notificationRepository.CreateNotification(
+			ctx,
+			tx,
+			&models.Notification{
+				SellerID:         seller.ID,
+				NotificationType: models.NotificationTypeTransaction,
+				Subject:          "New Order",
+				Body:             helper.Sprintf(`New Order Reference No "%s"`, response.ReferenceNumber),
+				Params: map[string]string{
+					"id": response.ID.String(),
+				},
+				CreatedByBuyerID: buyer.ID,
+				CreatedAt:        response.CreatedAt,
+			},
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateNotification")
+			return nil, nil, err
+		}
+		seller.UnreadNotifications = 1
+		if _, err = q.sellerRepository.UpdateSeller(ctx, tx, seller); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSeller")
+			return nil, nil, err
+		}
+		notificationIDs[i] = notification.ID
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return nil, err
+		return nil, nil, err
 	}
-	return response, nil
+	return response, notificationIDs, nil
 }
 func (q *transactionService) UpdateTransaction(
 	ctx context.Context,

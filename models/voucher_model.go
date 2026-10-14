@@ -119,7 +119,7 @@ type Voucher struct {
 	Name                  string                `json:"name" form:"name"`
 	Discount              int64                 `json:"discount" form:"discount"`
 	MinimumPurchase       int64                 `json:"minimum_purchase" form:"minimum_purchase"`
-	QuotaPerBuyer         int                   `json:"-" form:"quota_per_buyer"`
+	QuotaPerBuyer         int64                 `json:"-" form:"quota_per_buyer"`
 	EffectiveStartTime    time.Time             `json:"effective_start_time" form:"-"`
 	RawEffectiveStartTime string                `json:"-" form:"effective_start_time"`
 	EffectiveEndTime      time.Time             `json:"effective_end_time" form:"-"`

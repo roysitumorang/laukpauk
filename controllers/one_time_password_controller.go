@@ -22,16 +22,14 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	oneTimePasswordController struct {
-		sellerService          services.SellerService
-		buyerService           services.BuyerService
-		companyService         services.CompanyService
-		oneTimePasswordService services.OneTimePasswordService
-		textMessageService     services.TextMessageService
-		kafkaService           *externals.KafkaClient
-	}
-)
+type oneTimePasswordController struct {
+	sellerService          services.SellerService
+	buyerService           services.BuyerService
+	companyService         services.CompanyService
+	oneTimePasswordService services.OneTimePasswordService
+	textMessageService     services.TextMessageService
+	kafkaClient            *externals.KafkaClient
+}
 
 func NewOneTimePasswordController(
 	sellerService services.SellerService,
@@ -39,7 +37,7 @@ func NewOneTimePasswordController(
 	companyService services.CompanyService,
 	oneTimePasswordService services.OneTimePasswordService,
 	textMessageService services.TextMessageService,
-	kafkaService *externals.KafkaClient,
+	kafkaClient *externals.KafkaClient,
 ) *oneTimePasswordController {
 	return &oneTimePasswordController{
 		sellerService:          sellerService,
@@ -47,7 +45,7 @@ func NewOneTimePasswordController(
 		companyService:         companyService,
 		oneTimePasswordService: oneTimePasswordService,
 		textMessageService:     textMessageService,
-		kafkaService:           kafkaService,
+		kafkaClient:            kafkaClient,
 	}
 }
 
@@ -205,17 +203,12 @@ func (q *oneTimePasswordController) SellerCreate(c fiber.Ctx) error {
 			"flash", flash.Danger(err.Error()),
 		))
 	}
-	if err = q.kafkaService.Publish(
+	if err = q.kafkaClient.Publish(
 		ctx,
-		models.TopicRequest{
+		models.TopicMessage{
 			Topic: models.TopicTextMessage,
-			Messages: []models.TopicMessage{
-				{
-					Topic: models.TopicTextMessage,
-					Event: models.TopicTextMessageEventSend,
-					ID:    textMessage.ID,
-				},
-			},
+			Event: models.TopicTextMessageEventSend,
+			ID:    textMessage.ID,
 		},
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
@@ -330,17 +323,12 @@ func (q *oneTimePasswordController) V1BuyerCreate(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	go func() {
-		if err = q.kafkaService.Publish(
+		if err = q.kafkaClient.Publish(
 			ctx,
-			models.TopicRequest{
+			models.TopicMessage{
 				Topic: models.TopicTextMessage,
-				Messages: []models.TopicMessage{
-					{
-						Topic: models.TopicTextMessage,
-						Event: models.TopicTextMessageEventSend,
-						ID:    textMessage.ID,
-					},
-				},
+				Event: models.TopicTextMessageEventSend,
+				ID:    textMessage.ID,
 			},
 		); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")

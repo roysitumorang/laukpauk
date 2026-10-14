@@ -204,12 +204,10 @@ func (q *notificationController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger("buyer_id: not found"),
 		), "admin/layouts/authenticated")
 	}
-	createdBy := currentAdmin.ID
-	now := time.Now()
 	request.NotificationType = models.NotificationTypeOther
 	request.Params = map[string]string{}
-	request.CreatedBy = &createdBy
-	request.CreatedAt = now
+	request.CreatedByAdminID = currentAdmin.ID
+	request.CreatedAt = time.Now()
 	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
