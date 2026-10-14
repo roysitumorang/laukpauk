@@ -767,9 +767,9 @@
 		}
 	</script>
 	<script type="module">
-		import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-		import { getMessaging, onMessage, onRegistered } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging.js";
-		import { getInstallations, getId } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-installations.js";
+		import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+		import { getMessaging, onMessage, onRegistered } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-messaging.js";
+		import { getInstallations, getId } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-installations.js";
 		const firebaseConfig = {
 			apiKey: "AIzaSyBob-5BSzx71suls2th1WpXpmw5gozG-Mk",
 			authDomain: "laukpauk-53b39.firebaseapp.com",
