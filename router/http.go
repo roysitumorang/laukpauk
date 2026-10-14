@@ -135,9 +135,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/landing_pages/*", To: "/landing_pages/admin/$1"},
 				{From: "/admin/landing_pages/*/*", To: "/landing_pages/admin/$1/$2"},
 				{From: "/admin/landing_pages/*/*/*", To: "/landing_pages/admin/$1/$2/$3"},
-				{From: "/admin/settings", To: "/settings/admin"},
-				{From: "/admin/settings/*", To: "/settings/admin/$1"},
-				{From: "/admin/settings/*/*", To: "/settings/admin/$1/$2"},
+				{From: "/admin/setting", To: "/setting/admin"},
 				{From: "/admin/admins", To: "/admins/admin"},
 				{From: "/admin/admins/*", To: "/admins/admin/$1"},
 				{From: "/admin/admins/*/*", To: "/admins/admin/$1/$2"},
@@ -219,7 +217,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/delivery_routes", To: "/delivery_routes/v1/buyer"},
 				{From: "/v1/buyer/point_earning_caps", To: "/point_earning_caps/v1/buyer"},
 				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
-				{From: "/v1/buyer/setting", To: "/setting/v1/buyer"},
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
 				{From: "/v1/buyer/companies/*", To: "/companies/v1/buyer/$1"},
 				{From: "/", To: "/home"},
@@ -413,10 +410,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/delivery_routes"))
 	controllers.NewSettingController(
 		q.AdminService,
-		q.BuyerService,
-		q.CompanyService,
 		q.SettingService,
-		q.JsonWebTokenService,
 	).Mount(app.Group("/setting"))
 	controllers.NewPaymentChannelController(
 		q.BuyerService,
