@@ -451,9 +451,9 @@ func (q *transactionService) CreateTransaction(
 		}
 		duration := company.PaymentTerms
 		if virtualAccountExpiredAt != nil {
-			duration = virtualAccountExpiredAt.Sub(response.CreatedAt) - time.Second
+			duration = models.Duration{Duration: virtualAccountExpiredAt.Sub(response.CreatedAt) - time.Second}
 		}
-		response.PaymentDueDate = new(now.Add(duration))
+		response.PaymentDueDate = new(now.Add(duration.Duration))
 		response.PaymentChannelID = request.PaymentChannelID
 		response.PaymentChannelName = &paymentChannel.Name
 		response.PaymentRequestID = &paymentRequestID
@@ -776,7 +776,7 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 	}(ctx)
 	for _, transaction := range transactions {
 		company, ok := mapCompanies[transaction.CompanyID]
-		if !ok || !transaction.ShippedAt.Before(now.Add(-company.MaximumDeliveryTime)) {
+		if !ok || !transaction.ShippedAt.Before(now.Add(-company.MaximumDeliveryTime.Duration)) {
 			continue
 		}
 		transaction.Status = models.TransactionStatusCompleted

@@ -204,8 +204,8 @@ func (q *companyRepository) FindCompanies(
 			&company.DeliveryCostPerKM,
 			&company.DeliveryMaxDistanceKM,
 			&company.WhatsappPhoneNumber,
-			&company.PaymentTerms,
-			&company.MaximumDeliveryTime,
+			&company.PaymentTerms.Duration,
+			&company.MaximumDeliveryTime.Duration,
 			&company.TransactionAutoWithdrawalEnabled,
 			&company.TransactionAutoWithdrawalWindowMin,
 			&company.TransactionAutoWithdrawalWindowMax,
@@ -310,8 +310,8 @@ func (q *companyRepository) FindCompany(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
+		&response.PaymentTerms.Duration,
+		&response.MaximumDeliveryTime.Duration,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
@@ -442,8 +442,8 @@ func (q *companyRepository) CreateCompany(
 		request.DeliveryCostPerKM,
 		request.DeliveryMaxDistanceKM,
 		request.WhatsappPhoneNumber,
-		request.PaymentTerms,
-		request.MaximumDeliveryTime,
+		request.PaymentTerms.Duration,
+		request.MaximumDeliveryTime.Duration,
 		request.TransactionAutoWithdrawalEnabled,
 		request.TransactionAutoWithdrawalWindowMin,
 		request.TransactionAutoWithdrawalWindowMax,
@@ -477,8 +477,8 @@ func (q *companyRepository) CreateCompany(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
+		&response.PaymentTerms.Duration,
+		&response.MaximumDeliveryTime.Duration,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
@@ -585,8 +585,8 @@ func (q *companyRepository) UpdateCompany(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
+		&response.PaymentTerms.Duration,
+		&response.MaximumDeliveryTime.Duration,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
@@ -784,14 +784,14 @@ func (q *companyRepository) UpdateCompany(
 		_, _ = fmt.Fprintf(sb, " whatsapp_phone_number = $%d", n)
 	}
 	if response.PaymentTerms != request.PaymentTerms {
-		params = append(params, request.PaymentTerms)
+		params = append(params, request.PaymentTerms.Duration)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " payment_terms = $%d", n)
 	}
 	if response.MaximumDeliveryTime != request.MaximumDeliveryTime {
-		params = append(params, request.MaximumDeliveryTime)
+		params = append(params, request.MaximumDeliveryTime.Duration)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
@@ -913,8 +913,8 @@ func (q *companyRepository) UpdateCompany(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
+		&response.PaymentTerms.Duration,
+		&response.MaximumDeliveryTime.Duration,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
@@ -1024,8 +1024,8 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
+		&response.PaymentTerms.Duration,
+		&response.MaximumDeliveryTime.Duration,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
@@ -1118,8 +1118,8 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
+		&response.PaymentTerms.Duration,
+		&response.MaximumDeliveryTime.Duration,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,

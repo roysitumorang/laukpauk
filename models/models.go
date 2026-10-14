@@ -1,8 +1,11 @@
 package models
 
 import (
+	"encoding/json/v2"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 	"uuid"
 
 	"github.com/coregx/coregex"
@@ -158,3 +161,29 @@ var Limits = []int64{10, 25, 50, 100}
 var PhoneNumberRegex = coregex.MustCompile(`^\+[1-9]\d{1,14}$`)
 var UsernameRegex = coregex.MustCompile("[^a-z0-9]+")
 var SlugRegex = coregex.MustCompile("^[a-z0-9-]+$")
+
+type Duration struct {
+	time.Duration
+}
+
+func (q Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(q.String())
+}
+
+func (q *Duration) UnmarshalJSON(b []byte) error {
+	var v any
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case string:
+		q.Duration, err = time.ParseDuration(value)
+		return err
+	case float64:
+		q.Duration = time.Duration(value)
+		return nil
+	default:
+		return fmt.Errorf("invalid duration type: %T", v)
+	}
+}

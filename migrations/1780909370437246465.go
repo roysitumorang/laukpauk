@@ -380,8 +380,8 @@ func init() {
 			DeliveryCostPerKM:                    3_000,
 			DeliveryMaxDistanceKM:                15,
 			WhatsappPhoneNumber:                  "+628116099887",
-			PaymentTerms:                         24 * time.Hour,
-			MaximumDeliveryTime:                  4 * time.Hour,
+			PaymentTerms:                         models.Duration{Duration: 24 * time.Hour},
+			MaximumDeliveryTime:                  models.Duration{Duration: 4 * time.Hour},
 			TransactionAutoWithdrawalEnabled:     true,
 			TransactionAutoWithdrawalWindowMin: new(time.Date(
 				now.Year(),

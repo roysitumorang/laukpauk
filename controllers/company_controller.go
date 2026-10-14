@@ -20,20 +20,26 @@ import (
 )
 
 type companyController struct {
-	adminService   services.AdminService
-	sellerService  services.SellerService
-	companyService services.CompanyService
+	adminService        services.AdminService
+	sellerService       services.SellerService
+	buyerService        services.BuyerService
+	companyService      services.CompanyService
+	jsonWebTokenService services.JsonWebTokenService
 }
 
 func NewCompanyController(
 	adminService services.AdminService,
 	sellerService services.SellerService,
+	buyerService services.BuyerService,
 	companyService services.CompanyService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *companyController {
 	return &companyController{
-		adminService:   adminService,
-		sellerService:  sellerService,
-		companyService: companyService,
+		adminService:        adminService,
+		sellerService:       sellerService,
+		buyerService:        buyerService,
+		companyService:      companyService,
+		jsonWebTokenService: jsonWebTokenService,
 	}
 }
 
@@ -50,6 +56,10 @@ func (q *companyController) Mount(r fiber.Router) {
 	r.Group("/seller", sellerSessionAuth).
 		Get("/mine", q.SellerEdit).
 		Post("/mine", q.SellerUpdate)
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+		Get("/mine", q.V1BuyerShow)
 }
 
 func (q *companyController) AdminIndex(c fiber.Ctx) (err error) {
@@ -547,4 +557,11 @@ func (q *companyController) SellerUpdate(c fiber.Ctx) (err error) {
 	return flash.Clear(c, sess.Session).
 		Success("company updated successfully").
 		Redirect(c, sess.Session, "/seller/companies/mine")
+}
+
+func (q *companyController) V1BuyerShow(c fiber.Ctx) error {
+	currentCompany, _ := c.Locals(models.CurrentCompany).(*models.Company)
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(currentCompany).
+		WriteResponse(c)
 }

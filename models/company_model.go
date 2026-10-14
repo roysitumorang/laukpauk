@@ -89,9 +89,9 @@ type Company struct {
 	DeliveryCostPerKM                     int64              `json:"delivery_cost_per_km" form:"delivery_cost_per_km"`
 	DeliveryMaxDistanceKM                 int64              `json:"delivery_max_distance_km" form:"delivery_max_distance_km"`
 	WhatsappPhoneNumber                   string             `json:"whatsapp_phone_number" form:"whatsapp_phone_number"`
-	PaymentTerms                          time.Duration      `json:"payment_terms" form:""`
+	PaymentTerms                          Duration           `json:"payment_terms" form:""`
 	RawPaymentTerms                       string             `json:"-" form:"payment_terms"`
-	MaximumDeliveryTime                   time.Duration      `json:"maximum_delivery_time" form:"-"`
+	MaximumDeliveryTime                   Duration           `json:"maximum_delivery_time" form:"-"`
 	RawMaximumDeliveryTime                string             `json:"-" form:"maximum_delivery_time"`
 	TransactionAutoWithdrawalEnabled      bool               `json:"-" form:"transaction_auto_withdrawal_enabled"`
 	TransactionAutoWithdrawalWindowMin    *time.Time         `json:"transaction_auto_withdrawal_window_min" form:"-"`
@@ -150,13 +150,13 @@ func (q *Company) Validate(includeSetting ...bool) error {
 	if q.RawPaymentTerms = strings.TrimSpace(q.RawPaymentTerms); q.RawPaymentTerms == "" {
 		return errors.New("payment_terms: is required")
 	}
-	if q.PaymentTerms, err = time.ParseDuration(q.RawPaymentTerms); err != nil || q.PaymentTerms < 1 {
+	if q.PaymentTerms.Duration, err = time.ParseDuration(q.RawPaymentTerms); err != nil || q.PaymentTerms.Duration < 1 {
 		return errors.New("payment_terms: is invalid")
 	}
 	if q.RawMaximumDeliveryTime = strings.TrimSpace(q.RawMaximumDeliveryTime); q.RawMaximumDeliveryTime == "" {
 		return errors.New("maximum_delivery_time: is required")
 	}
-	if q.MaximumDeliveryTime, err = time.ParseDuration(q.RawMaximumDeliveryTime); err != nil || q.MaximumDeliveryTime < 1 {
+	if q.MaximumDeliveryTime.Duration, err = time.ParseDuration(q.RawMaximumDeliveryTime); err != nil || q.MaximumDeliveryTime.Duration < 1 {
 		return errors.New("maximum_delivery_time: is invalid")
 	}
 	if q.TransactionAutoWithdrawalEnabled {

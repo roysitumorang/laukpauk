@@ -221,6 +221,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
 				{From: "/v1/buyer/setting", To: "/setting/v1/buyer"},
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
+				{From: "/v1/buyer/companies/*", To: "/companies/v1/buyer/$1"},
 				{From: "/", To: "/home"},
 				{From: "/blogs", To: "/home/blogs"},
 				{From: "/read/*", To: "/home/blogs/$1"},
@@ -456,7 +457,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewCompanyController(
 		q.AdminService,
 		q.SellerService,
+		q.BuyerService,
 		q.CompanyService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/companies"))
 	controllers.NewSellerController(
 		q.SellerService,
