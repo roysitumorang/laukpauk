@@ -104,22 +104,22 @@
 				<li class="nav-item dropdown">
 					<a class="nav-link" data-toggle="dropdown" href="#">
 						<i class="far fa-bell"></i>
-						<span class="badge badge-primary navbar-badge" id="jumlahNotifikasi">{{ currentSeller.UnreadNotifications }}</span>
+						<span class="badge badge-primary navbar-badge" id="notificationsCount">{{ currentSeller.UnreadNotifications }}</span>
 					</a>
 					<div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-						<span class="dropdown-item dropdown-header">0 Newest of {{ currentSeller.UnreadNotifications }} Notifications</span>
-						<div id="notifikasi">
+						<span class="dropdown-item dropdown-header">{{ len(notifications) }} Newest of {{ currentSeller.UnreadNotifications }} Notifications</span>
+						<div id="notifications">
 							{{ if len(notifications) > 0 }}
 							{{ range _, row := notifications }}
 							<div class="dropdown-divider"></div>
-							<a href="{{ baseURL }}{{ row.SellerLink }}" class="notifikasi-item">
+							<a href="{{ baseURL }}{{ row.SellerLink }}" class="notification" data-notification-id="{{ row.ID }}">
 								<div class="dropdown-item">
 									<div class="row">
 										<div class="col-lg-2 text-center">
 											<span class="fa fa-bell"></span>
 										</div>
 										<div class="col-lg-10">
-											<p class="text-primary mb-1" class="word-break:break-all;">{{ row.Subject }}</p>
+											<p class="text-primary mb-1" style="word-break:break-all;">{{ row.Subject }}</p>
 											<span class="text-muted" style="font-size:.75em">Pada {{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}</span>
 										</div>
 									</div>
@@ -669,19 +669,28 @@
 	<script>
 		let baseURLJS = "{{ baseURL }}/seller/";
 		$("[data-toggle=tooltip]").tooltip();
-		$(".notifikasi-item").on("click", function(e) {
-			e.preventDefault();
-			let href = $(this).attr("href");
-			let idNotifikasi = $(this).attr("idNotifikasi");
-			$.ajax({
-				url: `${baseURLJS}/NotifikasiAdmin/toggleStatus/${idNotifikasi}`,
-				success: function(responseFromServer) {
-					let rFS = JSON.parse(responseFromServer);
-					let statusToggleStatus = rFS.statusToggleStatus;
-					if (statusToggleStatus) {
+		document.addEventListener("DOMContentLoaded", () => {
+			document.querySelectorAll(".notification").forEach(element => {
+				const href = element.href;
+				const notificationId = element.dataset.notificationId;
+				const csrfToken = document.querySelector(`meta[name="csrf-token"]`).getAttribute("content");
+				element.addEventListener("click", (event) => {
+					event.preventDefault();
+					fetch(`{{ baseURL }}/seller/notifications/${notificationId}/read`, {
+						method: 'POST',
+						credentials: 'same-origin',
+						body: new URLSearchParams({
+							_csrf: csrfToken
+						})
+					}).then(response => {
+						if (!response.ok) {
+							throw new Error(`HTTP error! Status: ${response.status}`);
+						}
 						location.href = href;
-					}
-				}
+					}).catch(error => {
+						console.error('error fetching data:', error);
+					});
+				});
 			});
 		});
 		$(".not-allowed").on("click", function(e) {
@@ -728,7 +737,7 @@
 				notifikasiAdminBelumDibaca.forEach((item, index) => {
 					notifikasiAdminBelumDibacaHTML += `
 						<div class="dropdown-divider"></div>
-						<a href="${item.route}" class="notifikasi-item" idNotifikasi="${item.id}">
+						<a href="${item.route}" class="notification" idNotifikasi="${item.id}">
 							<div class="dropdown-item">
 								<div class="row">
 									<div class="col-lg-2 text-center">
@@ -743,8 +752,8 @@
 						</a>`;
 				});
 			}
-			$("#jumlahNotifikasi").text(jumlahNotifikasiBelumDibaca);
-			$("#notifikasi").html(notifikasiAdminBelumDibacaHTML);
+			$("#notificationsCount").text(jumlahNotifikasiBelumDibaca);
+			$("#notifications").html(notifikasiAdminBelumDibacaHTML);
 		}
 
 		function getJumlahNotifikasi(isRead = null) {
