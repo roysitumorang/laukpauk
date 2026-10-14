@@ -225,6 +225,8 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 		MobilePhone: company.WhatsappPhoneNumber,
 		Username:    helper.RandomString(10),
 		Photo:       "seller-default.png",
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	})
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateSeller")
