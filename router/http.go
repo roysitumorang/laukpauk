@@ -191,6 +191,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/points", To: "/points/seller"},
 				{From: "/seller/points/*", To: "/points/seller/$1"},
 				{From: "/seller/points/*/*", To: "/points/seller/$1/$2"},
+				{From: "/seller/notifications", To: "/notifications/seller"},
+				{From: "/seller/notifications/*", To: "/notifications/seller/$1"},
+				{From: "/seller/notifications/*/*", To: "/notifications/seller/$1/$2"},
 				{From: "/seller/notification_targets", To: "/notification_targets/seller"},
 				{From: "/seller/transactions", To: "/transactions/seller"},
 				{From: "/seller/transactions/*", To: "/transactions/seller/$1"},
@@ -437,6 +440,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/text_messages"))
 	controllers.NewNotificationController(
 		q.AdminService,
+		q.SellerService,
 		q.BuyerService,
 		q.NotificationService,
 		q.KafkaClient,
