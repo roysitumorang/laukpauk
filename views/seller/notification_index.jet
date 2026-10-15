@@ -116,8 +116,9 @@
 							<thead>
 								<tr>
 									<th class="border-top-0 text-center">No.</th>
-									<th class="border-top-0 text-left">Pesan</th>
-									<th class="border-top-0 text-right">Dipush Pada</th>
+									<th class="border-top-0 text-left">Judul</th>
+									<th class="border-top-0 text-left">Isi</th>
+									<th class="border-top-0 text-left">Gambar</th>
 									<th class="border-top-0 text-center">Opsi</th>
 								</tr>
 							</thead>
@@ -125,7 +126,20 @@
 								{{ range _, row := rows }}
 								<tr class="text-sm tr-parent">
 									<td class="text-center"><b>{{ row.RowNo }}.</b></td>
-									<td class="text-left">
+									<td class="vam text-left">
+										<h6 class="text-primary mb-1 text-bold">{{ row.Subject }}</h6>
+										<p class="text-muted text-sm mb-0">{{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}</p>
+										<span class="badge badge-{{ if row.ReadAt }}dark{{ else }}success{{ end }}">
+											{{ if row.ReadAt }}
+											<span class="fa fa-envelope-open"></span> Sudah
+											{{ else }}
+											<span class="fa fa-envelope"></span> Belum
+											{{ end }}
+											dibaca
+										</span>
+									</td>
+									<td class="vam text-left">{{ if row.Body }}{{ row.Body }}{{ else }}-{{ end }}</td>
+									<td class="vam text-left">
 										<div class="row">
 											<div class="col-lg-1 text-center">
 												{{ if row.Photo }}
@@ -135,41 +149,31 @@
 														style="width:50px; height:50px;" />
 												</a>
 												{{ else }}
-												<i class="text-muted">Tanpa Gambar</i>
+												<i class="text-muted" style="white-space: nowrap;">Tanpa Gambar</i>
 												{{ end }}
-											</div>
-											<div class="col-lg-11">
-												<h6 class="text-info mb-1">
-													{{ if !row.ReadAt }}<b>{{ end}}{{ row.Subject }}{{ if !row.ReadAt }}</b>{{ end}}
-												</h6>
-												<p class="text-sm text-muted mb-0">
-													{{ if row.Body }}{{ row.Body }}{{ else }}-{{ end }}
-												</p>
 											</div>
 										</div>
 									</td>
-									<td class="vam text-left">{{ row.CreatedAt.Format("Mon, 2 Jan 2006 15:04:05 MST") }}</td>
 									<td class="vam text-center">
-										{{ if row.SellerLink }}
-											<a href="{{ row.SellerLink }}" class="btn btn-default ml-1">
-												<span class="fa fa-link"></span> Detail
-											</a>
-										{{ end }}
-										{{ if !row.ReadAt }}
-										<form method="POST" action="{{ baseURL }}/seller/notifications/{{ row.ID }}/read" >
-											<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-											<button type="submit" class="btn btn-default ml-1">
-												<span class="fa fa-envelope text-primary cp ml-2"
-													data-toggle="tooltip"
-													data-placement="top"
-													title="Mark as Read">
-												</span> Mark as Read
-											</button>
-										</form>
-										{{ else }}
-										<span class="fa fa-envelope-open text-secondary cp ml-2">
-										</span>
-										{{ end }}
+										<div style="display:flex; gap:15px;">
+											{{ if row.SellerLink }}
+												<a href="{{ row.SellerLink }}" class="btn btn-default ml-1">
+													<span class="fa fa-link"></span> Detail
+												</a>
+											{{ end }}
+											{{ if !row.ReadAt }}
+											<form method="POST" action="{{ baseURL }}/seller/notifications/{{ row.ID }}/read">
+												<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+												<button type="submit" class="btn btn-default ml-1">
+													<span class="fa fa-envelope text-primary cp ml-2"
+														data-toggle="tooltip"
+														data-placement="top"
+														title="Mark as Read">
+													</span> Mark as Read
+												</button>
+											</form>
+											{{ end }}
+										</div>
 									</td>
 								</tr>
 								{{ end }}
