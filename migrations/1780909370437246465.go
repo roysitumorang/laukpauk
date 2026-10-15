@@ -2435,6 +2435,7 @@ func init() {
 				, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_name character varying NOT NULL
+				, product_photo character varying NOT NULL
 				, stock_unit character varying NOT NULL
 				, base_price bigint NOT NULL
 				, selling_price bigint NOT NULL

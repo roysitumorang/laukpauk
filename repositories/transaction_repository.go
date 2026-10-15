@@ -208,6 +208,7 @@ func (q *transactionRepository) FindTransactions(
 			, product_variant_id
 			, product_id
 			, product_name
+			, product_photo
 			, stock_unit
 			, base_price
 			, selling_price
@@ -330,6 +331,7 @@ func (q *transactionRepository) FindTransactions(
 			&transactionItem.ProductVariantID,
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
+			&transactionItem.ProductPhoto,
 			&transactionItem.StockUnit,
 			&transactionItem.BasePrice,
 			&transactionItem.SellingPrice,
@@ -527,6 +529,7 @@ func (q *transactionRepository) FindTransaction(
 			, product_variant_id
 			, product_id
 			, product_name
+			, product_photo
 			, stock_unit
 			, base_price
 			, selling_price
@@ -560,6 +563,7 @@ func (q *transactionRepository) FindTransaction(
 			&transactionItem.ProductVariantID,
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
+			&transactionItem.ProductPhoto,
 			&transactionItem.StockUnit,
 			&transactionItem.BasePrice,
 			&transactionItem.SellingPrice,
@@ -853,6 +857,7 @@ func (q *transactionRepository) CreateTransaction(
 			, product_variant_id
 			, product_id
 			, product_name
+			, product_photo
 			, stock_unit
 			, base_price
 			, selling_price
@@ -875,6 +880,7 @@ func (q *transactionRepository) CreateTransaction(
 			&requestItem.ProductVariantID,
 			&requestItem.ProductID,
 			&requestItem.ProductName,
+			&requestItem.ProductPhoto,
 			&requestItem.StockUnit,
 			&requestItem.BasePrice,
 			&requestItem.SellingPrice,
@@ -888,13 +894,13 @@ func (q *transactionRepository) CreateTransaction(
 			&requestItem.RevisionNote,
 			&requestItem.OutOfStock,
 		)
-		if n = len(params); n > 16 {
+		if n = len(params); n > 17 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(
 			sb,
-			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
-			n-15, n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
+			" ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			n-16, n-15, n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5, n-4, n-3, n-2, n-1, n,
 		)
 	}
 	_, _ = sb.WriteString(
@@ -903,6 +909,7 @@ func (q *transactionRepository) CreateTransaction(
 			, product_variant_id
 			, product_id
 			, product_name
+			, product_photo
 			, stock_unit
 			, base_price
 			, selling_price
@@ -933,6 +940,7 @@ func (q *transactionRepository) CreateTransaction(
 			&transactionItem.ProductVariantID,
 			&transactionItem.ProductID,
 			&transactionItem.ProductName,
+			&transactionItem.ProductPhoto,
 			&transactionItem.StockUnit,
 			&transactionItem.BasePrice,
 			&transactionItem.SellingPrice,
@@ -1512,6 +1520,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, product_variant_id
 				, product_id
 				, product_name
+				, product_photo
 				, stock_unit
 				, base_price
 				, selling_price
@@ -1536,6 +1545,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&itemResponse.ProductVariantID,
 			&itemResponse.ProductID,
 			&itemResponse.ProductName,
+			&itemResponse.ProductPhoto,
 			&itemResponse.StockUnit,
 			&itemResponse.BasePrice,
 			&itemResponse.SellingPrice,
@@ -1597,6 +1607,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, product_variant_id
 				, product_id
 				, product_name
+				, product_photo
 				, stock_unit
 				, base_price
 				, selling_price
@@ -1618,6 +1629,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&itemResponse.ProductVariantID,
 			&itemResponse.ProductID,
 			&itemResponse.ProductName,
+			&itemResponse.ProductPhoto,
 			&itemResponse.StockUnit,
 			&itemResponse.BasePrice,
 			&itemResponse.SellingPrice,

@@ -150,6 +150,7 @@ type TransactionItem struct {
 	ProductVariantID        uuid.UUID  `json:"product_variant_id" form:"-"`
 	ProductID               uuid.UUID  `json:"-" form:"-"`
 	ProductName             string     `json:"product_name" form:"-"`
+	ProductPhoto            string     `json:"-" form:"-"`
 	StockUnit               string     `json:"stock_unit" form:"-"`
 	BasePrice               int64      `json:"-" form:"-"`
 	SellingPrice            int64      `json:"selling_price" form:"-"`
@@ -337,6 +338,10 @@ func (q *Transaction) Revise() {
 	}
 	q.RevisedPaymentAmount = q.RevisedDiscountedShoppingCost + q.DiscountedDeliveryEstimatedCost
 	q.RefundAmount = q.PaymentAmount - q.RevisedPaymentAmount
+}
+
+func (q *TransactionItem) PhotoPath(baseURLs ...string) string {
+	return helper.PhotoPath(q.ProductPhoto, baseURLs...)
 }
 
 type TransactionFilter struct {

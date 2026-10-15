@@ -250,6 +250,7 @@ func (q *transactionService) CreateTransaction(
 			}
 			item.ProductID = productVariant.ProductID
 			item.ProductName = productVariant.ProductName
+			item.ProductPhoto = productVariant.ProductPhoto
 			item.StockUnit = productVariant.StockUnit
 			item.DiscountMinimumQuantity = productVariant.DiscountMinimumQuantity
 			item.BasePrice = productVariant.BasePrice

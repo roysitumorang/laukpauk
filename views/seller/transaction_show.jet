@@ -177,17 +177,19 @@
 								<tr class="text-sm tr-parent">
 									<td class="vam text-center"><b>{{ item.RowNo }}.</b></td>
 									<td class="vam text-left">
-										<div class="row">
-											<div class="col-lg-4 text-center">
-												<img src="{{ baseURL }}/assets/img/no-image.png"
-													alt="{{ item.ProductName }}" class="img-circle"
-													style="width:50px; height:50px;"
-													onerror="this.src='{{ baseURL }}/assets/img/no-image.png'" />
+										<a href="{{ baseURL }}/seller/products/{{ item.ProductID }}" target="_blank">
+											<div class="row">
+												<div class="col-lg-4 text-center">
+													<img src="{{ item.PhotoPath(baseURL) }}"
+														alt="{{ item.ProductName }}"
+														class="img-circle"
+														style="width:50px; height:50px;" />
+												</div>
+												<div class="col-lg-8">
+													<h6 class="text-primary mb-1">{{ item.ProductName }}</h6>
+												</div>
 											</div>
-											<div class="col-lg-8">
-												<h6 class="text-primary mb-1">{{ item.ProductName }}</h6>
-											</div>
-										</div>
+										</a>
 									</td>
 									<td class="vam text-left">
 										{{ item.Quantity }} x {{ item.StockUnit }}
