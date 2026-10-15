@@ -157,7 +157,7 @@
 									<td class="vam text-center">
 										<div style="display:flex; gap:15px;">
 											{{ if row.SellerLink }}
-												<a href="{{ row.SellerLink }}" class="btn btn-default ml-1">
+												<a href="{{ row.SellerLink }}" target="_blank" rel="noopener noreferrer" class="btn btn-default ml-1">
 													<span class="fa fa-link"></span> Detail
 												</a>
 											{{ end }}
