@@ -3,9 +3,9 @@ module github.com/roysitumorang/laukpauk
 go 1.27.1
 
 require (
-	github.com/coregx/coregex v0.12.29
+	github.com/coregx/coregex v0.12.30
 	github.com/dustin/go-humanize v1.1.0
-	github.com/gabriel-vasile/mimetype v1.4.15
+	github.com/gabriel-vasile/mimetype v1.4.16
 	github.com/getsentry/sentry-go v0.50.0
 	github.com/godruoyi/go-snowflake v0.0.2
 	github.com/gofiber/contrib/v3/monitor v1.2.3
@@ -39,7 +39,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coregx/ahocorasick v0.3.1 // indirect
-	github.com/ebitengine/purego v0.11.1 // indirect
+	github.com/ebitengine/purego v0.11.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.2 // indirect
 	github.com/go-openapi/jsonreference v1.0.3 // indirect
