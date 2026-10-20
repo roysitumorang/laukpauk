@@ -575,7 +575,9 @@ func (q *transactionService) AutoCancelOverdueTransactions(ctx context.Context) 
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 			return err
 		}
-		if transaction.PaymentRequestID != nil {
+		if transaction.PaymentRequestID != nil &&
+			transaction.PaymentDueDate != nil &&
+			transaction.PaymentDueDate.After(now) {
 			if _, err = q.xenditClient.CancelPaymentRequest(ctx, *transaction.PaymentRequestID); err != nil {
 				return err
 			}
