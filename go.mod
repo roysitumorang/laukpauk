@@ -1,6 +1,6 @@
 module github.com/roysitumorang/laukpauk
 
-go 1.27.1
+go 1.27.3
 
 require (
 	github.com/coregx/coregex v0.12.30
