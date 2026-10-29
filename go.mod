@@ -7,6 +7,7 @@ require (
 	github.com/dustin/go-humanize v1.1.0
 	github.com/gabriel-vasile/mimetype v1.4.16
 	github.com/getsentry/sentry-go v0.50.0
+	github.com/goccy/go-json v0.12.0
 	github.com/godruoyi/go-snowflake v0.0.2
 	github.com/gofiber/contrib/v3/monitor v1.2.3
 	github.com/gofiber/contrib/v3/sentry v1.1.14

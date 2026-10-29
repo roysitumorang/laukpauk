@@ -2,7 +2,6 @@ package router
 
 import (
 	"context"
-	"encoding/json/v2"
 	"errors"
 	"log/slog"
 	"math"
@@ -17,6 +16,7 @@ import (
 	"github.com/coregx/coregex"
 	"github.com/dustin/go-humanize"
 	"github.com/getsentry/sentry-go"
+	"github.com/goccy/go-json/v2"
 	"github.com/gofiber/contrib/v3/monitor"
 	fibersentry "github.com/gofiber/contrib/v3/sentry"
 	"github.com/gofiber/contrib/v3/swaggo"

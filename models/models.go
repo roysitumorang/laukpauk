@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,6 +8,7 @@ import (
 	"uuid"
 
 	"github.com/coregx/coregex"
+	"github.com/goccy/go-json/v2"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 

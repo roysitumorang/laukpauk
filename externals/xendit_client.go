@@ -3,12 +3,12 @@ package externals
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/goccy/go-json/v2"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/valyala/fasthttp"
