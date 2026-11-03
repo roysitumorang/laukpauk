@@ -13,7 +13,7 @@ require (
 	github.com/gofiber/contrib/v3/sentry v1.1.15
 	github.com/gofiber/contrib/v3/swaggo v1.0.15
 	github.com/gofiber/fiber/v3 v3.6.1
-	github.com/gofiber/storage/valkey v0.4.2
+	github.com/gofiber/storage/valkey v0.4.3
 	github.com/gofiber/template/jet/v3 v3.0.12
 	github.com/gofiber/utils/v2 v2.6.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -40,7 +40,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coregx/ahocorasick v0.3.1 // indirect
-	github.com/ebitengine/purego v0.11.2 // indirect
+	github.com/ebitengine/purego v0.11.3 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.2 // indirect
 	github.com/go-openapi/jsonreference v1.0.3 // indirect
@@ -52,7 +52,7 @@ require (
 	github.com/go-openapi/swag/stringutils v0.29.2 // indirect
 	github.com/go-openapi/swag/typeutils v0.29.2 // indirect
 	github.com/go-openapi/swag/yamlutils v0.29.2 // indirect
-	github.com/gofiber/schema v1.9.2 // indirect
+	github.com/gofiber/schema v1.9.3 // indirect
 	github.com/gofiber/template/v2 v2.1.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
