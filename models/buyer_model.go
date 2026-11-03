@@ -226,3 +226,39 @@ func (q *BuyerFilter) WithUrlValues(urlValues url.Values) *BuyerFilter {
 	q.UrlValues = urlValues
 	return q
 }
+
+type BuyerRegistration struct {
+	Name           string `json:"name" form:"-"`
+	Username       string `json:"username" form:"-"`
+	MobilePhone    string `json:"mobile_phone" form:"-"`
+	Base64Password string `json:"password" form:"-"`
+	Password       string `json:"-" form:"-"`
+	ReferralCode   string `json:"referral_code" form:"-"`
+}
+
+func (q *BuyerRegistration) Validate() error {
+	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
+		return errors.New("name: is required")
+	}
+	if q.Username = strings.TrimSpace(strings.ToLower(q.Username)); q.Username == "" {
+		return errors.New("username: is required")
+	}
+	if q.MobilePhone = strings.TrimSpace(q.MobilePhone); q.MobilePhone == "" {
+		return errors.New("mobile_phone: is required")
+	}
+	mobilePhone, err := phonenumbers.Parse(q.MobilePhone, "ID")
+	if err != nil {
+		return fmt.Errorf("mobile_phone: %w", err)
+	}
+	q.MobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
+	if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
+		return errors.New("password: is required")
+	}
+	password, err := helper.Base64Decode(q.Base64Password)
+	if err != nil {
+		return fmt.Errorf("password: %s", err.Error())
+	}
+	q.Password = password
+	q.ReferralCode = strings.TrimSpace(q.ReferralCode)
+	return nil
+}

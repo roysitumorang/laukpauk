@@ -205,6 +205,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/transactions/*", To: "/transactions/seller/$1"},
 				{From: "/seller/transactions/*/*", To: "/transactions/seller/$1/$2"},
 				{From: "/seller/companies/*", To: "/companies/seller/$1"},
+				{From: "/v1/buyer/buyers", To: "/buyers/v1/buyer"},
 				{From: "/v1/buyer/otp", To: "/otp/v1/buyer"},
 				{From: "/v1/buyer/auth/*", To: "/auth/v1/buyer/$1"},
 				{From: "/v1/buyer/notification_targets", To: "/notification_targets/v1/buyer"},
@@ -448,6 +449,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewBuyerController(
 		q.SellerService,
 		q.BuyerService,
+		q.CompanyService,
 		q.NotificationService,
 	).Mount(app.Group("/buyers"))
 	controllers.NewAdminController(

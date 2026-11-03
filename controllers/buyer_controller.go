@@ -23,22 +23,28 @@ import (
 type buyerController struct {
 	sellerService       services.SellerService
 	buyerService        services.BuyerService
+	companyService      services.CompanyService
 	notificationService services.NotificationService
 }
 
 func NewBuyerController(
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
+	companyService services.CompanyService,
 	notificationService services.NotificationService,
 ) *buyerController {
 	return &buyerController{
 		sellerService:       sellerService,
 		buyerService:        buyerService,
+		companyService:      companyService,
 		notificationService: notificationService,
 	}
 }
 
 func (q *buyerController) Mount(r fiber.Router) {
+	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
+	r.Group("/v1/buyer", companyVerify).
+		Post("", q.BuyerCreate)
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
@@ -47,6 +53,119 @@ func (q *buyerController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
+
+}
+
+func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "BuyerController-BuyerCreate"
+	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
+	request, statusCode, err := sanitizers.ValidateBuyerRegistration(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyerRegistration")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	buyer, err := q.buyerService.FindBuyer(
+		ctx,
+		models.NewBuyerFilter().
+			WithCompanyIDs(company.ID).
+			WithUsername(request.Username),
+	)
+	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if buyer != nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrUniqueBuyerUsernameViolation.Error()).
+			WriteResponse(c)
+	}
+	if buyer, err = q.buyerService.FindBuyer(
+		ctx,
+		models.NewBuyerFilter().
+			WithCompanyIDs(company.ID).
+			WithMobilePhone(request.MobilePhone),
+	); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if buyer != nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrUniqueBuyerMobilePhoneViolation.Error()).
+			WriteResponse(c)
+	}
+	now := time.Now().In(time.Local)
+	encryptedPasword, err := helper.HashPassword(request.Password)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	buyer = &models.Buyer{
+		CompanyID:         company.ID,
+		Name:              request.Name,
+		Username:          request.Username,
+		MobilePhone:       request.MobilePhone,
+		EncryptedPassword: &encryptedPasword,
+		Photo:             os.Getenv("BUYER_DEFAULT_PHOTO"),
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	if request.ReferralCode != "" {
+		referrer, err := q.buyerService.FindBuyer(
+			ctx,
+			models.NewBuyerFilter().
+				WithCompanyIDs(company.ID).
+				WithReferralCodes(request.ReferralCode),
+		)
+		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		if referrer != nil {
+			buyer.ReferrerID = &referrer.ID
+		}
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	response, err := q.buyerService.CreateBuyer(ctx, tx, buyer)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBuyer")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusCreated).
+		SetData(response).
+		WriteResponse(c)
 }
 
 func (q *buyerController) SellerIndex(c fiber.Ctx) (err error) {
