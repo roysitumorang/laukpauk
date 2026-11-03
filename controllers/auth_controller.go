@@ -436,7 +436,7 @@ func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer == nil {
+	if buyer == nil || buyer.EncryptedPassword == nil {
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
