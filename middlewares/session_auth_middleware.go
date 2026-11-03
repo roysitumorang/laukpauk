@@ -26,7 +26,7 @@ func AdminSessionAuthMiddleware(
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
 			}
-			return flash.Redirect(c, sess.Session, "/admin/sessions/new")
+			return flash.Redirect(c, sess.Session, "/admin/auth/sessions/new")
 		}
 		currentAdmin, err := adminService.FindAdmin(
 			ctx,
@@ -38,7 +38,7 @@ func AdminSessionAuthMiddleware(
 			if c.Method() == fiber.MethodGet {
 				sess.Set("next", c.OriginalURL())
 			}
-			return flash.Redirect(c, sess.Session, "/admin/sessions/new")
+			return flash.Redirect(c, sess.Session, "/admin/auth/sessions/new")
 		}
 		c.Locals(models.CurrentAdmin, currentAdmin)
 		_ = sess.Session.SaveWithContext(ctx)

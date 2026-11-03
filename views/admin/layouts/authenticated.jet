@@ -130,7 +130,7 @@
 					</div>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" href="{{ baseURL }}/admin/sessions/logout">
+					<a class="nav-link" href="{{ baseURL }}/admin/auth/logout">
 						<i class="fas fa-power-off text-danger" data-toggle="tooltip" data-placement="top" title="Logout"></i>
 					</a>
 				</li>

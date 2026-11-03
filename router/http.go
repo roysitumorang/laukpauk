@@ -129,8 +129,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		compress.New(),
 		rewrite.New(rewrite.Config{
 			RuleList: []rewrite.Rule{
-				{From: "/admin/sessions", To: "/sessions/admin"},
-				{From: "/admin/sessions/*", To: "/sessions/admin/$1"},
+				{From: "/admin/auth/sessions", To: "/auth/admin/sessions"},
+				{From: "/admin/auth/sessions/*", To: "/auth/admin/sessions/$1"},
+				{From: "/admin/auth/*", To: "/auth/admin/$1"},
 				{From: "/admin", To: "/home/admin"},
 				{From: "/admin/landing_pages/*", To: "/landing_pages/admin/$1"},
 				{From: "/admin/landing_pages/*/*", To: "/landing_pages/admin/$1/$2"},
@@ -300,7 +301,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TextMessageService,
 		q.KafkaClient,
 	).Mount(app.Group("/otp"))
-	controllers.NewSessionController(
+	controllers.NewAuthController(
 		q.AdminService,
 		q.SellerService,
 		q.BuyerService,
@@ -310,7 +311,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TextMessageService,
 		q.NotificationService,
 		q.KafkaClient,
-	).Mount(app.Group("/sessions"))
+	).Mount(app.Group("/auth"))
 	controllers.NewHomeController(
 		q.AdminService,
 		q.SellerService,

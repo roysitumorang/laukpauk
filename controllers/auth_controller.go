@@ -23,7 +23,7 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type sessionController struct {
+type authController struct {
 	adminService           services.AdminService
 	sellerService          services.SellerService
 	buyerService           services.BuyerService
@@ -35,7 +35,7 @@ type sessionController struct {
 	kafkaClient            *externals.KafkaClient
 }
 
-func NewSessionController(
+func NewAuthController(
 	adminService services.AdminService,
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
@@ -45,8 +45,8 @@ func NewSessionController(
 	textMessageService services.TextMessageService,
 	notificationService services.NotificationService,
 	kafkaClient *externals.KafkaClient,
-) *sessionController {
-	return &sessionController{
+) *authController {
+	return &authController{
 		adminService:           adminService,
 		sellerService:          sellerService,
 		buyerService:           buyerService,
@@ -59,27 +59,27 @@ func NewSessionController(
 	}
 }
 
-func (q *sessionController) Mount(r fiber.Router) {
+func (q *authController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	r.Group("/admin").
-		Get("/new", q.AdminNew).
-		Post("", q.AdminCreate).
-		Get("/mine", adminSessionAuth, q.AdminShow).
+		Get("/sessions/new", q.AdminNew).
+		Post("/sessions", q.AdminCreate).
+		Get("/me", adminSessionAuth, q.AdminShow).
 		Get("/logout", q.AdminLogout)
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller").
-		Get("/new", q.SellerNew).
-		Post("", q.SellerCreate).
-		Get("/mine", sellerSessionAuth, q.SellerShow).
+		Get("/sessions/new", q.SellerNew).
+		Post("/sessions", q.SellerCreate).
+		Get("/me", sellerSessionAuth, q.SellerShow).
 		Get("/logout", q.SellerLogout)
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", companyVerify).
-		Post("", q.V1BuyerCreate).
+		Post("/login", q.V1BuyerCreate).
 		Get("/me", buyerKeyAuth, q.V1BuyerShow)
 }
 
-func (q *sessionController) AdminNew(c fiber.Ctx) error {
+func (q *authController) AdminNew(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -91,7 +91,7 @@ func (q *sessionController) AdminNew(c fiber.Ctx) error {
 	}
 	csrfToken := csrf.TokenFromContext(c)
 	request := new(models.LoginRequest)
-	return c.Render("admin/session_new", models.NewMap().Push(
+	return c.Render("admin/auth_session_new", models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
 		"path", c.OriginalURL(),
@@ -100,9 +100,9 @@ func (q *sessionController) AdminNew(c fiber.Ctx) error {
 	))
 }
 
-func (q *sessionController) AdminCreate(c fiber.Ctx) error {
+func (q *authController) AdminCreate(c fiber.Ctx) error {
 	ctx := c.Context()
-	ctxt := "SessionController-AdminCreate"
+	ctxt := "AuthController-AdminCreate"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -124,7 +124,7 @@ func (q *sessionController) AdminCreate(c fiber.Ctx) error {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateLogin")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("admin/session_new", params.Push(
+		return c.Render("admin/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
@@ -138,25 +138,25 @@ func (q *sessionController) AdminCreate(c fiber.Ctx) error {
 		if !errors.Is(err, models.ErrAdminNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAdmin")
 		}
-		return c.Render("admin/session_new", params.Push(
+		return c.Render("admin/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
 	if admin == nil ||
 		admin.EncryptedPassword == nil {
-		return c.Render("admin/session_new", params.Push(
+		return c.Render("admin/auth_session_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
 	matched, err := helper.VerifyPassword(request.Password, *admin.EncryptedPassword)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
-		return c.Render("admin/session_new", params.Push(
+		return c.Render("admin/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
 	if !matched {
-		return c.Render("admin/session_new", params.Push(
+		return c.Render("admin/auth_session_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
@@ -173,7 +173,7 @@ func (q *sessionController) AdminCreate(c fiber.Ctx) error {
 	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, next)
 }
 
-func (q *sessionController) AdminShow(c fiber.Ctx) error {
+func (q *authController) AdminShow(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
@@ -189,12 +189,12 @@ func (q *sessionController) AdminShow(c fiber.Ctx) error {
 		"csrfToken", csrfToken,
 		"currentAdmin", currentAdmin,
 	)
-	return c.Render("admin/session_show", params)
+	return c.Render("admin/auth_me", params)
 }
 
-func (q *sessionController) AdminLogout(c fiber.Ctx) error {
+func (q *authController) AdminLogout(c fiber.Ctx) error {
 	ctx := c.Context()
-	ctxt := "SessionController-AdminLogout"
+	ctxt := "AuthController-AdminLogout"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -208,10 +208,10 @@ func (q *sessionController) AdminLogout(c fiber.Ctx) error {
 	if err := sess.ResetWithContext(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
-	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin/sessions/new")
+	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin/auth/sessions/new")
 }
 
-func (q *sessionController) SellerNew(c fiber.Ctx) error {
+func (q *authController) SellerNew(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -238,9 +238,9 @@ func (q *sessionController) SellerNew(c fiber.Ctx) error {
 	return c.Render("seller/session_new", params)
 }
 
-func (q *sessionController) SellerCreate(c fiber.Ctx) error {
+func (q *authController) SellerCreate(c fiber.Ctx) error {
 	ctx := c.Context()
-	ctxt := "SessionController-SellerCreate"
+	ctxt := "AuthController-SellerCreate"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -371,7 +371,7 @@ func (q *sessionController) SellerCreate(c fiber.Ctx) error {
 	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, next)
 }
 
-func (q *sessionController) SellerShow(c fiber.Ctx) error {
+func (q *authController) SellerShow(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
 	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
@@ -392,9 +392,9 @@ func (q *sessionController) SellerShow(c fiber.Ctx) error {
 	return c.Render("seller/session_show", params)
 }
 
-func (q *sessionController) SellerLogout(c fiber.Ctx) error {
+func (q *authController) SellerLogout(c fiber.Ctx) error {
 	ctx := c.Context()
-	ctxt := "SessionController-SellerLogout"
+	ctxt := "AuthController-SellerLogout"
 	sess := session.FromContext(c)
 	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
 	if !ok {
@@ -411,9 +411,9 @@ func (q *sessionController) SellerLogout(c fiber.Ctx) error {
 	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/seller/otp/new")
 }
 
-func (q *sessionController) V1BuyerCreate(c fiber.Ctx) error {
+func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
 	ctx := c.Context()
-	ctxt := "SessionController-V1BuyerCreate"
+	ctxt := "AuthController-V1BuyerCreate"
 	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	loginRequest, statusCode, err := sanitizers.ValidateOtpLogin(ctx, c)
 	if err != nil {
@@ -548,7 +548,7 @@ func (q *sessionController) V1BuyerCreate(c fiber.Ctx) error {
 		WriteResponse(c)
 }
 
-func (q *sessionController) V1BuyerShow(c fiber.Ctx) error {
+func (q *authController) V1BuyerShow(c fiber.Ctx) error {
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(currentBuyer).
