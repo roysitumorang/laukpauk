@@ -72,7 +72,7 @@
 		<div class="card">
 			<div class="card-body login-card-body">
 				<p class="login-box-msg">Sign in to start your session</p>
-				<form method="POST" action="{{ baseURL }}/seller/sessions">
+				<form method="POST" action="{{ baseURL }}/seller/auth/sessions">
 					<input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 					<input type="hidden" name="otp_token" id="otp_token" value="" />
 					<input type="hidden" name="tracking_id" value="{{ request.TrackingID }}" />
@@ -93,7 +93,7 @@
 						</div>
 					</div>
 					<button type="submit" class="btn btn-primary btn-block">Login</button>
-					<a href="{{ baseURL }}/seller/otp/new{{ if request.Login }}?login={{ request.Login }}{{ end }}" class="btn btn-default ml-1">
+					<a href="{{ baseURL }}/seller/otp/new{{ if request.Login }}?login={{ request.Login | QueryEscape }}{{ end }}" class="btn btn-default ml-1">
 						Request New OTP Code
 					</a>
 				</form>

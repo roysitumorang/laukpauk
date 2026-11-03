@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -223,7 +224,7 @@ func (q *authController) SellerNew(c fiber.Ctx) error {
 	csrfToken := csrf.TokenFromContext(c)
 	otpTrackingID, ok := sess.Get(models.CurrentOtpTrackingID).(uuid.UUID)
 	if !ok {
-		return flash.Redirect(c, sess.Session, helper.Sprintf("/seller/otp/new?login=%s", c.Query("login")))
+		return flash.Redirect(c, sess.Session, helper.Sprintf("/seller/otp/new?login=%s", url.QueryEscape(c.Query("login"))))
 	}
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
@@ -235,7 +236,7 @@ func (q *authController) SellerNew(c fiber.Ctx) error {
 			TrackingID: otpTrackingID,
 		},
 	)
-	return c.Render("seller/session_new", params)
+	return c.Render("seller/auth_session_new", params)
 }
 
 func (q *authController) SellerCreate(c fiber.Ctx) error {
@@ -262,7 +263,7 @@ func (q *authController) SellerCreate(c fiber.Ctx) error {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateOtpLogin")
 		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
@@ -276,12 +277,12 @@ func (q *authController) SellerCreate(c fiber.Ctx) error {
 		if !errors.Is(err, models.ErrSellerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSeller")
 		}
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
 	if seller == nil {
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
@@ -295,7 +296,7 @@ func (q *authController) SellerCreate(c fiber.Ctx) error {
 		if errors.Is(err, models.ErrOneTimePasswordNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindOneTimePassword")
 		}
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
@@ -303,21 +304,21 @@ func (q *authController) SellerCreate(c fiber.Ctx) error {
 	if oneTimePassword == nil ||
 		!oneTimePassword.Valid ||
 		!oneTimePassword.ExpiredAt.After(now) {
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
 	matched, err := helper.VerifyPassword(request.OtpToken, oneTimePassword.Hash)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
@@ -342,18 +343,18 @@ func (q *authController) SellerCreate(c fiber.Ctx) error {
 		oneTimePassword,
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		))
 	}
 	if !matched {
-		return c.Render("seller/session_new", params.Push(
+		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
@@ -389,7 +390,7 @@ func (q *authController) SellerShow(c fiber.Ctx) error {
 		"currentSeller", currentSeller,
 		"notifications", notifications,
 	)
-	return c.Render("seller/session_show", params)
+	return c.Render("seller/auth_me", params)
 }
 
 func (q *authController) SellerLogout(c fiber.Ctx) error {

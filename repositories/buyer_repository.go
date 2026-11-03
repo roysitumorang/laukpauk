@@ -95,6 +95,10 @@ func (q *buyerRepository) FindBuyers(
 		, email_confirmation_token
 		, email_confirmed_at
 		, email
+		, encrypted_password
+		, password_reset_at
+		, password_reset_token
+		, password_changed_at
 		, photo
 		, unread_notifications
 		, referral_code
@@ -176,6 +180,10 @@ func (q *buyerRepository) FindBuyers(
 			&buyer.EmailConfirmationToken,
 			&buyer.EmailConfirmedAt,
 			&buyer.Email,
+			&buyer.EncryptedPassword,
+			&buyer.PasswordResetAt,
+			&buyer.PasswordResetToken,
+			&buyer.PasswordChangedAt,
 			&buyer.Photo,
 			&buyer.UnreadNotifications,
 			&buyer.ReferralCode,
@@ -235,6 +243,10 @@ func (q *buyerRepository) FindBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, referral_code
@@ -272,6 +284,10 @@ func (q *buyerRepository) FindBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.ReferralCode,
@@ -465,6 +481,10 @@ func (q *buyerRepository) CreateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, referral_code
@@ -482,7 +502,8 @@ func (q *buyerRepository) CreateBuyer(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27, $28
+			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+			, $31, $32
 		)
 		RETURNING id
 			, company_id
@@ -499,6 +520,10 @@ func (q *buyerRepository) CreateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, referral_code
@@ -530,6 +555,10 @@ func (q *buyerRepository) CreateBuyer(
 		request.EmailConfirmationToken,
 		request.EmailConfirmedAt,
 		request.Email,
+		request.EncryptedPassword,
+		request.PasswordResetAt,
+		request.PasswordResetToken,
+		request.PasswordChangedAt,
 		request.Photo,
 		request.UnreadNotifications,
 		request.ReferralCode,
@@ -560,6 +589,10 @@ func (q *buyerRepository) CreateBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.ReferralCode,
@@ -628,6 +661,10 @@ func (q *buyerRepository) UpdateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, referral_code
@@ -665,6 +702,10 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.ReferralCode,
@@ -816,6 +857,46 @@ func (q *buyerRepository) UpdateBuyer(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " email = $%d", n)
+	}
+	if (response.EncryptedPassword != nil && request.EncryptedPassword == nil) ||
+		(response.EncryptedPassword == nil && request.EncryptedPassword != nil) ||
+		(response.EncryptedPassword != nil && request.EncryptedPassword != nil &&
+			*response.EncryptedPassword != *request.EncryptedPassword) {
+		params = append(params, request.EncryptedPassword)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " encrypted_password = $%d", n)
+	}
+	if (response.PasswordResetAt != nil && request.PasswordResetAt == nil) ||
+		(response.PasswordResetAt == nil && request.PasswordResetAt != nil) ||
+		(response.PasswordResetAt != nil && request.PasswordResetAt != nil &&
+			!response.PasswordResetAt.Equal(*request.PasswordResetAt)) {
+		params = append(params, request.PasswordResetAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " password_reset_at = $%d", n)
+	}
+	if (response.PasswordResetToken != nil && request.PasswordResetToken == nil) ||
+		(response.PasswordResetToken == nil && request.PasswordResetToken != nil) ||
+		(response.PasswordResetToken != nil && request.PasswordResetToken != nil &&
+			*response.PasswordResetToken != *request.PasswordResetToken) {
+		params = append(params, request.PasswordResetToken)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " password_reset_token = $%d", n)
+	}
+	if (response.PasswordChangedAt != nil && request.PasswordChangedAt == nil) ||
+		(response.PasswordChangedAt == nil && request.PasswordChangedAt != nil) ||
+		(response.PasswordChangedAt != nil && request.PasswordChangedAt != nil &&
+			!response.PasswordChangedAt.Equal(*request.PasswordChangedAt)) {
+		params = append(params, request.PasswordChangedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " password_changed_at = $%d", n)
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
@@ -970,6 +1051,10 @@ func (q *buyerRepository) UpdateBuyer(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, referral_code
@@ -1005,6 +1090,10 @@ func (q *buyerRepository) UpdateBuyer(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.ReferralCode,

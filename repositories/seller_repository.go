@@ -96,6 +96,10 @@ func (q *sellerRepository) FindSellers(
 		, email_confirmation_token
 		, email_confirmed_at
 		, email
+		, encrypted_password
+		, password_reset_at
+		, password_reset_token
+		, password_changed_at
 		, photo
 		, unread_notifications
 		, telegram_chat_id
@@ -172,6 +176,10 @@ func (q *sellerRepository) FindSellers(
 			&seller.EmailConfirmationToken,
 			&seller.EmailConfirmedAt,
 			&seller.Email,
+			&seller.EncryptedPassword,
+			&seller.PasswordResetAt,
+			&seller.PasswordResetToken,
+			&seller.PasswordChangedAt,
 			&seller.Photo,
 			&seller.UnreadNotifications,
 			&seller.TelegramChatID,
@@ -226,6 +234,10 @@ func (q *sellerRepository) FindSeller(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, telegram_chat_id
@@ -258,6 +270,10 @@ func (q *sellerRepository) FindSeller(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.TelegramChatID,
@@ -433,6 +449,10 @@ func (q *sellerRepository) CreateSeller(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, telegram_chat_id
@@ -444,7 +464,7 @@ func (q *sellerRepository) CreateSeller(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23
+			, $21, $22, $23, $24, $25, $26, $27
 		)
 		RETURNING id
 			, company_id
@@ -462,6 +482,10 @@ func (q *sellerRepository) CreateSeller(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, telegram_chat_id
@@ -488,6 +512,10 @@ func (q *sellerRepository) CreateSeller(
 		request.EmailConfirmationToken,
 		request.EmailConfirmedAt,
 		request.Email,
+		request.EncryptedPassword,
+		request.PasswordResetAt,
+		request.PasswordResetToken,
+		request.PasswordChangedAt,
 		request.Photo,
 		request.UnreadNotifications,
 		request.TelegramChatID,
@@ -513,6 +541,10 @@ func (q *sellerRepository) CreateSeller(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.TelegramChatID,
@@ -574,6 +606,10 @@ func (q *sellerRepository) UpdateSeller(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, telegram_chat_id
@@ -606,6 +642,10 @@ func (q *sellerRepository) UpdateSeller(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.TelegramChatID,
@@ -759,6 +799,46 @@ func (q *sellerRepository) UpdateSeller(
 		}
 		_, _ = fmt.Fprintf(sb, " email = $%d", n)
 	}
+	if (response.EncryptedPassword != nil && request.EncryptedPassword == nil) ||
+		(response.EncryptedPassword == nil && request.EncryptedPassword != nil) ||
+		(response.EncryptedPassword != nil && request.EncryptedPassword != nil &&
+			*response.EncryptedPassword != *request.EncryptedPassword) {
+		params = append(params, request.EncryptedPassword)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " encrypted_password = $%d", n)
+	}
+	if (response.PasswordResetAt != nil && request.PasswordResetAt == nil) ||
+		(response.PasswordResetAt == nil && request.PasswordResetAt != nil) ||
+		(response.PasswordResetAt != nil && request.PasswordResetAt != nil &&
+			!response.PasswordResetAt.Equal(*request.PasswordResetAt)) {
+		params = append(params, request.PasswordResetAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " password_reset_at = $%d", n)
+	}
+	if (response.PasswordResetToken != nil && request.PasswordResetToken == nil) ||
+		(response.PasswordResetToken == nil && request.PasswordResetToken != nil) ||
+		(response.PasswordResetToken != nil && request.PasswordResetToken != nil &&
+			*response.PasswordResetToken != *request.PasswordResetToken) {
+		params = append(params, request.PasswordResetToken)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " password_reset_token = $%d", n)
+	}
+	if (response.PasswordChangedAt != nil && request.PasswordChangedAt == nil) ||
+		(response.PasswordChangedAt == nil && request.PasswordChangedAt != nil) ||
+		(response.PasswordChangedAt != nil && request.PasswordChangedAt != nil &&
+			!response.PasswordChangedAt.Equal(*request.PasswordChangedAt)) {
+		params = append(params, request.PasswordChangedAt)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " password_changed_at = $%d", n)
+	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
@@ -863,6 +943,10 @@ func (q *sellerRepository) UpdateSeller(
 			, email_confirmation_token
 			, email_confirmed_at
 			, email
+			, encrypted_password
+			, password_reset_at
+			, password_reset_token
+			, password_changed_at
 			, photo
 			, unread_notifications
 			, telegram_chat_id
@@ -893,6 +977,10 @@ func (q *sellerRepository) UpdateSeller(
 		&response.EmailConfirmationToken,
 		&response.EmailConfirmedAt,
 		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
 		&response.Photo,
 		&response.UnreadNotifications,
 		&response.TelegramChatID,

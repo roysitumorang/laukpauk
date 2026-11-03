@@ -497,6 +497,10 @@ func init() {
 				, email_confirmation_token character varying
 				, email_confirmed_at timestamp with time zone
 				, email character varying UNIQUE
+				, encrypted_password character varying
+				, password_reset_at timestamp with time zone
+				, password_reset_token character varying
+				, password_changed_at timestamp with time zone
 				, photo character varying NOT NULL
 				, unread_notifications bigint NOT NULL DEFAULT 0
 				, telegram_chat_id bigint UNIQUE
@@ -587,6 +591,10 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
+		if encryptedPassword, err = helper.HashPassword(password); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrHashPassword")
+			return
+		}
 		var sellerID uuid.UUID
 		if err = tx.QueryRow(
 			ctx,
@@ -598,10 +606,11 @@ func init() {
 				, mobile_phone_confirmed_at
 				, mobile_phone
 				, username
+				, encrypted_password
 				, photo
 				, created_at
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 			RETURNING id`,
 			companyID,
 			models.SellerStatusActive,
@@ -610,6 +619,7 @@ func init() {
 			now,
 			company.WhatsappPhoneNumber,
 			strings.ToLower(company.Name),
+			encryptedPassword,
 			"seller-default.png",
 			now,
 			now,
@@ -658,6 +668,10 @@ func init() {
 				, email_confirmation_token character varying
 				, email_confirmed_at timestamp with time zone
 				, email character varying
+				, encrypted_password character varying
+				, password_reset_at timestamp with time zone
+				, password_reset_token character varying
+				, password_changed_at timestamp with time zone
 				, photo character varying NOT NULL
 				, unread_notifications bigint NOT NULL DEFAULT 0
 				, telegram_chat_id bigint UNIQUE

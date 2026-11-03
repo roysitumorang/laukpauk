@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"strconv"
@@ -60,6 +61,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	})
 	engine.AddFunc("HasPrefix", func(s, prefix string) bool {
 		return strings.HasPrefix(s, prefix)
+	})
+	engine.AddFunc("QueryEscape", func(s string) string {
+		return url.QueryEscape(s)
 	})
 	sessionMiddleware, sessionStore := session.NewWithStore(session.Config{
 		Storage:         q.Storage,
@@ -150,8 +154,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/companies/*/*", To: "/companies/admin/$1/$2"},
 				{From: "/seller/otp", To: "/otp/seller"},
 				{From: "/seller/otp/*", To: "/otp/seller/$1"},
-				{From: "/seller/sessions", To: "/sessions/seller"},
-				{From: "/seller/sessions/*", To: "/sessions/seller/$1"},
+				{From: "/seller/auth/sessions", To: "/auth/seller/sessions"},
+				{From: "/seller/auth/sessions/*", To: "/auth/seller/sessions/$1"},
+				{From: "/seller/auth/*", To: "/auth/seller/$1"},
 				{From: "/seller", To: "/home/seller"},
 				{From: "/seller/product_categories", To: "/product_categories/seller"},
 				{From: "/seller/product_categories/*", To: "/product_categories/seller/$1"},

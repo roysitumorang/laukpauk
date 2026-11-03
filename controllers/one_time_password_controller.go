@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"math"
+	"net/url"
 	"os"
 	"time"
 	"uuid"
@@ -123,7 +124,19 @@ func (q *oneTimePasswordController) SellerCreate(c fiber.Ctx) error {
 			"flash", flash.Danger(err.Error()),
 		))
 	}
-	if seller == nil {
+	if seller == nil || seller.EncryptedPassword == nil {
+		return c.Render("seller/one_time_password_new", params.Push(
+			"flash", flash.Danger(models.ErrLoginNotFound.Error()),
+		))
+	}
+	matched, err := helper.VerifyPassword(request.Password, *seller.EncryptedPassword)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if !matched {
 		return c.Render("seller/one_time_password_new", params.Push(
 			"flash", flash.Danger(models.ErrLoginNotFound.Error()),
 		))
@@ -215,7 +228,7 @@ func (q *oneTimePasswordController) SellerCreate(c fiber.Ctx) error {
 	}
 	sess.Set(models.CurrentOtpTrackingID, oneTimePassword.TrackingID)
 	return flash.Success("please check your phone for OTP token SMS").
-		Redirect(c, sess.Session, helper.Sprintf("/seller/sessions/new?login=%s", request.Login))
+		Redirect(c, sess.Session, helper.Sprintf("/seller/auth/sessions/new?login=%s", url.QueryEscape(request.Login)))
 }
 
 func (q *oneTimePasswordController) V1BuyerCreate(c fiber.Ctx) error {

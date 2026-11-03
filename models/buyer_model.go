@@ -50,6 +50,10 @@ type Buyer struct {
 	EmailConfirmationToken        *string     `json:"-" form:"-"`
 	EmailConfirmedAt              *time.Time  `json:"-" form:"-"`
 	Email                         *string     `json:"email" form:"email"`
+	EncryptedPassword             *string     `json:"-" form:"-"`
+	PasswordResetAt               *time.Time  `json:"-" form:"-"`
+	PasswordResetToken            *string     `json:"-" form:"-"`
+	PasswordChangedAt             *time.Time  `json:"-" form:"-"`
 	Photo                         string      `json:"-" form:"photo"`
 	UnreadNotifications           int64       `json:"-" form:"-"`
 	ReferralCode                  string      `json:"referral_code" form:"referral_code"`
