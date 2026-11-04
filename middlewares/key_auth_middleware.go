@@ -68,6 +68,7 @@ func BuyerKeyAuthMiddleware(
 }
 
 func KeyAuthMiddleware(
+	role string,
 	userService services.UserService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) fiber.Handler {
@@ -96,6 +97,7 @@ func KeyAuthMiddleware(
 				ctx,
 				models.NewUserFilter().
 					WithCompanyIDs(company.ID).
+					WithRoles(role).
 					WithUserIDs(userID),
 			)
 			if err != nil || currentUser == nil {

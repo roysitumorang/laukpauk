@@ -48,11 +48,11 @@ func NewUserController(
 
 func (q *userController) Mount(r fiber.Router) {
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
-	keyAuth := middlewares.KeyAuthMiddleware(q.userService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", companyVerify).
 		Post("", q.V1SignUp).
 		Post("/sign_in", q.V1SignIn).
-		Get("/me", keyAuth, q.V1Me)
+		Get("/me", buyerKeyAuth, q.V1Me)
 }
 
 func (q *userController) V1SignUp(c fiber.Ctx) error {
@@ -89,7 +89,7 @@ func (q *userController) V1SignUp(c fiber.Ctx) error {
 			WithCompanyIDs(company.ID).
 			WithUsername(request.Username),
 	); err != nil && !errors.Is(err, models.ErrUserNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -184,7 +184,7 @@ func (q *userController) V1SignIn(c fiber.Ctx) error {
 	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	request, statusCode, err := sanitizers.ValidateSignIn(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateOtpLogin")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSignIn")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
