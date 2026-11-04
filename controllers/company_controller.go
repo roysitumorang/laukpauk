@@ -60,9 +60,8 @@ func (q *companyController) Mount(r fiber.Router) {
 		Get("/mine", q.SellerEdit).
 		Post("/mine", q.SellerUpdate)
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
-		Get("/mine", q.V1BuyerShow)
+	r.Group("/v1/buyer", companyVerify).
+		Get("/current", q.V1BuyerShow)
 }
 
 func (q *companyController) AdminIndex(c fiber.Ctx) (err error) {

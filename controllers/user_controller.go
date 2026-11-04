@@ -49,7 +49,7 @@ func NewUserController(
 func (q *userController) Mount(r fiber.Router) {
 	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	keyAuth := middlewares.KeyAuthMiddleware(q.userService, q.jsonWebTokenService)
-	r.Group("/v1", companyVerify).
+	r.Group("/v1/buyer", companyVerify).
 		Post("", q.V1SignUp).
 		Post("/sign_in", q.V1SignIn).
 		Get("/me", keyAuth, q.V1Me)
