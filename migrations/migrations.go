@@ -48,6 +48,23 @@ func (m *Migration) Migrate(ctx context.Context) error {
 	}(ctx)
 	if _, err = tx.Exec(
 		ctx,
+		"CREATE EXTENSION IF NOT EXISTS btree_gist;",
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		return err
+	}
+	if _, err = tx.Exec(
+		ctx,
+		`CREATE COLLATION IF NOT EXISTS natural_sort (
+			PROVIDER = 'icu'
+			, LOCALE = 'en-US-u-kn-true'
+		);`,
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		return err
+	}
+	if _, err = tx.Exec(
+		ctx,
 		`CREATE TABLE IF NOT EXISTS migrations (
 			"version" bigint NOT NULL PRIMARY KEY
 		)`,

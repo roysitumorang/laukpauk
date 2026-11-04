@@ -101,6 +101,7 @@ type Company struct {
 	RawTransactionAutoWithdrawalWindowMin string             `json:"-" form:"transaction_auto_withdrawal_window_min"`
 	TransactionAutoWithdrawalWindowMax    *time.Time         `json:"transaction_auto_withdrawal_window_max" form:"-"`
 	RawTransactionAutoWithdrawalWindowMax string             `json:"-" form:"transaction_auto_withdrawal_window_max"`
+	OtpRequiredForLogin                   bool               `json:"-" form:"otp_required_for_login"`
 	OwnerID                               uuid.UUID          `json:"-" form:"-"`
 	CreatedBy                             uuid.UUID          `json:"-" form:"-"`
 	CreatedAt                             time.Time          `json:"-" form:"-"`

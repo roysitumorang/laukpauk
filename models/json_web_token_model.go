@@ -10,33 +10,29 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var (
-	ErrJsonWebTokenNotFound        = errors.New("json web token not found")
-	ErrUniqueJsonWebTokenViolation = errors.New("token: already exists")
-)
+var ErrJsonWebTokenNotFound = errors.New("json web token not found")
+var ErrUniqueJsonWebTokenViolation = errors.New("token: already exists")
 
-type (
-	JsonWebToken struct {
-		RowNo     int64     `json:"-" form:"-"`
-		ID        uuid.UUID `json:"-" form:"-"`
-		BuyerID   uuid.UUID `json:"buyer_id" form:"-"`
-		CreatedAt time.Time `json:"-" form:"-"`
-		ExpiredAt time.Time `json:"-" form:"-"`
-	}
+type JsonWebToken struct {
+	RowNo     int64     `json:"-" form:"-"`
+	ID        uuid.UUID `json:"-" form:"-"`
+	UserID    uuid.UUID `json:"user_id" form:"-"`
+	CreatedAt time.Time `json:"-" form:"-"`
+	ExpiredAt time.Time `json:"-" form:"-"`
+}
 
-	JsonWebTokenFilter struct {
-		JsonWebTokenIDs,
-		BuyerIDs []uuid.UUID
-		Expired *bool
-		Keyword,
-		PaginationURL string
-		Sortings    []Sorting
-		MapSortings Map
-		Limit,
-		Page int64
-		UrlValues url.Values
-	}
-)
+type JsonWebTokenFilter struct {
+	JsonWebTokenIDs,
+	UserIDs []uuid.UUID
+	Expired *bool
+	Keyword,
+	PaginationURL string
+	Sortings    []Sorting
+	MapSortings Map
+	Limit,
+	Page int64
+	UrlValues url.Values
+}
 
 func NewJsonWebTokenFilter() *JsonWebTokenFilter {
 	return &JsonWebTokenFilter{
@@ -50,8 +46,8 @@ func (q *JsonWebTokenFilter) WithJsonWebTokenIDs(jsonWebTokenIDs ...uuid.UUID) *
 	return q
 }
 
-func (q *JsonWebTokenFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *JsonWebTokenFilter {
-	q.BuyerIDs = buyerIDs
+func (q *JsonWebTokenFilter) WithUserIDs(userIDs ...uuid.UUID) *JsonWebTokenFilter {
+	q.UserIDs = userIDs
 	return q
 }
 
@@ -95,8 +91,8 @@ func (q *JsonWebTokenFilter) WithUrlValues(urlValues url.Values) *JsonWebTokenFi
 }
 
 func (q *JsonWebToken) Validate() error {
-	if q.BuyerID.Compare(uuid.Nil()) == 0 {
-		return errors.New("buyer_id: is required")
+	if q.UserID.Compare(uuid.Nil()) == 0 {
+		return errors.New("user_id: is required")
 	}
 	return nil
 }

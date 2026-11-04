@@ -67,6 +67,59 @@ func BuyerKeyAuthMiddleware(
 	})
 }
 
+func KeyAuthMiddleware(
+	userService services.UserService,
+	jsonWebTokenService services.JsonWebTokenService,
+) fiber.Handler {
+	return keyauth.New(keyauth.Config{
+		SuccessHandler: func(c fiber.Ctx) error {
+			return c.Next()
+		},
+		ErrorHandler: func(c fiber.Ctx, err error) error {
+			if err == nil {
+				err = keyauth.ErrMissingOrMalformedAPIKey
+			}
+			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).WriteResponse(c)
+		},
+		Validator: func(c fiber.Ctx, token string) (bool, error) {
+			company, _ := c.Locals(models.CurrentCompany).(*models.Company)
+			claims, err := bearerVerify(token)
+			if err != nil {
+				return false, err
+			}
+			userID, err := uuid.Parse(claims.ID)
+			if err != nil {
+				return false, keyauth.ErrMissingOrMalformedAPIKey
+			}
+			ctx := c.Context()
+			currentUser, err := userService.FindUser(
+				ctx,
+				models.NewUserFilter().
+					WithCompanyIDs(company.ID).
+					WithUserIDs(userID),
+			)
+			if err != nil || currentUser == nil {
+				return false, keyauth.ErrMissingOrMalformedAPIKey
+			}
+			jsonWebTokenID, err := uuid.Parse(claims.Subject)
+			if err != nil {
+				return false, keyauth.ErrMissingOrMalformedAPIKey
+			}
+			currentJsonWebToken, err := jsonWebTokenService.FindJsonWebToken(
+				ctx,
+				models.NewJsonWebTokenFilter().
+					WithJsonWebTokenIDs(jsonWebTokenID),
+			)
+			if err != nil || currentJsonWebToken == nil {
+				return false, keyauth.ErrMissingOrMalformedAPIKey
+			}
+			c.Locals(models.CurrentUser, currentUser)
+			c.Locals(models.CurrentJsonWebToken, currentJsonWebToken)
+			return true, nil
+		},
+	})
+}
+
 func bearerVerify(tokenString string) (*jwt.RegisteredClaims, error) {
 	var claimsStruct jwt.RegisteredClaims
 	token, err := jwt.ParseWithClaims(

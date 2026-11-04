@@ -1,0 +1,36 @@
+package migrations
+
+import (
+	"context"
+	"log/slog"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/helper"
+)
+
+func init() {
+	Migrations[1793798481020874086] = func(ctx context.Context, tx pgx.Tx) (err error) {
+		ctxt := "Migration-1793798481020874086"
+		// vouchers_users
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE TABLE vouchers_users (
+				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+				, voucher_id UUID NOT NULL REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				, created_at timestamp with time zone NOT NULL
+				, UNIQUE (voucher_id, user_id)
+			);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON vouchers_users (user_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		}
+		return
+	}
+}
