@@ -63,7 +63,7 @@ type User struct {
 	Name                          string     `json:"name" form:"name"`
 	MobilePhoneConfirmationSentAt *time.Time `json:"-" form:"-"`
 	MobilePhoneConfirmationToken  *string    `json:"-" form:"-"`
-	MobilePhoneConfirmedAt        *time.Time `json:"-" form:"-"`
+	MobilePhoneConfirmedAt        *time.Time `json:"mobile_phone_confirmed_at" form:"-"`
 	MobilePhone                   string     `json:"mobile_phone" form:"mobile_phone"`
 	Username                      *string    `json:"username" form:"username"`
 	EmailConfirmationSentAt       *time.Time `json:"-" form:"-"`
@@ -80,10 +80,10 @@ type User struct {
 	CurrentSignInIP               *string    `json:"current_sign_in_ip" form:"-"`
 	LastSignInIP                  *string    `json:"last_sign_in_ip" form:"-"`
 	FailedAttempts                int        `json:"failed_attempts" form:"-"`
-	UnlockToken                   *string    `json:"unlock_token" form:"-"`
+	UnlockToken                   *string    `json:"-" form:"-"`
 	LockedAt                      *time.Time `json:"locked_at" form:"-"`
-	OtpSecret                     *string    `json:"otp_secret" form:"-"`
-	OtpExpiredAt                  *time.Time `json:"otp_expired_at" form:"-"`
+	OtpSecret                     *string    `json:"-" form:"-"`
+	OtpExpiredAt                  *time.Time `json:"-" form:"-"`
 	Photo                         string     `json:"photo" form:"photo"`
 	UserLevel                     string     `json:"user_level" form:"user_level"`
 	CompanyID                     *uuid.UUID `json:"company_id" form:"-"`
@@ -285,6 +285,42 @@ func (q *UserFilter) WithPage(page int64) *UserFilter {
 func (q *UserFilter) WithUrlValues(urlValues url.Values) *UserFilter {
 	q.UrlValues = urlValues
 	return q
+}
+
+type SignUp struct {
+	Name           string `json:"name" form:"-"`
+	Username       string `json:"username" form:"-"`
+	MobilePhone    string `json:"mobile_phone" form:"-"`
+	Base64Password string `json:"password" form:"-"`
+	Password       string `json:"-" form:"-"`
+	ReferralCode   string `json:"referral_code" form:"-"`
+}
+
+func (q *SignUp) Validate() error {
+	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
+		return errors.New("name: is required")
+	}
+	if q.Username = strings.TrimSpace(strings.ToLower(q.Username)); q.Username == "" {
+		return errors.New("username: is required")
+	}
+	if q.MobilePhone = strings.TrimSpace(q.MobilePhone); q.MobilePhone == "" {
+		return errors.New("mobile_phone: is required")
+	}
+	mobilePhone, err := phonenumbers.Parse(q.MobilePhone, "ID")
+	if err != nil {
+		return fmt.Errorf("mobile_phone: %w", err)
+	}
+	q.MobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
+	if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
+		return errors.New("password: is required")
+	}
+	password, err := helper.Base64Decode(q.Base64Password)
+	if err != nil {
+		return fmt.Errorf("password: %s", err.Error())
+	}
+	q.Password = password
+	q.ReferralCode = strings.TrimSpace(q.ReferralCode)
+	return nil
 }
 
 type SignInRequest struct {

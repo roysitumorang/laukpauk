@@ -17,7 +17,6 @@ import (
 
 var ErrCompanyNotFound = errors.New("company not found")
 var ErrUniqueCompanySubdomainViolation = errors.New("subdomain: already exists")
-var ErrUniqueCompanyTelegramBotTokenViolation = errors.New("telegram_bot_token: already exists")
 var ErrUniqueCompanyWhatsappPhoneNumberViolation = errors.New("whatsapp_phone_number: already exists")
 var MapCompanySortings = map[string]struct{}{
 	SortingFieldID:          {},
@@ -66,7 +65,6 @@ type Company struct {
 	RowNo                                 int64              `json:"-" form:"-"`
 	ID                                    uuid.UUID          `json:"-" form:"-"`
 	Name                                  string             `json:"-" form:"name"`
-	Android                               bool               `json:"-" form:"android"`
 	Subdomain                             string             `json:"-" form:"subdomain"`
 	Billed                                bool               `json:"-" form:"billed"`
 	BillingInterval                       *BillingInterval   `json:"-" form:"billing_interval"`
@@ -75,7 +73,6 @@ type Company struct {
 	RawSubscriptionStatus                 string             `json:"subscription_status" form:"-"`
 	SubscriptionStartDate                 *time.Time         `json:"-" form:"subscription_start_date"`
 	SubscriptionEndDate                   *time.Time         `json:"-" form:"subscription_end_date"`
-	TelegramBotToken                      *string            `json:"-" form:"telegram_bot_token"`
 	VacationMode                          bool               `json:"vacation_mode" form:"vacation_mode"`
 	VacationEndDate                       *time.Time         `json:"vacation_end_date" form:"-"`
 	RawVacationEndDate                    string             `json:"-" form:"vacation_end_date"`
@@ -127,11 +124,6 @@ func (q *Company) Validate(includeSetting ...bool) error {
 		return fmt.Errorf("whatsapp_phone_number: %w", err)
 	}
 	q.WhatsappPhoneNumber = phonenumbers.Format(whatsappPhoneNumber, phonenumbers.E164)
-	if q.TelegramBotToken != nil {
-		if *q.TelegramBotToken = strings.TrimSpace(*q.TelegramBotToken); *q.TelegramBotToken == "" {
-			q.TelegramBotToken = nil
-		}
-	}
 	if len(includeSetting) == 0 || !includeSetting[0] {
 		return nil
 	}

@@ -92,14 +92,12 @@ func (q *companyRepository) FindCompanies(
 		"COUNT(1)",
 		`id
 		, name
-		, android
 		, subdomain
 		, billed
 		, billing_interval
 		, subscription_status
 		, subscription_start_date
 		, subscription_end_date
-		, telegram_bot_token
 		, vacation_mode
 		, vacation_end_date
 		, voucher_enabled
@@ -119,6 +117,7 @@ func (q *companyRepository) FindCompanies(
 		, transaction_auto_withdrawal_enabled
 		, lower(transaction_auto_withdrawal_window)
 		, upper(transaction_auto_withdrawal_window)
+		, otp_required_for_login
 		, owner_id
 		, created_by
 		, created_at
@@ -182,14 +181,12 @@ func (q *companyRepository) FindCompanies(
 		if err = rows.Scan(
 			&company.ID,
 			&company.Name,
-			&company.Android,
 			&company.Subdomain,
 			&company.Billed,
 			&company.BillingInterval,
 			&company.SubscriptionStatus,
 			&company.SubscriptionStartDate,
 			&company.SubscriptionEndDate,
-			&company.TelegramBotToken,
 			&company.VacationMode,
 			&company.VacationEndDate,
 			&company.VoucherEnabled,
@@ -209,6 +206,7 @@ func (q *companyRepository) FindCompanies(
 			&company.TransactionAutoWithdrawalEnabled,
 			&company.TransactionAutoWithdrawalWindowMin,
 			&company.TransactionAutoWithdrawalWindowMax,
+			&company.OtpRequiredForLogin,
 			&company.OwnerID,
 			&company.CreatedBy,
 			&company.CreatedAt,
@@ -245,14 +243,12 @@ func (q *companyRepository) FindCompany(
 		`SELECT
 			id
 			, name
-			, android
 			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
 			, subscription_start_date
 			, subscription_end_date
-			, telegram_bot_token
 			, vacation_mode
 			, vacation_end_date
 			, voucher_enabled
@@ -272,6 +268,7 @@ func (q *companyRepository) FindCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, otp_required_for_login
 			, owner_id
 			, created_by
 			, created_at
@@ -288,14 +285,12 @@ func (q *companyRepository) FindCompany(
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
 		&response.Name,
-		&response.Android,
 		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
 		&response.SubscriptionStartDate,
 		&response.SubscriptionEndDate,
-		&response.TelegramBotToken,
 		&response.VacationMode,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
@@ -315,6 +310,7 @@ func (q *companyRepository) FindCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OtpRequiredForLogin,
 		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -345,14 +341,12 @@ func (q *companyRepository) CreateCompany(
 		ctx,
 		`INSERT INTO companies (
 			name
-			, android
 			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
 			, subscription_start_date
 			, subscription_end_date
-			, telegram_bot_token
 			, vacation_mode
 			, vacation_end_date
 			, voucher_enabled
@@ -371,6 +365,7 @@ func (q *companyRepository) CreateCompany(
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
 			, transaction_auto_withdrawal_window
+			, otp_required_for_login
 			, owner_id
 			, created_by
 			, created_at
@@ -379,19 +374,17 @@ func (q *companyRepository) CreateCompany(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, tstzrange($27, $28, '[]'), $29, $30
-			, $31, $32, $33
+			, $21, $22, $23, $24, tstzrange($25, $26, '[]'), $27, $28, $29, $30
+			, $31, $32
 		)
 		RETURNING id
 			, name
-			, android
 			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
 			, subscription_start_date
 			, subscription_end_date
-			, telegram_bot_token
 			, vacation_mode
 			, vacation_end_date
 			, voucher_enabled
@@ -411,6 +404,7 @@ func (q *companyRepository) CreateCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, otp_required_for_login
 			, owner_id
 			, created_by
 			, created_at
@@ -420,14 +414,12 @@ func (q *companyRepository) CreateCompany(
 			, deactivated_at
 			, deactivation_reason`,
 		request.Name,
-		request.Android,
 		request.Subdomain,
 		request.Billed,
 		request.BillingInterval,
 		request.SubscriptionStatus,
 		request.SubscriptionStartDate,
 		request.SubscriptionEndDate,
-		request.TelegramBotToken,
 		request.VacationMode,
 		request.VacationEndDate,
 		request.VoucherEnabled,
@@ -447,6 +439,7 @@ func (q *companyRepository) CreateCompany(
 		request.TransactionAutoWithdrawalEnabled,
 		request.TransactionAutoWithdrawalWindowMin,
 		request.TransactionAutoWithdrawalWindowMax,
+		request.OtpRequiredForLogin,
 		request.OwnerID,
 		request.CreatedBy,
 		request.CreatedAt,
@@ -455,14 +448,12 @@ func (q *companyRepository) CreateCompany(
 	).Scan(
 		&response.ID,
 		&response.Name,
-		&response.Android,
 		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
 		&response.SubscriptionStartDate,
 		&response.SubscriptionEndDate,
-		&response.TelegramBotToken,
 		&response.VacationMode,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
@@ -482,6 +473,7 @@ func (q *companyRepository) CreateCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OtpRequiredForLogin,
 		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -496,8 +488,6 @@ func (q *companyRepository) CreateCompany(
 			switch pgxErr.ConstraintName {
 			case "companies_subdomain_key":
 				err = models.ErrUniqueCompanySubdomainViolation
-			case "companies_telegram_bot_token_key":
-				err = models.ErrUniqueCompanyTelegramBotTokenViolation
 			case "companies_whatsapp_phone_number_key":
 				err = models.ErrUniqueCompanyWhatsappPhoneNumberViolation
 			}
@@ -521,14 +511,12 @@ func (q *companyRepository) UpdateCompany(
 		`SELECT
 			id
 			, name
-			, android
 			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
 			, subscription_start_date
 			, subscription_end_date
-			, telegram_bot_token
 			, vacation_mode
 			, vacation_end_date
 			, voucher_enabled
@@ -548,6 +536,7 @@ func (q *companyRepository) UpdateCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, otp_required_for_login
 			, owner_id
 			, created_by
 			, created_at
@@ -563,14 +552,12 @@ func (q *companyRepository) UpdateCompany(
 	).Scan(
 		&response.ID,
 		&response.Name,
-		&response.Android,
 		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
 		&response.SubscriptionStartDate,
 		&response.SubscriptionEndDate,
-		&response.TelegramBotToken,
 		&response.VacationMode,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
@@ -590,6 +577,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OtpRequiredForLogin,
 		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -620,13 +608,6 @@ func (q *companyRepository) UpdateCompany(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " name = $%d", n)
-	}
-	if response.Android != request.Android {
-		params = append(params, request.Android)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " android = $%d", n)
 	}
 	if response.Subdomain != request.Subdomain {
 		params = append(params, request.Subdomain)
@@ -669,19 +650,6 @@ func (q *companyRepository) UpdateCompany(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " subscription_end_date = $%d", n)
-	}
-	if (response.TelegramBotToken == nil &&
-		request.TelegramBotToken != nil) ||
-		(response.TelegramBotToken != nil &&
-			request.TelegramBotToken == nil) ||
-		(response.TelegramBotToken != nil &&
-			request.TelegramBotToken != nil &&
-			*response.TelegramBotToken != *request.TelegramBotToken) {
-		params = append(params, request.TelegramBotToken)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " telegram_bot_token = $%d", n)
 	}
 	if response.VacationMode != request.VacationMode {
 		params = append(params, request.VacationMode)
@@ -832,6 +800,13 @@ func (q *companyRepository) UpdateCompany(
 		}
 		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_window = tstzrange($%d, $%d, '[]')", n-1, n)
 	}
+	if response.OtpRequiredForLogin != request.OtpRequiredForLogin {
+		params = append(params, request.OtpRequiredForLogin)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " otp_required_for_login = $%d", n)
+	}
 	if response.OwnerID.Compare(request.OwnerID) != 0 {
 		params = append(params, request.OwnerID)
 		if n = len(params); n > 1 {
@@ -851,14 +826,12 @@ func (q *companyRepository) UpdateCompany(
 		WHERE id = $%d
 		RETURNING id
 			, name
-			, android
 			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
 			, subscription_start_date
 			, subscription_end_date
-			, telegram_bot_token
 			, vacation_mode
 			, vacation_end_date
 			, voucher_enabled
@@ -878,6 +851,7 @@ func (q *companyRepository) UpdateCompany(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, otp_required_for_login
 			, owner_id
 			, created_by
 			, created_at
@@ -891,14 +865,12 @@ func (q *companyRepository) UpdateCompany(
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.Name,
-		&response.Android,
 		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
 		&response.SubscriptionStartDate,
 		&response.SubscriptionEndDate,
-		&response.TelegramBotToken,
 		&response.VacationMode,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
@@ -918,6 +890,7 @@ func (q *companyRepository) UpdateCompany(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OtpRequiredForLogin,
 		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -932,8 +905,6 @@ func (q *companyRepository) UpdateCompany(
 			switch pgxErr.ConstraintName {
 			case "companies_subdomain_key":
 				err = models.ErrUniqueCompanySubdomainViolation
-			case "companies_telegram_bot_token_key":
-				err = models.ErrUniqueCompanyTelegramBotTokenViolation
 			case "companies_whatsapp_phone_number_key":
 				err = models.ErrUniqueCompanyWhatsappPhoneNumberViolation
 			}
@@ -960,14 +931,12 @@ func (q *companyRepository) AddReferralPointsExpense(
 		`SELECT
 			id
 			, name
-			, android
 			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
 			, subscription_start_date
 			, subscription_end_date
-			, telegram_bot_token
 			, vacation_mode
 			, vacation_end_date
 			, voucher_enabled
@@ -987,6 +956,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, otp_required_for_login
 			, owner_id
 			, created_by
 			, created_at
@@ -1002,14 +972,12 @@ func (q *companyRepository) AddReferralPointsExpense(
 	).Scan(
 		&response.ID,
 		&response.Name,
-		&response.Android,
 		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
 		&response.SubscriptionStartDate,
 		&response.SubscriptionEndDate,
-		&response.TelegramBotToken,
 		&response.VacationMode,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
@@ -1029,6 +997,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OtpRequiredForLogin,
 		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,
@@ -1054,14 +1023,12 @@ func (q *companyRepository) AddReferralPointsExpense(
 		WHERE id = $4
 		RETURNING id
 			, name
-			, android
 			, subdomain
 			, billed
 			, billing_interval
 			, subscription_status
 			, subscription_start_date
 			, subscription_end_date
-			, telegram_bot_token
 			, vacation_mode
 			, vacation_end_date
 			, voucher_enabled
@@ -1081,6 +1048,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 			, transaction_auto_withdrawal_enabled
 			, lower(transaction_auto_withdrawal_window)
 			, upper(transaction_auto_withdrawal_window)
+			, otp_required_for_login
 			, owner_id
 			, created_by
 			, created_at
@@ -1096,14 +1064,12 @@ func (q *companyRepository) AddReferralPointsExpense(
 	).Scan(
 		&response.ID,
 		&response.Name,
-		&response.Android,
 		&response.Subdomain,
 		&response.Billed,
 		&response.BillingInterval,
 		&response.SubscriptionStatus,
 		&response.SubscriptionStartDate,
 		&response.SubscriptionEndDate,
-		&response.TelegramBotToken,
 		&response.VacationMode,
 		&response.VacationEndDate,
 		&response.VoucherEnabled,
@@ -1123,6 +1089,7 @@ func (q *companyRepository) AddReferralPointsExpense(
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
+		&response.OtpRequiredForLogin,
 		&response.OwnerID,
 		&response.CreatedBy,
 		&response.CreatedAt,

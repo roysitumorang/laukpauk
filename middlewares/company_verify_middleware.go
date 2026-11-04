@@ -26,7 +26,7 @@ func CompanyVerifyMiddleware(
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
-		if company == nil || !company.Android {
+		if company == nil {
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(models.ErrCompanyNotFound.Error()).
 				WriteResponse(c)

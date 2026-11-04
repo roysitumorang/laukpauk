@@ -33,6 +33,7 @@ type Service struct {
 	XenditClient              *externals.XenditClient
 	TelegramBotClient         *externals.TelegramBotClient
 	Storage                   fiber.Storage
+	UserService               services.UserService
 	AdminService              services.AdminService
 	BuyerService              services.BuyerService
 	ArticleService            services.ArticleService
@@ -145,6 +146,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		URL: os.Getenv("REDIS_URL"),
 	})
 	repositories.SetDbWrite(dbWrite)
+	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	adminRepository := repositories.NewAdminRepository(dbRead, dbWrite)
 	buyerRepository := repositories.NewBuyerRepository(dbRead, dbWrite)
 	articleRepository := repositories.NewArticleRepository(dbRead, dbWrite)
@@ -178,6 +180,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	sellerRepository := repositories.NewSellerRepository(dbRead, dbWrite)
 	oneTimePasswordRepository := repositories.NewOneTimePasswordRepository(dbRead, dbWrite)
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
+	userService := services.NewUserService(userRepository)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
 	articleService := services.NewArticleService(articleRepository)
@@ -246,6 +249,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		XenditClient:              xenditClient,
 		TelegramBotClient:         telegramBotClient,
 		Storage:                   storage,
+		UserService:               userService,
 		AdminService:              adminService,
 		BuyerService:              buyerService,
 		ArticleService:            articleService,

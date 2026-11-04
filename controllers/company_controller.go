@@ -344,10 +344,8 @@ func (q *companyController) AdminUpdate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	company.Name = request.Name
-	company.Android = request.Android
 	company.Subdomain = request.Subdomain
 	company.Billed = request.Billed
-	company.TelegramBotToken = request.TelegramBotToken
 	company.WhatsappPhoneNumber = request.WhatsappPhoneNumber
 	company.UpdatedAt = time.Now()
 	company.DeactivatedBy = nil
@@ -523,13 +521,11 @@ func (q *companyController) SellerUpdate(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	request.ID = company.ID
-	request.Android = company.Android
 	request.Billed = company.Billed
 	request.BillingInterval = company.BillingInterval
 	request.SubscriptionStatus = company.SubscriptionStatus
 	request.SubscriptionStartDate = company.SubscriptionStartDate
 	request.SubscriptionEndDate = company.SubscriptionEndDate
-	request.TelegramBotToken = company.TelegramBotToken
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	request.DeactivatedBy = nil

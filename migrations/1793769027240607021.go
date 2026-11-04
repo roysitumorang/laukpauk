@@ -142,7 +142,6 @@ func init() {
 		}
 		company := models.Company{
 			Name:                                 "Laukpauk",
-			Android:                              true,
 			Subdomain:                            "laukpauk",
 			Billed:                               false,
 			SubscriptionStatus:                   models.SubscriptionStatusActive,
