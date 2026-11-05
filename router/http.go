@@ -137,9 +137,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/auth/sessions/*", To: "/auth/admin/sessions/$1"},
 				{From: "/admin/auth/*", To: "/auth/admin/$1"},
 				{From: "/admin", To: "/home/admin"},
-				{From: "/admin/landing_pages/*", To: "/landing_pages/admin/$1"},
-				{From: "/admin/landing_pages/*/*", To: "/landing_pages/admin/$1/$2"},
-				{From: "/admin/landing_pages/*/*/*", To: "/landing_pages/admin/$1/$2/$3"},
 				{From: "/admin/setting", To: "/setting/admin"},
 				{From: "/admin/admins", To: "/admins/admin"},
 				{From: "/admin/admins/*", To: "/admins/admin/$1"},
@@ -303,17 +300,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewHomeController(
 		q.AdminService,
 		q.SellerService,
-		q.LandingPageService,
-		q.LandingPageItemService,
 		q.MessageService,
 		q.NotificationService,
 	).Mount(app.Group("/home"))
-	controllers.NewLandingPageController(
-		q.AdminService,
-		q.LandingPageService,
-		q.LandingPageItemService,
-		q.MessageService,
-	).Mount(app.Group("/landing_pages"))
 	controllers.NewProductCategoryController(
 		q.SellerService,
 		q.CompanyService,

@@ -36,8 +36,6 @@ type Service struct {
 	UserService               services.UserService
 	AdminService              services.AdminService
 	BuyerService              services.BuyerService
-	LandingPageService        services.LandingPageService
-	LandingPageItemService    services.LandingPageItemService
 	MessageService            services.MessageService
 	ProductCategoryService    services.ProductCategoryService
 	ProductService            services.ProductService
@@ -146,8 +144,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	adminRepository := repositories.NewAdminRepository(dbRead, dbWrite)
 	buyerRepository := repositories.NewBuyerRepository(dbRead, dbWrite)
-	landingPageRepository := repositories.NewLandingPageRepository(dbRead, dbWrite)
-	landingPageItemRepository := repositories.NewLandingPageItemRepository(dbRead, dbWrite)
 	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
 	productCategoryRepository := repositories.NewProductCategoryRepository(dbRead, dbWrite)
 	productRepository := repositories.NewProductRepository(dbRead, dbWrite)
@@ -177,8 +173,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	userService := services.NewUserService(userRepository)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
-	landingPageService := services.NewLandingPageService(landingPageRepository)
-	landingPageItemService := services.NewLandingPageItemService(landingPageItemRepository)
 	messageService := services.NewMessageService(messageRepository)
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	productService := services.NewProductService(productRepository)
@@ -243,8 +237,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		UserService:               userService,
 		AdminService:              adminService,
 		BuyerService:              buyerService,
-		LandingPageService:        landingPageService,
-		LandingPageItemService:    landingPageItemService,
 		MessageService:            messageService,
 		ProductCategoryService:    productCategoryService,
 		ProductService:            productService,
