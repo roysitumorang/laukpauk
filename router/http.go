@@ -137,7 +137,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/auth/sessions/*", To: "/auth/admin/sessions/$1"},
 				{From: "/admin/auth/*", To: "/auth/admin/$1"},
 				{From: "/admin", To: "/home/admin"},
-				{From: "/admin/setting", To: "/setting/admin"},
 				{From: "/admin/admins", To: "/admins/admin"},
 				{From: "/admin/admins/*", To: "/admins/admin/$1"},
 				{From: "/admin/admins/*/*", To: "/admins/admin/$1/$2"},
@@ -194,9 +193,14 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/transactions/*", To: "/transactions/seller/$1"},
 				{From: "/seller/transactions/*/*", To: "/transactions/seller/$1/$2"},
 				{From: "/seller/companies/*", To: "/companies/seller/$1"},
+				{From: "/v1/seller/users", To: "/users/v1/seller"},
+				{From: "/v1/seller/users/*", To: "/users/v1/seller/$1"},
+				{From: "/v1/seller/users/*/*", To: "/users/v1/seller/$1/$2"},
+				{From: "/v1/seller/setting", To: "/setting/v1/seller"},
 				{From: "/v1/buyer/users", To: "/users/v1/buyer"},
 				{From: "/v1/buyer/users/*", To: "/users/v1/buyer/$1"},
 				{From: "/v1/buyer/users/*/*", To: "/users/v1/buyer/$1/$2"},
+				{From: "/v1/buyer/setting", To: "/setting/v1/buyer"},
 				{From: "/v1/buyer/buyers", To: "/buyers/v1/buyer"},
 				{From: "/v1/buyer/auth/*", To: "/auth/v1/buyer/$1"},
 				{From: "/v1/buyer/notification_targets", To: "/notification_targets/v1/buyer"},
@@ -392,8 +396,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.RoutesApiClient,
 	).Mount(app.Group("/delivery_routes"))
 	controllers.NewSettingController(
-		q.AdminService,
+		q.UserService,
 		q.SettingService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/setting"))
 	controllers.NewPaymentChannelController(
 		q.BuyerService,

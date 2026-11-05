@@ -109,15 +109,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
-		if _, err = tx.Exec(
-			ctx,
-			`ALTER TABLE users
-				ADD FOREIGN KEY (company_id) REFERENCES companies (id)
-				ON UPDATE CASCADE ON DELETE RESTRICT;`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
 		var adminID uuid.UUID
 		if err = tx.QueryRow(
 			ctx,
@@ -200,8 +191,7 @@ func init() {
 				now.Location(),
 			),
 		}
-		var companyID uuid.UUID
-		if err = tx.QueryRow(
+		if _, err = tx.Exec(
 			ctx,
 			`INSERT INTO companies (
 				name
@@ -236,8 +226,7 @@ func init() {
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 				, $21, tstzrange($22, $23, '[]'), $24, $25, $26, $27, $28, $29
-			)
-			RETURNING id`,
+			);`,
 			company.Name,
 			company.Subdomain,
 			company.Billed,
@@ -267,8 +256,8 @@ func init() {
 			company.CreatedAt,
 			adminID,
 			company.UpdatedAt,
-		).Scan(&companyID); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
 		}
 		password, err := helper.Base64Decode(os.Getenv("DEFAULT_PASSWORD"))
@@ -281,8 +270,7 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrHashPassword")
 			return
 		}
-		var sellerID uuid.UUID
-		if err = tx.QueryRow(
+		if _, err = tx.Exec(
 			ctx,
 			`INSERT INTO users (
 				role
@@ -293,10 +281,9 @@ func init() {
 				, encrypted_password
 				, photo
 				, user_level
-				, company_id
 				, created_at
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			RETURNING id`,
 			models.RoleSeller,
 			models.UserStatusActive,
@@ -306,20 +293,8 @@ func init() {
 			encryptedPassword,
 			"seller-default.png",
 			models.SellerLevelOwner,
-			companyID,
 			now,
 			now,
-		).Scan(&sellerID); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`UPDATE companies SET
-				owner_id = $1
-			WHERE id = $2`,
-			sellerID,
-			companyID,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		}

@@ -11,22 +11,20 @@ import (
 	"github.com/roysitumorang/laukpauk/repositories"
 )
 
-type (
-	SettingService interface {
-		FindSetting(
-			ctx context.Context,
-		) (*models.Setting, error)
-		UpdateSetting(
-			ctx context.Context,
-			tx pgx.Tx,
-			request *models.Setting,
-		) (*models.Setting, error)
-	}
+type SettingService interface {
+	FindSetting(
+		ctx context.Context,
+	) (*models.Setting, error)
+	UpdateSetting(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.Setting,
+	) (*models.Setting, error)
+}
 
-	settingService struct {
-		settingRepository repositories.SettingRepository
-	}
-)
+type settingService struct {
+	settingRepository repositories.SettingRepository
+}
 
 func NewSettingService(
 	settingRepository repositories.SettingRepository,
@@ -54,7 +52,7 @@ func (q *settingService) UpdateSetting(
 ) (*models.Setting, error) {
 	ctxt := "SettingService-UpdateSetting"
 	response, err := q.settingRepository.UpdateSetting(ctx, tx, request)
-	if err != nil {
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSetting")
 	}
 	return response, err

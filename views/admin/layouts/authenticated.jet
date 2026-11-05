@@ -225,12 +225,6 @@
 							</ul>
 						</li>
 						{{ end }}
-						<li class="nav-item">
-							<a href="{{ baseURL }}/admin/setting" class="nav-link">
-								<i class="nav-icon fa fa-wrench"></i>
-								<p>Pengaturan</p>
-							</a>
-						</li>
 					</ul>
 				</nav>
 				<!-- /.sidebar-menu -->

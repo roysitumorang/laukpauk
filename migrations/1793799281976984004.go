@@ -75,14 +75,24 @@ func init() {
 			return
 		}
 		var sellerID uuid.UUID
+		if err = tx.QueryRow(
+			ctx,
+			`SELECT id
+			FROM users
+			WHERE email = $1`,
+			"benni.surbakti@gmail.com",
+		).Scan(&sellerID); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return
+		}
 		var companyID uuid.UUID
 		if err = tx.QueryRow(
 			ctx,
-			`SELECT id, company_id
-			FROM users
-			WHERE mobile_phone = $1`,
-			"+628116099887",
-		).Scan(&sellerID, &companyID); err != nil {
+			`SELECT id
+			FROM companies
+			WHERE subdomain = $1`,
+			"laukpauk",
+		).Scan(&companyID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
