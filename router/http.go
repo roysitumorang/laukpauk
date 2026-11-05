@@ -152,8 +152,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/companies", To: "/companies/admin"},
 				{From: "/admin/companies/*", To: "/companies/admin/$1"},
 				{From: "/admin/companies/*/*", To: "/companies/admin/$1/$2"},
-				{From: "/seller/otp", To: "/otp/seller"},
-				{From: "/seller/otp/*", To: "/otp/seller/$1"},
 				{From: "/seller/auth/sessions", To: "/auth/seller/sessions"},
 				{From: "/seller/auth/sessions/*", To: "/auth/seller/sessions/$1"},
 				{From: "/seller/auth/*", To: "/auth/seller/$1"},
@@ -176,9 +174,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/point_spending_caps", To: "/point_spending_caps/seller"},
 				{From: "/seller/point_spending_caps/*", To: "/point_spending_caps/seller/$1"},
 				{From: "/seller/point_spending_caps/*/*", To: "/point_spending_caps/seller/$1/$2"},
-				{From: "/seller/articles", To: "/articles/seller"},
-				{From: "/seller/articles/*", To: "/articles/seller/$1"},
-				{From: "/seller/articles/*/*", To: "/articles/seller/$1/$2"},
 				{From: "/seller/blogs", To: "/blogs/seller"},
 				{From: "/seller/blogs/*", To: "/blogs/seller/$1"},
 				{From: "/seller/blogs/*/*", To: "/blogs/seller/$1/$2"},
@@ -209,7 +204,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/users/*", To: "/users/v1/buyer/$1"},
 				{From: "/v1/buyer/users/*/*", To: "/users/v1/buyer/$1/$2"},
 				{From: "/v1/buyer/buyers", To: "/buyers/v1/buyer"},
-				{From: "/v1/buyer/otp", To: "/otp/v1/buyer"},
 				{From: "/v1/buyer/auth/*", To: "/auth/v1/buyer/$1"},
 				{From: "/v1/buyer/notification_targets", To: "/notification_targets/v1/buyer"},
 				{From: "/v1/buyer/product_categories", To: "/product_categories/v1/buyer"},
@@ -320,11 +314,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.MessageService,
 		q.NotificationService,
 	).Mount(app.Group("/home"))
-	controllers.NewArticleController(
-		q.SellerService,
-		q.ArticleService,
-		q.NotificationService,
-	).Mount(app.Group("/articles"))
 	controllers.NewBlogController(
 		q.SellerService,
 		q.BlogService,
