@@ -408,7 +408,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/banners"))
 	controllers.NewUserController(
 		q.UserService,
-		q.CompanyService,
 		q.JsonWebTokenService,
 		q.TextMessageService,
 		q.NotificationService,

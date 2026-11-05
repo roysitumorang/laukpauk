@@ -83,7 +83,6 @@ func KeyAuthMiddleware(
 			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).WriteResponse(c)
 		},
 		Validator: func(c fiber.Ctx, token string) (bool, error) {
-			company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 			claims, err := bearerVerify(token)
 			if err != nil {
 				return false, err
@@ -96,7 +95,6 @@ func KeyAuthMiddleware(
 			currentUser, err := userService.FindUser(
 				ctx,
 				models.NewUserFilter().
-					WithCompanyIDs(company.ID).
 					WithRoles(role).
 					WithUserIDs(userID),
 			)

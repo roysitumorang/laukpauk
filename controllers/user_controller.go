@@ -21,7 +21,6 @@ import (
 
 type userController struct {
 	userService         services.UserService
-	companyService      services.CompanyService
 	jsonWebTokenService services.JsonWebTokenService
 	textMessageService  services.TextMessageService
 	notificationService services.NotificationService
@@ -30,7 +29,6 @@ type userController struct {
 
 func NewUserController(
 	userService services.UserService,
-	companyService services.CompanyService,
 	jsonWebTokenService services.JsonWebTokenService,
 	textMessageService services.TextMessageService,
 	notificationService services.NotificationService,
@@ -38,7 +36,6 @@ func NewUserController(
 ) *userController {
 	return &userController{
 		userService:         userService,
-		companyService:      companyService,
 		jsonWebTokenService: jsonWebTokenService,
 		textMessageService:  textMessageService,
 		notificationService: notificationService,
@@ -47,9 +44,8 @@ func NewUserController(
 }
 
 func (q *userController) Mount(r fiber.Router) {
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify).
+	r.Group("/v1/buyer").
 		Post("", q.V1SignUp).
 		Post("/sign_in", q.V1SignIn).
 		Get("/me", buyerKeyAuth, q.V1Me)
@@ -58,7 +54,6 @@ func (q *userController) Mount(r fiber.Router) {
 func (q *userController) V1SignUp(c fiber.Ctx) error {
 	ctx := c.Context()
 	ctxt := "UserController-V1SignUp"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	request, statusCode, err := sanitizers.ValidateSignUp(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSignUp")
@@ -69,7 +64,6 @@ func (q *userController) V1SignUp(c fiber.Ctx) error {
 	user, err := q.userService.FindUser(
 		ctx,
 		models.NewUserFilter().
-			WithCompanyIDs(company.ID).
 			WithMobilePhone(request.MobilePhone),
 	)
 	if err != nil && !errors.Is(err, models.ErrUserNotFound) {
@@ -86,7 +80,6 @@ func (q *userController) V1SignUp(c fiber.Ctx) error {
 	if user, err = q.userService.FindUser(
 		ctx,
 		models.NewUserFilter().
-			WithCompanyIDs(company.ID).
 			WithUsername(request.Username),
 	); err != nil && !errors.Is(err, models.ErrUserNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
@@ -117,7 +110,6 @@ func (q *userController) V1SignUp(c fiber.Ctx) error {
 		MobilePhone:                   request.MobilePhone,
 		EncryptedPassword:             &encryptedPasword,
 		Photo:                         os.Getenv("BUYER_DEFAULT_PHOTO"),
-		CompanyID:                     &company.ID,
 		CreatedAt:                     now,
 		UpdatedAt:                     now,
 	}
@@ -125,7 +117,6 @@ func (q *userController) V1SignUp(c fiber.Ctx) error {
 		referrer, err := q.userService.FindUser(
 			ctx,
 			models.NewUserFilter().
-				WithCompanyIDs(company.ID).
 				WithRoles(models.RoleBuyer).
 				WithReferralCodes(request.ReferralCode),
 		)
@@ -181,7 +172,6 @@ func (q *userController) V1SignUp(c fiber.Ctx) error {
 func (q *userController) V1SignIn(c fiber.Ctx) error {
 	ctx := c.Context()
 	ctxt := "UserController-V1SignIn"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	request, statusCode, err := sanitizers.ValidateSignIn(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSignIn")
@@ -192,7 +182,6 @@ func (q *userController) V1SignIn(c fiber.Ctx) error {
 	user, err := q.userService.FindUser(
 		ctx,
 		models.NewUserFilter().
-			WithCompanyIDs(company.ID).
 			WithLogin(request.Login).
 			WithStatuses(models.UserStatusActive),
 	)

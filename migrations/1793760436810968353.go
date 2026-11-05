@@ -24,12 +24,12 @@ func init() {
 				, mobile_phone_confirmation_sent_at timestamp with time zone
 				, mobile_phone_confirmation_token character varying
 				, mobile_phone_confirmed_at timestamp with time zone
-				, mobile_phone character varying NOT NULL
-				, username character varying
+				, mobile_phone character varying NOT NULL UNIQUE
+				, username character varying UNIQUE
 				, email_confirmation_sent_at timestamp with time zone
 				, email_confirmation_token character varying
 				, email_confirmed_at timestamp with time zone
-				, email character varying
+				, email character varying UNIQUE
 				, encrypted_password character varying
 				, password_reset_sent_at timestamp with time zone
 				, password_reset_token character varying
@@ -46,8 +46,7 @@ func init() {
 				, otp_expired_at timestamp with time zone
 				, photo character varying NOT NULL
 				, user_level character varying NOT NULL
-				, company_id UUID
-				, referral_code character varying
+				, referral_code character varying UNIQUE
 				, address character varying
 				, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, referral_points bigint
@@ -60,10 +59,6 @@ func init() {
 				, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, deactivated_at timestamp with time zone
 				, deactivation_reason character varying
-				, UNIQUE (mobile_phone, company_id)
-				, UNIQUE (username, company_id)
-				, UNIQUE (email, company_id)
-				, UNIQUE (referral_code, company_id)
 			);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -86,13 +81,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON users (LOWER(name));`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON users (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -152,7 +140,7 @@ func init() {
 				, created_at
 				, updated_at
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-			models.RoleAdmin,
+			models.RoleSeller,
 			models.UserStatusActive,
 			"Ben",
 			"2024-12-11 07:41:55.000 +0700",
@@ -162,7 +150,7 @@ func init() {
 			"benni.surbakti@gmail.com",
 			encryptedPassword,
 			"admin-default.png",
-			models.AdminLevelSuperAdmin,
+			models.UserLevelSellerOwner,
 			"2021-12-16 17:26:51.000 +0700",
 			"2024-12-11 07:41:55.000 +0700",
 		); err != nil {

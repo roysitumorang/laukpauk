@@ -109,7 +109,6 @@ func (q *userRepository) FindUsers(
 		, otp_expired_at
 		, photo
 		, user_level
-		, company_id
 		, referral_code
 		, address
 		, referrer_id
@@ -201,7 +200,6 @@ func (q *userRepository) FindUsers(
 			&user.OtpExpiredAt,
 			&user.Photo,
 			&user.UserLevel,
-			&user.CompanyID,
 			&user.ReferralCode,
 			&user.Address,
 			&user.ReferrerID,
@@ -271,7 +269,6 @@ func (q *userRepository) FindUser(
 			, otp_expired_at
 			, photo
 			, user_level
-			, company_id
 			, referral_code
 			, address
 			, referrer_id
@@ -319,7 +316,6 @@ func (q *userRepository) FindUser(
 		&response.OtpExpiredAt,
 		&response.Photo,
 		&response.UserLevel,
-		&response.CompanyID,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,
@@ -364,19 +360,6 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedUserID := range request.ExcludedUserIDs {
 			params = append(params, excludedUserID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -523,7 +506,6 @@ func (q *userRepository) CreateUser(
 			, otp_expired_at
 			, photo
 			, user_level
-			, company_id
 			, referral_code
 			, address
 			, referrer_id
@@ -542,7 +524,7 @@ func (q *userRepository) CreateUser(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41, $42
+			, $41
 		)
 		RETURNING id
 			, role
@@ -573,7 +555,6 @@ func (q *userRepository) CreateUser(
 			, otp_expired_at
 			, photo
 			, user_level
-			, company_id
 			, referral_code
 			, address
 			, referrer_id
@@ -615,7 +596,6 @@ func (q *userRepository) CreateUser(
 		request.OtpExpiredAt,
 		request.Photo,
 		request.UserLevel,
-		request.CompanyID,
 		request.ReferralCode,
 		request.Address,
 		request.ReferrerID,
@@ -659,7 +639,6 @@ func (q *userRepository) CreateUser(
 		&response.OtpExpiredAt,
 		&response.Photo,
 		&response.UserLevel,
-		&response.CompanyID,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,
@@ -732,7 +711,6 @@ func (q *userRepository) UpdateUser(
 			, otp_expired_at
 			, photo
 			, user_level
-			, company_id
 			, referral_code
 			, address
 			, referrer_id
@@ -780,7 +758,6 @@ func (q *userRepository) UpdateUser(
 		&response.OtpExpiredAt,
 		&response.Photo,
 		&response.UserLevel,
-		&response.CompanyID,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,
@@ -1130,7 +1107,6 @@ func (q *userRepository) UpdateUser(
 			, otp_expired_at
 			, photo
 			, user_level
-			, company_id
 			, referral_code
 			, address
 			, referrer_id
@@ -1176,7 +1152,6 @@ func (q *userRepository) UpdateUser(
 		&response.OtpExpiredAt,
 		&response.Photo,
 		&response.UserLevel,
-		&response.CompanyID,
 		&response.ReferralCode,
 		&response.Address,
 		&response.ReferrerID,

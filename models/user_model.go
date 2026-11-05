@@ -23,33 +23,26 @@ var ErrUserLocked = errors.New("user locked")
 const CurrentUser = "current_user"
 const UserID = "user_id"
 
-const RoleAdmin = "admin"
 const RoleSeller = "seller"
 const RoleBuyer = "buyer"
 
-var Roles = []string{RoleAdmin, RoleSeller, RoleBuyer}
-var MapRoles = map[string]struct{}{RoleAdmin: {}, RoleSeller: {}, RoleBuyer: {}}
+var Roles = []string{RoleSeller, RoleBuyer}
+var MapRoles = map[string]struct{}{RoleSeller: {}, RoleBuyer: {}}
 
 const UserStatusActive = "active"
 const UserStatusLocked = "locked"
 const UserStatusDeactivated = "deactivated"
 
-const UserLevelSuperAdmin = "superadmin"
-const UserLevelAdmin = "admin"
 const UserLevelSellerOwner = "owner"
 const UserLevelSellerStaff = "staff"
 const UserLevelBuyer = "buyer"
 
 var UserLevels = []string{
-	UserLevelSuperAdmin,
-	UserLevelAdmin,
 	UserLevelSellerOwner,
 	UserLevelSellerStaff,
 	UserLevelBuyer,
 }
 var MapUserLevels = map[string]struct{}{
-	UserLevelSuperAdmin:  {},
-	UserLevelAdmin:       {},
 	UserLevelSellerOwner: {},
 	UserLevelSellerStaff: {},
 	UserLevelBuyer:       {},
@@ -86,7 +79,6 @@ type User struct {
 	OtpExpiredAt                  *time.Time `json:"-" form:"-"`
 	Photo                         string     `json:"photo" form:"photo"`
 	UserLevel                     string     `json:"user_level" form:"user_level"`
-	CompanyID                     *uuid.UUID `json:"company_id" form:"-"`
 	ReferralCode                  *string    `json:"referral_code" form:"referral_code"`
 	Address                       *string    `json:"address" form:"address"`
 	ReferrerID                    *uuid.UUID `json:"referrer_id" form:"referrer_id"`
@@ -132,12 +124,8 @@ func (q *User) Validate() error {
 		q.UserLevel = UserLevelBuyer
 	} else if q.UserLevel = strings.TrimSpace(q.UserLevel); q.UserLevel == "" {
 		return errors.New("user_level: is required")
-	} else if (q.Role == RoleAdmin &&
-		q.UserLevel != UserLevelSuperAdmin &&
-		q.UserLevel != UserLevelAdmin) ||
-		(q.Role == RoleSeller &&
-			q.UserLevel != UserLevelSellerOwner &&
-			q.UserLevel != UserLevelSellerStaff) {
+	} else if q.UserLevel != UserLevelSellerOwner &&
+		q.UserLevel != UserLevelSellerStaff {
 		return errors.New("user_level: not found")
 	}
 	if q.ReferralCode != nil {
@@ -166,14 +154,13 @@ func (q *User) PhotoPath(baseURLs ...string) string {
 	return helper.PhotoPath(q.Photo, baseURLs...)
 }
 
-func (q *User) SuperAdmin() bool {
-	return q.UserLevel == UserLevelSuperAdmin
+func (q *User) SellerOwner() bool {
+	return q.UserLevel == UserLevelSellerOwner
 }
 
 type UserFilter struct {
 	UserIDs,
-	ExcludedUserIDs,
-	CompanyIDs []uuid.UUID
+	ExcludedUserIDs []uuid.UUID
 	Roles,
 	Statuses,
 	ReferralCodes []string
@@ -205,11 +192,6 @@ func (q *UserFilter) WithUserIDs(userIDs ...uuid.UUID) *UserFilter {
 
 func (q *UserFilter) WithExcludedUserIDs(excludedUserIDs ...uuid.UUID) *UserFilter {
 	q.ExcludedUserIDs = excludedUserIDs
-	return q
-}
-
-func (q *UserFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *UserFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 
