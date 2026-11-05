@@ -174,9 +174,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/point_spending_caps", To: "/point_spending_caps/seller"},
 				{From: "/seller/point_spending_caps/*", To: "/point_spending_caps/seller/$1"},
 				{From: "/seller/point_spending_caps/*/*", To: "/point_spending_caps/seller/$1/$2"},
-				{From: "/seller/blogs", To: "/blogs/seller"},
-				{From: "/seller/blogs/*", To: "/blogs/seller/$1"},
-				{From: "/seller/blogs/*/*", To: "/blogs/seller/$1/$2"},
 				{From: "/seller/banners", To: "/banners/seller"},
 				{From: "/seller/banners/*", To: "/banners/seller/$1"},
 				{From: "/seller/banners/*/*", To: "/banners/seller/$1/$2"},
@@ -226,8 +223,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
 				{From: "/v1/buyer/companies/*", To: "/companies/v1/buyer/$1"},
 				{From: "/", To: "/home"},
-				{From: "/blogs", To: "/home/blogs"},
-				{From: "/read/*", To: "/home/blogs/$1"},
 				{From: "/contact-us", To: "/home/contact-us"},
 				{From: "/faq", To: "/home/faq"},
 				{From: "/privacy-policy", To: "/home/privacy-policy"},
@@ -310,20 +305,13 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.SellerService,
 		q.LandingPageService,
 		q.LandingPageItemService,
-		q.BlogService,
 		q.MessageService,
 		q.NotificationService,
 	).Mount(app.Group("/home"))
-	controllers.NewBlogController(
-		q.SellerService,
-		q.BlogService,
-		q.NotificationService,
-	).Mount(app.Group("/blogs"))
 	controllers.NewLandingPageController(
 		q.AdminService,
 		q.LandingPageService,
 		q.LandingPageItemService,
-		q.BlogService,
 		q.MessageService,
 	).Mount(app.Group("/landing_pages"))
 	controllers.NewProductCategoryController(

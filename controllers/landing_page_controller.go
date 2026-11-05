@@ -24,7 +24,6 @@ type (
 		adminService           services.AdminService
 		landingPageService     services.LandingPageService
 		landingPageItemService services.LandingPageItemService
-		blogService            services.BlogService
 		messageService         services.MessageService
 	}
 )
@@ -33,14 +32,12 @@ func NewLandingPageController(
 	adminService services.AdminService,
 	landingPageService services.LandingPageService,
 	landingPageItemService services.LandingPageItemService,
-	blogService services.BlogService,
 	messageService services.MessageService,
 ) *landingPageController {
 	return &landingPageController{
 		adminService:           adminService,
 		landingPageService:     landingPageService,
 		landingPageItemService: landingPageItemService,
-		blogService:            blogService,
 		messageService:         messageService,
 	}
 }

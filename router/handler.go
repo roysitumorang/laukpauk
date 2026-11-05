@@ -36,7 +36,6 @@ type Service struct {
 	UserService               services.UserService
 	AdminService              services.AdminService
 	BuyerService              services.BuyerService
-	BlogService               services.BlogService
 	LandingPageService        services.LandingPageService
 	LandingPageItemService    services.LandingPageItemService
 	MessageService            services.MessageService
@@ -147,7 +146,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	adminRepository := repositories.NewAdminRepository(dbRead, dbWrite)
 	buyerRepository := repositories.NewBuyerRepository(dbRead, dbWrite)
-	blogRepository := repositories.NewBlogRepository(dbRead, dbWrite)
 	landingPageRepository := repositories.NewLandingPageRepository(dbRead, dbWrite)
 	landingPageItemRepository := repositories.NewLandingPageItemRepository(dbRead, dbWrite)
 	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
@@ -179,7 +177,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	userService := services.NewUserService(userRepository)
 	adminService := services.NewAdminService(adminRepository)
 	buyerService := services.NewBuyerService(buyerRepository)
-	blogService := services.NewBlogService(blogRepository)
 	landingPageService := services.NewLandingPageService(landingPageRepository)
 	landingPageItemService := services.NewLandingPageItemService(landingPageItemRepository)
 	messageService := services.NewMessageService(messageRepository)
@@ -246,7 +243,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		UserService:               userService,
 		AdminService:              adminService,
 		BuyerService:              buyerService,
-		BlogService:               blogService,
 		LandingPageService:        landingPageService,
 		LandingPageItemService:    landingPageItemService,
 		MessageService:            messageService,

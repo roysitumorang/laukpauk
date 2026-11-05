@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"time"
-	"uuid"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
@@ -25,7 +24,6 @@ type (
 		sellerService          services.SellerService
 		landingPageService     services.LandingPageService
 		landingPageItemService services.LandingPageItemService
-		blogService            services.BlogService
 		messageService         services.MessageService
 		notificationService    services.NotificationService
 	}
@@ -36,7 +34,6 @@ func NewHomeController(
 	sellerService services.SellerService,
 	landingPageService services.LandingPageService,
 	landingPageItemService services.LandingPageItemService,
-	blogService services.BlogService,
 	messageService services.MessageService,
 	notificationService services.NotificationService,
 ) *homeController {
@@ -45,7 +42,6 @@ func NewHomeController(
 		sellerService:          sellerService,
 		landingPageService:     landingPageService,
 		landingPageItemService: landingPageItemService,
-		blogService:            blogService,
 		messageService:         messageService,
 		notificationService:    notificationService,
 	}
@@ -55,8 +51,6 @@ func (q *homeController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Get("", q.Index).
-		Get("/blogs", q.BlogIndex).
-		Get("/blogs/:id", q.BlogShow).
 		Get("/contact-us", q.NewMessage).
 		Post("/contact-us", q.CreateMessage).
 		Get("/faq", q.FaqIndex).
@@ -134,98 +128,6 @@ func (q *homeController) Index(c fiber.Ctx) (err error) {
 		"freeShopping", mapLandingPages[models.LandingPageNameFreeShopping],
 		"commitment", mapLandingPages[models.LandingPageNameCommitment],
 		"kitchenHero", mapLandingPages[models.LandingPageNameKitchenHero],
-	), "landing_page/_layout")
-}
-
-func (q *homeController) BlogIndex(c fiber.Ctx) (err error) {
-	ctx := c.Context()
-	ctxt := "HomeController-BlogIndex"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	request := &models.BlogFilter{}
-	rows := []*models.Blog{}
-	pagination := new(models.Pagination)
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Blog | Belanja Sayur Online",
-		"limits", models.Limits,
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-	)
-	request, err = sanitizers.FindBlogs(ctx, c)
-	params.Push("request", request)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
-		return c.Render("landing_page/blog_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "landing_page/_layout")
-	}
-	if rows, pagination, err = q.blogService.FindBlogs(
-		ctx,
-		request.WithRecordStatuses(models.RecordStatusActive),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlogs")
-		return c.Render("landing_page/blog_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "landing_page/_layout")
-	}
-	return c.Render("landing_page/blog_index", params.Push(
-		"rows", rows,
-		"pagination", pagination,
-	), "landing_page/_layout")
-}
-
-func (q *homeController) BlogShow(c fiber.Ctx) (err error) {
-	ctx := c.Context()
-	ctxt := "HomeController-BlogShow"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	defer flash.Clear(c, sess.Session)
-	currentAdmin, _ := c.Locals(models.CurrentAdmin).(*models.Admin)
-	csrfToken := csrf.TokenFromContext(c)
-	var blog *models.Blog
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentAdmin", currentAdmin,
-		"pageTitle", "Blog | Belanja Sayur Online",
-		"blog", blog,
-	)
-	request := models.NewBlogFilter().
-		WithRecordStatuses(models.RecordStatusActive)
-	slug := c.Params("id")
-	if blogID, err := uuid.Parse(slug); err == nil {
-		request.WithBlogIDs(blogID)
-	} else {
-		request.WithSlugs(&slug)
-	}
-	if blog, err = q.blogService.FindBlog(c, request); err != nil &&
-		!errors.Is(err, models.ErrBlogNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBlog")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/blogs")
-	}
-	if blog == nil {
-		return flash.Danger(models.ErrBlogNotFound.Error()).Redirect(c, sess.Session, "/blogs")
-	}
-	return c.Render("landing_page/blog_show", params.Push(
-		"pageTitle", helper.Sprintf("%s | Belanja Sayur Online", blog.Subject),
-		"blog", blog,
 	), "landing_page/_layout")
 }
 
