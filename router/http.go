@@ -301,21 +301,12 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		Get("/images*", static.New("", static.Config{
 			FS: os.DirFS("images"),
 		}))
-	controllers.NewOneTimePasswordController(
-		q.SellerService,
-		q.BuyerService,
-		q.CompanyService,
-		q.OneTimePasswordService,
-		q.TextMessageService,
-		q.KafkaClient,
-	).Mount(app.Group("/otp"))
 	controllers.NewAuthController(
 		q.AdminService,
 		q.SellerService,
 		q.BuyerService,
 		q.CompanyService,
 		q.JsonWebTokenService,
-		q.OneTimePasswordService,
 		q.TextMessageService,
 		q.NotificationService,
 		q.KafkaClient,

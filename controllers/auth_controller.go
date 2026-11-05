@@ -5,8 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/url"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 	"uuid"
@@ -25,15 +23,14 @@ import (
 )
 
 type authController struct {
-	adminService           services.AdminService
-	sellerService          services.SellerService
-	buyerService           services.BuyerService
-	companyService         services.CompanyService
-	jsonWebTokenService    services.JsonWebTokenService
-	oneTimePasswordService services.OneTimePasswordService
-	textMessageService     services.TextMessageService
-	notificationService    services.NotificationService
-	kafkaClient            *externals.KafkaClient
+	adminService        services.AdminService
+	sellerService       services.SellerService
+	buyerService        services.BuyerService
+	companyService      services.CompanyService
+	jsonWebTokenService services.JsonWebTokenService
+	textMessageService  services.TextMessageService
+	notificationService services.NotificationService
+	kafkaClient         *externals.KafkaClient
 }
 
 func NewAuthController(
@@ -42,21 +39,19 @@ func NewAuthController(
 	buyerService services.BuyerService,
 	companyService services.CompanyService,
 	jsonWebTokenService services.JsonWebTokenService,
-	oneTimePasswordService services.OneTimePasswordService,
 	textMessageService services.TextMessageService,
 	notificationService services.NotificationService,
 	kafkaClient *externals.KafkaClient,
 ) *authController {
 	return &authController{
-		adminService:           adminService,
-		sellerService:          sellerService,
-		buyerService:           buyerService,
-		companyService:         companyService,
-		jsonWebTokenService:    jsonWebTokenService,
-		oneTimePasswordService: oneTimePasswordService,
-		textMessageService:     textMessageService,
-		notificationService:    notificationService,
-		kafkaClient:            kafkaClient,
+		adminService:        adminService,
+		sellerService:       sellerService,
+		buyerService:        buyerService,
+		companyService:      companyService,
+		jsonWebTokenService: jsonWebTokenService,
+		textMessageService:  textMessageService,
+		notificationService: notificationService,
+		kafkaClient:         kafkaClient,
 	}
 }
 
@@ -286,35 +281,6 @@ func (q *authController) SellerCreate(c fiber.Ctx) error {
 			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
-	oneTimePassword, err := q.oneTimePasswordService.FindOneTimePassword(
-		ctx,
-		models.NewOneTimePasswordFilter().
-			WithSellerIDs(seller.ID).
-			WithTrackingIDs(request.TrackingID),
-	)
-	if err != nil {
-		if errors.Is(err, models.ErrOneTimePasswordNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindOneTimePassword")
-		}
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(models.ErrLoginFailed.Error()),
-		))
-	}
-	now := time.Now().In(time.Local)
-	if oneTimePassword == nil ||
-		!oneTimePassword.Valid ||
-		!oneTimePassword.ExpiredAt.After(now) {
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(models.ErrLoginFailed.Error()),
-		))
-	}
-	matched, err := helper.VerifyPassword(request.OtpToken, oneTimePassword.Hash)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(models.ErrLoginFailed.Error()),
-		))
-	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -330,32 +296,10 @@ func (q *authController) SellerCreate(c fiber.Ctx) error {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	oneTimePassword.AttemptsCount++
-	oneTimePassword.Valid = false
-	if !matched {
-		otpMaxAttempts64, _ := strconv.ParseUint(os.Getenv("OTP_MAX_ATTEMPTS"), 10, 8)
-		otpMaxAttempts := uint8(otpMaxAttempts64)
-		oneTimePassword.Valid = oneTimePassword.AttemptsCount < otpMaxAttempts
-	}
-	if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
-		ctx,
-		tx,
-		oneTimePassword,
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		))
-	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return c.Render("seller/auth_session_new", params.Push(
 			"flash", flash.Danger(err.Error()),
-		))
-	}
-	if !matched {
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(models.ErrLoginFailed.Error()),
 		))
 	}
 	if err = sess.RegenerateWithContext(ctx); err != nil {
@@ -441,42 +385,7 @@ func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
-	oneTimePassword, err := q.oneTimePasswordService.FindOneTimePassword(
-		ctx,
-		models.NewOneTimePasswordFilter().
-			WithBuyerIDs(buyer.ID).
-			WithTrackingIDs(loginRequest.TrackingID),
-	)
-	if err != nil {
-		if !errors.Is(err, models.ErrOneTimePasswordNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindOneTimePassword")
-		}
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
-			WriteResponse(c)
-	}
 	now := time.Now().In(time.Local)
-	if oneTimePassword == nil ||
-		!oneTimePassword.Valid ||
-		!oneTimePassword.ExpiredAt.After(now) {
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
-			WriteResponse(c)
-	}
-	matched, err := helper.VerifyPassword(loginRequest.OtpToken, oneTimePassword.Hash)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	oneTimePassword.AttemptsCount++
-	oneTimePassword.Valid = false
-	if !matched {
-		otpMaxAttempts64, _ := strconv.ParseUint(os.Getenv("OTP_MAX_ATTEMPTS"), 10, 8)
-		otpMaxAttempts := uint8(otpMaxAttempts64)
-		oneTimePassword.Valid = oneTimePassword.AttemptsCount < otpMaxAttempts
-	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -492,27 +401,6 @@ func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.oneTimePasswordService.UpdateOneTimePassword(
-		ctx,
-		tx,
-		oneTimePassword,
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateOneTimePassword")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if !matched {
-		if err = tx.Commit(ctx); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
-			WriteResponse(c)
-	}
 	expiredAt := now.Add(helper.GetAccessTokenAge()).Add(time.Nanosecond)
 	jsonWebTokenRequest := &models.JsonWebToken{
 		UserID:    buyer.ID,

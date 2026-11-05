@@ -129,9 +129,6 @@ func main() {
 							if err = service.DeliveryPlanService.AutoUpdateDate(ctx); err != nil {
 								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoUpdateDate")
 							}
-							if err = service.OneTimePasswordService.AutoDeleteInvalidOneTimePasswords(ctx); err != nil {
-								helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAutoDeleteInvalidOneTimePasswords")
-							}
 						}); err != nil {
 							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrAddFunc")
 							return err

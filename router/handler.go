@@ -65,7 +65,6 @@ type Service struct {
 	RecipeItemService         services.RecipeItemService
 	CompanyService            services.CompanyService
 	SellerService             services.SellerService
-	OneTimePasswordService    services.OneTimePasswordService
 	PointEarningService       services.PointEarningService
 }
 
@@ -178,7 +177,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
 	companyRepository := repositories.NewCompanyRepository(dbRead, dbWrite)
 	sellerRepository := repositories.NewSellerRepository(dbRead, dbWrite)
-	oneTimePasswordRepository := repositories.NewOneTimePasswordRepository(dbRead, dbWrite)
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	adminService := services.NewAdminService(adminRepository)
@@ -237,7 +235,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeItemService := services.NewRecipeItemService(recipeItemRepository)
 	companyService := services.NewCompanyService(companyRepository)
 	sellerService := services.NewSellerService(sellerRepository)
-	oneTimePasswordService := services.NewOneTimePasswordService(oneTimePasswordRepository)
 	pointEarningService := services.NewPointEarningService(pointEarningRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
@@ -281,7 +278,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		RecipeItemService:         recipeItemService,
 		CompanyService:            companyService,
 		SellerService:             sellerService,
-		OneTimePasswordService:    oneTimePasswordService,
 		PointEarningService:       pointEarningService,
 	}, nil
 }
