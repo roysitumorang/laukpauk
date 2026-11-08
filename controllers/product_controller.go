@@ -1045,7 +1045,6 @@ func (q *productController) prepareProduct(
 		productCategories, _, err := q.productCategoryService.FindProductCategories(
 			ctx,
 			models.NewProductCategoryFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithSortings(models.Sorting{
 					Field:     models.SortProductCategoriesByName,

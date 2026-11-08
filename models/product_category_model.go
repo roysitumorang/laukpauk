@@ -23,7 +23,6 @@ const SortProductCategoriesByName = "name"
 type ProductCategory struct {
 	RowNo          int64        `json:"-" form:"-"`
 	ID             uuid.UUID    `json:"id" form:"id"`
-	CompanyID      uuid.UUID    `json:"-" form:"-"`
 	RecordStatus   RecordStatus `json:"-" form:"-"`
 	Name           string       `json:"name" form:"name"`
 	Description    string       `json:"description" form:"description"`
@@ -59,8 +58,7 @@ func (q *ProductCategory) PhotoPath(baseURLs ...string) string {
 
 type ProductCategoryFilter struct {
 	ProductCategoryIDs,
-	ExcludedProductCategoryIDs,
-	CompanyIDs []uuid.UUID
+	ExcludedProductCategoryIDs []uuid.UUID
 	RecordStatuses []RecordStatus
 	Names          []string
 	Keyword,
@@ -86,11 +84,6 @@ func (q *ProductCategoryFilter) WithProductCategoryIDs(productCategoryIDs ...uui
 
 func (q *ProductCategoryFilter) WithExcludedProductCategoryIDs(excludedProductCategoryIDs ...uuid.UUID) *ProductCategoryFilter {
 	q.ExcludedProductCategoryIDs = excludedProductCategoryIDs
-	return q
-}
-
-func (q *ProductCategoryFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *ProductCategoryFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

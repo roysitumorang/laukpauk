@@ -113,8 +113,7 @@ func (q *productCategoryController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.productCategoryService.FindProductCategories(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
 		return c.Render("seller/product_category_index", params.Push(
@@ -160,7 +159,6 @@ func (q *productCategoryController) SellerCreate(c fiber.Ctx) (err error) {
 	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
 		models.NewProductCategoryFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithNames(request.Name),
 	)
 	if err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
@@ -173,7 +171,6 @@ func (q *productCategoryController) SellerCreate(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = currentSeller.ID
 	request.CreatedAt = now
@@ -371,7 +368,6 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherProductCategory, err := q.productCategoryService.FindProductCategory(
 			ctx,
 			models.NewProductCategoryFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithNames(request.Name).
 				WithExcludedProductCategoryIDs(productCategory.ID),
 		)
@@ -390,7 +386,6 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = productCategory.ID
-	request.CompanyID = productCategory.CompanyID
 	request.RecordStatus = productCategory.RecordStatus
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
@@ -599,7 +594,6 @@ func (q *productCategoryController) prepareProductCategory(
 		if productCategory, err = q.productCategoryService.FindProductCategory(
 			ctx,
 			models.NewProductCategoryFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductCategoryIDs(productCategoryID),
 		); err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
@@ -622,7 +616,6 @@ func (q *productCategoryController) prepareProductCategory(
 func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductCategoryController-V1BuyerIndex"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	request, err := sanitizers.FindProductCategories(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
@@ -632,8 +625,7 @@ func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	rows, pagination, err := q.productCategoryService.FindProductCategories(
 		ctx,
-		request.WithCompanyIDs(company.ID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
