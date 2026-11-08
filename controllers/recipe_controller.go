@@ -1310,7 +1310,6 @@ func (q *recipeController) prepareRecipeItem(
 	variants, _, err := q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(productIDs...),
 	)

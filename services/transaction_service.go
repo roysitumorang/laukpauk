@@ -231,7 +231,6 @@ func (q *transactionService) CreateTransaction(
 		productVariants, _, _, err := q.productVariantRepository.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
-				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductVariantIDs(productVariantIDs...),
 		)

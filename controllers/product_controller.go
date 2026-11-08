@@ -239,7 +239,6 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		if productVariants, _, err = q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductCategoryIDs(request.ProductCategoryID),
 		); err != nil {
@@ -385,7 +384,6 @@ func (q *productController) SellerShow(c fiber.Ctx) (err error) {
 	if productVariants, _, err = q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(product.ID),
 	); err != nil {
@@ -492,7 +490,6 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 	productVariants, _, err := q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(request.ProductCategoryID),
 	)
@@ -681,7 +678,6 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 	productVariant, err := q.productVariantService.FindProductVariant(
 		ctx,
 		models.NewProductVariantFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithProductIDs(product.ID).
 			WithStockUnits(request.StockUnit),
 	)
@@ -690,7 +686,6 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
 	}
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.ProductCategoryID = product.ProductCategoryID
 	request.ProductCategoryName = product.ProductCategoryName
@@ -805,7 +800,6 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 		otherProductVariant, err := q.productVariantService.FindProductVariant(
 			ctx,
 			models.NewProductVariantFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithProductIDs(product.ID).
 				WithStockUnits(request.StockUnit).
 				WithExcludedProductVariantIDs(productVariant.ID),
@@ -834,7 +828,6 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	request.ID = productVariant.ID
-	request.CompanyID = productVariant.CompanyID
 	request.RecordStatus = productVariant.RecordStatus
 	request.ProductCategoryID = product.ProductCategoryID
 	request.ProductCategoryName = product.ProductCategoryName
@@ -1102,7 +1095,6 @@ func (q *productController) prepareProductVariant(
 		if productVariant, err = q.productVariantService.FindProductVariant(
 			ctx,
 			models.NewProductVariantFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(product.ID).
 				WithProductVariantIDs(productVariantID),
@@ -1158,7 +1150,6 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductController-V1BuyerShow"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	productID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -1199,7 +1190,6 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		variants, _, err := q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
-				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(response.ID),
 		)
@@ -1299,7 +1289,6 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		variants, _, err := q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
-				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(response.ID),
 		)

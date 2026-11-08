@@ -214,7 +214,6 @@ func (q *productCategoryController) SellerCreate(c fiber.Ctx) (err error) {
 		if productVariants, _, err = q.productVariantService.FindProductVariants(
 			ctx,
 			models.NewProductVariantFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductCategoryIDs(productCategory.ID),
 		); err != nil {
@@ -408,7 +407,6 @@ func (q *productCategoryController) SellerUpdate(c fiber.Ctx) (err error) {
 	productVariants, _, err := q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductCategoryIDs(productCategory.ID),
 	)
