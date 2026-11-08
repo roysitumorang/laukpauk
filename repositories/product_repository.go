@@ -90,7 +90,6 @@ func (q *productRepository) FindProducts(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, record_status
 		, product_category_id
 		, product_category_name
@@ -159,7 +158,6 @@ func (q *productRepository) FindProducts(
 		var product models.Product
 		if err = rows.Scan(
 			&product.ID,
-			&product.CompanyID,
 			&product.RecordStatus,
 			&product.ProductCategoryID,
 			&product.ProductCategoryName,
@@ -231,7 +229,6 @@ func (q *productRepository) InfiniteScrollProducts(
 		sb,
 		`) AS rn
 		, id
-		, company_id
 		, record_status
 		, product_category_id
 		, product_category_name
@@ -276,7 +273,6 @@ func (q *productRepository) InfiniteScrollProducts(
 		if err = rows.Scan(
 			&product.RowNo,
 			&product.ID,
-			&product.CompanyID,
 			&product.RecordStatus,
 			&product.ProductCategoryID,
 			&product.ProductCategoryName,
@@ -325,7 +321,6 @@ func (q *productRepository) FindProduct(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -350,7 +345,6 @@ func (q *productRepository) FindProduct(
 	var response models.Product
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -390,8 +384,7 @@ func (q *productRepository) CreateProduct(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO products (
-			company_id
-			, record_status
+			record_status
 			, product_category_id
 			, product_category_name
 			, product_type
@@ -406,9 +399,8 @@ func (q *productRepository) CreateProduct(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id
-			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -427,7 +419,6 @@ func (q *productRepository) CreateProduct(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.CompanyID,
 		request.RecordStatus,
 		request.ProductCategoryID,
 		request.ProductCategoryName,
@@ -445,7 +436,6 @@ func (q *productRepository) CreateProduct(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -488,7 +478,6 @@ func (q *productRepository) UpdateProduct(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -513,7 +502,6 @@ func (q *productRepository) UpdateProduct(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -678,7 +666,6 @@ func (q *productRepository) UpdateProduct(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, record_status
 			, product_category_id
 			, product_category_name
@@ -701,7 +688,6 @@ func (q *productRepository) UpdateProduct(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
@@ -746,19 +732,6 @@ func (q *productRepository) SaveProduct(
 
 func (q *productRepository) buildCondition(request *models.ProductFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
 	if len(request.ProductCategoryIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("product_category_id IN (")

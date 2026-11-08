@@ -46,7 +46,6 @@ func (q ProductType) String() string {
 type Product struct {
 	RowNo               int64             `json:"-" form:"-"`
 	ID                  uuid.UUID         `json:"id" form:"id"`
-	CompanyID           uuid.UUID         `json:"-" form:"-"`
 	RecordStatus        RecordStatus      `json:"-" form:"-"`
 	ProductCategoryID   uuid.UUID         `json:"category_id" form:"product_category_id"`
 	ProductCategoryName string            `json:"category_name" form:"-"`
@@ -110,7 +109,6 @@ func (q *Product) Populate() *Product {
 
 type ProductFilter struct {
 	NextRowNo *int64
-	CompanyIDs,
 	ProductCategoryIDs,
 	ProductIDs,
 	ExcludedProductIDs []uuid.UUID
@@ -136,11 +134,6 @@ func NewProductFilter() *ProductFilter {
 
 func (q *ProductFilter) WithNextRowNo(nextRowNo *int64) *ProductFilter {
 	q.NextRowNo = nextRowNo
-	return q
-}
-
-func (q *ProductFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *ProductFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

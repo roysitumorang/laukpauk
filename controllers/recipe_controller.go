@@ -1294,7 +1294,6 @@ func (q *recipeController) prepareRecipeItem(
 	if products, _, err = q.productService.FindProducts(
 		ctx,
 		models.NewProductFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithExcludedProductIDs(productIDs...).
 			WithSortings(models.Sorting{

@@ -16,7 +16,6 @@ func init() {
 			ctx,
 			`CREATE TABLE products (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status smallint NOT NULL
 				, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_category_name character varying NOT NULL COLLATE "natural_sort"
@@ -36,13 +35,6 @@ func init() {
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON products (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -70,7 +62,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX products_unique_name_idx ON products (LOWER(name), company_id) WHERE record_status = 0;`,
+			`CREATE UNIQUE INDEX products_unique_name_idx ON products (LOWER(name)) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

@@ -127,8 +127,7 @@ func (q *productController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.productService.FindProducts(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
 		return c.Render("seller/product_index", params.Push(
@@ -197,7 +196,6 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 	product, err := q.productService.FindProduct(
 		ctx,
 		models.NewProductFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithNames(request.Name),
 	)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
@@ -210,7 +208,6 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.ProductCategoryName = productCategoryName
 	request.Hits = 0
@@ -465,7 +462,6 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherProduct, err := q.productService.FindProduct(
 			ctx,
 			models.NewProductFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithNames(request.Name).
 				WithExcludedProductIDs(product.ID),
 		)
@@ -484,7 +480,6 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = product.ID
-	request.CompanyID = product.CompanyID
 	request.RecordStatus = product.RecordStatus
 	request.ProductCategoryName = productCategoryName
 	request.Hits = product.Hits
@@ -981,7 +976,6 @@ func (q *productController) prepareProductByID(
 	product, err := q.productService.FindProduct(
 		ctx,
 		models.NewProductFilter().
-			WithCompanyIDs(companyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(productID),
 	)
@@ -1131,7 +1125,6 @@ func (q *productController) prepareProductVariant(
 func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "ProductController-V1BuyerIndex"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	request, err := sanitizers.FindProducts(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
@@ -1141,8 +1134,7 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	infiniteScroll, err := q.productService.InfiniteScrollProducts(
 		ctx,
-		request.WithCompanyIDs(company.ID).
-			WithRecordStatuses(models.RecordStatusActive).
+		request.WithRecordStatuses(models.RecordStatusActive).
 			WithReadyStock(new(true)),
 	)
 	if err != nil {
@@ -1191,7 +1183,6 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		if response, err = q.productService.FindProduct(
 			ctx,
 			models.NewProductFilter().
-				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(productID),
 		); errors.Is(err, models.ErrProductNotFound) || response == nil {
@@ -1257,7 +1248,6 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		product, err := q.productService.FindProduct(
 			ctx,
 			models.NewProductFilter().
-				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(productID),
 		)
