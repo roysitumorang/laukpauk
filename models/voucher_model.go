@@ -107,38 +107,42 @@ var MapVoucherSortings = map[string]struct{}{
 type Voucher struct {
 	RowNo                 int64                 `json:"-" form:"-"`
 	ID                    uuid.UUID             `json:"id" form:"id"`
-	RecordStatus          RecordStatus          `json:"-" form:"-"`
+	RecordStatus          RecordStatus          `json:"record_status" form:"-"`
 	VoucherType           VoucherType           `json:"voucher_type" form:"voucher_type"`
 	VoucherTypeName       string                `json:"voucher_type_name" form:"-"`
 	TargetAudience        VoucherTargetAudience `json:"target_audience" form:"target_audience"`
 	TargetAudienceName    string                `json:"target_audience_name" form:"-"`
 	Code                  *string               `json:"code" form:"code"`
-	DeletedCode           *string               `json:"-" form:"-"`
+	DeletedCode           *string               `json:"deleted_code" form:"-"`
 	Photo                 string                `json:"photo" form:"photo"`
 	Name                  string                `json:"name" form:"name"`
 	Discount              int64                 `json:"discount" form:"discount"`
 	MinimumPurchase       int64                 `json:"minimum_purchase" form:"minimum_purchase"`
-	QuotaPerBuyer         int64                 `json:"-" form:"quota_per_buyer"`
-	EffectiveStartTime    time.Time             `json:"effective_start_time" form:"-"`
+	QuotaPerBuyer         int64                 `json:"quota_per_buyer" form:"quota_per_buyer"`
+	EffectiveStartTime    time.Time             `json:"effective_start_time" form:"-" input:"json"`
 	RawEffectiveStartTime string                `json:"-" form:"effective_start_time"`
-	EffectiveEndTime      time.Time             `json:"effective_end_time" form:"-"`
+	EffectiveEndTime      time.Time             `json:"effective_end_time" form:"-" input:"json"`
 	RawEffectiveEndTime   string                `json:"-" form:"effective_end_time"`
-	EffectiveStartDate    time.Time             `json:"effective_start_date" form:"-"`
+	EffectiveStartDate    time.Time             `json:"effective_start_date" form:"-" input:"json"`
 	RawEffectiveStartDate string                `json:"-" form:"effective_start_date"`
-	EffectiveEndDate      time.Time             `json:"effective_end_date" form:"-"`
+	EffectiveEndDate      time.Time             `json:"effective_end_date" form:"-" input:"json"`
 	RawEffectiveEndDate   string                `json:"-" form:"effective_end_date"`
 	Description           string                `json:"description" form:"description"`
-	CreatedBy             uuid.UUID             `json:"-" form:"-"`
-	CreatedAt             time.Time             `json:"-" form:"-"`
-	UpdatedBy             uuid.UUID             `json:"-" form:"-"`
-	UpdatedAt             time.Time             `json:"-" form:"-"`
-	DeletedBy             *uuid.UUID            `json:"-" form:"-"`
-	DeletedAt             *time.Time            `json:"-" form:"-"`
-	DeletionReason        *string               `json:"-" form:"-"`
+	CreatedBy             uuid.UUID             `json:"created_by" form:"-"`
+	CreatedAt             time.Time             `json:"created_at" form:"-"`
+	UpdatedBy             uuid.UUID             `json:"updated_by" form:"-"`
+	UpdatedAt             time.Time             `json:"updated_at" form:"-"`
+	DeletedBy             *uuid.UUID            `json:"deleted_by" form:"-"`
+	DeletedAt             *time.Time            `json:"deleted_at" form:"-"`
+	DeletionReason        *string               `json:"deletion_reason" form:"-"`
 	BuyerIDs              []uuid.UUID           `json:"-" form:"-"`
 }
 
 func (q *Voucher) Validate() (err error) {
+	rawFromTime(&q.RawEffectiveStartTime, &q.EffectiveStartTime, time.TimeOnly)
+	rawFromTime(&q.RawEffectiveEndTime, &q.EffectiveEndTime, time.TimeOnly)
+	rawFromTime(&q.RawEffectiveStartDate, &q.EffectiveStartDate, time.DateOnly)
+	rawFromTime(&q.RawEffectiveEndDate, &q.EffectiveEndDate, time.DateOnly)
 	if _, ok := MapVoucherTypes[q.VoucherType]; !ok {
 		return errors.New("voucher_type: not found")
 	}

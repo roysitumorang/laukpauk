@@ -13,14 +13,11 @@ import (
 var ErrLoginNotFound = errors.New("login: not found")
 
 const CurrentAdmin = "current_admin"
-const CurrentSeller = "current_seller"
 const CurrentBuyer = "current_buyer"
 const CurrentJsonWebToken = "current_jwt"
 const CurrentSubdomain = "current_subdomain"
-const CurrentOtpTrackingID = "current_otp_tracking_id"
 const CurrentNotifications = "current_notifications"
 const AdminID = "admin_id"
-const SellerID = "seller_id"
 const BuyerID = "buyer_id"
 
 var ErrLoginFailed = errors.New("login failed")

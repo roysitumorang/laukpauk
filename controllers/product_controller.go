@@ -11,8 +11,6 @@ import (
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/csrf"
-	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
@@ -24,170 +22,109 @@ import (
 )
 
 type productController struct {
-	sellerService          services.SellerService
 	productCategoryService services.ProductCategoryService
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
 	recipeItemService      services.RecipeItemService
-	notificationService    services.NotificationService
 	storage                fiber.Storage
+	userService            services.UserService
+	jsonWebTokenService    services.JsonWebTokenService
 }
 
 func NewProductController(
-	sellerService services.SellerService,
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
 	recipeItemService services.RecipeItemService,
-	notificationService services.NotificationService,
 	storage fiber.Storage,
+	userService services.UserService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *productController {
 	return &productController{
-		sellerService:          sellerService,
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
 		recipeItemService:      recipeItemService,
-		notificationService:    notificationService,
 		storage:                storage,
+		userService:            userService,
+		jsonWebTokenService:    jsonWebTokenService,
 	}
 }
 
 func (q *productController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
-	r.Group("/seller", sellerSessionAuth).
-		Get("", q.SellerIndex).
-		Get("/new", q.SellerNew).
-		Post("", q.SellerCreate).
-		Get("/:id", q.SellerShow).
-		Get("/:id/edit", q.SellerEdit).
-		Post("/:id", q.SellerUpdate).
-		Post("/:id/delete", q.SellerDelete).
-		Get("/:id/variants/new", q.SellerNewVariant).
-		Post("/:id/variants", q.SellerCreateVariant).
-		Get("/:id/variants/:product_variant_id/edit", q.SellerEditVariant).
-		Post("/:id/variants/:product_variant_id", q.SellerUpdateVariant).
-		Post("/:id/variants/:product_variant_id/delete", q.SellerDeleteVariant)
+	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
+	r.Group("/v1/seller", sellerKeyAuth).
+		Get("", q.V1SellerIndex).
+		Post("", q.V1SellerCreate).
+		Get("/:id", q.V1SellerShow).
+		Post("/:id", q.V1SellerUpdate).
+		Post("/:id/delete", q.V1SellerDelete).
+		Post("/:id/variants", q.V1SellerCreateVariant).
+		Get("/:id/variants/:product_variant_id", q.V1SellerShowVariant).
+		Post("/:id/variants/:product_variant_id", q.V1SellerUpdateVariant).
+		Post("/:id/variants/:product_variant_id/delete", q.V1SellerDeleteVariant)
 	r.Group("/v1/buyer").
 		Get("", q.V1BuyerIndex).
 		Get("/:id", q.V1BuyerShow)
 }
 
-func (q *productController) SellerIndex(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerIndex"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	request := &models.ProductFilter{}
-	rows := []*models.Product{}
-	pagination := &models.Pagination{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", "Data Produk",
-		"limits", models.Limits,
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-		"sortings", []models.Sorting{
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Newest-Oldest",
-			},
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Oldest-Newest",
-			},
-			{
-				Field:     models.SortingFieldName,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Name A-Z",
-			},
-			{
-				Field:     models.SortingFieldName,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Name Z-A",
-			},
-		},
-	)
-	if request, err = sanitizers.FindProducts(ctx, c); err != nil {
+func (q *productController) V1SellerIndex(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerIndex"
+	ctx := c.Context()
+	request, err := sanitizers.FindProducts(ctx, c)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
-		return c.Render("seller/product_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	if rows, pagination, err = q.productService.FindProducts(
+	rows, pagination, err := q.productService.FindProducts(
 		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive),
-	); err != nil {
+	)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
-		return c.Render("seller/product_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return c.Render("seller/product_index", params.Push(
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-	), "seller/layouts/authenticated")
+	pagination.Rows = make([]any, len(rows))
+	for i := range rows {
+		pagination.Rows[i] = rows[i]
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerNew(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerNew"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, _, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, notifications, true, true)
+func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerCreate"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	_, mapProductCategoryNames, err := q.prepareProduct(ctx, c, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
-	}
-	return c.Render("seller/product_new", params, "seller/layouts/authenticated")
-}
-
-func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerCreate"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, mapProductCategoryNames, err := q.prepareProduct(ctx, c, flash, currentSeller, csrfToken, notifications, true, true)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	if photo == nil {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 	}
-	params.Push(
-		"request", request,
-		"product", request,
-	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
-		c.Response().SetStatusCode(statusCode)
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"product", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	productCategoryName, ok := mapProductCategoryNames[request.ProductCategoryID]
 	if !ok {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger("product_category_id: not found"),
-			"request", request,
-			"product", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("product_category_id: not found").
+			WriteResponse(c)
 	}
 	product, err := q.productService.FindProduct(
 		ctx,
@@ -197,30 +134,26 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"product", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
 	request.ProductCategoryName = productCategoryName
 	request.Hits = 0
-	request.CreatedBy = currentSeller.ID
+	request.CreatedBy = currentUser.ID
 	request.CreatedAt = now
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = now
 	var productVariants []*models.ProductVariant
 	var recipeItems []*models.RecipeItem
 	if product != nil {
 		if product.RecordStatus == models.RecordStatusActive {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("seller/product_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
-				"request", request,
-				"product", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueProductNameViolation.Error()).
+				WriteResponse(c)
 		}
 		request.ID = product.ID
 		request.Name = product.Name
@@ -240,11 +173,9 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("seller/product_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-				"product", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
 			ctx,
@@ -253,22 +184,18 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("seller/product_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-				"product", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"product", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -282,11 +209,9 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProduct")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"product", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
@@ -297,11 +222,9 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("seller/product_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-				"product", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	for _, recipeItem := range recipeItems {
@@ -311,21 +234,17 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-			return c.Render("seller/product_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-				"product", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"product", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if product != nil &&
 		product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
@@ -333,124 +252,81 @@ func (q *productController) SellerCreate(c fiber.Ctx) (err error) {
 		if err = os.RemoveAll(helper.PhotoLocation(product.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
 			request.SetPhoto(product.Photo)
-			return c.Render("seller/product_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-				"product", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-		return c.Render("seller/product_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"product", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("product created successfully").Redirect(c, sess.Session, "/seller/products")
+	return helper.NewResponse(fiber.StatusCreated).
+		SetMessage("product created successfully").
+		SetData(response).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerShow(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerShow"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
+func (q *productController) V1SellerShow(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerShow"
+	ctx := c.Context()
 	product, err := q.prepareProductByID(ctx, c)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if product == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrProductNotFound.Error()).
+			WriteResponse(c)
 	}
-	var productVariants []*models.ProductVariant
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
-		"product", product,
-		"productVariants", productVariants,
-		"discountTypePercentage", models.DiscountTypePercentage,
-	)
-	if productVariants, _, err = q.productVariantService.FindProductVariants(
+	if product.Variants, _, err = q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
 			WithRecordStatuses(models.RecordStatusActive).
 			WithProductIDs(product.ID),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-		return c.Render("seller/product_show", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	params.Push("productVariants", productVariants)
-	return c.Render("seller/product_show", params, "seller/layouts/authenticated")
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(product).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerEdit(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerEdit"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, _, err := q.prepareProduct(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-		true,
-	)
+func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerUpdate"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	product, mapProductCategoryNames, err := q.prepareProduct(ctx, c, true)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
-	}
-	return c.Render("seller/product_edit", params, "seller/layouts/authenticated")
-}
-
-func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerUpdate"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	product, params, mapProductCategoryNames, err := q.prepareProduct(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-		true,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	if photo == nil {
 		request.SetPhoto(product.Photo)
 	}
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	params.Push("request", request)
 	productCategoryName, ok := mapProductCategoryNames[request.ProductCategoryID]
 	if !ok {
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger("product_category_id: not found"),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("product_category_id: not found").
+			WriteResponse(c)
 	}
 	if product.Name != request.Name {
 		otherProduct, err := q.productService.FindProduct(
@@ -461,28 +337,25 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 		)
 		if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
-			return c.Render("seller/product_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(product.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if otherProduct != nil {
-			return c.Render("seller/product_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueProductNameViolation.Error()),
-				"request", request.SetPhoto(product.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueProductNameViolation.Error()).
+				WriteResponse(c)
 		}
 	}
 	request.ID = product.ID
 	request.RecordStatus = product.RecordStatus
 	request.ProductCategoryName = productCategoryName
 	request.Hits = product.Hits
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	params.Push("request", request)
 	productVariants, _, err := q.productVariantService.FindProductVariants(
 		ctx,
 		models.NewProductVariantFilter().
@@ -491,10 +364,9 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	recipeItems, _, err := q.recipeItemService.FindRecipeItems(
 		ctx,
@@ -503,18 +375,16 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -527,10 +397,9 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 	response, err := q.productService.UpdateProduct(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
@@ -540,10 +409,9 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 		productVariant.ProductReadyStock = response.ReadyStock
 		if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-			return c.Render("seller/product_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(product.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	for _, recipeItem := range recipeItems {
@@ -552,59 +420,64 @@ func (q *productController) SellerUpdate(c fiber.Ctx) (err error) {
 		recipeItem.ProductReadyStock = response.ReadyStock
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
-			return c.Render("seller/product_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(product.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
 		product.Photo != request.Photo {
 		if err = os.RemoveAll(helper.PhotoLocation(product.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
-			return c.Render("seller/product_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(product.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/product_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(product.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("product updated successfully").Redirect(c, sess.Session, "/seller/products")
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("product updated successfully").
+		SetData(response).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerDelete(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerDelete"
-	ctx, sess, flash, currentSeller, _, _ := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
+func (q *productController) V1SellerDelete(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerDelete"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, err := q.prepareProductByID(ctx, c)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if request == nil {
-		return flash.Danger(models.ErrProductNotFound.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrProductNotFound.Error()).
+			WriteResponse(c)
 	}
 	request.RecordStatus = models.RecordStatusDeleted
-	request.DeletedBy = &currentSeller.ID
+	request.DeletedBy = &currentUser.ID
 	request.DeletedAt = new(time.Now())
 	request.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -614,62 +487,42 @@ func (q *productController) SellerDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productService.UpdateProduct(ctx, tx, request); err != nil {
+	saved, err := q.productService.UpdateProduct(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("product deleted successfully").Redirect(c, sess.Session, "/seller/products")
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("product deleted successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerNewVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerNewVariant"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, _, params, err := q.prepareProductVariant(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *productController) V1SellerCreateVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerCreateVariant"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	product, _, err := q.prepareProductVariant(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
-	}
-	return c.Render("seller/product_variant_new", params, "seller/layouts/authenticated")
-}
-
-func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerCreateVariant"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	product, _, params, err := q.prepareProductVariant(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductVariant")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/product_variant_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	productVariant, err := q.productVariantService.FindProductVariant(
 		ctx,
@@ -679,7 +532,9 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
@@ -689,15 +544,15 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 	request.ProductName = product.Name
 	request.ProductPhoto = product.Photo
 	request.ProductReadyStock = product.ReadyStock
-	request.CreatedBy = currentSeller.ID
+	request.CreatedBy = currentUser.ID
 	request.CreatedAt = now
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = now
 	if productVariant != nil {
 		if productVariant.RecordStatus == models.RecordStatusActive {
-			return c.Render("seller/product_variant_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueProductVariantStockUnitViolation.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueProductVariantStockUnitViolation.Error()).
+				WriteResponse(c)
 		}
 		request.ID = productVariant.ID
 		request.StockUnit = productVariant.StockUnit
@@ -710,9 +565,9 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/product_variant_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -722,75 +577,66 @@ func (q *productController) SellerCreateVariant(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productVariantService.SaveProductVariant(ctx, tx, request); err != nil {
+	saved, err := q.productVariantService.SaveProductVariant(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveProductVariant")
-		return c.Render("seller/product_variant_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if request.SellingPrice < product.LowestSellingPrice {
 		product.LowestSellingPrice = request.SellingPrice
 		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-			return c.Render("seller/product_variant_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/product_variant_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("product variant created successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
+	return helper.NewResponse(fiber.StatusCreated).
+		SetMessage("product variant created successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerEditVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerEditVariant"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, _, params, err := q.prepareProductVariant(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *productController) V1SellerShowVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerShowVariant"
+	ctx := c.Context()
+	_, productVariant, err := q.prepareProductVariant(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return c.Render("seller/product_variant_edit", params, "seller/layouts/authenticated")
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(productVariant).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerUpdateVariant"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	product, productVariant, params, err := q.prepareProductVariant(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *productController) V1SellerUpdateVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerUpdateVariant"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	product, productVariant, err := q.prepareProductVariant(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, statusCode, err := sanitizers.ValidateProductVariant(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductVariant")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/product_variant_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if productVariant.StockUnit != request.StockUnit {
 		otherProductVariant, err := q.productVariantService.FindProductVariant(
@@ -802,14 +648,14 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 		)
 		if err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
-			return c.Render("seller/product_variant_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if otherProductVariant != nil {
-			return c.Render("seller/product_variant_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueProductVariantStockUnitViolation.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueProductVariantStockUnitViolation.Error()).
+				WriteResponse(c)
 		}
 	}
 	recipeItems, _, err := q.recipeItemService.FindRecipeItems(
@@ -819,9 +665,9 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
-		return c.Render("seller/product_variant_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request.ID = productVariant.ID
 	request.RecordStatus = productVariant.RecordStatus
@@ -831,7 +677,7 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 	request.ProductName = product.Name
 	request.ProductPhoto = product.Photo
 	request.ProductReadyStock = productVariant.ProductReadyStock
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -839,9 +685,9 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/product_variant_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -854,62 +700,61 @@ func (q *productController) SellerUpdateVariant(c fiber.Ctx) (err error) {
 	response, err := q.productVariantService.UpdateProductVariant(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-		return c.Render("seller/product_variant_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if request.SellingPrice < product.LowestSellingPrice {
 		product.LowestSellingPrice = request.SellingPrice
 		if _, err = q.productService.UpdateProduct(ctx, tx, product); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
-			return c.Render("seller/product_variant_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	for _, recipeItem := range recipeItems {
 		recipeItem.ProductVariantStockUnit = response.StockUnit
 		if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
-			return c.Render("seller/product_variant_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/product_variant_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("product variant updated successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("product variant updated successfully").
+		SetData(response).
+		WriteResponse(c)
 }
 
-func (q *productController) SellerDeleteVariant(c fiber.Ctx) (err error) {
-	ctxt := "ProductController-SellerDeleteVariant"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	product, productVariant, _, err := q.prepareProductVariant(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		false,
-	)
+func (q *productController) V1SellerDeleteVariant(c fiber.Ctx) (err error) {
+	ctxt := "ProductController-V1SellerDeleteVariant"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	_, productVariant, err := q.prepareProductVariant(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	productVariant.RecordStatus = models.RecordStatusDeleted
-	productVariant.DeletedBy = new(currentSeller.ID)
+	productVariant.DeletedBy = new(currentUser.ID)
 	productVariant.DeletedAt = new(time.Now())
 	productVariant.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -919,35 +764,23 @@ func (q *productController) SellerDeleteVariant(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.productVariantService.UpdateProductVariant(ctx, tx, productVariant); err != nil {
+	saved, err := q.productVariantService.UpdateProductVariant(ctx, tx, productVariant)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("product variant deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/products/%s", product.ID))
-}
-
-func (q *productController) prepare(c fiber.Ctx) (
-	context.Context,
-	*session.Middleware,
-	*helper.FlashMessage,
-	*models.Seller,
-	string,
-	[]*models.Notification,
-) {
-	ctx := c.Context()
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentSeller, csrfToken, notifications
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("product variant deleted successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
 func (q *productController) prepareProductByID(
@@ -979,51 +812,20 @@ func (q *productController) prepareProductByID(
 func (q *productController) prepareProduct(
 	ctx context.Context,
 	c fiber.Ctx,
-	flash *helper.FlashMessage,
-	currentSeller *models.Seller,
-	csrfToken string,
-	notifications []*models.Notification,
-	withParams,
 	withProductCategories bool,
 ) (
 	product *models.Product,
-	params models.Map,
 	mapProductCategoryNames map[uuid.UUID]string,
 	err error,
 ) {
 	product = &models.Product{}
 	product.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
-	if withParams {
-		params = models.NewMap().Push(
-			"baseURL", c.BaseURL(),
-			"flash", flash,
-			"path", c.OriginalURL(),
-			"csrfToken", csrfToken,
-			"currentSeller", currentSeller,
-			"notifications", notifications,
-			"pageTitle", "Produk Baru",
-			"request", product,
-			"product", product,
-			"productTypes", models.ProductTypes,
-		)
-	}
 	if c.Params("id") != "" {
 		if product, err = q.prepareProductByID(ctx, c); err != nil {
-			return nil, nil, nil, err
-		}
-		if withParams && params.Size() > 0 && product != nil {
-			params.Push(
-				"pageTitle", helper.Sprintf("Edit Data Produk|%s", product.Name),
-				"request", product,
-				"product", product,
-			)
+			return nil, nil, err
 		}
 	}
 	if withProductCategories {
-		var productCategories []*models.ProductCategory
-		if withParams && params.Size() > 0 {
-			params.Push("productCategories", productCategories)
-		}
 		productCategories, _, err := q.productCategoryService.FindProductCategories(
 			ctx,
 			models.NewProductCategoryFilter().
@@ -1034,58 +836,33 @@ func (q *productController) prepareProduct(
 				}),
 		)
 		if err != nil {
-			return nil, nil, nil, err
-		}
-		if withParams && params.Size() > 0 {
-			params.Push("productCategories", productCategories)
+			return nil, nil, err
 		}
 		mapProductCategoryNames = map[uuid.UUID]string{}
 		for _, productCategory := range productCategories {
 			mapProductCategoryNames[productCategory.ID] = productCategory.Name
 		}
 	}
-	return product, params, mapProductCategoryNames, nil
+	return product, mapProductCategoryNames, nil
 }
 
 func (q *productController) prepareProductVariant(
 	ctx context.Context,
 	c fiber.Ctx,
-	flash *helper.FlashMessage,
-	currentSeller *models.Seller,
-	csrfToken string,
-	notifications []*models.Notification,
-	withParams bool,
 ) (
 	*models.Product,
 	*models.ProductVariant,
-	models.Map,
 	error,
 ) {
 	product, err := q.prepareProductByID(ctx, c)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	productVariant := &models.ProductVariant{}
-	var params models.Map
-	if withParams {
-		params = models.NewMap().Push(
-			"baseURL", c.BaseURL(),
-			"flash", flash,
-			"path", c.OriginalURL(),
-			"csrfToken", csrfToken,
-			"currentSeller", currentSeller,
-			"notifications", notifications,
-			"pageTitle", helper.Sprintf("Detail Produk|%s", product.Name),
-			"product", product,
-			"productVariant", productVariant,
-			"request", productVariant,
-			"discountTypes", models.DiscountTypes,
-		)
-	}
 	if c.Params("product_variant_id") != "" {
 		productVariantID, err := uuid.Parse(c.Params("product_variant_id"))
 		if err != nil {
-			return nil, nil, nil, models.ErrProductVariantNotFound
+			return nil, nil, models.ErrProductVariantNotFound
 		}
 		if productVariant, err = q.productVariantService.FindProductVariant(
 			ctx,
@@ -1093,20 +870,14 @@ func (q *productController) prepareProductVariant(
 				WithRecordStatuses(models.RecordStatusActive).
 				WithProductIDs(product.ID).
 				WithProductVariantIDs(productVariantID),
-		); err != nil {
-			return nil, nil, nil, err
+		); err != nil && !errors.Is(err, models.ErrProductVariantNotFound) {
+			return nil, nil, err
 		}
 		if productVariant == nil {
-			return nil, nil, nil, models.ErrProductVariantNotFound
-		}
-		if withParams && params.Size() > 0 {
-			params.Push(
-				"productVariant", productVariant,
-				"request", productVariant,
-			)
+			return nil, nil, models.ErrProductVariantNotFound
 		}
 	}
-	return product, productVariant, params, nil
+	return product, productVariant, nil
 }
 
 func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
@@ -1134,6 +905,7 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		row, ok := infiniteScroll.Rows[i].(*models.Product)
 		if ok {
 			row.Photo = row.PhotoPath(c.BaseURL())
+			row.HideBasePrices()
 		}
 		infiniteScroll.Rows[i] = row
 	}
@@ -1326,6 +1098,6 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
-		SetData(response).
+		SetData(response.HideBasePrices()).
 		WriteResponse(c)
 }

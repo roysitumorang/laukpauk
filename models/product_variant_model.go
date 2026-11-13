@@ -17,15 +17,15 @@ var ErrUniqueProductVariantStockUnitViolation = errors.New("stock_unit: already 
 type ProductVariant struct {
 	RowNo                   int64        `json:"-" form:"-"`
 	ID                      uuid.UUID    `json:"id" form:"id"`
-	RecordStatus            RecordStatus `json:"-" form:"-"`
-	ProductCategoryID       uuid.UUID    `json:"-" form:"-"`
-	ProductCategoryName     string       `json:"-" form:"-"`
-	ProductID               uuid.UUID    `json:"-" form:"-"`
-	ProductName             string       `json:"-" form:"-"`
-	ProductPhoto            string       `json:"-" form:"-"`
-	ProductReadyStock       bool         `json:"-" form:"-"`
+	RecordStatus            RecordStatus `json:"record_status" form:"-"`
+	ProductCategoryID       uuid.UUID    `json:"product_category_id" form:"-"`
+	ProductCategoryName     string       `json:"product_category_name" form:"-"`
+	ProductID               uuid.UUID    `json:"product_id" form:"-"`
+	ProductName             string       `json:"product_name" form:"-"`
+	ProductPhoto            string       `json:"product_photo" form:"-"`
+	ProductReadyStock       bool         `json:"product_ready_stock" form:"-"`
 	StockUnit               string       `json:"stock_unit" form:"stock_unit"`
-	BasePrice               int64        `json:"-" form:"base_price"`
+	BasePrice               int64        `json:"base_price,omitempty" form:"base_price"`
 	SellingPrice            int64        `json:"selling_price" form:"selling_price"`
 	DiscountType            DiscountType `json:"discount_type" form:"discount_type"`
 	DiscountTypeName        string       `json:"discount_type_name" form:"-"`
@@ -34,13 +34,13 @@ type ProductVariant struct {
 	DiscountAmount          int64        `json:"discount_amount" form:"-"`
 	SalePrice               int64        `json:"sale_price" form:"-"`
 	Description             string       `json:"description" form:"description"`
-	CreatedBy               uuid.UUID    `json:"-" form:"-"`
-	CreatedAt               time.Time    `json:"-" form:"-"`
-	UpdatedBy               uuid.UUID    `json:"-" form:"-"`
-	UpdatedAt               time.Time    `json:"-" form:"-"`
-	DeletedBy               *uuid.UUID   `json:"-" form:"-"`
-	DeletedAt               *time.Time   `json:"-" form:"-"`
-	DeletionReason          *string      `json:"-" form:"-"`
+	CreatedBy               uuid.UUID    `json:"created_by" form:"-"`
+	CreatedAt               time.Time    `json:"created_at" form:"-"`
+	UpdatedBy               uuid.UUID    `json:"updated_by" form:"-"`
+	UpdatedAt               time.Time    `json:"updated_at" form:"-"`
+	DeletedBy               *uuid.UUID   `json:"deleted_by" form:"-"`
+	DeletedAt               *time.Time   `json:"deleted_at" form:"-"`
+	DeletionReason          *string      `json:"deletion_reason" form:"-"`
 }
 
 func (q *ProductVariant) Validate() error {

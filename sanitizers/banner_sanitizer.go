@@ -79,6 +79,7 @@ func ValidateBanner(ctx context.Context, c fiber.Ctx) (*models.Banner, *multipar
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, nil, nil, fiberErr.Code, err
 	}
+	keepFormFields(&response)
 	var mimeType *string
 	photo, err := c.FormFile("photo")
 	if err == nil {

@@ -184,3 +184,11 @@ func (q *Duration) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("invalid duration type: %T", v)
 	}
 }
+
+// rawFromTime fills a form-style time string from a time decoded from a
+// JSON body, when no form value was sent.
+func rawFromTime(raw *string, t *time.Time, layout string) {
+	if strings.TrimSpace(*raw) == "" && t != nil && !t.IsZero() {
+		*raw = t.In(time.Local).Format(layout)
+	}
+}

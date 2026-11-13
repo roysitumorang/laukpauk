@@ -18,24 +18,24 @@ var MapRecipeItemSortings = map[string]struct{}{
 
 type RecipeItem struct {
 	RowNo                   int64        `json:"-" form:"-"`
-	ID                      uuid.UUID    `json:"-" form:"id"`
-	RecordStatus            RecordStatus `json:"-" form:"-"`
-	RecipeID                uuid.UUID    `json:"-" form:"-"`
-	ProductID               uuid.UUID    `json:"-" form:"-"`
-	ProductName             string       `json:"-" form:"-"`
-	ProductPhoto            string       `json:"-" form:"-"`
-	ProductReadyStock       bool         `json:"-" form:"-"`
-	ProductVariantID        uuid.UUID    `json:"-" form:"product_variant_id"`
-	ProductVariantStockUnit string       `json:"-" form:"-"`
-	Quantity                int64        `json:"-" form:"quantity"`
-	Note                    string       `json:"-" form:"note"`
-	CreatedBy               uuid.UUID    `json:"-" form:"-"`
-	CreatedAt               time.Time    `json:"-" form:"-"`
-	UpdatedBy               uuid.UUID    `json:"-" form:"-"`
-	UpdatedAt               time.Time    `json:"-" form:"-"`
-	DeletedBy               *uuid.UUID   `json:"-" form:"-"`
-	DeletedAt               *time.Time   `json:"-" form:"-"`
-	DeletionReason          *string      `json:"-" form:"-"`
+	ID                      uuid.UUID    `json:"id" form:"id"`
+	RecordStatus            RecordStatus `json:"record_status" form:"-"`
+	RecipeID                uuid.UUID    `json:"recipe_id" form:"-"`
+	ProductID               uuid.UUID    `json:"product_id" form:"-"`
+	ProductName             string       `json:"product_name" form:"-"`
+	ProductPhoto            string       `json:"product_photo" form:"-"`
+	ProductReadyStock       bool         `json:"product_ready_stock" form:"-"`
+	ProductVariantID        uuid.UUID    `json:"product_variant_id" form:"product_variant_id"`
+	ProductVariantStockUnit string       `json:"product_variant_stock_unit" form:"-"`
+	Quantity                int64        `json:"quantity" form:"quantity"`
+	Note                    string       `json:"note" form:"note"`
+	CreatedBy               uuid.UUID    `json:"created_by" form:"-"`
+	CreatedAt               time.Time    `json:"created_at" form:"-"`
+	UpdatedBy               uuid.UUID    `json:"updated_by" form:"-"`
+	UpdatedAt               time.Time    `json:"updated_at" form:"-"`
+	DeletedBy               *uuid.UUID   `json:"deleted_by" form:"-"`
+	DeletedAt               *time.Time   `json:"deleted_at" form:"-"`
+	DeletionReason          *string      `json:"deletion_reason" form:"-"`
 }
 
 func (q *RecipeItem) Validate() error {

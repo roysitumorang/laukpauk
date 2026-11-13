@@ -47,39 +47,39 @@ type (
 	DeliveryPlan struct {
 		RowNo                   int64              `json:"-" form:"-"`
 		ID                      uuid.UUID          `json:"id" form:"-"`
-		RecordStatus            RecordStatus       `json:"-" form:"-"`
+		RecordStatus            RecordStatus       `json:"record_status" form:"-"`
 		Name                    string             `json:"name" form:"name"`
 		Weekday                 DeliveryWeekday    `json:"weekday" form:"weekday"`
-		TransactionWindowMin    time.Time          `json:"transaction_window_min" form:"-"`
+		TransactionWindowMin    time.Time          `json:"transaction_window_min" form:"-" input:"json"`
 		RawTransactionWindowMin string             `json:"-" form:"transaction_window_min"`
-		TransactionWindowMax    time.Time          `json:"transaction_window_max" form:"-"`
+		TransactionWindowMax    time.Time          `json:"transaction_window_max" form:"-" input:"json"`
 		RawTransactionWindowMax string             `json:"-" form:"transaction_window_max"`
 		DeliveryTimeInterval    time.Duration      `json:"-" form:"-"`
 		RawDeliveryTimeInterval string             `json:"delivery_time_interval" form:"delivery_time_interval"`
 		SameDay                 bool               `json:"same_day" form:"same_day"`
-		SameDayWindowMin        *time.Time         `json:"-" form:"-"`
+		SameDayWindowMin        *time.Time         `json:"same_day_window_min" form:"-" input:"json"`
 		RawSameDayWindowMin     string             `json:"-" form:"same_day_window_min"`
-		SameDayWindowMax        *time.Time         `json:"-" form:"-"`
+		SameDayWindowMax        *time.Time         `json:"same_day_window_max" form:"-" input:"json"`
 		RawSameDayWindowMax     string             `json:"-" form:"same_day_window_max"`
 		NextDay                 bool               `json:"next_day" form:"next_day"`
-		NextDayWindowMin        *time.Time         `json:"-" form:"-"`
+		NextDayWindowMin        *time.Time         `json:"next_day_window_min" form:"-" input:"json"`
 		RawNextDayWindowMin     string             `json:"-" form:"next_day_window_min"`
-		NextDayWindowMax        *time.Time         `json:"-" form:"-"`
+		NextDayWindowMax        *time.Time         `json:"next_day_window_max" form:"-" input:"json"`
 		RawNextDayWindowMax     string             `json:"-" form:"next_day_window_max"`
 		NextTwoDay              bool               `json:"next_two_day" form:"next_two_day"`
-		NextTwoDayWindowMin     *time.Time         `json:"-" form:"-"`
+		NextTwoDayWindowMin     *time.Time         `json:"next_two_day_window_min" form:"-" input:"json"`
 		RawNextTwoDayWindowMin  string             `json:"-" form:"next_two_day_window_min"`
-		NextTwoDayWindowMax     *time.Time         `json:"-" form:"-"`
+		NextTwoDayWindowMax     *time.Time         `json:"next_two_day_window_max" form:"-" input:"json"`
 		RawNextTwoDayWindowMax  string             `json:"-" form:"next_two_day_window_max"`
 		DeliveryTimes           []time.Time        `json:"delivery_times" form:"-"`
 		MapDeliveryTimes        map[int64]struct{} `json:"-" form:"-"`
-		CreatedBy               uuid.UUID          `json:"-" form:"-"`
-		CreatedAt               time.Time          `json:"-" form:"-"`
-		UpdatedBy               uuid.UUID          `json:"-" form:"-"`
-		UpdatedAt               time.Time          `json:"-" form:"-"`
-		DeletedBy               *uuid.UUID         `json:"-" form:"-"`
-		DeletedAt               *time.Time         `json:"-" form:"-"`
-		DeletionReason          *string            `json:"-" form:"-"`
+		CreatedBy               uuid.UUID          `json:"created_by" form:"-"`
+		CreatedAt               time.Time          `json:"created_at" form:"-"`
+		UpdatedBy               uuid.UUID          `json:"updated_by" form:"-"`
+		UpdatedAt               time.Time          `json:"updated_at" form:"-"`
+		DeletedBy               *uuid.UUID         `json:"deleted_by" form:"-"`
+		DeletedAt               *time.Time         `json:"deleted_at" form:"-"`
+		DeletionReason          *string            `json:"deletion_reason" form:"-"`
 	}
 
 	DeliveryPlanFilter struct {
@@ -185,6 +185,14 @@ func (q *DeliveryPlanFilter) WithUrlValues(urlValues url.Values) *DeliveryPlanFi
 }
 
 func (q *DeliveryPlan) Validate() (err error) {
+	rawFromTime(&q.RawTransactionWindowMin, &q.TransactionWindowMin, time.TimeOnly)
+	rawFromTime(&q.RawTransactionWindowMax, &q.TransactionWindowMax, time.TimeOnly)
+	rawFromTime(&q.RawSameDayWindowMin, q.SameDayWindowMin, time.TimeOnly)
+	rawFromTime(&q.RawSameDayWindowMax, q.SameDayWindowMax, time.TimeOnly)
+	rawFromTime(&q.RawNextDayWindowMin, q.NextDayWindowMin, time.TimeOnly)
+	rawFromTime(&q.RawNextDayWindowMax, q.NextDayWindowMax, time.TimeOnly)
+	rawFromTime(&q.RawNextTwoDayWindowMin, q.NextTwoDayWindowMin, time.TimeOnly)
+	rawFromTime(&q.RawNextTwoDayWindowMax, q.NextTwoDayWindowMax, time.TimeOnly)
 	now := time.Now().In(time.Local)
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")

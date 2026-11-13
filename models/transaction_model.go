@@ -83,21 +83,21 @@ type Transaction struct {
 	BuyerNote                       string             `json:"buyer_note" form:"buyer_note"`
 	UniqueCode                      int64              `json:"unique_code" form:"-"`
 	ShoppingCost                    int64              `json:"shopping_cost" form:"-"`
-	ReferrerID                      *uuid.UUID         `json:"-" form:"-"`
+	ReferrerID                      *uuid.UUID         `json:"referrer_id" form:"-"`
 	ReferralCode                    *string            `json:"referral_code" form:"referral_code"`
-	ReferralPoints                  int64              `json:"-" form:"-"`
-	VoucherID                       *uuid.UUID         `json:"-" form:"-"`
-	VoucherType                     *VoucherType       `json:"-" form:"-"`
+	ReferralPoints                  int64              `json:"referral_points" form:"-"`
+	VoucherID                       *uuid.UUID         `json:"voucher_id" form:"-"`
+	VoucherType                     *VoucherType       `json:"voucher_type" form:"-"`
 	VoucherCode                     *string            `json:"voucher_code" form:"voucher_code"`
-	VoucherDiscount                 int64              `json:"-" form:"-"`
+	VoucherDiscount                 int64              `json:"voucher_discount" form:"-"`
 	RewardPointsDiscounted          bool               `json:"reward_points_discounted" form:"reward_points_discounted"`
-	RewardPointsDiscount            int64              `json:"-" form:"-"`
+	RewardPointsDiscount            int64              `json:"reward_points_discount" form:"-"`
 	WalletDiscounted                bool               `json:"wallet_discounted" form:"wallet_discounted"`
-	WalletAmount                    int64              `json:"-" form:"-"`
-	WalletDiscount                  int64              `json:"-" form:"-"`
-	DiscountedShoppingCost          int64              `json:"-" form:"-"`
+	WalletAmount                    int64              `json:"wallet_amount" form:"-"`
+	WalletDiscount                  int64              `json:"wallet_discount" form:"-"`
+	DiscountedShoppingCost          int64              `json:"discounted_shopping_cost" form:"-"`
 	DeliveryEstimatedCost           int64              `json:"delivery_estimated_cost" form:"-"`
-	DiscountedDeliveryEstimatedCost int64              `json:"-" form:"-"`
+	DiscountedDeliveryEstimatedCost int64              `json:"discounted_delivery_estimated_cost" form:"-"`
 	DeliveryRouteID                 uuid.UUID          `json:"delivery_route_id" form:"-"`
 	DeliveryLatitude                decimal.Decimal    `json:"delivery_latitude" form:"delivery_latitude"`
 	DeliveryLongitude               decimal.Decimal    `json:"delivery_longitude" form:"delivery_longitude"`
@@ -108,35 +108,35 @@ type Transaction struct {
 	PaymentAmount                   int64              `json:"payment_amount" form:"-"`
 	PaymentDueDate                  *time.Time         `json:"payment_due_date" form:"-"`
 	PaymentChannelID                *uuid.UUID         `json:"payment_channel_id" form:"-"`
-	PaymentRequestID                *string            `json:"-" form:"-"`
-	PaymentTokenID                  *string            `json:"-" form:"-"`
+	PaymentRequestID                *string            `json:"payment_request_id" form:"-"`
+	PaymentTokenID                  *string            `json:"payment_token_id" form:"-"`
 	PaymentChannelName              *string            `json:"payment_channel_name" form:"-"`
 	PaymentVirtualAccountNumber     *string            `json:"payment_virtual_account_number" form:"-"`
 	PaymentVirtualAccountExpiredAt  *time.Time         `json:"payment_virtual_account_expired_at" form:"-"`
 	CreatedAt                       time.Time          `json:"created_at" form:"-"`
 	UpdatedAt                       time.Time          `json:"updated_at" form:"-"`
 	CancelledAt                     *time.Time         `json:"cancelled_at" form:"-"`
-	PaymentStatus                   *string            `json:"-" form:"-"`
-	PaymentFailureCode              *string            `json:"-" form:"-"`
-	PaymentCapturedAt               *time.Time         `json:"-" form:"-"`
-	PaymentID                       *string            `json:"-" form:"-"`
+	PaymentStatus                   *string            `json:"payment_status" form:"-"`
+	PaymentFailureCode              *string            `json:"payment_failure_code" form:"-"`
+	PaymentCapturedAt               *time.Time         `json:"payment_captured_at" form:"-"`
+	PaymentID                       *string            `json:"payment_id" form:"-"`
 	PaidAt                          *time.Time         `json:"paid_at" form:"-"`
 	WithdrawalRequestedAt           *time.Time         `json:"withdrawal_requested_at"`
 	WithdrawalReason                *string            `json:"withdrawal_reason" form:"-"`
-	WithdrawnBy                     *uuid.UUID         `json:"-" form:"-"`
+	WithdrawnBy                     *uuid.UUID         `json:"withdrawn_by" form:"-"`
 	WithdrawnAt                     *time.Time         `json:"withdrawn_at" form:"-"`
-	ProcessedBy                     *uuid.UUID         `json:"-" form:"-"`
+	ProcessedBy                     *uuid.UUID         `json:"processed_by" form:"-"`
 	ProcessedAt                     *time.Time         `json:"processed_at" form:"-"`
 	RevisedShoppingCost             int64              `json:"revised_shopping_cost" form:"-"`
 	RevisedDiscountedShoppingCost   int64              `json:"revised_discounted_shopping_cost" form:"-"`
 	RevisedPaymentAmount            int64              `json:"revised_payment_amount" form:"-"`
 	RefundAmount                    int64              `json:"refund_amount" form:"-"`
 	RefundedAt                      *time.Time         `json:"refunded_at" form:"-"`
-	RefundID                        *string            `json:"-" form:"-"`
-	ShippedBy                       *uuid.UUID         `json:"-" form:"-"`
+	RefundID                        *string            `json:"refund_id" form:"-"`
+	ShippedBy                       *uuid.UUID         `json:"shipped_by" form:"-"`
 	ShippedAt                       *time.Time         `json:"shipped_at" form:"-"`
-	DeliveryActualCost              int64              `json:"-" form:"delivery_actual_cost"`
-	CompletedBy                     *uuid.UUID         `json:"-" form:"-"`
+	DeliveryActualCost              int64              `json:"delivery_actual_cost" form:"delivery_actual_cost"`
+	CompletedBy                     *uuid.UUID         `json:"completed_by" form:"-"`
 	CompletedAt                     *time.Time         `json:"completed_at" form:"-"`
 	Items                           []*TransactionItem `json:"items" form:"items"`
 }
@@ -144,12 +144,12 @@ type Transaction struct {
 type TransactionItem struct {
 	RowNo                   int64      `json:"-" form:"-"`
 	ID                      uuid.UUID  `json:"id" form:"-"`
-	TransactionID           uuid.UUID  `json:"-" form:"-"`
+	TransactionID           uuid.UUID  `json:"transaction_id" form:"-"`
 	CartItemID              *uuid.UUID `json:"cart_item_id,omitempty" form:"cart_item_id"`
 	ProductVariantID        uuid.UUID  `json:"product_variant_id" form:"-"`
-	ProductID               uuid.UUID  `json:"-" form:"-"`
+	ProductID               uuid.UUID  `json:"product_id" form:"-"`
 	ProductName             string     `json:"product_name" form:"-"`
-	ProductPhoto            string     `json:"-" form:"-"`
+	ProductPhoto            string     `json:"product_photo" form:"-"`
 	StockUnit               string     `json:"stock_unit" form:"-"`
 	BasePrice               int64      `json:"-" form:"-"`
 	SellingPrice            int64      `json:"selling_price" form:"-"`
@@ -522,7 +522,7 @@ func (q *TransactionWithdrawal) Validate() error {
 }
 
 type TransactionShipment struct {
-	DeliveryActualCost int64 `json:"-" form:"delivery_actual_cost"`
+	DeliveryActualCost int64 `json:"delivery_actual_cost" form:"delivery_actual_cost"`
 }
 
 func (q *TransactionShipment) Validate() error {

@@ -5,13 +5,10 @@ import (
 	"errors"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/csrf"
-	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
@@ -22,154 +19,99 @@ import (
 )
 
 type recipeController struct {
-	sellerService         services.SellerService
 	buyerService          services.BuyerService
 	recipeService         services.RecipeService
 	recipeGuideService    services.RecipeGuideService
 	recipeItemService     services.RecipeItemService
 	productService        services.ProductService
 	productVariantService services.ProductVariantService
-	notificationService   services.NotificationService
+	userService           services.UserService
+	jsonWebTokenService   services.JsonWebTokenService
 }
 
 func NewRecipeController(
-	sellerService services.SellerService,
 	buyerService services.BuyerService,
 	recipeService services.RecipeService,
 	recipeGuideService services.RecipeGuideService,
 	recipeItemService services.RecipeItemService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
-	notificationService services.NotificationService,
+	userService services.UserService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *recipeController {
 	return &recipeController{
-		sellerService:         sellerService,
 		buyerService:          buyerService,
 		recipeService:         recipeService,
 		recipeGuideService:    recipeGuideService,
 		recipeItemService:     recipeItemService,
 		productService:        productService,
 		productVariantService: productVariantService,
-		notificationService:   notificationService,
+		userService:           userService,
+		jsonWebTokenService:   jsonWebTokenService,
 	}
 }
 
 func (q *recipeController) Mount(r fiber.Router) {
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
-	r.Group("/seller", sellerSessionAuth).
-		Get("", q.SellerIndex).
-		Get("/new", q.SellerNew).
-		Post("", q.SellerCreate).
-		Get("/:id", q.SellerShow).
-		Get("/:id/edit", q.SellerEdit).
-		Post("/:id", q.SellerUpdate).
-		Post("/:id/delete", q.SellerDelete).
-		Get("/:id/guides/new", q.SellerNewGuide).
-		Post("/:id/guides", q.SellerCreateGuide).
-		Get("/:id/guides/:guide_id/edit", q.SellerEditGuide).
-		Post("/:id/guides/:guide_id", q.SellerUpdateGuide).
-		Post("/:id/guides/:guide_id/delete", q.SellerDeleteGuide).
-		Get("/:id/items/new", q.SellerNewItem).
-		Post("/:id/items", q.SellerCreateItem).
-		Get("/:id/items/:item_id/edit", q.SellerEditItem).
-		Post("/:id/items/:item_id", q.SellerUpdateItem).
-		Post("/:id/items/:item_id/delete", q.SellerDeleteItem)
+	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
+	r.Group("/v1/seller", sellerKeyAuth).
+		Get("", q.V1SellerIndex).
+		Post("", q.V1SellerCreate).
+		Get("/:id", q.V1SellerShow).
+		Post("/:id", q.V1SellerUpdate).
+		Post("/:id/delete", q.V1SellerDelete).
+		Post("/:id/guides", q.V1SellerCreateGuide).
+		Get("/:id/guides/:guide_id", q.V1SellerShowGuide).
+		Post("/:id/guides/:guide_id", q.V1SellerUpdateGuide).
+		Post("/:id/guides/:guide_id/delete", q.V1SellerDeleteGuide).
+		Post("/:id/items", q.V1SellerCreateItem).
+		Get("/:id/items/:item_id", q.V1SellerShowItem).
+		Post("/:id/items/:item_id", q.V1SellerUpdateItem).
+		Post("/:id/items/:item_id/delete", q.V1SellerDeleteItem)
 }
 
-func (q *recipeController) SellerIndex(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerIndex"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	request := &models.RecipeFilter{}
-	rows := []*models.Recipe{}
-	pagination := &models.Pagination{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", "Data Resep",
-		"limits", models.Limits,
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-		"sortings", []models.Sorting{
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Newest-Oldest",
-			},
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Oldest-Newest",
-			},
-			{
-				Field:     models.SortingFieldName,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Name A-Z",
-			},
-			{
-				Field:     models.SortingFieldName,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Name Z-A",
-			},
-		},
-	)
-	request, err = sanitizers.FindRecipes(ctx, c)
-	params.Push("request", request)
+func (q *recipeController) V1SellerIndex(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerIndex"
+	ctx := c.Context()
+	request, err := sanitizers.FindRecipes(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipes")
-		return c.Render("seller/recipe_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	if rows, pagination, err = q.recipeService.FindRecipes(
+	rows, pagination, err := q.recipeService.FindRecipes(
 		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive),
-	); err != nil {
+	)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipes")
-		return c.Render("seller/recipe_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return c.Render("seller/recipe_index", params.Push(
-		"rows", rows,
-		"pagination", pagination,
-	), "seller/layouts/authenticated")
+	pagination.Rows = make([]any, len(rows))
+	for i := range rows {
+		pagination.Rows[i] = rows[i]
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerNew(c fiber.Ctx) (err error) {
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, _ := q.prepareRecipe(ctx, c, flash, currentSeller, csrfToken, notifications, true)
-	return c.Render("seller/recipe_new", params, "seller/layouts/authenticated")
-}
-
-func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerCreate"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, _ := q.prepareRecipe(ctx, c, flash, currentSeller, csrfToken, notifications, true)
+func (q *recipeController) V1SellerCreate(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerCreate"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateRecipe(ctx, c)
 	if photo == nil {
 		request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
 	}
-	params.Push(
-		"request", request,
-		"recipe", request,
-	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipe")
-		c.Response().SetStatusCode(statusCode)
 		request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-		return c.Render("seller/recipe_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"recipe", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	var recipe *models.Recipe
 	if request.Name != nil {
@@ -181,27 +123,23 @@ func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 		if err != nil && !errors.Is(err, models.ErrRecipeNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipe")
 			request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-			return c.Render("seller/recipe_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-				"recipe", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
-	request.CreatedBy = currentSeller.ID
+	request.CreatedBy = currentUser.ID
 	request.CreatedAt = now
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = now
 	if recipe != nil {
 		if recipe.RecordStatus == models.RecordStatusActive {
 			request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-			return c.Render("seller/recipe_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueRecipeNameViolation.Error()),
-				"request", request,
-				"recipe", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueRecipeNameViolation.Error()).
+				WriteResponse(c)
 		}
 		request.ID = recipe.ID
 		request.Name = recipe.DeletedName
@@ -219,11 +157,9 @@ func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-		return c.Render("seller/recipe_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"recipe", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -233,23 +169,20 @@ func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeService.SaveRecipe(ctx, tx, request); err != nil {
+	saved, err := q.recipeService.SaveRecipe(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveRecipe")
 		request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-		return c.Render("seller/recipe_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"recipe", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-		return c.Render("seller/recipe_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"recipe", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if recipe != nil &&
 		recipe.Photo != os.Getenv("RECIPE_DEFAULT_PHOTO") &&
@@ -257,94 +190,83 @@ func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 		if err = os.RemoveAll(helper.PhotoLocation(recipe.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
 			request.SetPhoto(recipe.Photo)
-			return c.Render("seller/recipe_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request,
-				"recipe", request,
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		request.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-		return c.Render("seller/recipe_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request,
-			"recipe", request,
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe created successfully").Redirect(c, sess.Session, "/seller/recipes")
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe created successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerShow(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerShow"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, err := q.prepareRecipe(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerShow(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerShow"
+	ctx := c.Context()
+	recipe, err := q.prepareRecipe(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipe")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return c.Render("seller/recipe_show", params, "seller/layouts/authenticated")
+	if recipe.Guides, _, err = q.recipeGuideService.FindRecipeGuides(
+		ctx,
+		models.NewRecipeGuideFilter().
+			WithRecipeIDs(recipe.ID).
+			WithRecordStatuses(models.RecordStatusActive).
+			WithSortings(models.DefaultAscendingSortBy),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeGuides")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if recipe.Items, _, err = q.recipeItemService.FindRecipeItems(
+		ctx,
+		models.NewRecipeItemFilter().
+			WithRecipeIDs(recipe.ID).
+			WithRecordStatuses(models.RecordStatusActive).
+			WithSortings(models.DefaultAscendingSortBy),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(recipe).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerEdit(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerEdit"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, err := q.prepareRecipe(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerUpdate(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerUpdate"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	recipe, err := q.prepareRecipe(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipe")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
-	}
-	return c.Render("seller/recipe_edit", params, "seller/layouts/authenticated")
-}
-
-func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerUpdate"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, params, err := q.prepareRecipe(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipe")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateRecipe(ctx, c)
 	if photo == nil {
 		request.SetPhoto(recipe.Photo)
 	}
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipe")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/recipe_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(recipe.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if recipe.Name != nil && request.Name != nil && *recipe.Name != *request.Name {
 		otherRecipe, err := q.recipeService.FindRecipe(
@@ -355,33 +277,29 @@ func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
 		)
 		if err != nil && !errors.Is(err, models.ErrRecipeNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipe")
-			return c.Render("seller/recipe_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(recipe.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if otherRecipe != nil {
-			return c.Render("seller/recipe_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueRecipeNameViolation.Error()),
-				"request", request.SetPhoto(recipe.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueRecipeNameViolation.Error()).
+				WriteResponse(c)
 		}
 	}
 	request.ID = recipe.ID
 	request.RecordStatus = recipe.RecordStatus
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/recipe_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(recipe.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -391,69 +309,65 @@ func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeService.UpdateRecipe(ctx, tx, request); err != nil {
+	saved, err := q.recipeService.UpdateRecipe(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipe")
-		return c.Render("seller/recipe_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(recipe.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-		return c.Render("seller/recipe_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(recipe.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if recipe.Photo != os.Getenv("RECIPE_DEFAULT_PHOTO") &&
 		recipe.Photo != request.Photo {
 		if err = os.RemoveAll(helper.PhotoLocation(recipe.Photo)); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
-			return c.Render("seller/recipe_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(recipe.Photo),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/recipe_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(recipe.Photo),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe updated successfully").Redirect(c, sess.Session, "/seller/recipes")
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe updated successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerDelete(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerDelete"
-	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, _, err := q.prepareRecipe(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		nil,
-		false,
-	)
+func (q *recipeController) V1SellerDelete(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerDelete"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	recipe, err := q.prepareRecipe(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipe")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	recipe.RecordStatus = models.RecordStatusDeleted
 	if recipe.Name != nil {
 		recipe.DeletedName = new(*recipe.Name)
 	}
 	recipe.Name = nil
-	recipe.DeletedBy = &currentSeller.ID
+	recipe.DeletedBy = &currentUser.ID
 	recipe.DeletedAt = new(time.Now())
 	recipe.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -463,76 +377,56 @@ func (q *recipeController) SellerDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeService.UpdateRecipe(ctx, tx, recipe); err != nil {
+	saved, err := q.recipeService.UpdateRecipe(ctx, tx, recipe)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipe")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe deleted successfully").Redirect(c, sess.Session, "/seller/recipes")
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe deleted successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerNewGuide(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerNewGuide"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, _, params, err := q.prepareRecipeGuide(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerCreateGuide(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerCreateGuide"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	recipe, _, err := q.prepareRecipeGuide(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeGuide")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
-	}
-	return c.Render("seller/recipe_guide_new", params, "seller/layouts/authenticated")
-}
-
-func (q *recipeController) SellerCreateGuide(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerCreateGuide"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, _, params, err := q.prepareRecipeGuide(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeGuide")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, statusCode, err := sanitizers.ValidateRecipeGuide(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipeGuide")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/recipe_guide_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
 	request.RecipeID = recipe.ID
-	request.CreatedBy = currentSeller.ID
+	request.CreatedBy = currentUser.ID
 	request.CreatedAt = now
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/recipe_guide_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -542,70 +436,61 @@ func (q *recipeController) SellerCreateGuide(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeGuideService.CreateRecipeGuide(ctx, tx, request); err != nil {
+	saved, err := q.recipeGuideService.CreateRecipeGuide(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateRecipeGuide")
-		return c.Render("seller/recipe_guide_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/recipe_guide_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe guide created successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+	return helper.NewResponse(fiber.StatusCreated).
+		SetMessage("recipe guide created successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerEditGuide(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerEditGuide"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, _, params, err := q.prepareRecipeGuide(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerShowGuide(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerShowGuide"
+	ctx := c.Context()
+	_, recipeGuide, err := q.prepareRecipeGuide(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeGuide")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return c.Render("seller/recipe_guide_edit", params, "seller/layouts/authenticated")
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(recipeGuide).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerUpdateGuide(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerUpdateGuide"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, recipeGuide, params, err := q.prepareRecipeGuide(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerUpdateGuide(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerUpdateGuide"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	_, recipeGuide, err := q.prepareRecipeGuide(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeGuide")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, statusCode, err := sanitizers.ValidateRecipeGuide(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipeGuide")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/recipe_guide_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request.ID = recipeGuide.ID
 	request.RecordStatus = recipeGuide.RecordStatus
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -613,9 +498,9 @@ func (q *recipeController) SellerUpdateGuide(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/recipe_guide_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -625,46 +510,46 @@ func (q *recipeController) SellerUpdateGuide(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeGuideService.UpdateRecipeGuide(ctx, tx, request); err != nil {
+	saved, err := q.recipeGuideService.UpdateRecipeGuide(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeGuide")
-		return c.Render("seller/recipe_guide_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/recipe_guide_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe guide updated successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe guide updated successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerDeleteGuide(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerDeleteGuide"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, recipeGuide, _, err := q.prepareRecipeGuide(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		false,
-	)
+func (q *recipeController) V1SellerDeleteGuide(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerDeleteGuide"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	_, recipeGuide, err := q.prepareRecipeGuide(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeGuide")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	recipeGuide.RecordStatus = models.RecordStatusDeleted
-	recipeGuide.DeletedBy = new(currentSeller.ID)
+	recipeGuide.DeletedBy = new(currentUser.ID)
 	recipeGuide.DeletedAt = new(time.Now())
 	recipeGuide.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -674,62 +559,42 @@ func (q *recipeController) SellerDeleteGuide(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeGuideService.UpdateRecipeGuide(ctx, tx, recipeGuide); err != nil {
+	saved, err := q.recipeGuideService.UpdateRecipeGuide(ctx, tx, recipeGuide)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeGuide")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe guide deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe guide deleted successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerNewItem(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerNewItem"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, _, _, params, err := q.prepareRecipeItem(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerCreateItem(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerCreateItem"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	recipe, _, products, err := q.prepareRecipeItem(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
-	}
-	return c.Render("seller/recipe_item_new", params, "seller/layouts/authenticated")
-}
-
-func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerCreateItem"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, _, products, params, err := q.prepareRecipeItem(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, statusCode, err := sanitizers.ValidateRecipeItem(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipeItem")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/recipe_item_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	mapVariants := map[uuid.UUID]*models.ProductVariant{}
 	for _, product := range products {
@@ -740,9 +605,9 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 	var recipeItem *models.RecipeItem
 	variant, ok := mapVariants[request.ProductVariantID]
 	if !ok {
-		return c.Render("seller/recipe_item_new", params.Push(
-			"flash", flash.Danger("product_variant_id: not found"),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("product_variant_id: not found").
+			WriteResponse(c)
 	}
 	request.ProductID = variant.ProductID
 	request.ProductName = variant.ProductName
@@ -755,22 +620,22 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 			WithProductIDs(request.ProductID),
 	); err != nil && !errors.Is(err, models.ErrRecipeItemNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItem")
-		return c.Render("seller/recipe_item_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
 	request.RecipeID = recipe.ID
-	request.CreatedBy = currentSeller.ID
+	request.CreatedBy = currentUser.ID
 	request.CreatedAt = now
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = now
 	if recipeItem != nil {
 		if recipeItem.RecordStatus == models.RecordStatusActive {
-			return c.Render("seller/recipe_item_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueRecipeItemProductIdViolation.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueRecipeItemProductIdViolation.Error()).
+				WriteResponse(c)
 		}
 		request.ID = recipeItem.ID
 		request.CreatedBy = recipeItem.CreatedBy
@@ -782,9 +647,9 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/recipe_item_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -794,66 +659,60 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeItemService.SaveRecipeItem(ctx, tx, request); err != nil {
+	saved, err := q.recipeItemService.SaveRecipeItem(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveRecipeItem")
-		return c.Render("seller/recipe_item_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/recipe_item_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe item created successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe item created successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerEditItem(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerEditItem"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, _, _, params, err := q.prepareRecipeItem(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerShowItem(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerShowItem"
+	ctx := c.Context()
+	_, recipeItem, products, err := q.prepareRecipeItem(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return c.Render("seller/recipe_item_edit", params, "seller/layouts/authenticated")
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(models.NewMap().Push(
+			"recipe_item", recipeItem,
+			"products", products,
+		)).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerUpdateItem"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, recipeItem, products, params, err := q.prepareRecipeItem(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
+func (q *recipeController) V1SellerUpdateItem(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerUpdateItem"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	_, recipeItem, products, err := q.prepareRecipeItem(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	request, statusCode, err := sanitizers.ValidateRecipeItem(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipeItem")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/recipe_item_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	mapVariants := map[uuid.UUID]*models.ProductVariant{}
 	for _, product := range products {
@@ -870,7 +729,7 @@ func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 	request.ID = recipeItem.ID
 	request.ProductVariantID = recipeItem.ProductVariantID
 	request.RecordStatus = recipeItem.RecordStatus
-	request.UpdatedBy = currentSeller.ID
+	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = time.Now()
 	request.DeletedBy = nil
 	request.DeletedAt = nil
@@ -878,9 +737,9 @@ func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/recipe_item_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -890,46 +749,46 @@ func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, request); err != nil {
+	saved, err := q.recipeItemService.UpdateRecipeItem(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
-		return c.Render("seller/recipe_item_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/recipe_item_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe item updated successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe item updated successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *recipeController) SellerDeleteItem(c fiber.Ctx) (err error) {
-	ctxt := "RecipeController-SellerDeleteItem"
-	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	recipe, recipeItem, _, _, err := q.prepareRecipeItem(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		nil,
-		false,
-	)
+func (q *recipeController) V1SellerDeleteItem(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1SellerDeleteItem"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	_, recipeItem, _, err := q.prepareRecipeItem(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareRecipeItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/recipes")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	recipeItem.RecordStatus = models.RecordStatusDeleted
-	recipeItem.DeletedBy = new(currentSeller.ID)
+	recipeItem.DeletedBy = new(currentUser.ID)
 	recipeItem.DeletedAt = new(time.Now())
 	recipeItem.DeletionReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -939,122 +798,41 @@ func (q *recipeController) SellerDeleteItem(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem); err != nil {
+	saved, err := q.recipeItemService.UpdateRecipeItem(ctx, tx, recipeItem)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("recipe item deleted successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/recipes/%s", recipe.ID))
-}
-
-func (q *recipeController) prepare(c fiber.Ctx) (
-	context.Context,
-	*session.Middleware,
-	*helper.FlashMessage,
-	*models.Seller,
-	string,
-	[]*models.Notification,
-) {
-	ctx := c.Context()
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentSeller, csrfToken, notifications
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("recipe item deleted successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
 func (q *recipeController) prepareRecipe(
 	ctx context.Context,
 	c fiber.Ctx,
-	flash *helper.FlashMessage,
-	currentSeller *models.Seller,
-	csrfToken string,
-	notifications []*models.Notification,
-	withParams bool,
 ) (
 	*models.Recipe,
-	models.Map,
 	error,
 ) {
 	recipe := &models.Recipe{}
 	recipe.SetPhoto(os.Getenv("RECIPE_DEFAULT_PHOTO"))
-	recipeGuides := []*models.RecipeGuide{}
-	recipeItems := []*models.RecipeItem{}
-	var params models.Map
-	if withParams {
-		params = models.NewMap().Push(
-			"baseURL", c.BaseURL(),
-			"flash", flash,
-			"path", c.OriginalURL(),
-			"csrfToken", csrfToken,
-			"currentSeller", currentSeller,
-			"notifications", notifications,
-			"pageTitle", "Add New Resep",
-			"request", recipe,
-			"recipe", recipe,
-			"recipeGuides", recipeGuides,
-			"recipeItems", recipeItems,
-		)
-	}
 	if c.Params("id") != "" {
-		recipeID, err := uuid.Parse(c.Params("id"))
-		if err != nil {
-			return nil, nil, models.ErrRecipeNotFound
-		}
-		if recipe, err = q.recipeService.FindRecipe(
-			ctx,
-			models.NewRecipeFilter().
-				WithRecordStatuses(models.RecordStatusActive).
-				WithRecipeIDs(recipeID),
-		); err != nil && !errors.Is(err, models.ErrRecipeNotFound) {
-			return nil, nil, err
-		}
-		if recipe == nil {
-			return nil, nil, models.ErrRecipeNotFound
-		}
-		if withParams && params.Size() > 0 && recipe.Name != nil {
-			params.Push(
-				"pageTitle", helper.Sprintf("Edit Data Resep|%s", *recipe.Name),
-				"request", recipe,
-				"recipe", recipe,
-			)
-			if strings.HasSuffix(c.OriginalURL(), recipe.ID.String()) {
-				params.Push(
-					"pageTitle", helper.Sprintf("Detail Data Resep|%s", *recipe.Name),
-				)
-			}
-			if recipeGuides, _, err = q.recipeGuideService.FindRecipeGuides(
-				ctx,
-				models.NewRecipeGuideFilter().
-					WithRecipeIDs(recipe.ID).
-					WithRecordStatuses(models.RecordStatusActive).
-					WithSortings(models.DefaultAscendingSortBy),
-			); err != nil {
-				return nil, nil, err
-			}
-			if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
-				ctx,
-				models.NewRecipeItemFilter().
-					WithRecipeIDs(recipe.ID).
-					WithRecordStatuses(models.RecordStatusActive).
-					WithSortings(models.DefaultAscendingSortBy),
-			); err != nil {
-				return nil, nil, err
-			}
-			params.Push(
-				"recipeGuides", recipeGuides,
-				"recipeItems", recipeItems,
-			)
+		var err error
+		if recipe, err = q.prepareRecipeByID(ctx, c); err != nil {
+			return nil, err
 		}
 	}
-	return recipe, params, nil
+	return recipe, nil
 }
 
 func (q *recipeController) prepareRecipeByID(
@@ -1086,67 +864,20 @@ func (q *recipeController) prepareRecipeByID(
 func (q *recipeController) prepareRecipeGuide(
 	ctx context.Context,
 	c fiber.Ctx,
-	flash *helper.FlashMessage,
-	currentSeller *models.Seller,
-	csrfToken string,
-	notifications []*models.Notification,
-	withParams bool,
 ) (
 	*models.Recipe,
 	*models.RecipeGuide,
-	models.Map,
 	error,
 ) {
 	recipe, err := q.prepareRecipeByID(ctx, c)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	recipeGuide := &models.RecipeGuide{}
-	var params models.Map
-	if withParams && recipe.Name != nil {
-		recipeGuides := []*models.RecipeGuide{}
-		recipeItems := []*models.RecipeItem{}
-		params = models.NewMap().Push(
-			"baseURL", c.BaseURL(),
-			"flash", flash,
-			"path", c.OriginalURL(),
-			"csrfToken", csrfToken,
-			"currentSeller", currentSeller,
-			"notifications", notifications,
-			"pageTitle", helper.Sprintf("Detail Resep|%s", *recipe.Name),
-			"recipe", recipe,
-			"recipeGuide", recipeGuide,
-			"request", recipeGuide,
-			"recipeGuides", recipeGuides,
-			"recipeItems", recipeItems,
-		)
-		if recipeGuides, _, err = q.recipeGuideService.FindRecipeGuides(
-			ctx,
-			models.NewRecipeGuideFilter().
-				WithRecipeIDs(recipe.ID).
-				WithRecordStatuses(models.RecordStatusActive).
-				WithSortings(models.DefaultAscendingSortBy),
-		); err != nil {
-			return nil, nil, nil, err
-		}
-		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
-			ctx,
-			models.NewRecipeItemFilter().
-				WithRecipeIDs(recipe.ID).
-				WithRecordStatuses(models.RecordStatusActive).
-				WithSortings(models.DefaultAscendingSortBy),
-		); err != nil {
-			return nil, nil, nil, err
-		}
-		params.Push(
-			"recipeGuides", recipeGuides,
-			"recipeItems", recipeItems,
-		)
-	}
 	if c.Params("guide_id") != "" {
 		recipeGuideID, err := uuid.Parse(c.Params("guide_id"))
 		if err != nil {
-			return nil, nil, nil, models.ErrRecipeGuideNotFound
+			return nil, nil, models.ErrRecipeGuideNotFound
 		}
 		if recipeGuide, err = q.recipeGuideService.FindRecipeGuide(
 			ctx,
@@ -1154,94 +885,47 @@ func (q *recipeController) prepareRecipeGuide(
 				WithRecordStatuses(models.RecordStatusActive).
 				WithRecipeIDs(recipe.ID).
 				WithRecipeGuideIDs(recipeGuideID),
-		); err != nil {
-			return nil, nil, nil, err
+		); err != nil && !errors.Is(err, models.ErrRecipeGuideNotFound) {
+			return nil, nil, err
 		}
 		if recipeGuide == nil {
-			return nil, nil, nil, models.ErrRecipeGuideNotFound
-		}
-		if withParams && params.Size() > 0 {
-			params.Push(
-				"recipeGuide", recipeGuide,
-				"request", recipeGuide,
-			)
+			return nil, nil, models.ErrRecipeGuideNotFound
 		}
 	}
-	return recipe, recipeGuide, params, nil
+	return recipe, recipeGuide, nil
 }
 
 func (q *recipeController) prepareRecipeItem(
 	ctx context.Context,
 	c fiber.Ctx,
-	flash *helper.FlashMessage,
-	currentSeller *models.Seller,
-	csrfToken string,
-	notifications []*models.Notification,
-	withParams bool,
 ) (
 	*models.Recipe,
 	*models.RecipeItem,
 	[]*models.Product,
-	models.Map,
 	error,
 ) {
 	recipe, err := q.prepareRecipeByID(ctx, c)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	recipeItem := &models.RecipeItem{}
+	recipeItems, _, err := q.recipeItemService.FindRecipeItems(
+		ctx,
+		models.NewRecipeItemFilter().
+			WithRecipeIDs(recipe.ID).
+			WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	var productIDs []uuid.UUID
-	products := []*models.Product{}
-	var params models.Map
-	if withParams && recipe.Name != nil {
-		recipeGuides := []*models.RecipeGuide{}
-		recipeItems := []*models.RecipeItem{}
-		params = models.NewMap().Push(
-			"baseURL", c.BaseURL(),
-			"flash", flash,
-			"path", c.OriginalURL(),
-			"csrfToken", csrfToken,
-			"currentSeller", currentSeller,
-			"notifications", notifications,
-			"pageTitle", helper.Sprintf("Detail Resep|%s", *recipe.Name),
-			"recipe", recipe,
-			"recipeItem", recipeItem,
-			"request", recipeItem,
-			"recipeGuides", recipeGuides,
-			"recipeItems", recipeItems,
-			"products", products,
-		)
-		if recipeGuides, _, err = q.recipeGuideService.FindRecipeGuides(
-			ctx,
-			models.NewRecipeGuideFilter().
-				WithRecipeIDs(recipe.ID).
-				WithRecordStatuses(models.RecordStatusActive).
-				WithSortings(models.DefaultAscendingSortBy),
-		); err != nil {
-			return nil, nil, nil, nil, err
-		}
-		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
-			ctx,
-			models.NewRecipeItemFilter().
-				WithRecipeIDs(recipe.ID).
-				WithRecordStatuses(models.RecordStatusActive).
-				WithSortings(models.DefaultAscendingSortBy),
-		); err != nil {
-			return nil, nil, nil, nil, err
-		}
-		for _, recipeItem := range recipeItems {
-			productIDs = append(productIDs, recipeItem.ProductID)
-		}
-		params.Push(
-			"recipeGuides", recipeGuides,
-			"recipeItems", recipeItems,
-			"products", products,
-		)
+	for _, recipeItem := range recipeItems {
+		productIDs = append(productIDs, recipeItem.ProductID)
 	}
 	if c.Params("item_id") != "" {
 		recipeItemID, err := uuid.Parse(c.Params("item_id"))
 		if err != nil {
-			return nil, nil, nil, nil, models.ErrRecipeItemNotFound
+			return nil, nil, nil, models.ErrRecipeItemNotFound
 		}
 		if recipeItem, err = q.recipeItemService.FindRecipeItem(
 			ctx,
@@ -1249,11 +933,11 @@ func (q *recipeController) prepareRecipeItem(
 				WithRecordStatuses(models.RecordStatusActive).
 				WithRecipeIDs(recipe.ID).
 				WithRecipeItemIDs(recipeItemID),
-		); err != nil {
-			return nil, nil, nil, nil, err
+		); err != nil && !errors.Is(err, models.ErrRecipeItemNotFound) {
+			return nil, nil, nil, err
 		}
 		if recipeItem == nil {
-			return nil, nil, nil, nil, models.ErrRecipeItemNotFound
+			return nil, nil, nil, models.ErrRecipeItemNotFound
 		}
 		oldProductIDs := make([]uuid.UUID, len(productIDs))
 		copy(oldProductIDs, productIDs)
@@ -1263,14 +947,8 @@ func (q *recipeController) prepareRecipeItem(
 				productIDs = append(productIDs, oldProductID)
 			}
 		}
-		if withParams && params.Size() > 0 {
-			params.Push(
-				"recipeItem", recipeItem,
-				"request", recipeItem,
-			)
-		}
 	}
-	if products, _, err = q.productService.FindProducts(
+	products, _, err := q.productService.FindProducts(
 		ctx,
 		models.NewProductFilter().
 			WithRecordStatuses(models.RecordStatusActive).
@@ -1279,8 +957,9 @@ func (q *recipeController) prepareRecipeItem(
 				Field:     models.SortingFieldName,
 				Direction: models.SortingDirectionAsc,
 			}),
-	); err != nil {
-		return nil, nil, nil, nil, err
+	)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	productIDs = make([]uuid.UUID, len(products))
 	for i := range products {
@@ -1293,7 +972,7 @@ func (q *recipeController) prepareRecipeItem(
 			WithProductIDs(productIDs...),
 	)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	mapProductVariants := map[uuid.UUID][]*models.ProductVariant{}
 	for _, variant := range variants {
@@ -1302,8 +981,5 @@ func (q *recipeController) prepareRecipeItem(
 	for i := range products {
 		products[i].Variants = mapProductVariants[products[i].ID]
 	}
-	if withParams && params.Size() > 0 {
-		params.Push("products", products)
-	}
-	return recipe, recipeItem, products, params, nil
+	return recipe, recipeItem, products, nil
 }

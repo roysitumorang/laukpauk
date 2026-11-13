@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net/url"
 	"strings"
 	"time"
 	"uuid"
@@ -24,30 +23,24 @@ import (
 
 type authController struct {
 	adminService        services.AdminService
-	sellerService       services.SellerService
 	buyerService        services.BuyerService
 	jsonWebTokenService services.JsonWebTokenService
 	textMessageService  services.TextMessageService
-	notificationService services.NotificationService
 	kafkaClient         *externals.KafkaClient
 }
 
 func NewAuthController(
 	adminService services.AdminService,
-	sellerService services.SellerService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 	textMessageService services.TextMessageService,
-	notificationService services.NotificationService,
 	kafkaClient *externals.KafkaClient,
 ) *authController {
 	return &authController{
 		adminService:        adminService,
-		sellerService:       sellerService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
 		textMessageService:  textMessageService,
-		notificationService: notificationService,
 		kafkaClient:         kafkaClient,
 	}
 }
@@ -59,12 +52,6 @@ func (q *authController) Mount(r fiber.Router) {
 		Post("/sessions", q.AdminCreate).
 		Get("/me", adminSessionAuth, q.AdminShow).
 		Get("/logout", q.AdminLogout)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
-	r.Group("/seller").
-		Get("/sessions/new", q.SellerNew).
-		Post("/sessions", q.SellerCreate).
-		Get("/me", sellerSessionAuth, q.SellerShow).
-		Get("/logout", q.SellerLogout)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/v1/buyer").
 		Post("/login", q.V1BuyerCreate).
@@ -201,155 +188,6 @@ func (q *authController) AdminLogout(c fiber.Ctx) error {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
 	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin/auth/sessions/new")
-}
-
-func (q *authController) SellerNew(c fiber.Ctx) error {
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	if sess.Get(models.SellerID) != nil {
-		return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/seller")
-	}
-	csrfToken := csrf.TokenFromContext(c)
-	otpTrackingID, ok := sess.Get(models.CurrentOtpTrackingID).(uuid.UUID)
-	if !ok {
-		return flash.Redirect(c, sess.Session, helper.Sprintf("/seller/otp/new?login=%s", url.QueryEscape(c.Query("login"))))
-	}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"request", &models.OtpLoginRequest{
-			Login:      c.Query("login"),
-			TrackingID: otpTrackingID,
-		},
-	)
-	return c.Render("seller/auth_session_new", params)
-}
-
-func (q *authController) SellerCreate(c fiber.Ctx) error {
-	ctx := c.Context()
-	ctxt := "AuthController-SellerCreate"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	if sess.Get(models.SellerID) != nil {
-		return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/seller")
-	}
-	csrfToken := csrf.TokenFromContext(c)
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"request", &models.OtpLoginRequest{},
-	)
-	request, statusCode, err := sanitizers.ValidateOtpLogin(ctx, c)
-	params.Push("request", request)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateOtpLogin")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		))
-	}
-	seller, err := q.sellerService.FindSeller(
-		ctx,
-		models.NewSellerFilter().
-			WithLogin(request.Login).
-			WithStatuses(models.SellerStatusActive),
-	)
-	if err != nil {
-		if !errors.Is(err, models.ErrSellerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSeller")
-		}
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		))
-	}
-	if seller == nil {
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(models.ErrLoginFailed.Error()),
-		))
-	}
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		))
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/auth_session_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		))
-	}
-	if err = sess.RegenerateWithContext(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRegenerate")
-	}
-	sess.Delete(models.CurrentOtpTrackingID)
-	sess.Set(models.SellerID, seller.ID)
-	next, ok := sess.Get("next").(string)
-	if !ok || !strings.HasPrefix(next, "/seller") {
-		next = "/seller"
-	} else {
-		sess.Delete("next")
-	}
-	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, next)
-}
-
-func (q *authController) SellerShow(c fiber.Ctx) error {
-	sess := session.FromContext(c)
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	defer flash.Clear(c, sess.Session)
-	csrfToken := csrf.TokenFromContext(c)
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-	)
-	return c.Render("seller/auth_me", params)
-}
-
-func (q *authController) SellerLogout(c fiber.Ctx) error {
-	ctx := c.Context()
-	ctxt := "AuthController-SellerLogout"
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	if csrfHandler := csrf.HandlerFromContext(c); csrfHandler != nil {
-		if err := csrfHandler.DeleteToken(c); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDeleteToken")
-		}
-	}
-	if err := sess.ResetWithContext(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
-	}
-	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/seller/otp/new")
 }
 
 func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
