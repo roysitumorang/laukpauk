@@ -72,7 +72,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	})
 	sessionStore.RegisterType(&helper.FlashMessage{})
 	sessionStore.RegisterType(uuid.UUID{})
-	sessionStore.RegisterType(&models.Admin{})
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
@@ -132,15 +131,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		compress.New(),
 		rewrite.New(rewrite.Config{
 			RuleList: []rewrite.Rule{
-				{From: "/admin/auth/sessions", To: "/auth/admin/sessions"},
-				{From: "/admin/auth/sessions/*", To: "/auth/admin/sessions/$1"},
-				{From: "/admin/auth/*", To: "/auth/admin/$1"},
-				{From: "/admin", To: "/home/admin"},
-				{From: "/admin/admins", To: "/admins/admin"},
-				{From: "/admin/admins/*", To: "/admins/admin/$1"},
-				{From: "/admin/admins/*/*", To: "/admins/admin/$1/$2"},
-				{From: "/admin/text_messages", To: "/text_messages/admin"},
-				{From: "/admin/text_messages/*", To: "/text_messages/admin/$1"},
 				{From: "/v1/seller/product_categories", To: "/product_categories/v1/seller"},
 				{From: "/v1/seller/product_categories/*", To: "/product_categories/v1/seller/$1"},
 				{From: "/v1/seller/product_categories/*/*", To: "/product_categories/v1/seller/$1/$2"},
@@ -276,11 +266,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		Get("/images*", static.New("", static.Config{
 			FS: os.DirFS("images"),
 		}))
-	controllers.NewAuthController(
-		q.AdminService,
-	).Mount(app.Group("/auth"))
 	controllers.NewHomeController(
-		q.AdminService,
 		q.MessageService,
 	).Mount(app.Group("/home"))
 	controllers.NewProductCategoryController(
@@ -374,14 +360,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/buyers"))
-	controllers.NewAdminController(
-		q.AdminService,
-	).Mount(app.Group("/admins"))
-	controllers.NewTextMessageController(
-		q.AdminService,
-		q.UserService,
-		q.TextMessageService,
-	).Mount(app.Group("/text_messages"))
 	controllers.NewNotificationController(
 		q.NotificationService,
 		q.KafkaClient,
