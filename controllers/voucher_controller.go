@@ -22,7 +22,6 @@ import (
 
 type voucherController struct {
 	sellerService       services.SellerService
-	companyService      services.CompanyService
 	voucherService      services.VoucherService
 	buyerService        services.BuyerService
 	jsonWebTokenService services.JsonWebTokenService
@@ -31,7 +30,6 @@ type voucherController struct {
 
 func NewVoucherController(
 	sellerService services.SellerService,
-	companyService services.CompanyService,
 	voucherService services.VoucherService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
@@ -39,7 +37,6 @@ func NewVoucherController(
 ) *voucherController {
 	return &voucherController{
 		sellerService:       sellerService,
-		companyService:      companyService,
 		voucherService:      voucherService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
@@ -56,9 +53,8 @@ func (q *voucherController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex)
 }
 
@@ -115,8 +111,7 @@ func (q *voucherController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.voucherService.FindVouchers(
 		c,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
 		return c.Render("seller/voucher_index", params.Push(
@@ -218,7 +213,6 @@ func (q *voucherController) SellerCreate(c fiber.Ctx) (err error) {
 		voucher, err := q.voucherService.FindVoucher(
 			ctx,
 			models.NewVoucherFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithCodes(*request.Code),
 		)
 		if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
@@ -234,7 +228,6 @@ func (q *voucherController) SellerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	createdBy := currentSeller.ID
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -295,7 +288,6 @@ func (q *voucherController) SellerEdit(c fiber.Ctx) (err error) {
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithVoucherIDs(voucherID),
 	)
@@ -338,7 +330,6 @@ func (q *voucherController) SellerUpdate(c fiber.Ctx) (err error) {
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithVoucherIDs(voucherID),
 	)
@@ -375,7 +366,6 @@ func (q *voucherController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherVoucher, err := q.voucherService.FindVoucher(
 			ctx,
 			models.NewVoucherFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithCodes(*request.Code).
 				WithExcludedVoucherIDs(voucher.ID),
 		)
@@ -456,7 +446,6 @@ func (q *voucherController) SellerDelete(c fiber.Ctx) (err error) {
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithVoucherIDs(voucherID),
 	)
@@ -509,7 +498,6 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	response, _, err := q.voucherService.FindVouchers(
 		ctx,
 		models.NewVoucherFilter().
-			WithCompanyIDs(currentBuyer.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBuyerIDs(currentBuyer.ID),
 	)

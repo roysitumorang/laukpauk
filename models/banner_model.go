@@ -21,7 +21,6 @@ var MapBannerSortings = map[string]struct{}{
 type Banner struct {
 	RowNo          int64        `json:"-" form:"-"`
 	ID             uuid.UUID    `json:"id" form:"id"`
-	CompanyID      uuid.UUID    `json:"-" form:"-"`
 	RecordStatus   RecordStatus `json:"-" form:"-"`
 	Name           string       `json:"name" form:"name"`
 	Description    string       `json:"description" form:"description"`
@@ -61,8 +60,7 @@ func (q *Banner) PhotoPath(baseURLs ...string) string {
 }
 
 type BannerFilter struct {
-	BannerIDs,
-	CompanyIDs []uuid.UUID
+	BannerIDs      []uuid.UUID
 	RecordStatuses []RecordStatus
 	Keyword,
 	PaginationURL string
@@ -82,11 +80,6 @@ func NewBannerFilter() *BannerFilter {
 
 func (q *BannerFilter) WithBannerIDs(bannerIDs ...uuid.UUID) *BannerFilter {
 	q.BannerIDs = bannerIDs
-	return q
-}
-
-func (q *BannerFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *BannerFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

@@ -21,7 +21,6 @@ import (
 
 type pointSpendingCapController struct {
 	sellerService           services.SellerService
-	companyService          services.CompanyService
 	pointSpendingCapService services.PointSpendingCapService
 	buyerService            services.BuyerService
 	jsonWebTokenService     services.JsonWebTokenService
@@ -30,7 +29,6 @@ type pointSpendingCapController struct {
 
 func NewPointSpendingCapController(
 	sellerService services.SellerService,
-	companyService services.CompanyService,
 	pointSpendingCapService services.PointSpendingCapService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
@@ -38,7 +36,6 @@ func NewPointSpendingCapController(
 ) *pointSpendingCapController {
 	return &pointSpendingCapController{
 		sellerService:           sellerService,
-		companyService:          companyService,
 		pointSpendingCapService: pointSpendingCapService,
 		buyerService:            buyerService,
 		jsonWebTokenService:     jsonWebTokenService,
@@ -55,9 +52,8 @@ func (q *pointSpendingCapController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex)
 }
 
@@ -111,8 +107,7 @@ func (q *pointSpendingCapController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.pointSpendingCapService.FindPointSpendingCaps(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCaps")
 		return c.Render("/seller/point_spending_cap_index", params.Push(
@@ -185,7 +180,6 @@ func (q *pointSpendingCapController) SellerCreate(c fiber.Ctx) (err error) {
 	}
 	createdBy := currentSeller.ID
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -195,7 +189,6 @@ func (q *pointSpendingCapController) SellerCreate(c fiber.Ctx) (err error) {
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost),
 	)
 	if err != nil && !errors.Is(err, models.ErrPointSpendingCapNotFound) {
@@ -268,7 +261,6 @@ func (q *pointSpendingCapController) SellerEdit(c fiber.Ctx) (err error) {
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointSpendingCapIDs(pointSpendingCapID),
 	)
@@ -312,7 +304,6 @@ func (q *pointSpendingCapController) SellerUpdate(c fiber.Ctx) (err error) {
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointSpendingCapIDs(pointSpendingCapID),
 	)
@@ -348,7 +339,6 @@ func (q *pointSpendingCapController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherPointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 			ctx,
 			models.NewPointSpendingCapFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost).
 				WithExcludedPointSpendingCapIDs(pointSpendingCap.ID),
 		)
@@ -365,7 +355,6 @@ func (q *pointSpendingCapController) SellerUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = pointSpendingCap.ID
-	request.CompanyID = currentSeller.CompanyID
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	params.Push("request", request)
@@ -418,7 +407,6 @@ func (q *pointSpendingCapController) SellerDelete(c fiber.Ctx) (err error) {
 	request, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
 		models.NewPointSpendingCapFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointSpendingCapIDs(pointSpendingCapID),
 	)
@@ -462,11 +450,9 @@ func (q *pointSpendingCapController) SellerDelete(c fiber.Ctx) (err error) {
 func (q *pointSpendingCapController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointSpendingCapController-V1BuyerIndex"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	response, _, err := q.pointSpendingCapService.FindPointSpendingCaps(
 		ctx,
 		models.NewPointSpendingCapFilter().
-			WithCompanyIDs(currentBuyer.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive),
 	)
 	if err != nil {

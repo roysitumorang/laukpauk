@@ -59,7 +59,6 @@ type Service struct {
 	RecipeService             services.RecipeService
 	RecipeGuideService        services.RecipeGuideService
 	RecipeItemService         services.RecipeItemService
-	CompanyService            services.CompanyService
 	SellerService             services.SellerService
 	PointEarningService       services.PointEarningService
 }
@@ -167,7 +166,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeRepository := repositories.NewRecipeRepository(dbRead, dbWrite)
 	recipeGuideRepository := repositories.NewRecipeGuideRepository(dbRead, dbWrite)
 	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
-	companyRepository := repositories.NewCompanyRepository(dbRead, dbWrite)
 	sellerRepository := repositories.NewSellerRepository(dbRead, dbWrite)
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
@@ -195,7 +193,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		cartRepository,
 		deliveryPlanRepository,
 		deliveryRouteRepository,
-		companyRepository,
+		settingRepository,
 		voucherRepository,
 		pointSpendingCapRepository,
 		pointRepository,
@@ -221,7 +219,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeService := services.NewRecipeService(recipeRepository)
 	recipeGuideService := services.NewRecipeGuideService(recipeGuideRepository)
 	recipeItemService := services.NewRecipeItemService(recipeItemRepository)
-	companyService := services.NewCompanyService(companyRepository)
 	sellerService := services.NewSellerService(sellerRepository)
 	pointEarningService := services.NewPointEarningService(pointEarningRepository)
 	return &Service{
@@ -260,7 +257,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		RecipeService:             recipeService,
 		RecipeGuideService:        recipeGuideService,
 		RecipeItemService:         recipeItemService,
-		CompanyService:            companyService,
 		SellerService:             sellerService,
 		PointEarningService:       pointEarningService,
 	}, nil

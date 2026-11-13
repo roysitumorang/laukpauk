@@ -62,7 +62,6 @@ func (q SellerLevel) Int() uint8 {
 type Seller struct {
 	RowNo                         int64        `json:"-" form:"-"`
 	ID                            uuid.UUID    `json:"id" form:"-"`
-	CompanyID                     uuid.UUID    `json:"-" form:"-"`
 	Status                        SellerStatus `json:"-" form:"-"`
 	SellerLevel                   SellerLevel  `json:"-" form:"seller_level"`
 	Name                          string       `json:"name" form:"name"`
@@ -134,8 +133,7 @@ func (q *Seller) Owner() bool {
 
 type SellerFilter struct {
 	SellerIDs,
-	ExcludedSellerIDs,
-	CompanyIDs []uuid.UUID
+	ExcludedSellerIDs []uuid.UUID
 	TelegramChatIDs []int64
 	Statuses        []SellerStatus
 	Login,
@@ -166,11 +164,6 @@ func (q *SellerFilter) WithSellerIDs(sellerIDs ...uuid.UUID) *SellerFilter {
 
 func (q *SellerFilter) WithExcludedSellerIDs(excludedSellerIDs ...uuid.UUID) *SellerFilter {
 	q.ExcludedSellerIDs = excludedSellerIDs
-	return q
-}
-
-func (q *SellerFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *SellerFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

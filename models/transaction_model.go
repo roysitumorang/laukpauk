@@ -71,7 +71,6 @@ func (q TransactionStatus) Equal(v TransactionStatus) bool {
 type Transaction struct {
 	RowNo                           int64              `json:"-" form:"-"`
 	ID                              uuid.UUID          `json:"id" form:"id"`
-	CompanyID                       uuid.UUID          `json:"-" form:"-"`
 	ParentID                        *uuid.UUID         `json:"parent_id" form:"parent_id"`
 	Reordered                       bool               `json:"reordered" form:"reordered"`
 	BuyerID                         uuid.UUID          `json:"buyer_id" form:"buyer_id"`
@@ -347,7 +346,6 @@ func (q *TransactionItem) PhotoPath(baseURLs ...string) string {
 type TransactionFilter struct {
 	TransactionIDs,
 	ExcludedTransactionIDs,
-	CompanyIDs,
 	BuyerIDs,
 	CartIDs,
 	ReferrerIDs,
@@ -383,11 +381,6 @@ func (q *TransactionFilter) WithTransactionIDs(transactionIDs ...uuid.UUID) *Tra
 
 func (q *TransactionFilter) WithExcludedTransactionIDs(excludedTransactionIDs ...uuid.UUID) *TransactionFilter {
 	q.ExcludedTransactionIDs = excludedTransactionIDs
-	return q
-}
-
-func (q *TransactionFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *TransactionFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

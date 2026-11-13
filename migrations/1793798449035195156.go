@@ -16,7 +16,6 @@ func init() {
 			ctx,
 			`CREATE TABLE vouchers (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status smallint NOT NULL
 				, voucher_type smallint NOT NULL
 				, target_audience smallint NOT NULL
@@ -46,13 +45,6 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON vouchers (company_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
 			`CREATE INDEX ON vouchers (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -74,7 +66,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX vouchers_unique_code_idx ON vouchers (LOWER(code), company_id);`,
+			`CREATE UNIQUE INDEX vouchers_unique_code_idx ON vouchers (LOWER(code));`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

@@ -16,7 +16,6 @@ func init() {
 			ctx,
 			`CREATE TABLE delivery_routes (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, origin_longitude character varying NOT NULL
 				, origin_latitude character varying NOT NULL
 				, destination_longitude character varying NOT NULL
@@ -26,8 +25,7 @@ func init() {
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, UNIQUE (
-					company_id
-					, origin_longitude
+					origin_longitude
 					, origin_latitude
 					, destination_longitude
 					, destination_latitude

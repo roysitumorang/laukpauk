@@ -74,7 +74,6 @@ func (q *deliveryRouteRepository) FindDeliveryRoutes(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, origin_longitude
 		, origin_latitude
 		, destination_longitude
@@ -133,7 +132,6 @@ func (q *deliveryRouteRepository) FindDeliveryRoutes(
 		var deliveryRoute models.DeliveryRoute
 		if err = rows.Scan(
 			&deliveryRoute.ID,
-			&deliveryRoute.CompanyID,
 			&deliveryRoute.OriginLongitude,
 			&deliveryRoute.OriginLatitude,
 			&deliveryRoute.DestinationLongitude,
@@ -170,7 +168,6 @@ func (q *deliveryRouteRepository) FindDeliveryRoute(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, origin_longitude
 			, origin_latitude
 			, destination_longitude
@@ -185,7 +182,6 @@ func (q *deliveryRouteRepository) FindDeliveryRoute(
 	var response models.DeliveryRoute
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.OriginLongitude,
 		&response.OriginLatitude,
 		&response.DestinationLongitude,
@@ -215,8 +211,7 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO delivery_routes (
-			company_id
-			, origin_longitude
+			origin_longitude
 			, origin_latitude
 			, destination_longitude
 			, destination_latitude
@@ -224,20 +219,18 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 			, distance_km
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (
-			company_id
-			, origin_longitude
+			origin_longitude
 			, origin_latitude
 			, destination_longitude
 			, destination_latitude
 		)
 		DO UPDATE SET
-			distance_meters = $6
-			, distance_km = $7
-			, updated_at = $9
+			distance_meters = $5
+			, distance_km = $6
+			, updated_at = $8
 		RETURNING id
-			, company_id
 			, origin_longitude
 			, origin_latitude
 			, destination_longitude
@@ -246,7 +239,6 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 			, distance_km
 			, created_at
 			, updated_at`,
-		request.CompanyID,
 		request.OriginLongitude,
 		request.OriginLatitude,
 		request.DestinationLongitude,
@@ -257,7 +249,6 @@ func (q *deliveryRouteRepository) SaveDeliveryRoute(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.OriginLongitude,
 		&response.OriginLatitude,
 		&response.DestinationLongitude,
@@ -280,19 +271,6 @@ func (q *deliveryRouteRepository) buildCondition(request *models.DeliveryRouteFi
 		_, _ = sb.WriteString("id IN (")
 		for i, deliveryRouteID := range request.DeliveryRouteIDs {
 			params = append(params, deliveryRouteID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

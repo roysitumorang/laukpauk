@@ -78,7 +78,6 @@ func (q *bannerRepository) FindBanners(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, record_status
 		, name
 		, description
@@ -141,7 +140,6 @@ func (q *bannerRepository) FindBanners(
 		var banner models.Banner
 		if err = rows.Scan(
 			&banner.ID,
-			&banner.CompanyID,
 			&banner.RecordStatus,
 			&banner.Name,
 			&banner.Description,
@@ -181,7 +179,6 @@ func (q *bannerRepository) FindBanner(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, name
 			, description
@@ -201,7 +198,6 @@ func (q *bannerRepository) FindBanner(
 	var response models.Banner
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -235,8 +231,7 @@ func (q *bannerRepository) CreateBanner(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO banners (
-			company_id
-			, record_status
+			record_status
 			, name
 			, description
 			, photo
@@ -245,9 +240,8 @@ func (q *bannerRepository) CreateBanner(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
-			, company_id
 			, record_status
 			, name
 			, description
@@ -260,7 +254,6 @@ func (q *bannerRepository) CreateBanner(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.CompanyID,
 		request.RecordStatus,
 		request.Name,
 		request.Description,
@@ -272,7 +265,6 @@ func (q *bannerRepository) CreateBanner(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -303,7 +295,6 @@ func (q *bannerRepository) UpdateBanner(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, name
 			, description
@@ -322,7 +313,6 @@ func (q *bannerRepository) UpdateBanner(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -429,7 +419,6 @@ func (q *bannerRepository) UpdateBanner(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, record_status
 			, name
 			, description
@@ -446,7 +435,6 @@ func (q *bannerRepository) UpdateBanner(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Description,
@@ -473,19 +461,6 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 		_, _ = sb.WriteString("id IN (")
 		for i, bannerID := range request.BannerIDs {
 			params = append(params, bannerID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

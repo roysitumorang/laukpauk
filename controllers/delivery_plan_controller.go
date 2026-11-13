@@ -22,7 +22,6 @@ import (
 type (
 	deliveryPlanController struct {
 		sellerService       services.SellerService
-		companyService      services.CompanyService
 		deliveryPlanService services.DeliveryPlanService
 		buyerService        services.BuyerService
 		jsonWebTokenService services.JsonWebTokenService
@@ -32,7 +31,6 @@ type (
 
 func NewDeliveryPlanController(
 	sellerService services.SellerService,
-	companyService services.CompanyService,
 	deliveryPlanService services.DeliveryPlanService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
@@ -40,7 +38,6 @@ func NewDeliveryPlanController(
 ) *deliveryPlanController {
 	return &deliveryPlanController{
 		sellerService:       sellerService,
-		companyService:      companyService,
 		deliveryPlanService: deliveryPlanService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
@@ -57,9 +54,8 @@ func (q *deliveryPlanController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("/now", q.V1BuyerShow)
 }
 
@@ -123,8 +119,7 @@ func (q *deliveryPlanController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.deliveryPlanService.FindDeliveryPlans(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
 		return c.Render("seller/delivery_plan_index", params.Push(
@@ -200,7 +195,6 @@ func (q *deliveryPlanController) SellerCreate(c fiber.Ctx) (err error) {
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithDeliveryWeekdays(request.Weekday).
 			WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax),
 	)
@@ -217,7 +211,6 @@ func (q *deliveryPlanController) SellerCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	createdBy := currentSeller.ID
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -278,7 +271,6 @@ func (q *deliveryPlanController) SellerEdit(c fiber.Ctx) (err error) {
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithDeliveryPlanIDs(deliveryPlanID),
 	)
@@ -323,7 +315,6 @@ func (q *deliveryPlanController) SellerUpdate(c fiber.Ctx) (err error) {
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithDeliveryPlanIDs(deliveryPlanID),
 	)
@@ -361,7 +352,6 @@ func (q *deliveryPlanController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherDeliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 			ctx,
 			models.NewDeliveryPlanFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithDeliveryWeekdays(request.Weekday).
 				WithTransactionWindow(request.TransactionWindowMin, request.TransactionWindowMax).
 				WithExcludedDeliveryPlanIDs(deliveryPlan.ID),
@@ -379,7 +369,6 @@ func (q *deliveryPlanController) SellerUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = deliveryPlan.ID
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = deliveryPlan.RecordStatus
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
@@ -438,7 +427,6 @@ func (q *deliveryPlanController) SellerDelete(c fiber.Ctx) (err error) {
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithDeliveryPlanIDs(deliveryPlanID),
 	)
@@ -482,12 +470,10 @@ func (q *deliveryPlanController) SellerDelete(c fiber.Ctx) (err error) {
 func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryPlanController-V1BuyerShow"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	now := time.Now().In(time.Local)
 	response, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithCompanyIDs(currentBuyer.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now),
 	)

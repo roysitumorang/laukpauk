@@ -81,7 +81,6 @@ func (q *buyerRepository) FindBuyers(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, status
 		, name
 		, unconfirmed_mobile_phone
@@ -166,7 +165,6 @@ func (q *buyerRepository) FindBuyers(
 		var buyer models.Buyer
 		if err = rows.Scan(
 			&buyer.ID,
-			&buyer.CompanyID,
 			&buyer.Status,
 			&buyer.Name,
 			&buyer.UnconfirmedMobilePhone,
@@ -229,7 +227,6 @@ func (q *buyerRepository) FindBuyer(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, status
 			, name
 			, unconfirmed_mobile_phone
@@ -270,7 +267,6 @@ func (q *buyerRepository) FindBuyer(
 	var response models.Buyer
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
@@ -318,19 +314,6 @@ func (q *buyerRepository) FindBuyer(
 
 func (q *buyerRepository) buildCondition(request *models.BuyerFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
 	if len(request.BuyerIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
@@ -467,8 +450,7 @@ func (q *buyerRepository) CreateBuyer(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO buyers (
-			company_id
-			, status
+			status
 			, name
 			, unconfirmed_mobile_phone
 			, mobile_phone_confirmation_sent_at
@@ -503,10 +485,9 @@ func (q *buyerRepository) CreateBuyer(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32
+			, $31
 		)
 		RETURNING id
-			, company_id
 			, status
 			, name
 			, unconfirmed_mobile_phone
@@ -541,7 +522,6 @@ func (q *buyerRepository) CreateBuyer(
 			, deactivated_by
 			, deactivated_at
 			, deactivation_reason`,
-		request.CompanyID,
 		request.Status,
 		request.Name,
 		request.UnconfirmedMobilePhone,
@@ -575,7 +555,6 @@ func (q *buyerRepository) CreateBuyer(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
@@ -615,15 +594,15 @@ func (q *buyerRepository) CreateBuyer(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "buyers_username_company_id_key":
+			case "buyers_username_key":
 				err = models.ErrUniqueBuyerUsernameViolation
-			case "buyers_mobile_phone_company_id_key":
+			case "buyers_mobile_phone_key":
 				err = models.ErrUniqueBuyerMobilePhoneViolation
-			case "buyers_email_company_id_key":
+			case "buyers_email_key":
 				err = models.ErrUniqueBuyerEmailViolation
 			case "buyers_telegram_chat_id_key":
 				err = models.ErrUniqueTelegramChatIdViolation
-			case "buyers_telegram_username_company_id_key":
+			case "buyers_telegram_username_key":
 				err = models.ErrUniqueTelegramUsernameViolation
 			case "buyers_lower_idx":
 				err = models.ErrUniqueBuyerReferralCodeViolation
@@ -647,7 +626,6 @@ func (q *buyerRepository) UpdateBuyer(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, status
 			, name
 			, unconfirmed_mobile_phone
@@ -688,7 +666,6 @@ func (q *buyerRepository) UpdateBuyer(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
@@ -1037,7 +1014,6 @@ func (q *buyerRepository) UpdateBuyer(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, status
 			, name
 			, unconfirmed_mobile_phone
@@ -1076,7 +1052,6 @@ func (q *buyerRepository) UpdateBuyer(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.Name,
 		&response.UnconfirmedMobilePhone,
@@ -1115,15 +1090,15 @@ func (q *buyerRepository) UpdateBuyer(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "buyers_username_company_id_key":
+			case "buyers_username_key":
 				err = models.ErrUniqueBuyerUsernameViolation
-			case "buyers_mobile_phone_company_id_key":
+			case "buyers_mobile_phone_key":
 				err = models.ErrUniqueBuyerMobilePhoneViolation
-			case "buyers_email_company_id_key":
+			case "buyers_email_key":
 				err = models.ErrUniqueBuyerEmailViolation
 			case "buyers_telegram_chat_id_key":
 				err = models.ErrUniqueTelegramChatIdViolation
-			case "buyers_telegram_username_company_id_key":
+			case "buyers_telegram_username_key":
 				err = models.ErrUniqueTelegramUsernameViolation
 			case "buyers_lower_idx":
 				err = models.ErrUniqueBuyerReferralCodeViolation

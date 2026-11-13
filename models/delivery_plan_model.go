@@ -47,7 +47,6 @@ type (
 	DeliveryPlan struct {
 		RowNo                   int64              `json:"-" form:"-"`
 		ID                      uuid.UUID          `json:"id" form:"-"`
-		CompanyID               uuid.UUID          `json:"-" form:"-"`
 		RecordStatus            RecordStatus       `json:"-" form:"-"`
 		Name                    string             `json:"name" form:"name"`
 		Weekday                 DeliveryWeekday    `json:"weekday" form:"weekday"`
@@ -85,8 +84,7 @@ type (
 
 	DeliveryPlanFilter struct {
 		DeliveryPlanIDs,
-		ExcludedDeliveryPlanIDs,
-		CompanyIDs []uuid.UUID
+		ExcludedDeliveryPlanIDs []uuid.UUID
 		RecordStatuses      []RecordStatus
 		Name                string
 		DeliveryWeekdays    []DeliveryWeekday
@@ -121,11 +119,6 @@ func (q *DeliveryPlanFilter) WithDeliveryPlanIDs(deliveryPlanIDs ...uuid.UUID) *
 
 func (q *DeliveryPlanFilter) WithExcludedDeliveryPlanIDs(excludedDeliveryPlanIDs ...uuid.UUID) *DeliveryPlanFilter {
 	q.ExcludedDeliveryPlanIDs = excludedDeliveryPlanIDs
-	return q
-}
-
-func (q *DeliveryPlanFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *DeliveryPlanFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

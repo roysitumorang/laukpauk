@@ -107,7 +107,6 @@ var MapVoucherSortings = map[string]struct{}{
 type Voucher struct {
 	RowNo                 int64                 `json:"-" form:"-"`
 	ID                    uuid.UUID             `json:"id" form:"id"`
-	CompanyID             uuid.UUID             `json:"-" form:"-"`
 	RecordStatus          RecordStatus          `json:"-" form:"-"`
 	VoucherType           VoucherType           `json:"voucher_type" form:"voucher_type"`
 	VoucherTypeName       string                `json:"voucher_type_name" form:"-"`
@@ -282,7 +281,6 @@ func (q *Voucher) Status() string {
 type VoucherFilter struct {
 	VoucherIDs,
 	ExcludedVoucherIDs,
-	CompanyIDs,
 	BuyerIDs []uuid.UUID
 	RecordStatuses      []RecordStatus
 	VoucherTypes        []VoucherType
@@ -312,11 +310,6 @@ func (q *VoucherFilter) WithVoucherIDs(voucherIDs ...uuid.UUID) *VoucherFilter {
 
 func (q *VoucherFilter) WithExcludedVoucherIDs(excludedVoucherIDs ...uuid.UUID) *VoucherFilter {
 	q.ExcludedVoucherIDs = excludedVoucherIDs
-	return q
-}
-
-func (q *VoucherFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *VoucherFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

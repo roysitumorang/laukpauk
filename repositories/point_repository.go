@@ -79,7 +79,6 @@ func (q *pointRepository) FindPoints(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, record_status
 		, point_type
 		, buyer_id
@@ -143,7 +142,6 @@ func (q *pointRepository) FindPoints(
 		var point models.Point
 		if err = rows.Scan(
 			&point.ID,
-			&point.CompanyID,
 			&point.RecordStatus,
 			&point.PointType,
 			&point.BuyerID,
@@ -185,7 +183,6 @@ func (q *pointRepository) FindPoint(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, point_type
 			, buyer_id
@@ -206,7 +203,6 @@ func (q *pointRepository) FindPoint(
 	var response models.Point
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
@@ -241,8 +237,7 @@ func (q *pointRepository) CreatePoint(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO points (
-			company_id
-			, record_status
+			record_status
 			, point_type
 			, buyer_id
 			, amount
@@ -252,9 +247,8 @@ func (q *pointRepository) CreatePoint(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
-			, company_id
 			, record_status
 			, point_type
 			, buyer_id
@@ -268,7 +262,6 @@ func (q *pointRepository) CreatePoint(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.CompanyID,
 		request.RecordStatus,
 		request.PointType,
 		request.BuyerID,
@@ -281,7 +274,6 @@ func (q *pointRepository) CreatePoint(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
@@ -314,7 +306,6 @@ func (q *pointRepository) UpdatePoint(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, point_type
 			, buyer_id
@@ -334,7 +325,6 @@ func (q *pointRepository) UpdatePoint(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
@@ -441,7 +431,6 @@ func (q *pointRepository) UpdatePoint(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, record_status
 			, point_type
 			, buyer_id
@@ -459,7 +448,6 @@ func (q *pointRepository) UpdatePoint(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.PointType,
 		&response.BuyerID,
@@ -487,19 +475,6 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 		_, _ = sb.WriteString("id IN (")
 		for i, pointID := range request.PointIDs {
 			params = append(params, pointID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

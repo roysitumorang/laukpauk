@@ -81,7 +81,6 @@ func (q *sellerRepository) FindSellers(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, status
 		, seller_level
 		, name
@@ -161,7 +160,6 @@ func (q *sellerRepository) FindSellers(
 		var seller models.Seller
 		if err = rows.Scan(
 			&seller.ID,
-			&seller.CompanyID,
 			&seller.Status,
 			&seller.SellerLevel,
 			&seller.Name,
@@ -219,7 +217,6 @@ func (q *sellerRepository) FindSeller(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, status
 			, seller_level
 			, name
@@ -255,7 +252,6 @@ func (q *sellerRepository) FindSeller(
 	var response models.Seller
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.SellerLevel,
 		&response.Name,
@@ -316,19 +312,6 @@ func (q *sellerRepository) buildCondition(request *models.SellerFilter, sb *stri
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedSellerID := range request.ExcludedSellerIDs {
 			params = append(params, excludedSellerID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -434,8 +417,7 @@ func (q *sellerRepository) CreateSeller(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO sellers (
-			company_id
-			, status
+			status
 			, seller_level
 			, name
 			, unconfirmed_mobile_phone
@@ -464,10 +446,9 @@ func (q *sellerRepository) CreateSeller(
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27
+			, $21, $22, $23, $24, $25, $26
 		)
 		RETURNING id
-			, company_id
 			, status
 			, seller_level
 			, name
@@ -497,7 +478,6 @@ func (q *sellerRepository) CreateSeller(
 			, deactivated_by
 			, deactivated_at
 			, deactivation_reason`,
-		request.CompanyID,
 		request.Status,
 		request.SellerLevel,
 		request.Name,
@@ -526,7 +506,6 @@ func (q *sellerRepository) CreateSeller(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.SellerLevel,
 		&response.Name,
@@ -561,15 +540,15 @@ func (q *sellerRepository) CreateSeller(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "sellers_username_company_id_key":
+			case "sellers_username_key":
 				err = models.ErrUniqueSellerUsernameViolation
-			case "sellers_mobile_phone_company_id_key":
+			case "sellers_mobile_phone_key":
 				err = models.ErrUniqueSellerMobilePhoneViolation
-			case "sellers_email_company_id_key":
+			case "sellers_email_key":
 				err = models.ErrUniqueSellerEmailViolation
 			case "sellers_telegram_chat_id_key":
 				err = models.ErrUniqueTelegramChatIdViolation
-			case "sellers_telegram_username_company_id_key":
+			case "sellers_telegram_username_key":
 				err = models.ErrUniqueTelegramUsernameViolation
 			}
 		} else {
@@ -591,7 +570,6 @@ func (q *sellerRepository) UpdateSeller(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, status
 			, seller_level
 			, name
@@ -627,7 +605,6 @@ func (q *sellerRepository) UpdateSeller(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.SellerLevel,
 		&response.Name,
@@ -928,7 +905,6 @@ func (q *sellerRepository) UpdateSeller(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, status
 			, seller_level
 			, name
@@ -962,7 +938,6 @@ func (q *sellerRepository) UpdateSeller(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.Status,
 		&response.SellerLevel,
 		&response.Name,
@@ -996,15 +971,15 @@ func (q *sellerRepository) UpdateSeller(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "sellers_username_company_id_key":
+			case "sellers_username_key":
 				err = models.ErrUniqueSellerUsernameViolation
-			case "sellers_mobile_phone_company_id_key":
+			case "sellers_mobile_phone_key":
 				err = models.ErrUniqueSellerMobilePhoneViolation
-			case "sellers_email_company_id_key":
+			case "sellers_email_key":
 				err = models.ErrUniqueSellerEmailViolation
 			case "sellers_telegram_chat_id_key":
 				err = models.ErrUniqueTelegramChatIdViolation
-			case "sellers_telegram_username_company_id_key":
+			case "sellers_telegram_username_key":
 				err = models.ErrUniqueTelegramUsernameViolation
 			}
 		} else {

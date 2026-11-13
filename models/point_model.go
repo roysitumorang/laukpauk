@@ -50,7 +50,6 @@ var MapRewardPointSortings = map[string]struct{}{
 type Point struct {
 	RowNo                      int64        `json:"-" form:"-"`
 	ID                         uuid.UUID    `json:"-" form:"id"`
-	CompanyID                  uuid.UUID    `json:"-" form:"-"`
 	RecordStatus               RecordStatus `json:"-" form:"-"`
 	PointType                  PointType    `json:"-" form:"point_type"`
 	BuyerID                    uuid.UUID    `json:"-" form:"buyer_id"`
@@ -97,7 +96,6 @@ func (q *Point) Spendable() bool {
 
 type PointFilter struct {
 	PointIDs,
-	CompanyIDs,
 	BuyerIDs,
 	TransactionIDs []uuid.UUID
 	RecordStatuses []RecordStatus
@@ -120,11 +118,6 @@ func NewPointFilter() *PointFilter {
 
 func (q *PointFilter) WithPointIDs(pointIDs ...uuid.UUID) *PointFilter {
 	q.PointIDs = pointIDs
-	return q
-}
-
-func (q *PointFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *PointFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

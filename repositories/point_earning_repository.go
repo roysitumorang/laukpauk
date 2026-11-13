@@ -81,7 +81,6 @@ func (q *pointEarningRepository) FindPointEarnings(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, buyer_id
 		, start_date
 		, end_date
@@ -138,7 +137,6 @@ func (q *pointEarningRepository) FindPointEarnings(
 		var pointEarning models.PointEarning
 		if err = rows.Scan(
 			&pointEarning.ID,
-			&pointEarning.CompanyID,
 			&pointEarning.BuyerID,
 			&pointEarning.StartDate,
 			&pointEarning.EndDate,
@@ -173,7 +171,6 @@ func (q *pointEarningRepository) FindPointEarning(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, buyer_id
 			, start_date
 			, end_date
@@ -187,7 +184,6 @@ func (q *pointEarningRepository) FindPointEarning(
 	var response models.PointEarning
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.BuyerID,
 		&response.StartDate,
 		&response.EndDate,
@@ -215,23 +211,20 @@ func (q *pointEarningRepository) CreatePointEarning(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO point_earnings (
-			company_id
-			, buyer_id
+			buyer_id
 			, start_date
 			, end_date
 			, amount
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
-			, company_id
 			, buyer_id
 			, start_date
 			, end_date
 			, amount
 			, created_at
 			, updated_at`,
-		request.CompanyID,
 		request.BuyerID,
 		request.StartDate,
 		request.EndDate,
@@ -240,7 +233,6 @@ func (q *pointEarningRepository) CreatePointEarning(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.BuyerID,
 		&response.StartDate,
 		&response.EndDate,
@@ -272,7 +264,6 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, buyer_id
 			, start_date
 			, end_date
@@ -285,7 +276,6 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.BuyerID,
 		&response.StartDate,
 		&response.EndDate,
@@ -330,7 +320,6 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, buyer_id
 			, start_date
 			, end_date
@@ -341,7 +330,6 @@ func (q *pointEarningRepository) UpdatePointEarning(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.BuyerID,
 		&response.StartDate,
 		&response.EndDate,
@@ -368,19 +356,6 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 		_, _ = sb.WriteString("id IN (")
 		for i, pointEarningID := range request.PointEarningIDs {
 			params = append(params, pointEarningID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

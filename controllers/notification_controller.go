@@ -372,7 +372,6 @@ func (q *notificationController) SellerNew(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
 				Direction: models.SortingDirectionAsc,
@@ -414,7 +413,6 @@ func (q *notificationController) SellerCreate(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
 				Direction: models.SortingDirectionAsc,

@@ -19,7 +19,6 @@ var MapPointEarningSortings = map[string]struct{}{
 type PointEarning struct {
 	RowNo     int64     `json:"-" form:"-"`
 	ID        uuid.UUID `json:"-" form:"-"`
-	CompanyID uuid.UUID `json:"-" form:"-"`
 	BuyerID   uuid.UUID `json:"-" form:"-"`
 	StartDate time.Time `json:"-" form:"-"`
 	EndDate   time.Time `json:"-" form:"-"`
@@ -38,7 +37,6 @@ func (q *PointEarning) New() bool {
 
 type PointEarningFilter struct {
 	PointEarningIDs,
-	CompanyIDs,
 	BuyerIDs []uuid.UUID
 	StartDate,
 	EndDate time.Time
@@ -60,11 +58,6 @@ func NewPointEarningFilter() *PointEarningFilter {
 
 func (q *PointEarningFilter) WithPointEarningIDs(pointEarningIDs ...uuid.UUID) *PointEarningFilter {
 	q.PointEarningIDs = pointEarningIDs
-	return q
-}
-
-func (q *PointEarningFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *PointEarningFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

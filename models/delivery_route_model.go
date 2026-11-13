@@ -16,7 +16,6 @@ var ErrDeliveryRouteNotFound = errors.New("delivery route not found")
 type DeliveryRoute struct {
 	RowNo                int64           `json:"-" form:"-"`
 	ID                   uuid.UUID       `json:"id" form:"-"`
-	CompanyID            uuid.UUID       `json:"-" form:"-"`
 	OriginLongitude      decimal.Decimal `json:"origin_longitude" form:"-"`
 	OriginLatitude       decimal.Decimal `json:"origin_latitude" form:"-"`
 	DestinationLongitude decimal.Decimal `json:"destination_longitude" form:"-"`
@@ -42,8 +41,7 @@ func (q *DeliveryRoute) Populate() *DeliveryRoute {
 }
 
 type DeliveryRouteFilter struct {
-	DeliveryRouteIDs,
-	CompanyIDs []uuid.UUID
+	DeliveryRouteIDs []uuid.UUID
 	OriginLongitudes,
 	OriginLatitudes,
 	DestinationLongitudes,
@@ -66,11 +64,6 @@ func NewDeliveryRouteFilter() *DeliveryRouteFilter {
 
 func (q *DeliveryRouteFilter) WithDeliveryRouteIDs(deliveryRouteIDs ...uuid.UUID) *DeliveryRouteFilter {
 	q.DeliveryRouteIDs = deliveryRouteIDs
-	return q
-}
-
-func (q *DeliveryRouteFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *DeliveryRouteFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

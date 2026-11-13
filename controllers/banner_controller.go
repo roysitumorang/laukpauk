@@ -110,8 +110,7 @@ func (q *bannerController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.bannerService.FindBanners(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanners")
 		return c.Render("seller/banner_index", params.Push(
@@ -183,7 +182,6 @@ func (q *bannerController) SellerCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	createdBy := currentSeller.ID
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -257,7 +255,6 @@ func (q *bannerController) SellerEdit(c fiber.Ctx) (err error) {
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)
@@ -301,7 +298,6 @@ func (q *bannerController) SellerUpdate(c fiber.Ctx) (err error) {
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)
@@ -336,7 +332,6 @@ func (q *bannerController) SellerUpdate(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	request.ID = banner.ID
-	request.CompanyID = banner.CompanyID
 	request.RecordStatus = banner.RecordStatus
 	request.Visible = banner.Visible
 	request.UpdatedBy = currentSeller.ID
@@ -401,7 +396,6 @@ func (q *bannerController) SellerSwitchVisibility(c fiber.Ctx) (err error) {
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)
@@ -458,7 +452,6 @@ func (q *bannerController) SellerDelete(c fiber.Ctx) (err error) {
 	banner, err := q.bannerService.FindBanner(
 		ctx,
 		models.NewBannerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithBannerIDs(bannerID),
 	)

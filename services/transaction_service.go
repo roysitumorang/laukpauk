@@ -29,7 +29,6 @@ type TransactionService interface {
 	) (*models.Transaction, error)
 	CreateTransaction(
 		ctx context.Context,
-		company *models.Company,
 		buyer *models.Buyer,
 		request *models.Transaction,
 	) (*models.Transaction, []uuid.UUID, error)
@@ -61,7 +60,7 @@ type transactionService struct {
 	cartRepository               repositories.CartRepository
 	deliveryPlanRepository       repositories.DeliveryPlanRepository
 	deliveryRouteRepository      repositories.DeliveryRouteRepository
-	companyRepository            repositories.CompanyRepository
+	settingRepository            repositories.SettingRepository
 	voucherRepository            repositories.VoucherRepository
 	pointSpendingCapRepository   repositories.PointSpendingCapRepository
 	pointRepository              repositories.PointRepository
@@ -79,7 +78,7 @@ func NewTransactionService(
 	cartRepository repositories.CartRepository,
 	deliveryPlanRepository repositories.DeliveryPlanRepository,
 	deliveryRouteRepository repositories.DeliveryRouteRepository,
-	companyRepository repositories.CompanyRepository,
+	settingRepository repositories.SettingRepository,
 	voucherRepository repositories.VoucherRepository,
 	pointSpendingCapRepository repositories.PointSpendingCapRepository,
 	pointRepository repositories.PointRepository,
@@ -96,7 +95,7 @@ func NewTransactionService(
 		cartRepository:               cartRepository,
 		deliveryPlanRepository:       deliveryPlanRepository,
 		deliveryRouteRepository:      deliveryRouteRepository,
-		companyRepository:            companyRepository,
+		settingRepository:            settingRepository,
 		voucherRepository:            voucherRepository,
 		pointSpendingCapRepository:   pointSpendingCapRepository,
 		pointRepository:              pointRepository,
@@ -152,11 +151,15 @@ func (q *transactionService) FindTransaction(
 
 func (q *transactionService) CreateTransaction(
 	ctx context.Context,
-	company *models.Company,
 	buyer *models.Buyer,
 	request *models.Transaction,
 ) (*models.Transaction, []uuid.UUID, error) {
 	ctxt := "TransactionService-CreateTransaction"
+	setting, err := q.settingRepository.FindSetting(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return nil, nil, err
+	}
 	cart, err := q.cartRepository.FindCart(
 		ctx,
 		models.NewCartFilter().
@@ -176,7 +179,6 @@ func (q *transactionService) CreateTransaction(
 	deliveryRoute, err := q.deliveryRouteRepository.FindDeliveryRoute(
 		ctx,
 		models.NewDeliveryRouteFilter().
-			WithCompanyIDs(company.ID).
 			WithDeliveryRouteIDs(request.DeliveryRouteID),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
@@ -193,7 +195,6 @@ func (q *transactionService) CreateTransaction(
 	deliveryPlan, err := q.deliveryPlanRepository.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithCompanyIDs(company.ID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now),
 	)
@@ -207,7 +208,7 @@ func (q *transactionService) CreateTransaction(
 	if _, ok := deliveryPlan.MapDeliveryTimes[request.DeliveryDatetime.UnixNano()]; !ok {
 		return nil, nil, errors.New("delivery_time: not found")
 	}
-	request.DeliveryEstimatedCost = request.DeliveryDistanceKM * company.DeliveryCostPerKM
+	request.DeliveryEstimatedCost = request.DeliveryDistanceKM * setting.DeliveryCostPerKM
 	if n := len(request.Items); n > 0 {
 		mapCartItemIDs := map[uuid.UUID]struct{}{}
 		productVariantIDs := make([]uuid.UUID, len(request.Items))
@@ -258,15 +259,14 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	request.CalculateShoppingCost()
-	if company.ReferralPointsEnabled {
+	if setting.ReferralPointsEnabled {
 		if request.ReferralCode != nil {
-			if request.ShoppingCost < company.ReferralPointsMinimumShoppingCost {
-				return nil, nil, fmt.Errorf("referral_code: requires shopping cost minimum %s", humanize.Comma(company.ReferralPointsMinimumShoppingCost))
+			if request.ShoppingCost < setting.ReferralPointsMinimumShoppingCost {
+				return nil, nil, fmt.Errorf("referral_code: requires shopping cost minimum %s", humanize.Comma(setting.ReferralPointsMinimumShoppingCost))
 			}
 			referrer, err := q.buyerRepository.FindBuyer(
 				ctx,
 				models.NewBuyerFilter().
-					WithCompanyIDs(company.ID).
 					WithReferralCodes(*request.ReferralCode),
 			)
 			if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -279,7 +279,6 @@ func (q *transactionService) CreateTransaction(
 			_, total, _, err := q.transactionRepository.FindTransactions(
 				ctx,
 				models.NewTransactionFilter().
-					WithCompanyIDs(company.ID).
 					WithBuyerIDs(buyer.ID).
 					WithExcludedTransactionStatuses(
 						models.TransactionStatusCancelled,
@@ -295,11 +294,11 @@ func (q *transactionService) CreateTransaction(
 			}
 			if (buyer.ReferrerID != nil &&
 				buyer.ReferrerID.Compare(referrer.ID) != 0) ||
-				int(total) >= len(company.ReferralPointsSlots) {
+				int(total) >= len(setting.ReferralPointsSlots) {
 				return nil, nil, errors.New("referral_code: is invalid")
 			}
 			request.ReferrerID = &referrer.ID
-			request.ReferralPoints = company.ReferralPointsSlots[total]
+			request.ReferralPoints = setting.ReferralPointsSlots[total]
 		} else {
 			request.ReferrerID = nil
 			request.ReferralPoints = 0
@@ -310,7 +309,6 @@ func (q *transactionService) CreateTransaction(
 		pointSpendingCap, err := q.pointSpendingCapRepository.FindPointSpendingCap(
 			ctx,
 			models.NewPointSpendingCapFilter().
-				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithShoppingCost(request.ShoppingCost, request.ShoppingCost),
 		)
@@ -321,12 +319,11 @@ func (q *transactionService) CreateTransaction(
 		if pointSpendingCap != nil {
 			request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
 		}
-	} else if company.VoucherEnabled {
+	} else if setting.VoucherEnabled {
 		if request.VoucherCode != nil {
 			voucher, err := q.voucherRepository.FindVoucher(
 				ctx,
 				models.NewVoucherFilter().
-					WithCompanyIDs(company.ID).
 					WithRecordStatuses(models.RecordStatusActive).
 					WithCodes(*request.VoucherCode).
 					WithTransactionDatetime(now).
@@ -343,7 +340,6 @@ func (q *transactionService) CreateTransaction(
 				_, total, _, err := q.transactionRepository.FindTransactions(
 					ctx,
 					models.NewTransactionFilter().
-						WithCompanyIDs(company.ID).
 						WithBuyerIDs(buyer.ID).
 						WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
 						WithVoucherIDs(voucher.ID).
@@ -370,7 +366,6 @@ func (q *transactionService) CreateTransaction(
 	sellers, _, _, err := q.sellerRepository.FindSellers(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(company.ID).
 			WithStatuses(models.SellerStatusActive),
 	)
 	if err != nil {
@@ -387,7 +382,6 @@ func (q *transactionService) CreateTransaction(
 	counter, err := q.transactionCounterRepository.SaveTransactionCounter(
 		ctx,
 		&models.TransactionCounter{
-			CompanyID:         company.ID,
 			TransactionWindow: sb.String(),
 			CreatedAt:         now,
 			UpdatedAt:         now,
@@ -465,7 +459,7 @@ func (q *transactionService) CreateTransaction(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePaymentRequest")
 			return nil, nil, err
 		}
-		duration := company.PaymentTerms
+		duration := setting.PaymentTerms
 		if virtualAccountExpiredAt != nil {
 			duration = models.Duration{Duration: virtualAccountExpiredAt.Sub(response.CreatedAt) - time.Second}
 		}
@@ -594,17 +588,13 @@ func (q *transactionService) RequestWithdrawal(
 	request *models.Transaction,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionService-RequestWithdrawal"
-	setting, err := q.companyRepository.FindCompany(
-		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(request.CompanyID),
-	)
-	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
+	setting, err := q.settingRepository.FindSetting(ctx)
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
 		return nil, err
 	}
 	if setting == nil {
-		return nil, models.ErrCompanyNotFound
+		return nil, models.ErrSettingNotFound
 	}
 	now := time.Now().In(time.Local)
 	if setting.TransactionAutoWithdrawalEnabled &&
@@ -764,14 +754,9 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		return nil
 	}
 	now := time.Now().In(time.Local)
-	var companyIDs, buyerIDs []uuid.UUID
-	mapCompanyIDs := map[uuid.UUID]struct{}{}
+	var buyerIDs []uuid.UUID
 	mapBuyerIDs := map[uuid.UUID]struct{}{}
 	for _, transaction := range transactions {
-		if _, ok := mapCompanyIDs[transaction.CompanyID]; !ok {
-			companyIDs = append(buyerIDs, transaction.CompanyID)
-			mapCompanyIDs[transaction.CompanyID] = struct{}{}
-		}
 		if _, ok := mapBuyerIDs[transaction.BuyerID]; !ok {
 			buyerIDs = append(buyerIDs, transaction.BuyerID)
 			mapBuyerIDs[transaction.BuyerID] = struct{}{}
@@ -783,18 +768,13 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 			}
 		}
 	}
-	companies, _, _, err := q.companyRepository.FindCompanies(
-		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(companyIDs...),
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompanies")
+	setting, err := q.settingRepository.FindSetting(ctx)
+	if err != nil && !errors.Is(err, models.ErrSettingNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
 		return err
 	}
-	mapCompanies := make(map[uuid.UUID]*models.Company, len(companies))
-	for _, company := range companies {
-		mapCompanies[company.ID] = company
+	if setting == nil {
+		return nil
 	}
 	buyers, _, _, err := q.buyerRepository.FindBuyers(
 		ctx,
@@ -823,8 +803,7 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		}
 	}(ctx)
 	for _, transaction := range transactions {
-		company, ok := mapCompanies[transaction.CompanyID]
-		if !ok || !transaction.ShippedAt.Before(now.Add(-company.MaximumDeliveryTime.Duration)) {
+		if !transaction.ShippedAt.Before(now.Add(-setting.MaximumDeliveryTime.Duration)) {
 			continue
 		}
 		transaction.Status = models.TransactionStatusCompleted

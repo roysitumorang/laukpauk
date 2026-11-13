@@ -22,7 +22,6 @@ type (
 		adminService              services.AdminService
 		sellerService             services.SellerService
 		buyerService              services.BuyerService
-		companyService            services.CompanyService
 		notificationTargetService services.NotificationTargetService
 		jsonWebTokenService       services.JsonWebTokenService
 		notificationService       services.NotificationService
@@ -33,7 +32,6 @@ func NewNotificationTargetController(
 	adminService services.AdminService,
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
-	companyService services.CompanyService,
 	notificationTargetService services.NotificationTargetService,
 	jsonWebTokenService services.JsonWebTokenService,
 	notificationService services.NotificationService,
@@ -42,7 +40,6 @@ func NewNotificationTargetController(
 		adminService:              adminService,
 		sellerService:             sellerService,
 		buyerService:              buyerService,
-		companyService:            companyService,
 		notificationTargetService: notificationTargetService,
 		jsonWebTokenService:       jsonWebTokenService,
 		notificationService:       notificationService,
@@ -53,12 +50,11 @@ func (q *notificationTargetController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	r.Group("/admin", adminSessionAuth).
 		Post("", q.AdminCreate)
 	r.Group("/seller", sellerSessionAuth).
 		Post("", q.SellerCreate)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Post("", q.V1BuyerSave)
 }
 
