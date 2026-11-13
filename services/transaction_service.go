@@ -29,7 +29,7 @@ type TransactionService interface {
 	) (*models.Transaction, error)
 	CreateTransaction(
 		ctx context.Context,
-		buyer *models.Buyer,
+		buyer *models.User,
 		request *models.Transaction,
 	) (*models.Transaction, []uuid.UUID, error)
 	UpdateTransaction(
@@ -55,7 +55,6 @@ type TransactionService interface {
 
 type transactionService struct {
 	transactionRepository        repositories.TransactionRepository
-	buyerRepository              repositories.BuyerRepository
 	transactionCounterRepository repositories.TransactionCounterRepository
 	cartRepository               repositories.CartRepository
 	deliveryPlanRepository       repositories.DeliveryPlanRepository
@@ -73,7 +72,6 @@ type transactionService struct {
 
 func NewTransactionService(
 	transactionRepository repositories.TransactionRepository,
-	buyerRepository repositories.BuyerRepository,
 	transactionCounterRepository repositories.TransactionCounterRepository,
 	cartRepository repositories.CartRepository,
 	deliveryPlanRepository repositories.DeliveryPlanRepository,
@@ -90,7 +88,6 @@ func NewTransactionService(
 ) TransactionService {
 	return &transactionService{
 		transactionRepository:        transactionRepository,
-		buyerRepository:              buyerRepository,
 		transactionCounterRepository: transactionCounterRepository,
 		cartRepository:               cartRepository,
 		deliveryPlanRepository:       deliveryPlanRepository,
@@ -151,7 +148,7 @@ func (q *transactionService) FindTransaction(
 
 func (q *transactionService) CreateTransaction(
 	ctx context.Context,
-	buyer *models.Buyer,
+	buyer *models.User,
 	request *models.Transaction,
 ) (*models.Transaction, []uuid.UUID, error) {
 	ctxt := "TransactionService-CreateTransaction"
@@ -163,7 +160,7 @@ func (q *transactionService) CreateTransaction(
 	cart, err := q.cartRepository.FindCart(
 		ctx,
 		models.NewCartFilter().
-			WithBuyerIDs(buyer.ID),
+			WithUserIDs(buyer.ID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
@@ -264,13 +261,14 @@ func (q *transactionService) CreateTransaction(
 			if request.ShoppingCost < setting.ReferralPointsMinimumShoppingCost {
 				return nil, nil, fmt.Errorf("referral_code: requires shopping cost minimum %s", humanize.Comma(setting.ReferralPointsMinimumShoppingCost))
 			}
-			referrer, err := q.buyerRepository.FindBuyer(
+			referrer, err := q.userRepository.FindUser(
 				ctx,
-				models.NewBuyerFilter().
+				models.NewUserFilter().
+					WithRoles(models.RoleBuyer).
 					WithReferralCodes(*request.ReferralCode),
 			)
-			if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+			if err != nil && !errors.Is(err, models.ErrUserNotFound) {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 				return nil, nil, err
 			}
 			if referrer == nil {
@@ -279,7 +277,7 @@ func (q *transactionService) CreateTransaction(
 			_, total, _, err := q.transactionRepository.FindTransactions(
 				ctx,
 				models.NewTransactionFilter().
-					WithBuyerIDs(buyer.ID).
+					WithUserIDs(buyer.ID).
 					WithExcludedTransactionStatuses(
 						models.TransactionStatusCancelled,
 						models.TransactionStatusWithdrawalPending,
@@ -327,7 +325,7 @@ func (q *transactionService) CreateTransaction(
 					WithRecordStatuses(models.RecordStatusActive).
 					WithCodes(*request.VoucherCode).
 					WithTransactionDatetime(now).
-					WithBuyerIDs(buyer.ID),
+					WithUserIDs(buyer.ID),
 			)
 			if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
@@ -340,7 +338,7 @@ func (q *transactionService) CreateTransaction(
 				_, total, _, err := q.transactionRepository.FindTransactions(
 					ctx,
 					models.NewTransactionFilter().
-						WithBuyerIDs(buyer.ID).
+						WithUserIDs(buyer.ID).
 						WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
 						WithVoucherIDs(voucher.ID).
 						WithReturnCountOnly(true),
@@ -446,7 +444,7 @@ func (q *transactionService) CreateTransaction(
 		}
 		paymentRequestID, paymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, err := q.xenditClient.CreatePaymentRequest(
 			ctx,
-			response.BuyerID.String(),
+			response.UserID.String(),
 			response.ID.String(),
 			helper.Sprintf("Transaksi %s", response.ReferenceNumber),
 			paymentChannel.Country,
@@ -476,8 +474,8 @@ func (q *transactionService) CreateTransaction(
 			return nil, nil, err
 		}
 	}
-	cart.BuyerID = nil
-	cart.DeletedBuyerID = &buyer.ID
+	cart.UserID = nil
+	cart.DeletedUserID = &buyer.ID
 	cart.UpdatedAt = now
 	cart.Items = nil
 	if _, err = q.cartRepository.SaveCart(ctx, tx, cart); err != nil {
@@ -670,20 +668,20 @@ func (q *transactionService) CompleteTransaction(
 	request *models.Transaction,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionService-CompleteTransaction"
-	buyerIDs := []uuid.UUID{request.BuyerID}
+	userIDs := []uuid.UUID{request.UserID}
 	if request.ReferrerID != nil {
-		buyerIDs = append(buyerIDs, *request.ReferrerID)
+		userIDs = append(userIDs, *request.ReferrerID)
 	}
-	buyers, _, _, err := q.buyerRepository.FindBuyers(
+	buyers, _, _, err := q.userRepository.FindUsers(
 		ctx,
-		models.NewBuyerFilter().
-			WithBuyerIDs(buyerIDs...),
+		models.NewUserFilter().
+			WithUserIDs(userIDs...),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 		return nil, err
 	}
-	mapBuyers := make(map[uuid.UUID]*models.Buyer, len(buyers))
+	mapBuyers := make(map[uuid.UUID]*models.User, len(buyers))
 	for _, buyer := range buyers {
 		mapBuyers[buyer.ID] = buyer
 	}
@@ -707,23 +705,21 @@ func (q *transactionService) CompleteTransaction(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return nil, err
 	}
-	if buyer, ok := mapBuyers[response.BuyerID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
+	if buyer, ok := mapBuyers[response.UserID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
 		buyer.ReferrerID = response.ReferrerID
-		buyer.ReferralPoints = 0
-		buyer.RewardPoints = 0
-		buyer.Wallet = max(0, response.RefundAmount)
-		if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+		if _, err = q.userRepository.UpdateUser(ctx, tx, buyer); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
+			return nil, err
+		}
+		if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, 0, max(0, response.RefundAmount)); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 			return nil, err
 		}
 	}
 	if response.ReferrerID != nil {
 		if buyer, ok := mapBuyers[*response.ReferrerID]; ok {
-			buyer.ReferralPoints = -response.ReferralPoints
-			buyer.RewardPoints = response.RewardPointsDiscount
-			buyer.Wallet = 0
-			if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+			if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, -response.ReferralPoints, response.RewardPointsDiscount, 0); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 				return nil, err
 			}
 		}
@@ -750,16 +746,16 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		return nil
 	}
 	now := time.Now().In(time.Local)
-	var buyerIDs []uuid.UUID
+	var userIDs []uuid.UUID
 	mapBuyerIDs := map[uuid.UUID]struct{}{}
 	for _, transaction := range transactions {
-		if _, ok := mapBuyerIDs[transaction.BuyerID]; !ok {
-			buyerIDs = append(buyerIDs, transaction.BuyerID)
-			mapBuyerIDs[transaction.BuyerID] = struct{}{}
+		if _, ok := mapBuyerIDs[transaction.UserID]; !ok {
+			userIDs = append(userIDs, transaction.UserID)
+			mapBuyerIDs[transaction.UserID] = struct{}{}
 		}
 		if transaction.ReferrerID != nil {
 			if _, ok := mapBuyerIDs[*transaction.ReferrerID]; !ok {
-				buyerIDs = append(buyerIDs, *transaction.ReferrerID)
+				userIDs = append(userIDs, *transaction.ReferrerID)
 				mapBuyerIDs[*transaction.ReferrerID] = struct{}{}
 			}
 		}
@@ -772,16 +768,16 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 	if setting == nil {
 		return nil
 	}
-	buyers, _, _, err := q.buyerRepository.FindBuyers(
+	buyers, _, _, err := q.userRepository.FindUsers(
 		ctx,
-		models.NewBuyerFilter().
-			WithBuyerIDs(buyerIDs...),
+		models.NewUserFilter().
+			WithUserIDs(userIDs...),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 		return err
 	}
-	mapBuyers := make(map[uuid.UUID]*models.Buyer, len(buyers))
+	mapBuyers := make(map[uuid.UUID]*models.User, len(buyers))
 	for _, buyer := range buyers {
 		mapBuyers[buyer.ID] = buyer
 	}
@@ -809,23 +805,21 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 			return err
 		}
-		if buyer, ok := mapBuyers[response.BuyerID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
+		if buyer, ok := mapBuyers[response.UserID]; ok && buyer.ReferrerID == nil && response.ReferrerID != nil {
 			buyer.ReferrerID = response.ReferrerID
-			buyer.ReferralPoints = 0
-			buyer.RewardPoints = 0
-			buyer.Wallet = max(0, response.RefundAmount)
-			if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+			if _, err = q.userRepository.UpdateUser(ctx, tx, buyer); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
+				return err
+			}
+			if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, 0, max(0, response.RefundAmount)); err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 				return err
 			}
 		}
 		if response.ReferrerID != nil {
 			if buyer, ok := mapBuyers[*response.ReferrerID]; ok {
-				buyer.ReferralPoints = -response.ReferralPoints
-				buyer.RewardPoints = response.RewardPointsDiscount
-				buyer.Wallet = 0
-				if _, err = q.buyerRepository.UpdateBuyer(ctx, tx, buyer); err != nil {
-					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+				if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, -response.ReferralPoints, response.RewardPointsDiscount, 0); err != nil {
+					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 					return err
 				}
 			}

@@ -17,9 +17,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindBuyers(ctx context.Context, c fiber.Ctx) (*models.BuyerFilter, error) {
-	ctxt := "BuyerSanitizer-FindBuyers"
-	response := models.NewBuyerFilter()
+func FindUserAccounts(ctx context.Context, c fiber.Ctx) (*models.UserFilter, error) {
+	ctxt := "UserAccountSanitizer-FindUserAccounts"
+	response := models.NewUserFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -36,7 +36,7 @@ func FindBuyers(ctx context.Context, c fiber.Ctx) (*models.BuyerFilter, error) {
 		var sortings []models.Sorting
 		for _, sorting := range sortBy {
 			if !strings.Contains(sorting, ":") {
-				if _, ok := models.MapBuyerSortings[sorting]; ok {
+				if _, ok := models.MapUserAccountSortings[sorting]; ok {
 					sortings = append(sortings, models.Sorting{
 						Field:     sorting,
 						Direction: models.SortingDirectionAsc,
@@ -44,7 +44,7 @@ func FindBuyers(ctx context.Context, c fiber.Ctx) (*models.BuyerFilter, error) {
 				}
 			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
 				field, order := items[0], items[1]
-				if _, ok := models.MapBuyerSortings[field]; ok &&
+				if _, ok := models.MapUserAccountSortings[field]; ok &&
 					(models.SortingDirectionAsc.Equal(order) ||
 						models.SortingDirectionDesc.Equal(order)) {
 					sortings = append(sortings, models.Sorting{
@@ -71,16 +71,30 @@ func FindBuyers(ctx context.Context, c fiber.Ctx) (*models.BuyerFilter, error) {
 	return response, nil
 }
 
-func ValidateBuyer(ctx context.Context, c fiber.Ctx) (*models.Buyer, *multipart.FileHeader, *string, int, error) {
-	ctxt := "BuyerSanitizer-ValidateBuyer"
-	var response models.Buyer
+// ValidateUserAccount binds and validates an account request. An empty
+// password is rejected when passwordRequired is true and otherwise keeps the
+// current one; an address is required when addressRequired is true.
+func ValidateUserAccount(
+	ctx context.Context,
+	c fiber.Ctx,
+	passwordRequired,
+	addressRequired bool,
+) (
+	*models.UserAccount,
+	*multipart.FileHeader,
+	*string,
+	int,
+	error,
+) {
+	ctxt := "UserAccountSanitizer-ValidateUserAccount"
+	var response models.UserAccount
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, nil, nil, fiberErr.Code, err
 	}
 	keepFormFields(&response)
-	if err = (&response).Validate(); err != nil {
+	if err = (&response).Validate(passwordRequired, addressRequired); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, nil, nil, fiber.StatusBadRequest, err
 	}
@@ -104,19 +118,4 @@ func ValidateBuyer(ctx context.Context, c fiber.Ctx) (*models.Buyer, *multipart.
 		response.Photo = helper.Sprintf("%s.webp", uuid.NewV7().String())
 	}
 	return &response, photo, mimeType, fiber.StatusOK, nil
-}
-
-func ValidateBuyerRegistration(ctx context.Context, c fiber.Ctx) (*models.BuyerRegistration, int, error) {
-	ctxt := "BuyerSanitizer-ValidateBuyerRegistration"
-	var response models.BuyerRegistration
-	err := c.Bind().Body(&response)
-	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
-		return &response, fiberErr.Code, err
-	}
-	if err = (&response).Validate(); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
-		return &response, fiber.StatusBadRequest, err
-	}
-	return &response, fiber.StatusOK, nil
 }

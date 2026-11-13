@@ -48,9 +48,9 @@ func (q *sellerController) Mount(r fiber.Router) {
 func (q *sellerController) V1SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "SellerController-V1SellerIndex"
-	request, err := sanitizers.FindSellerStaff(ctx, c)
+	request, err := sanitizers.FindUserAccounts(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSellerStaff")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUserAccounts")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -80,14 +80,14 @@ func (q *sellerController) V1SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "SellerController-V1SellerCreate"
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	request, photo, mimetype, statusCode, err := sanitizers.ValidateSellerStaff(ctx, c, true)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateUserAccount(ctx, c, true, false)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSellerStaff")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateUserAccount")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if statusCode, err = q.checkUniqueLogins(ctx, request, uuid.Nil()); err != nil {
+	if statusCode, err = checkUniqueLogins(ctx, q.userService, request, uuid.Nil()); err != nil {
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -168,7 +168,7 @@ func (q *sellerController) V1SellerShow(c fiber.Ctx) (err error) {
 	user, err := q.prepareSeller(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareSeller")
-		return helper.NewResponse(sellerStatusCode(err)).
+		return helper.NewResponse(userNotFoundStatusCode(err)).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
@@ -184,18 +184,18 @@ func (q *sellerController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	user, err := q.prepareSeller(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareSeller")
-		return helper.NewResponse(sellerStatusCode(err)).
+		return helper.NewResponse(userNotFoundStatusCode(err)).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	request, photo, mimetype, statusCode, err := sanitizers.ValidateSellerStaff(ctx, c, false)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateUserAccount(ctx, c, false, false)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSellerStaff")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateUserAccount")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if statusCode, err = q.checkUniqueLogins(ctx, request, user.ID); err != nil {
+	if statusCode, err = checkUniqueLogins(ctx, q.userService, request, user.ID); err != nil {
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -270,7 +270,7 @@ func (q *sellerController) V1SellerDelete(c fiber.Ctx) (err error) {
 	user, err := q.prepareSeller(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareSeller")
-		return helper.NewResponse(sellerStatusCode(err)).
+		return helper.NewResponse(userNotFoundStatusCode(err)).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
@@ -340,49 +340,6 @@ func (q *sellerController) prepareSeller(ctx context.Context, c fiber.Ctx) (*mod
 		return nil, models.ErrUserNotFound
 	}
 	return user, nil
-}
-
-// checkUniqueLogins rejects a username, mobile phone or email that another
-// user (seller or buyer) already has. excludedUserID is the account being
-// updated, or uuid.Nil() when creating one.
-func (q *sellerController) checkUniqueLogins(
-	ctx context.Context,
-	request *models.SellerStaff,
-	excludedUserID uuid.UUID,
-) (int, error) {
-	checks := []struct {
-		filter *models.UserFilter
-		err    error
-	}{
-		{models.NewUserFilter().WithUsername(request.Username), models.ErrUniqueUserUsernameViolation},
-		{models.NewUserFilter().WithMobilePhone(request.MobilePhone), models.ErrUniqueUserMobilePhoneViolation},
-	}
-	if request.Email != nil {
-		checks = append(checks, struct {
-			filter *models.UserFilter
-			err    error
-		}{models.NewUserFilter().WithEmail(*request.Email), models.ErrUniqueUserEmailViolation})
-	}
-	for _, check := range checks {
-		if excludedUserID.Compare(uuid.Nil()) != 0 {
-			check.filter.WithExcludedUserIDs(excludedUserID)
-		}
-		other, err := q.userService.FindUser(ctx, check.filter)
-		if err != nil && !errors.Is(err, models.ErrUserNotFound) {
-			return fiber.StatusUnprocessableEntity, err
-		}
-		if other != nil {
-			return fiber.StatusUnprocessableEntity, check.err
-		}
-	}
-	return fiber.StatusOK, nil
-}
-
-func sellerStatusCode(err error) int {
-	if errors.Is(err, models.ErrUserNotFound) {
-		return fiber.StatusNotFound
-	}
-	return fiber.StatusUnprocessableEntity
 }
 
 // notFoundStatusCode answers 404 for the errors seller lookups return when a

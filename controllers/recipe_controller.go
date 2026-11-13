@@ -19,7 +19,6 @@ import (
 )
 
 type recipeController struct {
-	buyerService          services.BuyerService
 	recipeService         services.RecipeService
 	recipeGuideService    services.RecipeGuideService
 	recipeItemService     services.RecipeItemService
@@ -30,7 +29,6 @@ type recipeController struct {
 }
 
 func NewRecipeController(
-	buyerService services.BuyerService,
 	recipeService services.RecipeService,
 	recipeGuideService services.RecipeGuideService,
 	recipeItemService services.RecipeItemService,
@@ -40,7 +38,6 @@ func NewRecipeController(
 	jsonWebTokenService services.JsonWebTokenService,
 ) *recipeController {
 	return &recipeController{
-		buyerService:          buyerService,
 		recipeService:         recipeService,
 		recipeGuideService:    recipeGuideService,
 		recipeItemService:     recipeItemService,

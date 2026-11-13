@@ -75,8 +75,8 @@ func (q *cartRepository) FindCarts(
 		query,
 		"COUNT(1)",
 		`id
-		, buyer_id
-		, deleted_buyer_id
+		, user_id
+		, deleted_user_id
 		, created_at
 		, updated_at`,
 	)
@@ -144,8 +144,8 @@ func (q *cartRepository) FindCarts(
 		var cart models.Cart
 		if err = rows.Scan(
 			&cart.ID,
-			&cart.BuyerID,
-			&cart.DeletedBuyerID,
+			&cart.UserID,
+			&cart.DeletedUserID,
 			&cart.CreatedAt,
 			&cart.UpdatedAt,
 		); err != nil {
@@ -214,8 +214,8 @@ func (q *cartRepository) FindCart(
 		sb,
 		`SELECT
 			id
-			, buyer_id
-			, deleted_buyer_id
+			, user_id
+			, deleted_user_id
 			, created_at
 			, updated_at
 		FROM carts %s`,
@@ -224,8 +224,8 @@ func (q *cartRepository) FindCart(
 	var response models.Cart
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.BuyerID,
-		&response.DeletedBuyerID,
+		&response.UserID,
+		&response.DeletedUserID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
@@ -287,28 +287,28 @@ func (q *cartRepository) SaveCart(
 		response models.Cart
 		buyerID  uuid.UUID
 	)
-	if request.BuyerID != nil {
-		buyerID = *request.BuyerID
-	} else if request.DeletedBuyerID != nil {
-		buyerID = *request.DeletedBuyerID
+	if request.UserID != nil {
+		buyerID = *request.UserID
+	} else if request.DeletedUserID != nil {
+		buyerID = *request.DeletedUserID
 	}
 	err := tx.QueryRow(
 		ctx,
 		`SELECT
 			id
-			, buyer_id
-			, deleted_buyer_id
+			, user_id
+			, deleted_user_id
 			, created_at
 			, updated_at
 		FROM carts
-		WHERE id = $1 AND buyer_id = $2
+		WHERE id = $1 AND user_id = $2
 		FOR UPDATE`,
 		request.ID,
 		buyerID,
 	).Scan(
 		&response.ID,
-		&response.BuyerID,
-		&response.DeletedBuyerID,
+		&response.UserID,
+		&response.DeletedUserID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
@@ -324,18 +324,18 @@ func (q *cartRepository) SaveCart(
 		row = tx.QueryRow(
 			ctx,
 			`INSERT INTO carts (
-				buyer_id
+				user_id
 				, created_at
 				, updated_at
 			) VALUES ($1, $2, $3)
-			ON CONFLICT (buyer_id) DO UPDATE SET
-				buyer_id = EXCLUDED.buyer_id
+			ON CONFLICT (user_id) DO UPDATE SET
+				user_id = EXCLUDED.user_id
 			RETURNING id
-				, buyer_id
-				, deleted_buyer_id
+				, user_id
+				, deleted_user_id
 				, created_at
 				, updated_at`,
-			request.BuyerID,
+			request.UserID,
 			request.CreatedAt,
 			request.UpdatedAt,
 		)
@@ -343,25 +343,25 @@ func (q *cartRepository) SaveCart(
 		row = tx.QueryRow(
 			ctx,
 			`UPDATE carts SET
-				buyer_id = $1
-				, deleted_buyer_id = $2
+				user_id = $1
+				, deleted_user_id = $2
 				, updated_at = $3
 			WHERE id = $4
 			RETURNING id
-				, buyer_id
-				, deleted_buyer_id
+				, user_id
+				, deleted_user_id
 				, created_at
 				, updated_at`,
-			request.BuyerID,
-			request.DeletedBuyerID,
+			request.UserID,
+			request.DeletedUserID,
 			request.UpdatedAt,
 			request.ID,
 		)
 	}
 	if err = row.Scan(
 		&response.ID,
-		&response.BuyerID,
-		&response.DeletedBuyerID,
+		&response.UserID,
+		&response.DeletedUserID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	); err != nil {
@@ -463,10 +463,10 @@ func (q *cartRepository) SaveCart(
 
 func (q *cartRepository) buildCondition(request *models.CartFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.BuyerIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("buyer_id IN (")
-		for i, buyerID := range request.BuyerIDs {
+		_, _ = sb.WriteString("user_id IN (")
+		for i, buyerID := range request.UserIDs {
 			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")

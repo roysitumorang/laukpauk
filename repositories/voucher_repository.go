@@ -153,7 +153,7 @@ func (q *voucherRepository) FindVouchers(
 	var response []*models.Voucher
 	params = []any{}
 	sb.Reset()
-	_, _ = sb.WriteString("SELECT voucher_id, buyer_id FROM vouchers_buyers WHERE voucher_id IN (")
+	_, _ = sb.WriteString("SELECT voucher_id, user_id FROM vouchers_users WHERE voucher_id IN (")
 	var n int
 	mapVoucherIDs := map[uuid.UUID]int{}
 	for rows.Next() {
@@ -224,7 +224,7 @@ func (q *voucherRepository) FindVouchers(
 		}
 		i = mapVoucherIDs[voucherID]
 		voucher := response[i]
-		voucher.BuyerIDs = append(voucher.BuyerIDs, buyerID)
+		voucher.UserIDs = append(voucher.UserIDs, buyerID)
 		response[i] = voucher
 	}
 	return response, total, pages, nil
@@ -308,8 +308,8 @@ func (q *voucherRepository) FindVoucher(
 	}
 	rows, err := q.dbRead.Query(
 		ctx,
-		`SELECT buyer_id
-		FROM vouchers_buyers
+		`SELECT user_id
+		FROM vouchers_users
 		WHERE voucher_id = $1
 		ORDER BY id`,
 		response.ID,
@@ -328,7 +328,7 @@ func (q *voucherRepository) FindVoucher(
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
-		response.BuyerIDs = append(response.BuyerIDs, buyerID)
+		response.UserIDs = append(response.UserIDs, buyerID)
 	}
 	return (&response).Populate(), nil
 }
@@ -743,8 +743,8 @@ func (q *voucherRepository) UpdateVoucher(
 	}
 	rows, err := tx.Query(
 		ctx,
-		`SELECT buyer_id
-		FROM vouchers_buyers
+		`SELECT user_id
+		FROM vouchers_users
 		WHERE voucher_id = $1
 		ORDER BY id`,
 		request.ID,
@@ -772,11 +772,11 @@ func (q *voucherRepository) UpdateVoucher(
 	params = params[:0]
 	params = append(params, request.ID)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "DELETE FROM vouchers_buyers WHERE voucher_id = $%d", len(params))
-	if len(request.BuyerIDs) > 0 {
-		_, _ = sb.WriteString(" AND buyer_id NOT IN (")
+	_, _ = fmt.Fprintf(sb, "DELETE FROM vouchers_users WHERE voucher_id = $%d", len(params))
+	if len(request.UserIDs) > 0 {
+		_, _ = sb.WriteString(" AND user_id NOT IN (")
 	}
-	for _, buyerID := range request.BuyerIDs {
+	for _, buyerID := range request.UserIDs {
 		params = append(params, buyerID)
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
@@ -787,9 +787,9 @@ func (q *voucherRepository) UpdateVoucher(
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`INSERT INTO vouchers_buyers (
+			`INSERT INTO vouchers_users (
 				voucher_id
-				, buyer_id
+				, user_id
 				, created_at
 			) VALUES ($1, $2, $3)`,
 			request.ID,
@@ -800,7 +800,7 @@ func (q *voucherRepository) UpdateVoucher(
 			return nil, err
 		}
 	}
-	if len(request.BuyerIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		_, _ = sb.WriteString(")")
 	}
 	if _, err = tx.Exec(ctx, sb.String(), params...); err != nil {
@@ -899,19 +899,19 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 		_, _ = fmt.Fprintf(sb, "(LOWER(code) LIKE $%d OR LOWER(name) LIKE $%d)", n, n)
 		conds = append(conds, sb.String())
 	}
-	if len(request.BuyerIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		params = append(params, models.VoucherTargetAudienceAllBuyers)
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
 			`(target_audience = $%d OR EXISTS(
 				SELECT 1
-				FROM vouchers_buyers
-				WHERE vouchers_buyers.voucher_id = vouchers.id
-					AND vouchers_buyers.buyer_id IN (`,
+				FROM vouchers_users
+				WHERE vouchers_users.voucher_id = vouchers.id
+					AND vouchers_users.user_id IN (`,
 			len(params),
 		)
-		for i, buyerID := range request.BuyerIDs {
+		for i, buyerID := range request.UserIDs {
 			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")

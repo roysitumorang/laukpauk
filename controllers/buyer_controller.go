@@ -18,27 +18,23 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
+// buyerController lets sellers manage buyer accounts: users with role buyer.
 type buyerController struct {
-	buyerService        services.BuyerService
 	userService         services.UserService
 	jsonWebTokenService services.JsonWebTokenService
 }
 
 func NewBuyerController(
-	buyerService services.BuyerService,
 	userService services.UserService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *buyerController {
 	return &buyerController{
-		buyerService:        buyerService,
 		userService:         userService,
 		jsonWebTokenService: jsonWebTokenService,
 	}
 }
 
 func (q *buyerController) Mount(r fiber.Router) {
-	r.Group("/v1/buyer").
-		Post("", q.BuyerCreate)
 	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/seller", sellerKeyAuth).
 		Get("", q.V1SellerIndex).
@@ -46,132 +42,26 @@ func (q *buyerController) Mount(r fiber.Router) {
 		Get("/:id", q.V1SellerShow).
 		Post("/:id", q.V1SellerUpdate).
 		Post("/:id/delete", q.V1SellerDelete)
-
-}
-
-func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
-	ctx := c.Context()
-	ctxt := "BuyerController-BuyerCreate"
-	request, statusCode, err := sanitizers.ValidateBuyerRegistration(ctx, c)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyerRegistration")
-		return helper.NewResponse(statusCode).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	buyer, err := q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithUsername(request.Username),
-	)
-	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if buyer != nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrUniqueBuyerUsernameViolation.Error()).
-			WriteResponse(c)
-	}
-	if buyer, err = q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithMobilePhone(request.MobilePhone),
-	); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if buyer != nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrUniqueBuyerMobilePhoneViolation.Error()).
-			WriteResponse(c)
-	}
-	now := time.Now().In(time.Local)
-	encryptedPasword, err := helper.HashPassword(request.Password)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	buyer = &models.Buyer{
-		Name:              request.Name,
-		Username:          request.Username,
-		MobilePhone:       request.MobilePhone,
-		EncryptedPassword: &encryptedPasword,
-		Photo:             os.Getenv("BUYER_DEFAULT_PHOTO"),
-		CreatedAt:         now,
-		UpdatedAt:         now,
-	}
-	if request.ReferralCode != "" {
-		referrer, err := q.buyerService.FindBuyer(
-			ctx,
-			models.NewBuyerFilter().
-				WithReferralCodes(request.ReferralCode),
-		)
-		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		if referrer != nil {
-			buyer.ReferrerID = &referrer.ID
-		}
-	}
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	response, err := q.buyerService.CreateBuyer(ctx, tx, buyer)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	return helper.NewResponse(fiber.StatusCreated).
-		SetData(response).
-		WriteResponse(c)
 }
 
 func (q *buyerController) V1SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-V1SellerIndex"
-	request, err := sanitizers.FindBuyers(ctx, c)
+	request, err := sanitizers.FindUserAccounts(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUserAccounts")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	rows, pagination, err := q.buyerService.FindBuyers(
+	rows, pagination, err := q.userService.FindUsers(
 		ctx,
-		request.WithStatuses(models.BuyerStatusActive),
+		request.
+			WithRoles(models.RoleBuyer).
+			WithStatuses(models.UserStatusActive),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -188,70 +78,60 @@ func (q *buyerController) V1SellerIndex(c fiber.Ctx) (err error) {
 func (q *buyerController) V1SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-V1SellerCreate"
-	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateUserAccount(ctx, c, false, true)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateUserAccount")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	buyer, err := q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithUsername(request.Username),
-	)
-	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+	if statusCode, err = checkUniqueLogins(ctx, q.userService, request, uuid.Nil()); err != nil {
+		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer != nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrUniqueBuyerUsernameViolation.Error()).
-			WriteResponse(c)
-	}
-	if buyer, err = q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithMobilePhone(request.MobilePhone),
-	); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+	if statusCode, err = q.checkReferrer(ctx, request.ReferrerID, uuid.Nil()); err != nil {
+		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer != nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(models.ErrUniqueBuyerMobilePhoneViolation.Error()).
-			WriteResponse(c)
+	now := time.Now().In(time.Local)
+	createdBy := currentUser.ID
+	user := &models.User{
+		Role:        models.RoleBuyer,
+		Status:      models.UserStatusActive,
+		Name:        request.Name,
+		MobilePhone: request.MobilePhone,
+		Username:    &request.Username,
+		Email:       request.Email,
+		Photo:       request.Photo,
+		Address:     request.Address,
+		ReferrerID:  request.ReferrerID,
+		CreatedBy:   &createdBy,
+		CreatedAt:   now,
+		UpdatedBy:   &createdBy,
+		UpdatedAt:   now,
 	}
-	if request.Email != nil {
-		if buyer, err = q.buyerService.FindBuyer(
-			ctx,
-			models.NewBuyerFilter().
-				WithEmail(*request.Email),
-		); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+	if request.Password != "" {
+		encryptedPassword, err := helper.HashPassword(request.Password)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
 				WriteResponse(c)
 		}
-		if buyer != nil {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(models.ErrUniqueBuyerEmailViolation.Error()).
-				WriteResponse(c)
-		}
+		user.EncryptedPassword = &encryptedPassword
+		user.PasswordChangedAt = &now
 	}
-	now := time.Now().In(time.Local)
-	request.ReferralPoints = 0
-	request.RewardPoints = 0
-	request.Wallet = 0
-	request.TransactionVolume = 0
-	request.CreatedAt = now
-	request.UpdatedAt = now
 	if photo == nil {
-		request.Photo = os.Getenv("BUYER_DEFAULT_PHOTO")
+		user.Photo = os.Getenv("BUYER_DEFAULT_PHOTO")
+	}
+	if err = user.Validate(); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
@@ -268,15 +148,15 @@ func (q *buyerController) V1SellerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	saved, err := q.buyerService.CreateBuyer(ctx, tx, request)
+	saved, err := q.userService.CreateUser(ctx, tx, user)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateUser")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	if photo != nil {
-		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, user.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
@@ -298,145 +178,69 @@ func (q *buyerController) V1SellerCreate(c fiber.Ctx) (err error) {
 func (q *buyerController) V1SellerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-V1SellerShow"
-	buyerID, err := uuid.Parse(c.Params("id"))
+	user, err := q.prepareBuyer(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrBuyerNotFound.Error()).
-			WriteResponse(c)
-	}
-	buyer, err := q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithStatuses(models.BuyerStatusActive).
-			WithBuyerIDs(buyerID),
-	)
-	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareBuyer")
+		return helper.NewResponse(userNotFoundStatusCode(err)).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer == nil {
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrBuyerNotFound.Error()).
-			WriteResponse(c)
-	}
 	return helper.NewResponse(fiber.StatusOK).
-		SetData(buyer).
+		SetData(user).
 		WriteResponse(c)
 }
 
 func (q *buyerController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-V1SellerUpdate"
-	buyerID, err := uuid.Parse(c.Params("id"))
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	user, err := q.prepareBuyer(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrBuyerNotFound.Error()).
-			WriteResponse(c)
-	}
-	buyer, err := q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithStatuses(models.BuyerStatusActive).
-			WithBuyerIDs(buyerID),
-	)
-	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareBuyer")
+		return helper.NewResponse(userNotFoundStatusCode(err)).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer == nil {
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrBuyerNotFound.Error()).
-			WriteResponse(c)
-	}
-	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c)
-	if photo == nil {
-		request.Photo = buyer.Photo
-	}
+	request, photo, mimetype, statusCode, err := sanitizers.ValidateUserAccount(ctx, c, false, true)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateUserAccount")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer.Username != request.Username {
-		otherBuyer, err := q.buyerService.FindBuyer(
-			ctx,
-			models.NewBuyerFilter().
-				WithUsername(request.Username).
-				WithExcludedBuyerIDs(buyer.ID),
-		)
-		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		if otherBuyer != nil {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(models.ErrUniqueBuyerUsernameViolation.Error()).
-				WriteResponse(c)
-		}
+	if statusCode, err = checkUniqueLogins(ctx, q.userService, request, user.ID); err != nil {
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	if buyer.MobilePhone != request.MobilePhone {
-		otherBuyer, err := q.buyerService.FindBuyer(
-			ctx,
-			models.NewBuyerFilter().
-				WithMobilePhone(request.MobilePhone).
-				WithExcludedBuyerIDs(buyer.ID),
-		)
-		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		if otherBuyer != nil {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(models.ErrUniqueBuyerMobilePhoneViolation.Error()).
-				WriteResponse(c)
-		}
-	}
-	if request.Email != nil &&
-		(buyer.Email == nil ||
-			*buyer.Email != *request.Email) {
-		otherBuyer, err := q.buyerService.FindBuyer(
-			ctx,
-			models.NewBuyerFilter().
-				WithEmail(*request.Email).
-				WithExcludedBuyerIDs(buyer.ID),
-		)
-		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
-		if otherBuyer != nil {
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(models.ErrUniqueBuyerEmailViolation.Error()).
-				WriteResponse(c)
-		}
+	if statusCode, err = q.checkReferrer(ctx, request.ReferrerID, user.ID); err != nil {
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	now := time.Now().In(time.Local)
-	buyer.Name = request.Name
-	buyer.Username = request.Username
-	buyer.Photo = request.Photo
-	buyer.Address = request.Address
-	buyer.ReferralPoints = 0
-	buyer.RewardPoints = 0
-	buyer.Wallet = 0
-	buyer.TransactionVolume = 0
-	buyer.ReferrerID = request.ReferrerID
-	buyer.UpdatedAt = now
-	buyer.DeactivatedBy = nil
-	buyer.DeactivatedAt = nil
-	buyer.DeactivationReason = nil
+	if request.Password != "" {
+		encryptedPassword, err := helper.HashPassword(request.Password)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		user.EncryptedPassword = &encryptedPassword
+		user.PasswordChangedAt = &now
+	}
+	user.Name = request.Name
+	user.Username = &request.Username
+	user.MobilePhone = request.MobilePhone
+	user.Email = request.Email
+	user.Address = request.Address
+	user.ReferrerID = request.ReferrerID
+	if photo != nil {
+		user.Photo = request.Photo
+	}
+	user.UpdatedBy = &currentUser.ID
+	user.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -452,15 +256,15 @@ func (q *buyerController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	saved, err := q.buyerService.UpdateBuyer(ctx, tx, buyer)
+	saved, err := q.userService.UpdateUser(ctx, tx, user)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	if photo != nil {
-		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
+		if err = helper.SaveFile(c, photo, mimetype, user.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
@@ -483,34 +287,20 @@ func (q *buyerController) V1SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-V1SellerDelete"
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	buyerID, err := uuid.Parse(c.Params("id"))
+	user, err := q.prepareBuyer(ctx, c)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrBuyerNotFound.Error()).
-			WriteResponse(c)
-	}
-	buyer, err := q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithStatuses(models.BuyerStatusActive).
-			WithBuyerIDs(buyerID),
-	)
-	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareBuyer")
+		return helper.NewResponse(userNotFoundStatusCode(err)).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if buyer == nil {
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrBuyerNotFound.Error()).
-			WriteResponse(c)
-	}
-	buyer.Status = models.BuyerStatusDeactivated
-	buyer.DeactivatedBy = &currentUser.ID
-	buyer.DeactivatedAt = new(time.Now())
-	buyer.DeactivationReason = nil
+	now := time.Now().In(time.Local)
+	user.Status = models.UserStatusDeactivated
+	user.UpdatedBy = &currentUser.ID
+	user.UpdatedAt = now
+	user.DeactivatedBy = &currentUser.ID
+	user.DeactivatedAt = &now
+	user.DeactivationReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
@@ -526,9 +316,9 @@ func (q *buyerController) V1SellerDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	saved, err := q.buyerService.UpdateBuyer(ctx, tx, buyer)
+	saved, err := q.userService.UpdateUser(ctx, tx, user)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -543,4 +333,51 @@ func (q *buyerController) V1SellerDelete(c fiber.Ctx) (err error) {
 		SetMessage("buyer deactivated successfully").
 		SetData(saved).
 		WriteResponse(c)
+}
+
+// prepareBuyer loads the active buyer account named by the :id parameter.
+func (q *buyerController) prepareBuyer(ctx context.Context, c fiber.Ctx) (*models.User, error) {
+	userID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return nil, models.ErrUserNotFound
+	}
+	user, err := q.userService.FindUser(
+		ctx,
+		models.NewUserFilter().
+			WithRoles(models.RoleBuyer).
+			WithStatuses(models.UserStatusActive).
+			WithUserIDs(userID),
+	)
+	if err != nil && !errors.Is(err, models.ErrUserNotFound) {
+		return nil, err
+	}
+	if user == nil {
+		return nil, models.ErrUserNotFound
+	}
+	return user, nil
+}
+
+// checkReferrer accepts no referrer, or an active buyer other than the
+// account itself (buyerID, or uuid.Nil() when creating one).
+func (q *buyerController) checkReferrer(ctx context.Context, referrerID *uuid.UUID, buyerID uuid.UUID) (int, error) {
+	if referrerID == nil {
+		return fiber.StatusOK, nil
+	}
+	if referrerID.Compare(buyerID) == 0 {
+		return fiber.StatusUnprocessableEntity, errors.New("referrer_id: can't refer yourself")
+	}
+	referrer, err := q.userService.FindUser(
+		ctx,
+		models.NewUserFilter().
+			WithRoles(models.RoleBuyer).
+			WithStatuses(models.UserStatusActive).
+			WithUserIDs(*referrerID),
+	)
+	if err != nil && !errors.Is(err, models.ErrUserNotFound) {
+		return fiber.StatusUnprocessableEntity, err
+	}
+	if referrer == nil {
+		return fiber.StatusUnprocessableEntity, errors.New("referrer_id: not found")
+	}
+	return fiber.StatusOK, nil
 }

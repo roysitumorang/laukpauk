@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
+	"uuid"
 
 	"github.com/govalues/decimal"
 	"github.com/jackc/pgerrcode"
@@ -36,6 +38,14 @@ type UserRepository interface {
 		tx pgx.Tx,
 		request *models.User,
 	) (*models.User, error)
+	AddUserBalances(
+		ctx context.Context,
+		tx pgx.Tx,
+		userID uuid.UUID,
+		referralPoints,
+		rewardPoints,
+		wallet int64,
+	) error
 }
 
 type userRepository struct {
@@ -115,6 +125,7 @@ func (q *userRepository) FindUsers(
 		, referral_points
 		, reward_points
 		, wallet
+		, delivery_route_id
 		, created_by
 		, created_at
 		, updated_by
@@ -206,6 +217,7 @@ func (q *userRepository) FindUsers(
 			&user.ReferralPoints,
 			&user.RewardPoints,
 			&user.Wallet,
+			&user.DeliveryRouteID,
 			&user.CreatedBy,
 			&user.CreatedAt,
 			&user.UpdatedBy,
@@ -275,6 +287,7 @@ func (q *userRepository) FindUser(
 			, referral_points
 			, reward_points
 			, wallet
+			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -322,6 +335,7 @@ func (q *userRepository) FindUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
+		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -512,6 +526,7 @@ func (q *userRepository) CreateUser(
 			, referral_points
 			, reward_points
 			, wallet
+			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -524,7 +539,7 @@ func (q *userRepository) CreateUser(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41
+			, $41, $42
 		)
 		RETURNING id
 			, role
@@ -561,6 +576,7 @@ func (q *userRepository) CreateUser(
 			, referral_points
 			, reward_points
 			, wallet
+			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -602,6 +618,7 @@ func (q *userRepository) CreateUser(
 		request.ReferralPoints,
 		request.RewardPoints,
 		request.Wallet,
+		request.DeliveryRouteID,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -645,6 +662,7 @@ func (q *userRepository) CreateUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
+		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -717,6 +735,7 @@ func (q *userRepository) UpdateUser(
 			, referral_points
 			, reward_points
 			, wallet
+			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -764,6 +783,7 @@ func (q *userRepository) UpdateUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
+		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -1024,6 +1044,36 @@ func (q *userRepository) UpdateUser(
 		}
 		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
 	}
+	if (response.DeliveryRouteID == nil && request.DeliveryRouteID != nil) ||
+		(response.DeliveryRouteID != nil && request.DeliveryRouteID == nil) ||
+		(response.DeliveryRouteID != nil && request.DeliveryRouteID != nil &&
+			response.DeliveryRouteID.Compare(*request.DeliveryRouteID) != 0) {
+		params = append(params, request.DeliveryRouteID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " delivery_route_id = $%d", n)
+	}
+	if (response.Address == nil && request.Address != nil) ||
+		(response.Address != nil && request.Address == nil) ||
+		(response.Address != nil && request.Address != nil &&
+			*response.Address != *request.Address) {
+		params = append(params, request.Address)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " address = $%d", n)
+	}
+	if (response.ReferrerID == nil && request.ReferrerID != nil) ||
+		(response.ReferrerID != nil && request.ReferrerID == nil) ||
+		(response.ReferrerID != nil && request.ReferrerID != nil &&
+			response.ReferrerID.Compare(*request.ReferrerID) != 0) {
+		params = append(params, request.ReferrerID)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " referrer_id = $%d", n)
+	}
 	if len(params) == 0 {
 		return &response, nil
 	}
@@ -1113,6 +1163,7 @@ func (q *userRepository) UpdateUser(
 			, referral_points
 			, reward_points
 			, wallet
+			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -1158,6 +1209,7 @@ func (q *userRepository) UpdateUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
+		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -1183,4 +1235,38 @@ func (q *userRepository) UpdateUser(
 		return nil, err
 	}
 	return &response, nil
+}
+
+// AddUserBalances adds the given amounts (which may be negative) to a user's
+// referral points, reward points and wallet. Zero amounts are left alone.
+func (q *userRepository) AddUserBalances(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID uuid.UUID,
+	referralPoints,
+	rewardPoints,
+	wallet int64,
+) error {
+	ctxt := "UserRepository-AddUserBalances"
+	if referralPoints == 0 && rewardPoints == 0 && wallet == 0 {
+		return nil
+	}
+	if _, err := tx.Exec(
+		ctx,
+		`UPDATE users SET
+			referral_points = COALESCE(referral_points, 0) + $1
+			, reward_points = COALESCE(reward_points, 0) + $2
+			, wallet = COALESCE(wallet, 0) + $3
+			, updated_at = $4
+		WHERE id = $5`,
+		referralPoints,
+		rewardPoints,
+		wallet,
+		time.Now(),
+		userID,
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		return err
+	}
+	return nil
 }

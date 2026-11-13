@@ -135,7 +135,7 @@ type Voucher struct {
 	DeletedBy             *uuid.UUID            `json:"deleted_by" form:"-"`
 	DeletedAt             *time.Time            `json:"deleted_at" form:"-"`
 	DeletionReason        *string               `json:"deletion_reason" form:"-"`
-	BuyerIDs              []uuid.UUID           `json:"-" form:"-"`
+	UserIDs               []uuid.UUID           `json:"-" form:"-"`
 }
 
 func (q *Voucher) Validate() (err error) {
@@ -285,7 +285,7 @@ func (q *Voucher) Status() string {
 type VoucherFilter struct {
 	VoucherIDs,
 	ExcludedVoucherIDs,
-	BuyerIDs []uuid.UUID
+	UserIDs []uuid.UUID
 	RecordStatuses      []RecordStatus
 	VoucherTypes        []VoucherType
 	TargetAudiences     []VoucherTargetAudience
@@ -317,8 +317,8 @@ func (q *VoucherFilter) WithExcludedVoucherIDs(excludedVoucherIDs ...uuid.UUID) 
 	return q
 }
 
-func (q *VoucherFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *VoucherFilter {
-	q.BuyerIDs = buyerIDs
+func (q *VoucherFilter) WithUserIDs(userIDs ...uuid.UUID) *VoucherFilter {
+	q.UserIDs = userIDs
 	return q
 }
 

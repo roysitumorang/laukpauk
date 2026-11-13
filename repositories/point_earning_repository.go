@@ -81,7 +81,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 		query,
 		"COUNT(1)",
 		`id
-		, buyer_id
+		, user_id
 		, start_date
 		, end_date
 		, amount
@@ -137,7 +137,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 		var pointEarning models.PointEarning
 		if err = rows.Scan(
 			&pointEarning.ID,
-			&pointEarning.BuyerID,
+			&pointEarning.UserID,
 			&pointEarning.StartDate,
 			&pointEarning.EndDate,
 			&pointEarning.Amount,
@@ -171,7 +171,7 @@ func (q *pointEarningRepository) FindPointEarning(
 		sb,
 		`SELECT
 			id
-			, buyer_id
+			, user_id
 			, start_date
 			, end_date
 			, amount
@@ -184,7 +184,7 @@ func (q *pointEarningRepository) FindPointEarning(
 	var response models.PointEarning
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.StartDate,
 		&response.EndDate,
 		&response.Amount,
@@ -211,7 +211,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO point_earnings (
-			buyer_id
+			user_id
 			, start_date
 			, end_date
 			, amount
@@ -219,13 +219,13 @@ func (q *pointEarningRepository) CreatePointEarning(
 			, updated_at
 		) VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
-			, buyer_id
+			, user_id
 			, start_date
 			, end_date
 			, amount
 			, created_at
 			, updated_at`,
-		request.BuyerID,
+		request.UserID,
 		request.StartDate,
 		request.EndDate,
 		request.Amount,
@@ -233,7 +233,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.StartDate,
 		&response.EndDate,
 		&response.Amount,
@@ -243,7 +243,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_buyer_id_start_date_end_date_key" {
+			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -264,7 +264,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		ctx,
 		`SELECT
 			id
-			, buyer_id
+			, user_id
 			, start_date
 			, end_date
 			, amount
@@ -276,7 +276,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.StartDate,
 		&response.EndDate,
 		&response.CreatedAt,
@@ -320,7 +320,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, buyer_id
+			, user_id
 			, start_date
 			, end_date
 			, amount
@@ -330,7 +330,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.StartDate,
 		&response.EndDate,
 		&response.Amount,
@@ -339,7 +339,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_buyer_id_start_date_end_date_key" {
+			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -364,10 +364,10 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.BuyerIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("buyer_id IN (")
-		for i, buyerID := range request.BuyerIDs {
+		_, _ = sb.WriteString("user_id IN (")
+		for i, buyerID := range request.UserIDs {
 			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")

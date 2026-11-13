@@ -52,6 +52,7 @@ func init() {
 				, referral_points bigint
 				, reward_points bigint
 				, wallet bigint
+				, delivery_route_id UUID
 				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL
 				, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT

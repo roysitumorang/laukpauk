@@ -81,7 +81,7 @@ func (q *pointRepository) FindPoints(
 		`id
 		, record_status
 		, point_type
-		, buyer_id
+		, user_id
 		, amount
 		, transaction_id
 		, description
@@ -144,7 +144,7 @@ func (q *pointRepository) FindPoints(
 			&point.ID,
 			&point.RecordStatus,
 			&point.PointType,
-			&point.BuyerID,
+			&point.UserID,
 			&point.Amount,
 			&point.TransactionID,
 			&point.Description,
@@ -185,7 +185,7 @@ func (q *pointRepository) FindPoint(
 			id
 			, record_status
 			, point_type
-			, buyer_id
+			, user_id
 			, amount
 			, transaction_id
 			, description
@@ -205,7 +205,7 @@ func (q *pointRepository) FindPoint(
 		&response.ID,
 		&response.RecordStatus,
 		&response.PointType,
-		&response.BuyerID,
+		&response.UserID,
 		&response.Amount,
 		&response.TransactionID,
 		&response.Description,
@@ -239,7 +239,7 @@ func (q *pointRepository) CreatePoint(
 		`INSERT INTO points (
 			record_status
 			, point_type
-			, buyer_id
+			, user_id
 			, amount
 			, transaction_id
 			, description
@@ -251,7 +251,7 @@ func (q *pointRepository) CreatePoint(
 		RETURNING id
 			, record_status
 			, point_type
-			, buyer_id
+			, user_id
 			, amount
 			, transaction_id
 			, description
@@ -264,7 +264,7 @@ func (q *pointRepository) CreatePoint(
 			, deletion_reason`,
 		request.RecordStatus,
 		request.PointType,
-		request.BuyerID,
+		request.UserID,
 		request.Amount,
 		request.TransactionID,
 		request.Description,
@@ -276,7 +276,7 @@ func (q *pointRepository) CreatePoint(
 		&response.ID,
 		&response.RecordStatus,
 		&response.PointType,
-		&response.BuyerID,
+		&response.UserID,
 		&response.Amount,
 		&response.TransactionID,
 		&response.Description,
@@ -308,7 +308,7 @@ func (q *pointRepository) UpdatePoint(
 			id
 			, record_status
 			, point_type
-			, buyer_id
+			, user_id
 			, amount
 			, transaction_id
 			, description
@@ -327,7 +327,7 @@ func (q *pointRepository) UpdatePoint(
 		&response.ID,
 		&response.RecordStatus,
 		&response.PointType,
-		&response.BuyerID,
+		&response.UserID,
 		&response.Amount,
 		&response.TransactionID,
 		&response.Description,
@@ -433,7 +433,7 @@ func (q *pointRepository) UpdatePoint(
 		RETURNING id
 			, record_status
 			, point_type
-			, buyer_id
+			, user_id
 			, amount
 			, transaction_id
 			, description
@@ -450,7 +450,7 @@ func (q *pointRepository) UpdatePoint(
 		&response.ID,
 		&response.RecordStatus,
 		&response.PointType,
-		&response.BuyerID,
+		&response.UserID,
 		&response.Amount,
 		&response.TransactionID,
 		&response.Description,
@@ -496,10 +496,10 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.BuyerIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("buyer_id IN (")
-		for i, buyerID := range request.BuyerIDs {
+		_, _ = sb.WriteString("user_id IN (")
+		for i, buyerID := range request.UserIDs {
 			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -545,9 +545,8 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			sb,
 			`(EXISTS(
 				SELECT 1
-				FROM buyers b
-				JOIN users u ON b.user_id = u.id
-				WHERE b.id = points.buyer_id
+				FROM users u
+				WHERE u.id = points.user_id
 					AND (
 						LOWER(u.name) LIKE $%d
 						OR u.username LIKE $%d

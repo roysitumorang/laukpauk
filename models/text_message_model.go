@@ -42,9 +42,7 @@ func (q TextMessageType) String() string {
 type TextMessage struct {
 	RowNo          int64           `json:"-" form:"-"`
 	ID             uuid.UUID       `json:"-" form:"-"`
-	AdminID        uuid.UUID       `json:"-" form:"-"`
-	SellerID       uuid.UUID       `json:"-" form:"-"`
-	BuyerID        uuid.UUID       `json:"-" form:"buyer_id"`
+	UserID         uuid.UUID       `json:"-" form:"user_id"`
 	MobilePhone    string          `json:"-" form:"-"`
 	MessageType    TextMessageType `json:"-" form:"-"`
 	Body           string          `json:"-" form:"body"`
@@ -57,8 +55,8 @@ type TextMessage struct {
 }
 
 func (q *TextMessage) Validate() error {
-	if q.BuyerID.Compare(uuid.Nil()) == 0 {
-		return errors.New("buyer_id: is required")
+	if q.UserID.Compare(uuid.Nil()) == 0 {
+		return errors.New("user_id: is required")
 	}
 	if q.Body = strings.TrimSpace(q.Body); q.Body == "" {
 		return errors.New("body: is required")
@@ -68,9 +66,7 @@ func (q *TextMessage) Validate() error {
 
 type TextMessageFilter struct {
 	TextMessageIDs,
-	AdminIDs,
-	SellerIDs,
-	BuyerIDs []uuid.UUID
+	UserIDs []uuid.UUID
 	MessageTypes        []TextMessageType
 	DeliveryStatusBlank bool
 	DeliveryStatuses    []string
@@ -96,18 +92,8 @@ func (q *TextMessageFilter) WithTextMessageIDs(textMessageIDs ...uuid.UUID) *Tex
 	return q
 }
 
-func (q *TextMessageFilter) WithAdminIDs(adminIDs ...uuid.UUID) *TextMessageFilter {
-	q.AdminIDs = adminIDs
-	return q
-}
-
-func (q *TextMessageFilter) WithSellerIDs(sellerIDs ...uuid.UUID) *TextMessageFilter {
-	q.SellerIDs = sellerIDs
-	return q
-}
-
-func (q *TextMessageFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *TextMessageFilter {
-	q.BuyerIDs = buyerIDs
+func (q *TextMessageFilter) WithUserIDs(userIDs ...uuid.UUID) *TextMessageFilter {
+	q.UserIDs = userIDs
 	return q
 }
 

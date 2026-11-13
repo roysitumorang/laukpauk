@@ -48,12 +48,12 @@
 						<div class="row">
 							<div class="col-lg-12">
 								<div class="form-group">
-									<label for="buyer_id" class="label-title">Penerima Pesan</label>
-									<select name="buyer_id" id="buyer_id" class="form-control" required>
+									<label for="user_id" class="label-title">Penerima Pesan</label>
+									<select name="user_id" id="user_id" class="form-control" required>
 										<option value="" disabled>- Pilih Penerima -</option>
 										{{ range _, buyer := buyers }}
 										{{ if buyer.MobilePhone }}
-										<option value="{{ buyer.ID }}"{{ if request.BuyerID.Compare(buyer.ID) == 0 }} selected{{ end }}>{{ buyer.Name }} / {{ buyer.MobilePhone }}</option>
+										<option value="{{ buyer.ID }}"{{ if request.UserID.Compare(buyer.ID) == 0 }} selected{{ end }}>{{ buyer.Name }} / {{ buyer.MobilePhone }}</option>
 										{{ end }}
 										{{ end }}
 									</select>

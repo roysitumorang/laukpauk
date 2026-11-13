@@ -599,7 +599,7 @@ func (q *adminRepository) UpdateAdmin(
 		&response.DeactivationReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrBuyerNotFound
+		return nil, models.ErrAdminNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

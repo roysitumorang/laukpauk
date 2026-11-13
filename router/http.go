@@ -189,8 +189,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/users/*", To: "/users/v1/buyer/$1"},
 				{From: "/v1/buyer/users/*/*", To: "/users/v1/buyer/$1/$2"},
 				{From: "/v1/buyer/setting", To: "/setting/v1/buyer"},
-				{From: "/v1/buyer/buyers", To: "/buyers/v1/buyer"},
-				{From: "/v1/buyer/auth/*", To: "/auth/v1/buyer/$1"},
 				{From: "/v1/buyer/notification_targets", To: "/notification_targets/v1/buyer"},
 				{From: "/v1/buyer/product_categories", To: "/product_categories/v1/buyer"},
 				{From: "/v1/buyer/products", To: "/products/v1/buyer"},
@@ -280,10 +278,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		}))
 	controllers.NewAuthController(
 		q.AdminService,
-		q.BuyerService,
-		q.JsonWebTokenService,
-		q.TextMessageService,
-		q.KafkaClient,
 	).Mount(app.Group("/auth"))
 	controllers.NewHomeController(
 		q.AdminService,
@@ -307,55 +301,48 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/products"))
 	controllers.NewDeliveryPlanController(
 		q.DeliveryPlanService,
-		q.BuyerService,
 		q.JsonWebTokenService,
 		q.UserService,
 	).Mount(app.Group("/delivery_plans"))
 	controllers.NewPointController(
-		q.BuyerService,
 		q.PointService,
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/points"))
 	controllers.NewVoucherController(
 		q.VoucherService,
-		q.BuyerService,
 		q.JsonWebTokenService,
 		q.UserService,
 	).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(
 		q.PointEarningCapService,
-		q.BuyerService,
 		q.JsonWebTokenService,
 		q.UserService,
 	).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(
 		q.PointSpendingCapService,
-		q.BuyerService,
 		q.JsonWebTokenService,
 		q.UserService,
 	).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(
-		q.BuyerService,
 		q.TransactionService,
 		q.JsonWebTokenService,
 		q.KafkaClient,
 		q.UserService,
 	).Mount(app.Group("/transactions"))
 	controllers.NewNotificationTargetController(
-		q.BuyerService,
 		q.NotificationTargetService,
 		q.JsonWebTokenService,
 		q.UserService,
 	).Mount(app.Group("/notification_targets"))
 	controllers.NewCartController(
-		q.BuyerService,
+		q.UserService,
 		q.ProductVariantService,
 		q.CartService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/cart"))
 	controllers.NewDeliveryRouteController(
-		q.BuyerService,
+		q.UserService,
 		q.DeliveryRouteService,
 		q.SettingService,
 		q.JsonWebTokenService,
@@ -367,7 +354,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/setting"))
 	controllers.NewPaymentChannelController(
-		q.BuyerService,
+		q.UserService,
 		q.PaymentChannelService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/payment_channels"))
@@ -384,7 +371,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.KafkaClient,
 	).Mount(app.Group("/users"))
 	controllers.NewBuyerController(
-		q.BuyerService,
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/buyers"))
@@ -393,7 +379,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/admins"))
 	controllers.NewTextMessageController(
 		q.AdminService,
-		q.BuyerService,
+		q.UserService,
 		q.TextMessageService,
 	).Mount(app.Group("/text_messages"))
 	controllers.NewNotificationController(
@@ -403,7 +389,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/notifications"))
 	controllers.NewRecipeController(
-		q.BuyerService,
 		q.RecipeService,
 		q.RecipeGuideService,
 		q.RecipeItemService,

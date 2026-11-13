@@ -15,57 +15,6 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-func BuyerKeyAuthMiddleware(
-	buyerService services.BuyerService,
-	jsonWebTokenService services.JsonWebTokenService,
-) fiber.Handler {
-	return keyauth.New(keyauth.Config{
-		SuccessHandler: func(c fiber.Ctx) error {
-			return c.Next()
-		},
-		ErrorHandler: func(c fiber.Ctx, err error) error {
-			if err == nil {
-				err = keyauth.ErrMissingOrMalformedAPIKey
-			}
-			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).WriteResponse(c)
-		},
-		Validator: func(c fiber.Ctx, token string) (bool, error) {
-			claims, err := bearerVerify(token)
-			if err != nil {
-				return false, err
-			}
-			buyerID, err := uuid.Parse(claims.ID)
-			if err != nil {
-				return false, keyauth.ErrMissingOrMalformedAPIKey
-			}
-			ctx := c.Context()
-			currentBuyer, err := buyerService.FindBuyer(
-				ctx,
-				models.NewBuyerFilter().
-					WithBuyerIDs(buyerID),
-			)
-			if err != nil || currentBuyer == nil {
-				return false, keyauth.ErrMissingOrMalformedAPIKey
-			}
-			jsonWebTokenID, err := uuid.Parse(claims.Subject)
-			if err != nil {
-				return false, keyauth.ErrMissingOrMalformedAPIKey
-			}
-			currentJsonWebToken, err := jsonWebTokenService.FindJsonWebToken(
-				ctx,
-				models.NewJsonWebTokenFilter().
-					WithJsonWebTokenIDs(jsonWebTokenID),
-			)
-			if err != nil || currentJsonWebToken == nil {
-				return false, keyauth.ErrMissingOrMalformedAPIKey
-			}
-			c.Locals(models.CurrentBuyer, currentBuyer)
-			c.Locals(models.CurrentJsonWebToken, currentJsonWebToken)
-			return true, nil
-		},
-	})
-}
-
 func KeyAuthMiddleware(
 	role string,
 	userService services.UserService,

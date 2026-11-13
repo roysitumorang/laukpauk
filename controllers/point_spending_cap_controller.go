@@ -19,20 +19,17 @@ import (
 
 type pointSpendingCapController struct {
 	pointSpendingCapService services.PointSpendingCapService
-	buyerService            services.BuyerService
 	jsonWebTokenService     services.JsonWebTokenService
 	userService             services.UserService
 }
 
 func NewPointSpendingCapController(
 	pointSpendingCapService services.PointSpendingCapService,
-	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 	userService services.UserService,
 ) *pointSpendingCapController {
 	return &pointSpendingCapController{
 		pointSpendingCapService: pointSpendingCapService,
-		buyerService:            buyerService,
 		jsonWebTokenService:     jsonWebTokenService,
 		userService:             userService,
 	}
@@ -46,7 +43,7 @@ func (q *pointSpendingCapController) Mount(r fiber.Router) {
 		Get("/:id", q.V1SellerShow).
 		Post("/:id", q.V1SellerUpdate).
 		Post("/:id/delete", q.V1SellerDelete)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex)
 }

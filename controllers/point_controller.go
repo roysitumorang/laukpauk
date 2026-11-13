@@ -18,20 +18,17 @@ import (
 )
 
 type pointController struct {
-	buyerService        services.BuyerService
 	pointService        services.PointService
 	userService         services.UserService
 	jsonWebTokenService services.JsonWebTokenService
 }
 
 func NewPointController(
-	buyerService services.BuyerService,
 	pointService services.PointService,
 	userService services.UserService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *pointController {
 	return &pointController{
-		buyerService:        buyerService,
 		pointService:        pointService,
 		userService:         userService,
 		jsonWebTokenService: jsonWebTokenService,
@@ -81,20 +78,6 @@ func (q *pointController) V1SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointController-V1SellerCreate"
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	var buyers []*models.Buyer
-	if buyers, _, err = q.buyerService.FindBuyers(
-		ctx,
-		models.NewBuyerFilter(),
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	mapBuyerIDs := map[uuid.UUID]struct{}{}
-	for _, buyer := range buyers {
-		mapBuyerIDs[buyer.ID] = struct{}{}
-	}
 	request, statusCode, err := sanitizers.ValidatePoint(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
@@ -102,9 +85,22 @@ func (q *pointController) V1SellerCreate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if _, ok := mapBuyerIDs[request.BuyerID]; !ok {
+	buyer, err := q.userService.FindUser(
+		ctx,
+		models.NewUserFilter().
+			WithRoles(models.RoleBuyer).
+			WithStatuses(models.UserStatusActive).
+			WithUserIDs(request.UserID),
+	)
+	if err != nil && !errors.Is(err, models.ErrUserNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage("buyer_id: not found").
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if buyer == nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("user_id: not found").
 			WriteResponse(c)
 	}
 	createdBy := currentUser.ID
@@ -218,7 +214,7 @@ func (q *pointController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	request.ID = point.ID
 	request.RecordStatus = point.RecordStatus
 	request.PointType = point.PointType
-	request.BuyerID = point.BuyerID
+	request.UserID = point.UserID
 	request.TransactionID = point.TransactionID
 	request.UpdatedBy = &currentUser.ID
 	request.UpdatedAt = time.Now()

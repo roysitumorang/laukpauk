@@ -18,7 +18,6 @@ import (
 
 type (
 	notificationTargetController struct {
-		buyerService              services.BuyerService
 		notificationTargetService services.NotificationTargetService
 		jsonWebTokenService       services.JsonWebTokenService
 		userService               services.UserService
@@ -26,13 +25,11 @@ type (
 )
 
 func NewNotificationTargetController(
-	buyerService services.BuyerService,
 	notificationTargetService services.NotificationTargetService,
 	jsonWebTokenService services.JsonWebTokenService,
 	userService services.UserService,
 ) *notificationTargetController {
 	return &notificationTargetController{
-		buyerService:              buyerService,
 		notificationTargetService: notificationTargetService,
 		jsonWebTokenService:       jsonWebTokenService,
 		userService:               userService,
@@ -41,7 +38,7 @@ func NewNotificationTargetController(
 
 func (q *notificationTargetController) Mount(r fiber.Router) {
 	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/seller", sellerKeyAuth).
 		Post("", q.V1SellerCreate)
 	r.Group("/v1/buyer", buyerKeyAuth).
@@ -99,7 +96,7 @@ func (q *notificationTargetController) V1SellerCreate(c fiber.Ctx) (err error) {
 func (q *notificationTargetController) V1BuyerSave(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "NotificationTargetController-V1BuyerSave"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, statusCode, err := sanitizers.ValidateNotificationTarget(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNotificationTarget")
@@ -108,7 +105,7 @@ func (q *notificationTargetController) V1BuyerSave(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	now := time.Now()
-	request.UserID = currentBuyer.ID
+	request.UserID = currentUser.ID
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)

@@ -73,7 +73,7 @@ type Transaction struct {
 	ID                              uuid.UUID          `json:"id" form:"id"`
 	ParentID                        *uuid.UUID         `json:"parent_id" form:"parent_id"`
 	Reordered                       bool               `json:"reordered" form:"reordered"`
-	BuyerID                         uuid.UUID          `json:"buyer_id" form:"buyer_id"`
+	UserID                          uuid.UUID          `json:"user_id" form:"user_id"`
 	CartID                          *uuid.UUID         `json:"cart_id" form:"cart_id"`
 	ReferenceNumber                 string             `json:"reference_number" form:"-"`
 	Status                          TransactionStatus  `json:"status" form:"-"`
@@ -346,7 +346,7 @@ func (q *TransactionItem) PhotoPath(baseURLs ...string) string {
 type TransactionFilter struct {
 	TransactionIDs,
 	ExcludedTransactionIDs,
-	BuyerIDs,
+	UserIDs,
 	CartIDs,
 	ReferrerIDs,
 	VoucherIDs []uuid.UUID
@@ -384,8 +384,8 @@ func (q *TransactionFilter) WithExcludedTransactionIDs(excludedTransactionIDs ..
 	return q
 }
 
-func (q *TransactionFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *TransactionFilter {
-	q.BuyerIDs = buyerIDs
+func (q *TransactionFilter) WithUserIDs(userIDs ...uuid.UUID) *TransactionFilter {
+	q.UserIDs = userIDs
 	return q
 }
 
