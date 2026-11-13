@@ -34,7 +34,6 @@ type Service struct {
 	TelegramBotClient         *externals.TelegramBotClient
 	Storage                   fiber.Storage
 	UserService               services.UserService
-	AdminService              services.AdminService
 	MessageService            services.MessageService
 	ProductCategoryService    services.ProductCategoryService
 	ProductService            services.ProductService
@@ -139,7 +138,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	})
 	repositories.SetDbWrite(dbWrite)
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
-	adminRepository := repositories.NewAdminRepository(dbRead, dbWrite)
 	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
 	productCategoryRepository := repositories.NewProductCategoryRepository(dbRead, dbWrite)
 	productRepository := repositories.NewProductRepository(dbRead, dbWrite)
@@ -165,7 +163,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
-	adminService := services.NewAdminService(adminRepository)
 	messageService := services.NewMessageService(messageRepository)
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	productService := services.NewProductService(productRepository)
@@ -225,7 +222,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		TelegramBotClient:         telegramBotClient,
 		Storage:                   storage,
 		UserService:               userService,
-		AdminService:              adminService,
 		MessageService:            messageService,
 		ProductCategoryService:    productCategoryService,
 		ProductService:            productService,
