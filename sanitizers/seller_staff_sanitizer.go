@@ -17,9 +17,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindSellers(ctx context.Context, c fiber.Ctx) (*models.SellerFilter, error) {
-	ctxt := "SellerSanitizer-FindSellers"
-	response := models.NewSellerFilter()
+func FindSellerStaff(ctx context.Context, c fiber.Ctx) (*models.UserFilter, error) {
+	ctxt := "SellerStaffSanitizer-FindSellerStaff"
+	response := models.NewUserFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -36,7 +36,7 @@ func FindSellers(ctx context.Context, c fiber.Ctx) (*models.SellerFilter, error)
 		var sortings []models.Sorting
 		for _, sorting := range sortBy {
 			if !strings.Contains(sorting, ":") {
-				if _, ok := models.MapSellerSortings[sorting]; ok {
+				if _, ok := models.MapSellerStaffSortings[sorting]; ok {
 					sortings = append(sortings, models.Sorting{
 						Field:     sorting,
 						Direction: models.SortingDirectionAsc,
@@ -44,7 +44,7 @@ func FindSellers(ctx context.Context, c fiber.Ctx) (*models.SellerFilter, error)
 				}
 			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
 				field, order := items[0], items[1]
-				if _, ok := models.MapSellerSortings[field]; ok &&
+				if _, ok := models.MapSellerStaffSortings[field]; ok &&
 					(models.SortingDirectionAsc.Equal(order) ||
 						models.SortingDirectionDesc.Equal(order)) {
 					sortings = append(sortings, models.Sorting{
@@ -71,16 +71,29 @@ func FindSellers(ctx context.Context, c fiber.Ctx) (*models.SellerFilter, error)
 	return response, nil
 }
 
-func ValidateSeller(ctx context.Context, c fiber.Ctx) (*models.Seller, *multipart.FileHeader, *string, int, error) {
-	ctxt := "SellerSanitizer-ValidateSeller"
-	var response models.Seller
+// ValidateSellerStaff binds and validates a seller staff request. A password
+// is required when passwordRequired is true (creating an account) and
+// optional otherwise (an empty password keeps the current one).
+func ValidateSellerStaff(
+	ctx context.Context,
+	c fiber.Ctx,
+	passwordRequired bool,
+) (
+	*models.SellerStaff,
+	*multipart.FileHeader,
+	*string,
+	int,
+	error,
+) {
+	ctxt := "SellerStaffSanitizer-ValidateSellerStaff"
+	var response models.SellerStaff
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, nil, nil, fiberErr.Code, err
 	}
 	keepFormFields(&response)
-	if err = (&response).Validate(); err != nil {
+	if err = (&response).Validate(passwordRequired); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, nil, nil, fiber.StatusBadRequest, err
 	}

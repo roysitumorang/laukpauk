@@ -47,7 +47,7 @@ func init() {
 			"+628116099887",
 			encryptedPassword,
 			"seller-default.png",
-			models.SellerLevelOwner,
+			models.UserLevelSellerOwner,
 			now,
 			now,
 		); err != nil {

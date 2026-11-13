@@ -331,3 +331,54 @@ type SignInResponse struct {
 	ExpiredAt time.Time `json:"expired_at"`
 	User      *User     `json:"user"`
 }
+
+var MapSellerStaffSortings = map[string]struct{}{
+	SortingFieldID:   {},
+	SortingFieldName: {},
+}
+
+// SellerStaff is the request body an owner sends to create or update a
+// seller account (a users row with role seller).
+type SellerStaff struct {
+	Name           string  `json:"name" form:"name"`
+	Username       string  `json:"username" form:"username"`
+	MobilePhone    string  `json:"mobile_phone" form:"mobile_phone"`
+	Email          *string `json:"email" form:"email"`
+	Base64Password string  `json:"password" form:"password"`
+	Password       string  `json:"-" form:"-"`
+	Photo          string  `json:"-" form:"-"`
+}
+
+func (q *SellerStaff) Validate(passwordRequired bool) error {
+	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
+		return errors.New("name: is required")
+	}
+	if q.Username = strings.TrimSpace(strings.ToLower(q.Username)); q.Username == "" {
+		return errors.New("username: is required")
+	}
+	if q.MobilePhone = strings.TrimSpace(q.MobilePhone); q.MobilePhone == "" {
+		return errors.New("mobile_phone: is required")
+	}
+	mobilePhone, err := phonenumbers.Parse(q.MobilePhone, "ID")
+	if err != nil {
+		return fmt.Errorf("mobile_phone: %w", err)
+	}
+	q.MobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
+	if q.Email != nil {
+		if *q.Email = strings.ToLower(strings.TrimSpace(*q.Email)); *q.Email == "" {
+			q.Email = nil
+		} else if _, err = mail.ParseAddress(*q.Email); err != nil {
+			return fmt.Errorf("email: %w", err)
+		}
+	}
+	if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
+		if passwordRequired {
+			return errors.New("password: is required")
+		}
+		return nil
+	}
+	if q.Password, err = helper.Base64Decode(q.Base64Password); err != nil {
+		return fmt.Errorf("password: %s", err.Error())
+	}
+	return nil
+}

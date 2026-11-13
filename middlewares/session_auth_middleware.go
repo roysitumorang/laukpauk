@@ -85,7 +85,7 @@ func SessionAuthMiddleware(
 		notifications, _, err := notificationService.FindNotifications(
 			ctx,
 			models.NewNotificationFilter().
-				WithSellerIDs(currentUser.ID).
+				WithUserIDs(currentUser.ID).
 				WithReadAtBlank(new(true)),
 		)
 		if err != nil {

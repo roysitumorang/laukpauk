@@ -100,35 +100,6 @@
 			</ul>
 			<!-- Right navbar links -->
 			<ul class="navbar-nav ml-auto">
-				<!-- Notifications Dropdown Menu -->
-				<li class="nav-item dropdown">
-					<a class="nav-link" data-toggle="dropdown" href="#">
-					<i class="far fa-bell"></i>
-					<span class="badge badge-primary navbar-badge" id="jumlahNotifikasi">0</span>
-					</a>
-					<div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-						<span class="dropdown-item dropdown-header">0 Newest of 0 Notifications</span>
-						<div id="notifikasi">
-							<div class="col text-center mb-4">
-								<h2 class="text-danger mb-3 animate__animated animate__fadeInDown"
-									style="font-weight:550;">Notifikasi</h2>
-								<img src="{{ baseURL }}/assets/img/empty.png"
-									alt="No Data Img"
-									class="animate__animated animate__fadeInUp"
-									style="animation-delay:.35s; width:200px;"
-									id="imgNotFound" />
-								<p class="text-muted mb-0 mt-3 animate__animated animate__fadeInUp"><i>Tidak ada notifikasi</i></p>
-							</div>
-							<script>
-								setTimeout(() => {
-									$("#imgNotFound").removeClass("animate__fadeInUp").addClass("animate__headShake animate__infinite");
-								}, 2000);
-							</script>
-						</div>
-						<div class="dropdown-divider"></div>
-						<a href="{{ baseURL }}/admin/notifications" class="dropdown-item dropdown-footer">Lihat Semua Notifikasi</a>
-					</div>
-				</li>
 				<li class="nav-item">
 					<a class="nav-link" href="{{ baseURL }}/admin/auth/logout">
 						<i class="fas fa-power-off text-danger" data-toggle="tooltip" data-placement="top" title="Logout"></i>
@@ -333,62 +304,6 @@
 			});
 			return notifikasiAdmin;
 		}
-	</script>
-	<script type="module">
-		import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-		import { getMessaging, onMessage, onRegistered } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-messaging.js";
-		import { getInstallations, getId } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-installations.js";
-		const firebaseConfig = {
-			apiKey: "AIzaSyBob-5BSzx71suls2th1WpXpmw5gozG-Mk",
-			authDomain: "laukpauk-53b39.firebaseapp.com",
-			databaseURL: "https://laukpauk-53b39.firebaseio.com",
-			projectId: "laukpauk-53b39",
-			storageBucket: "laukpauk-53b39.firebasestorage.app",
-			messagingSenderId: "605038317389",
-			appId: "1:605038317389:web:767b27e1b3c33226d43104"
-		};
-		const app = initializeApp(firebaseConfig);
-		const vapidKey = "BMNjy4x4XOVtSplXSxg4Xq8ZAlc-6pTZRI-tAMDcYn5in5jrOd5yAEuOMn6I92QEDsrZYicsXNklWjwAFjl5CLk";
-		const installations = getInstallations(app);
-		const messaging = getMessaging(app);
-		async function requestPermission() {
-			const permission = await Notification.requestPermission();
-			if (permission === "granted") {
-				try {
-					const fid = await getId(installations);
-					console.log("FCM Token:", fid);
-					const formData = new FormData();
-					formData.append("_csrf", document.querySelector("meta[name='csrf-token']").getAttribute("content"));
-					formData.append("fid", fid);
-					const response = await fetch("{{ baseURL }}/admin/notification_targets", {
-						method: "POST",
-						headers: { "X-Request-Id": crypto.randomUUID() },
-						body: formData,
-						credentials: "include"
-					});
-				} catch (error) {
-					console.error("Token retrieval failed:", error);
-				}
-			} else {
-				console.warn("Notification permission denied.");
-			}
-		}
-		onMessage(messaging, (payload) => {
-			console.log("Message received in foreground: ", payload);
-		});
-		onRegistered(messaging, (fid) => {
-			console.log("FCM registered with Firebase Installation ID:", fid);
-			const formData = new FormData();
-			formData.append("_csrf", document.querySelector("meta[name='csrf-token']").getAttribute("content"));
-			formData.append("fid", fid);
-			const response = fetch("{{ baseURL }}/admin/notification_targets", {
-				method: "POST",
-				headers: { "X-Request-Id": crypto.randomUUID() },
-				body: formData,
-				credentials: "include"
-			});
-		});
-		requestPermission()
 	</script>
 </body>
 </html>
