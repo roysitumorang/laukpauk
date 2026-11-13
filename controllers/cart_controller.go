@@ -19,7 +19,7 @@ import (
 
 type (
 	cartController struct {
-		buyerService          services.BuyerService
+		userService           services.UserService
 		productVariantService services.ProductVariantService
 		cartService           services.CartService
 		jsonWebTokenService   services.JsonWebTokenService
@@ -27,13 +27,13 @@ type (
 )
 
 func NewCartController(
-	buyerService services.BuyerService,
+	userService services.UserService,
 	productVariantService services.ProductVariantService,
 	cartService services.CartService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *cartController {
 	return &cartController{
-		buyerService:          buyerService,
+		userService:           userService,
 		productVariantService: productVariantService,
 		cartService:           cartService,
 		jsonWebTokenService:   jsonWebTokenService,
@@ -41,7 +41,7 @@ func NewCartController(
 }
 
 func (q *cartController) Mount(r fiber.Router) {
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex).
 		Post("", q.V1BuyerSave)
@@ -50,11 +50,11 @@ func (q *cartController) Mount(r fiber.Router) {
 func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CartController-V1BuyerIndex"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	response, err := q.cartService.FindCart(
 		ctx,
 		models.NewCartFilter().
-			WithBuyerIDs(currentBuyer.ID),
+			WithUserIDs(currentUser.ID),
 	)
 	if err != nil && !errors.Is(err, models.ErrCartNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
@@ -64,7 +64,7 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	if response == nil {
 		response = &models.Cart{
-			BuyerID: &currentBuyer.ID,
+			UserID: &currentUser.ID,
 		}
 		return helper.NewResponse(fiber.StatusOK).
 			SetData(response).
@@ -78,7 +78,7 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "CartController-V1BuyerSave"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, statusCode, err := sanitizers.ValidateCart(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateCart")
@@ -114,7 +114,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		}
 	}
 	now := time.Now().In(time.Local)
-	request.BuyerID = &currentBuyer.ID
+	request.UserID = &currentUser.ID
 	request.CreatedAt = now
 	request.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)

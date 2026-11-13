@@ -20,7 +20,6 @@ import (
 )
 
 type transactionController struct {
-	buyerService        services.BuyerService
 	transactionService  services.TransactionService
 	jsonWebTokenService services.JsonWebTokenService
 	kafkaClient         *externals.KafkaClient
@@ -28,14 +27,12 @@ type transactionController struct {
 }
 
 func NewTransactionController(
-	buyerService services.BuyerService,
 	transactionService services.TransactionService,
 	jsonWebTokenService services.JsonWebTokenService,
 	kafkaClient *externals.KafkaClient,
 	userService services.UserService,
 ) *transactionController {
 	return &transactionController{
-		buyerService:        buyerService,
 		transactionService:  transactionService,
 		jsonWebTokenService: jsonWebTokenService,
 		kafkaClient:         kafkaClient,
@@ -44,7 +41,7 @@ func NewTransactionController(
 }
 
 func (q *transactionController) Mount(r fiber.Router) {
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer").
 		Get("", buyerKeyAuth, q.V1BuyerIndex).
 		Post("", buyerKeyAuth, q.V1BuyerCreate).
@@ -65,7 +62,7 @@ func (q *transactionController) Mount(r fiber.Router) {
 func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1BuyerIndex"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, err := sanitizers.FindTransactions(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
@@ -75,7 +72,7 @@ func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	rows, pagination, err := q.transactionService.FindTransactions(
 		ctx,
-		request.WithBuyerIDs(currentBuyer.ID),
+		request.WithUserIDs(currentUser.ID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
@@ -95,7 +92,7 @@ func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1BuyerCreate"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, statusCode, err := sanitizers.ValidateTransaction(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
@@ -104,8 +101,8 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	request.BuyerID = currentBuyer.ID
-	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, currentBuyer, request)
+	request.UserID = currentUser.ID
+	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, currentUser, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
@@ -132,7 +129,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1BuyerShow"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -143,7 +140,7 @@ func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
 	response, err := q.transactionService.FindTransaction(
 		c,
 		models.NewTransactionFilter().
-			WithBuyerIDs(currentBuyer.ID).
+			WithUserIDs(currentUser.ID).
 			WithTransactionIDs(transactionID),
 	)
 	if err != nil && !errors.Is(err, models.ErrTransactionNotFound) {
@@ -238,7 +235,7 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1BuyerWithdraw"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -249,7 +246,7 @@ func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 	transaction, err := q.transactionService.FindTransaction(
 		c,
 		models.NewTransactionFilter().
-			WithBuyerIDs(currentBuyer.ID).
+			WithUserIDs(currentUser.ID).
 			WithTransactionIDs(transactionID).
 			WithTransactionStatuses(models.TransactionStatusPaid),
 	)

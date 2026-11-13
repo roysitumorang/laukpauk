@@ -35,7 +35,6 @@ type Service struct {
 	Storage                   fiber.Storage
 	UserService               services.UserService
 	AdminService              services.AdminService
-	BuyerService              services.BuyerService
 	MessageService            services.MessageService
 	ProductCategoryService    services.ProductCategoryService
 	ProductService            services.ProductService
@@ -141,7 +140,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	repositories.SetDbWrite(dbWrite)
 	userRepository := repositories.NewUserRepository(dbRead, dbWrite)
 	adminRepository := repositories.NewAdminRepository(dbRead, dbWrite)
-	buyerRepository := repositories.NewBuyerRepository(dbRead, dbWrite)
 	messageRepository := repositories.NewMessageRepository(dbRead, dbWrite)
 	productCategoryRepository := repositories.NewProductCategoryRepository(dbRead, dbWrite)
 	productRepository := repositories.NewProductRepository(dbRead, dbWrite)
@@ -168,7 +166,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	adminService := services.NewAdminService(adminRepository)
-	buyerService := services.NewBuyerService(buyerRepository)
 	messageService := services.NewMessageService(messageRepository)
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
 	productService := services.NewProductService(productRepository)
@@ -178,7 +175,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	deliveryPlanService := services.NewDeliveryPlanService(deliveryPlanRepository)
 	pointService := services.NewPointService(
 		pointRepository,
-		buyerRepository,
+		userRepository,
 		transactionRepository,
 	)
 	voucherService := services.NewVoucherService(voucherRepository)
@@ -186,7 +183,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	pointSpendingCapService := services.NewPointSpendingCapService(pointSpendingCapRepository)
 	transactionService := services.NewTransactionService(
 		transactionRepository,
-		buyerRepository,
 		transactionCounterRepository,
 		cartRepository,
 		deliveryPlanRepository,
@@ -230,7 +226,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		Storage:                   storage,
 		UserService:               userService,
 		AdminService:              adminService,
-		BuyerService:              buyerService,
 		MessageService:            messageService,
 		ProductCategoryService:    productCategoryService,
 		ProductService:            productService,

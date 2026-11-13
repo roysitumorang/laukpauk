@@ -35,18 +35,18 @@ type PointService interface {
 
 type pointService struct {
 	pointRepository       repositories.PointRepository
-	buyerRepository       repositories.BuyerRepository
+	userRepository        repositories.UserRepository
 	transactionRepository repositories.TransactionRepository
 }
 
 func NewPointService(
 	pointRepository repositories.PointRepository,
-	buyerRepository repositories.BuyerRepository,
+	userRepository repositories.UserRepository,
 	transactionRepository repositories.TransactionRepository,
 ) PointService {
 	return &pointService{
 		pointRepository:       pointRepository,
-		buyerRepository:       buyerRepository,
+		userRepository:        userRepository,
 		transactionRepository: transactionRepository,
 	}
 }
@@ -64,15 +64,15 @@ func (q *pointService) FindPoints(
 	n := len(points)
 	rows := make([]*models.Point, n)
 	if n > 0 {
-		var buyerIDs []uuid.UUID
+		var userIDs []uuid.UUID
 		mapBuyerIDs := map[uuid.UUID]struct{}{}
 		var transactionIDs []uuid.UUID
 		mapTransactionIDs := map[uuid.UUID]struct{}{}
 		var ok bool
 		for _, point := range points {
-			if _, ok = mapBuyerIDs[point.BuyerID]; !ok {
-				buyerIDs = append(buyerIDs, point.BuyerID)
-				mapBuyerIDs[point.BuyerID] = struct{}{}
+			if _, ok = mapBuyerIDs[point.UserID]; !ok {
+				userIDs = append(userIDs, point.UserID)
+				mapBuyerIDs[point.UserID] = struct{}{}
 			}
 			if point.TransactionID != nil {
 				if _, ok = mapTransactionIDs[*point.TransactionID]; !ok {
@@ -81,15 +81,15 @@ func (q *pointService) FindPoints(
 				}
 			}
 		}
-		mapBuyers := map[uuid.UUID]*models.Buyer{}
-		if len(buyerIDs) > 0 {
-			buyers, _, _, err := q.buyerRepository.FindBuyers(
+		mapBuyers := map[uuid.UUID]*models.User{}
+		if len(userIDs) > 0 {
+			buyers, _, _, err := q.userRepository.FindUsers(
 				ctx,
-				models.NewBuyerFilter().
-					WithBuyerIDs(buyerIDs...),
+				models.NewUserFilter().
+					WithUserIDs(userIDs...),
 			)
 			if err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 				return nil, nil, err
 			}
 			for _, buyer := range buyers {
@@ -112,11 +112,8 @@ func (q *pointService) FindPoints(
 			}
 		}
 		for i, point := range points {
-			if buyer, ok := mapBuyers[point.BuyerID]; ok {
-				point.BuyerName = buyer.Name
-				point.BuyerUsername = buyer.Username
-				point.BuyerMobilePhone = buyer.MobilePhone
-				point.BuyerReferralCode = buyer.ReferralCode
+			if buyer, ok := mapBuyers[point.UserID]; ok {
+				point.SetBuyer(buyer)
 			}
 			if point.TransactionID != nil {
 				if transaction, ok := mapTransactions[*point.TransactionID]; ok {
@@ -155,19 +152,16 @@ func (q *pointService) FindPoint(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoint")
 		return nil, err
 	}
-	buyer, err := q.buyerRepository.FindBuyer(
+	buyer, err := q.userRepository.FindUser(
 		ctx,
-		models.NewBuyerFilter().
-			WithBuyerIDs(response.BuyerID),
+		models.NewUserFilter().
+			WithUserIDs(response.UserID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 		return nil, err
 	}
-	response.BuyerName = buyer.Name
-	response.BuyerUsername = buyer.Username
-	response.BuyerMobilePhone = buyer.MobilePhone
-	response.BuyerReferralCode = buyer.ReferralCode
+	response.SetBuyer(buyer)
 	if response.TransactionID != nil {
 		transaction, err := q.transactionRepository.FindTransaction(
 			ctx,
@@ -194,19 +188,16 @@ func (q *pointService) CreatePoint(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePoint")
 		return nil, err
 	}
-	buyer, err := q.buyerRepository.FindBuyer(
+	buyer, err := q.userRepository.FindUser(
 		ctx,
-		models.NewBuyerFilter().
-			WithBuyerIDs(response.BuyerID),
+		models.NewUserFilter().
+			WithUserIDs(response.UserID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 		return nil, err
 	}
-	response.BuyerName = buyer.Name
-	response.BuyerUsername = buyer.Username
-	response.BuyerMobilePhone = buyer.MobilePhone
-	response.BuyerReferralCode = buyer.ReferralCode
+	response.SetBuyer(buyer)
 	if response.TransactionID != nil {
 		transaction, err := q.transactionRepository.FindTransaction(
 			ctx,
@@ -236,19 +227,16 @@ func (q *pointService) UpdatePoint(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePoint")
 		return nil, err
 	}
-	buyer, err := q.buyerRepository.FindBuyer(
+	buyer, err := q.userRepository.FindUser(
 		ctx,
-		models.NewBuyerFilter().
-			WithBuyerIDs(response.BuyerID),
+		models.NewUserFilter().
+			WithUserIDs(response.UserID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 		return nil, err
 	}
-	response.BuyerName = buyer.Name
-	response.BuyerUsername = buyer.Username
-	response.BuyerMobilePhone = buyer.MobilePhone
-	response.BuyerReferralCode = buyer.ReferralCode
+	response.SetBuyer(buyer)
 	if response.TransactionID != nil {
 		transaction, err := q.transactionRepository.FindTransaction(
 			ctx,

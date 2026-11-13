@@ -84,7 +84,7 @@ func (q *transactionRepository) FindTransactions(
 		`id
 		, parent_id
 		, reordered
-		, buyer_id
+		, user_id
 		, cart_id
 		, reference_number
 		, status
@@ -229,7 +229,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.ID,
 			&transaction.ParentID,
 			&transaction.Reordered,
-			&transaction.BuyerID,
+			&transaction.UserID,
 			&transaction.CartID,
 			&transaction.ReferenceNumber,
 			&transaction.Status,
@@ -372,7 +372,7 @@ func (q *transactionRepository) FindTransaction(
 			id
 			, parent_id
 			, reordered
-			, buyer_id
+			, user_id
 			, cart_id
 			, reference_number
 			, status
@@ -445,7 +445,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.ID,
 		&response.ParentID,
 		&response.Reordered,
-		&response.BuyerID,
+		&response.UserID,
 		&response.CartID,
 		&response.ReferenceNumber,
 		&response.Status,
@@ -594,7 +594,7 @@ func (q *transactionRepository) CreateTransaction(
 		`INSERT INTO transactions (
 			parent_id
 			, reordered
-			, buyer_id
+			, user_id
 			, cart_id
 			, reference_number
 			, status
@@ -644,7 +644,7 @@ func (q *transactionRepository) CreateTransaction(
 		RETURNING id
 			, parent_id
 			, reordered
-			, buyer_id
+			, user_id
 			, cart_id
 			, reference_number
 			, status
@@ -710,7 +710,7 @@ func (q *transactionRepository) CreateTransaction(
 			, completed_at`,
 		request.ParentID,
 		request.Reordered,
-		request.BuyerID,
+		request.UserID,
 		request.CartID,
 		request.ReferenceNumber,
 		request.Status,
@@ -754,7 +754,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.ID,
 		&response.ParentID,
 		&response.Reordered,
-		&response.BuyerID,
+		&response.UserID,
 		&response.CartID,
 		&response.ReferenceNumber,
 		&response.Status,
@@ -823,7 +823,7 @@ func (q *transactionRepository) CreateTransaction(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "transactions_buyer_id_cart_id_key":
+			case "transactions_cart_id_key":
 				err = models.ErrUniqueTransactionCartIdViolation
 			case "transactions_unique_reference_number_idx":
 				err = models.ErrUniqueTransactionReferenceNumberViolation
@@ -979,7 +979,7 @@ func (q *transactionRepository) UpdateTransaction(
 			id
 			, parent_id
 			, reordered
-			, buyer_id
+			, user_id
 			, cart_id
 			, reference_number
 			, status
@@ -1051,7 +1051,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.ID,
 		&response.ParentID,
 		&response.Reordered,
-		&response.BuyerID,
+		&response.UserID,
 		&response.CartID,
 		&response.ReferenceNumber,
 		&response.Status,
@@ -1363,7 +1363,7 @@ func (q *transactionRepository) UpdateTransaction(
 			RETURNING id
 				, parent_id
 				, reordered
-				, buyer_id
+				, user_id
 				, cart_id
 				, reference_number
 				, status
@@ -1431,7 +1431,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.ID,
 			&response.ParentID,
 			&response.Reordered,
-			&response.BuyerID,
+			&response.UserID,
 			&response.CartID,
 			&response.ReferenceNumber,
 			&response.Status,
@@ -1667,10 +1667,10 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.BuyerIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("buyer_id IN (")
-		for i, buyerID := range request.BuyerIDs {
+		_, _ = sb.WriteString("user_id IN (")
+		for i, buyerID := range request.UserIDs {
 			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")

@@ -11,7 +11,7 @@ import (
 )
 
 var ErrPointEarningNotFound = errors.New("point earning not found")
-var ErrPointEarningUniqueBuyerIdStartDateEndDate = errors.New("buyer_id, start_date & end_date already exists")
+var ErrPointEarningUniqueBuyerIdStartDateEndDate = errors.New("user_id, start_date & end_date already exists")
 var MapPointEarningSortings = map[string]struct{}{
 	SortingFieldID: {},
 }
@@ -19,7 +19,7 @@ var MapPointEarningSortings = map[string]struct{}{
 type PointEarning struct {
 	RowNo     int64     `json:"-" form:"-"`
 	ID        uuid.UUID `json:"-" form:"-"`
-	BuyerID   uuid.UUID `json:"-" form:"-"`
+	UserID    uuid.UUID `json:"-" form:"-"`
 	StartDate time.Time `json:"-" form:"-"`
 	EndDate   time.Time `json:"-" form:"-"`
 	Amount    int       `json:"-" form:"-"`
@@ -37,7 +37,7 @@ func (q *PointEarning) New() bool {
 
 type PointEarningFilter struct {
 	PointEarningIDs,
-	BuyerIDs []uuid.UUID
+	UserIDs []uuid.UUID
 	StartDate,
 	EndDate time.Time
 	Keyword,
@@ -61,8 +61,8 @@ func (q *PointEarningFilter) WithPointEarningIDs(pointEarningIDs ...uuid.UUID) *
 	return q
 }
 
-func (q *PointEarningFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *PointEarningFilter {
-	q.BuyerIDs = buyerIDs
+func (q *PointEarningFilter) WithUserIDs(userIDs ...uuid.UUID) *PointEarningFilter {
+	q.UserIDs = userIDs
 	return q
 }
 

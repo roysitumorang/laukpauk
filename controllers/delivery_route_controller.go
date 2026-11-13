@@ -20,7 +20,7 @@ import (
 
 type (
 	deliveryRouteController struct {
-		buyerService         services.BuyerService
+		userService          services.UserService
 		deliveryRouteService services.DeliveryRouteService
 		settingService       services.SettingService
 		jsonWebTokenService  services.JsonWebTokenService
@@ -29,14 +29,14 @@ type (
 )
 
 func NewDeliveryRouteController(
-	buyerService services.BuyerService,
+	userService services.UserService,
 	deliveryRouteService services.DeliveryRouteService,
 	settingService services.SettingService,
 	jsonWebTokenService services.JsonWebTokenService,
 	routesApiClient *externals.RoutesApiClient,
 ) *deliveryRouteController {
 	return &deliveryRouteController{
-		buyerService:         buyerService,
+		userService:          userService,
 		deliveryRouteService: deliveryRouteService,
 		settingService:       settingService,
 		jsonWebTokenService:  jsonWebTokenService,
@@ -45,7 +45,7 @@ func NewDeliveryRouteController(
 }
 
 func (q *deliveryRouteController) Mount(r fiber.Router) {
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Post("", q.V1BuyerSave)
 }
@@ -53,7 +53,7 @@ func (q *deliveryRouteController) Mount(r fiber.Router) {
 func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryRouteController-V1BuyerSave"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	setting, err := q.settingService.FindSetting(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
@@ -141,9 +141,9 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	if request.DistanceKM <= setting.DeliveryMaxDistanceKM {
-		currentBuyer.DeliveryRouteID = &response.ID
-		if _, err = q.buyerService.UpdateBuyer(ctx, tx, currentBuyer); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
+		currentUser.DeliveryRouteID = &response.ID
+		if _, err = q.userService.UpdateUser(ctx, tx, currentUser); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
 				WriteResponse(c)

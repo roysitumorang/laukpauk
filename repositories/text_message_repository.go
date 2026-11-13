@@ -85,9 +85,7 @@ func (q *textMessageRepository) FindTextMessages(
 		query,
 		"COUNT(1)",
 		`id
-		, admin_id
-		, seller_id
-		, buyer_id
+		, user_id
 		, mobile_phone
 		, message_type
 		, body
@@ -147,9 +145,7 @@ func (q *textMessageRepository) FindTextMessages(
 		var textMessage models.TextMessage
 		if err = rows.Scan(
 			&textMessage.ID,
-			&textMessage.AdminID,
-			&textMessage.SellerID,
-			&textMessage.BuyerID,
+			&textMessage.UserID,
 			&textMessage.MobilePhone,
 			&textMessage.MessageType,
 			&textMessage.Body,
@@ -187,9 +183,7 @@ func (q *textMessageRepository) FindTextMessage(
 		sb,
 		`SELECT
 			id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, mobile_phone
 			, message_type
 			, body
@@ -205,9 +199,7 @@ func (q *textMessageRepository) FindTextMessage(
 	var response models.TextMessage
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.MobilePhone,
 		&response.MessageType,
 		&response.Body,
@@ -238,20 +230,16 @@ func (q *textMessageRepository) CreateTextMessage(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO text_messages (
-			admin_id
-			, seller_id
-			, buyer_id
+			user_id
 			, mobile_phone
 			, message_type
 			, body
 			, created_by
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, mobile_phone
 			, message_type
 			, body
@@ -261,9 +249,7 @@ func (q *textMessageRepository) CreateTextMessage(
 			, created_at
 			, updated_at
 			, sent_at`,
-		request.AdminID,
-		request.SellerID,
-		request.BuyerID,
+		request.UserID,
 		request.MobilePhone,
 		request.MessageType,
 		request.Body,
@@ -272,9 +258,7 @@ func (q *textMessageRepository) CreateTextMessage(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.MobilePhone,
 		&response.MessageType,
 		&response.Body,
@@ -302,9 +286,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		ctx,
 		`SELECT
 			id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, mobile_phone
 			, message_type
 			, body
@@ -320,9 +302,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.MobilePhone,
 		&response.MessageType,
 		&response.Body,
@@ -394,9 +374,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, mobile_phone
 			, message_type
 			, body
@@ -410,9 +388,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.MobilePhone,
 		&response.MessageType,
 		&response.Body,
@@ -461,36 +437,10 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.AdminIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("admin_id IN (")
-		for i, adminID := range request.AdminIDs {
-			params = append(params, adminID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.SellerIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("seller_id IN (")
-		for i, sellerID := range request.SellerIDs {
-			params = append(params, sellerID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.BuyerIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("buyer_id IN (")
-		for i, buyerID := range request.BuyerIDs {
+		_, _ = sb.WriteString("user_id IN (")
+		for i, buyerID := range request.UserIDs {
 			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -550,37 +500,18 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
-			`(EXISTS(
+			`EXISTS(
 				SELECT 1
-				FROM admins
-				WHERE admins.id = text_messages.admin_id
+				FROM users
+				WHERE users.id = text_messages.user_id
 					AND (
-						LOWER(admins.name) LIKE $%d
-						OR admins.username LIKE $%d
-						OR admins.email LIKE $%d
-						OR admins.mobile_phone LIKE $%d
+						LOWER(users.name) LIKE $%d
+						OR users.username LIKE $%d
+						OR users.email LIKE $%d
+						OR users.mobile_phone LIKE $%d
 					)
-			) OR EXISTS(
-				SELECT 1
-				FROM sellers
-				WHERE sellers.id = text_messages.seller_id
-					AND (
-						LOWER(sellers.name) LIKE $%d
-						OR sellers.username LIKE $%d
-						OR sellers.email LIKE $%d
-						OR sellers.mobile_phone LIKE $%d
-					)
-			) OR EXISTS(
-				SELECT 1
-				FROM buyers
-				WHERE buyers.id = text_messages.buyer_id
-					AND (
-						LOWER(buyers.name) LIKE $%d
-						OR buyers.username LIKE $%d
-						OR buyers.mobile_phone LIKE $%d
-					)
-			))`,
-			n, n, n, n, n, n, n, n, n, n, n,
+			)`,
+			n, n, n, n,
 		)
 		conds = append(conds, sb.String())
 	}

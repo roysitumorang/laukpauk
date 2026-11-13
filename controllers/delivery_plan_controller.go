@@ -20,7 +20,6 @@ import (
 type (
 	deliveryPlanController struct {
 		deliveryPlanService services.DeliveryPlanService
-		buyerService        services.BuyerService
 		jsonWebTokenService services.JsonWebTokenService
 		userService         services.UserService
 	}
@@ -28,13 +27,11 @@ type (
 
 func NewDeliveryPlanController(
 	deliveryPlanService services.DeliveryPlanService,
-	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 	userService services.UserService,
 ) *deliveryPlanController {
 	return &deliveryPlanController{
 		deliveryPlanService: deliveryPlanService,
-		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
 		userService:         userService,
 	}
@@ -48,7 +45,7 @@ func (q *deliveryPlanController) Mount(r fiber.Router) {
 		Get("/:id", q.V1SellerShow).
 		Post("/:id", q.V1SellerUpdate).
 		Post("/:id/delete", q.V1SellerDelete)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("/now", q.V1BuyerShow)
 }

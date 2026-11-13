@@ -20,20 +20,17 @@ import (
 
 type voucherController struct {
 	voucherService      services.VoucherService
-	buyerService        services.BuyerService
 	jsonWebTokenService services.JsonWebTokenService
 	userService         services.UserService
 }
 
 func NewVoucherController(
 	voucherService services.VoucherService,
-	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
 	userService services.UserService,
 ) *voucherController {
 	return &voucherController{
 		voucherService:      voucherService,
-		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
 		userService:         userService,
 	}
@@ -47,7 +44,7 @@ func (q *voucherController) Mount(r fiber.Router) {
 		Get("/:id", q.V1SellerShow).
 		Post("/:id", q.V1SellerUpdate).
 		Post("/:id/delete", q.V1SellerDelete)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex)
 }
@@ -270,7 +267,7 @@ func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	request.DeletedBy = nil
 	request.DeletedAt = nil
 	request.DeletionReason = nil
-	request.BuyerIDs = voucher.BuyerIDs
+	request.UserIDs = voucher.UserIDs
 	if photo == nil {
 		request.Photo = voucher.Photo
 	}
@@ -388,12 +385,12 @@ func (q *voucherController) V1SellerDelete(c fiber.Ctx) (err error) {
 func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "VoucherController-V1BuyerIndex"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	response, _, err := q.voucherService.FindVouchers(
 		ctx,
 		models.NewVoucherFilter().
 			WithRecordStatuses(models.RecordStatusActive).
-			WithBuyerIDs(currentBuyer.ID),
+			WithUserIDs(currentUser.ID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")

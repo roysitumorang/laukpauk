@@ -65,6 +65,20 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
+			`ALTER TABLE users ADD FOREIGN KEY (delivery_route_id) REFERENCES delivery_routes (id) ON UPDATE CASCADE ON DELETE SET NULL;`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
+			`CREATE INDEX ON users (delivery_route_id);`,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			return
+		}
+		if _, err = tx.Exec(
+			ctx,
 			`ALTER TABLE users
 				ADD COLUMN delivery_route_id UUID REFERENCES delivery_routes (id)
 				ON UPDATE CASCADE ON DELETE RESTRICT;`,

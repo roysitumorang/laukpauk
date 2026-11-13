@@ -332,24 +332,27 @@ type SignInResponse struct {
 	User      *User     `json:"user"`
 }
 
-var MapSellerStaffSortings = map[string]struct{}{
+var MapUserAccountSortings = map[string]struct{}{
 	SortingFieldID:   {},
 	SortingFieldName: {},
 }
 
-// SellerStaff is the request body an owner sends to create or update a
-// seller account (a users row with role seller).
-type SellerStaff struct {
-	Name           string  `json:"name" form:"name"`
-	Username       string  `json:"username" form:"username"`
-	MobilePhone    string  `json:"mobile_phone" form:"mobile_phone"`
-	Email          *string `json:"email" form:"email"`
-	Base64Password string  `json:"password" form:"password"`
-	Password       string  `json:"-" form:"-"`
-	Photo          string  `json:"-" form:"-"`
+// UserAccount is the request body a seller sends to create or update an
+// account: a staff seller (owner only) or a buyer. Address and referrer only
+// apply to buyers.
+type UserAccount struct {
+	Name           string     `json:"name" form:"name"`
+	Username       string     `json:"username" form:"username"`
+	MobilePhone    string     `json:"mobile_phone" form:"mobile_phone"`
+	Email          *string    `json:"email" form:"email"`
+	Address        *string    `json:"address" form:"address"`
+	ReferrerID     *uuid.UUID `json:"referrer_id" form:"referrer_id"`
+	Base64Password string     `json:"password" form:"password"`
+	Password       string     `json:"-" form:"-"`
+	Photo          string     `json:"-" form:"-"`
 }
 
-func (q *SellerStaff) Validate(passwordRequired bool) error {
+func (q *UserAccount) Validate(passwordRequired, addressRequired bool) error {
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
 	}
@@ -370,6 +373,17 @@ func (q *SellerStaff) Validate(passwordRequired bool) error {
 		} else if _, err = mail.ParseAddress(*q.Email); err != nil {
 			return fmt.Errorf("email: %w", err)
 		}
+	}
+	if q.Address != nil {
+		if *q.Address = strings.TrimSpace(*q.Address); *q.Address == "" {
+			q.Address = nil
+		}
+	}
+	if q.Address == nil && addressRequired {
+		return errors.New("address: is required")
+	}
+	if q.ReferrerID != nil && q.ReferrerID.Compare(uuid.Nil()) == 0 {
+		q.ReferrerID = nil
 	}
 	if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {
 		if passwordRequired {

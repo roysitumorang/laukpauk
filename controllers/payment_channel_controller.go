@@ -6,32 +6,33 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
+	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/sanitizers"
 	"github.com/roysitumorang/laukpauk/services"
 )
 
 type (
 	paymentChannelController struct {
-		buyerService          services.BuyerService
+		userService           services.UserService
 		paymentChannelService services.PaymentChannelService
 		jsonWebTokenService   services.JsonWebTokenService
 	}
 )
 
 func NewPaymentChannelController(
-	buyerService services.BuyerService,
+	userService services.UserService,
 	paymentChannelService services.PaymentChannelService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *paymentChannelController {
 	return &paymentChannelController{
-		buyerService:          buyerService,
+		userService:           userService,
 		paymentChannelService: paymentChannelService,
 		jsonWebTokenService:   jsonWebTokenService,
 	}
 }
 
 func (q *paymentChannelController) Mount(r fiber.Router) {
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
+	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex)
 }

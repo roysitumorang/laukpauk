@@ -1,47 +1,29 @@
 package controllers
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"strings"
-	"time"
-	"uuid"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/jackc/pgx/v5"
-	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
-	"github.com/roysitumorang/laukpauk/repositories"
 	"github.com/roysitumorang/laukpauk/sanitizers"
 	"github.com/roysitumorang/laukpauk/services"
 )
 
 type authController struct {
-	adminService        services.AdminService
-	buyerService        services.BuyerService
-	jsonWebTokenService services.JsonWebTokenService
-	textMessageService  services.TextMessageService
-	kafkaClient         *externals.KafkaClient
+	adminService services.AdminService
 }
 
 func NewAuthController(
 	adminService services.AdminService,
-	buyerService services.BuyerService,
-	jsonWebTokenService services.JsonWebTokenService,
-	textMessageService services.TextMessageService,
-	kafkaClient *externals.KafkaClient,
 ) *authController {
 	return &authController{
-		adminService:        adminService,
-		buyerService:        buyerService,
-		jsonWebTokenService: jsonWebTokenService,
-		textMessageService:  textMessageService,
-		kafkaClient:         kafkaClient,
+		adminService: adminService,
 	}
 }
 
@@ -52,10 +34,6 @@ func (q *authController) Mount(r fiber.Router) {
 		Post("/sessions", q.AdminCreate).
 		Get("/me", adminSessionAuth, q.AdminShow).
 		Get("/logout", q.AdminLogout)
-	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer").
-		Post("/login", q.V1BuyerCreate).
-		Get("/me", buyerKeyAuth, q.V1BuyerShow)
 }
 
 func (q *authController) AdminNew(c fiber.Ctx) error {
@@ -188,90 +166,4 @@ func (q *authController) AdminLogout(c fiber.Ctx) error {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrReset")
 	}
 	return flash.Clear(c, sess.Session).Redirect(c, sess.Session, "/admin/auth/sessions/new")
-}
-
-func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
-	ctx := c.Context()
-	ctxt := "AuthController-V1BuyerCreate"
-	loginRequest, statusCode, err := sanitizers.ValidateOtpLogin(ctx, c)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateOtpLogin")
-		return helper.NewResponse(statusCode).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	buyer, err := q.buyerService.FindBuyer(
-		ctx,
-		models.NewBuyerFilter().
-			WithLogin(loginRequest.Login).
-			WithStatuses(models.BuyerStatusActive),
-	)
-	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if buyer == nil || buyer.EncryptedPassword == nil {
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(models.ErrLoginFailed.Error()).
-			WriteResponse(c)
-	}
-	now := time.Now().In(time.Local)
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
-	expiredAt := now.Add(helper.GetAccessTokenAge()).Add(time.Nanosecond)
-	jsonWebTokenRequest := &models.JsonWebToken{
-		UserID:    buyer.ID,
-		CreatedAt: now,
-		ExpiredAt: expiredAt,
-	}
-	jsonWebToken, err := q.jsonWebTokenService.CreateJsonWebToken(ctx, tx, jsonWebTokenRequest)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateJsonWebToken")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	tokenString, err := helper.GenerateAccessToken(buyer.ID.String(), jsonWebToken.ID.String(), buyer.Username, jsonWebToken.CreatedAt, jsonWebToken.ExpiredAt)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGenerateAccessToken")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if err = tx.Commit(ctx); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	response := models.BuyerLoginResponse{
-		IDToken:   tokenString,
-		ExpiredAt: jsonWebToken.ExpiredAt,
-		Buyer:     buyer,
-	}
-	return helper.NewResponse(fiber.StatusCreated).
-		SetData(response).
-		WriteResponse(c)
-}
-
-func (q *authController) V1BuyerShow(c fiber.Ctx) error {
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
-	return helper.NewResponse(fiber.StatusOK).
-		SetData(currentBuyer).
-		WriteResponse(c)
 }

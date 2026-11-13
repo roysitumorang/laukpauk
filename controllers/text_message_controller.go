@@ -22,19 +22,19 @@ import (
 type (
 	textMessageController struct {
 		adminService       services.AdminService
-		buyerService       services.BuyerService
+		userService        services.UserService
 		textMessageService services.TextMessageService
 	}
 )
 
 func NewTextMessageController(
 	adminService services.AdminService,
-	buyerService services.BuyerService,
+	userService services.UserService,
 	textMessageService services.TextMessageService,
 ) *textMessageController {
 	return &textMessageController{
 		adminService:       adminService,
-		buyerService:       buyerService,
+		userService:        userService,
 		textMessageService: textMessageService,
 	}
 }
@@ -121,7 +121,7 @@ func (q *textMessageController) AdminNew(c fiber.Ctx) (err error) {
 	defer flash.Clear(c, sess.Session)
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.TextMessage{}
-	var buyers []*models.Buyer
+	var buyers []*models.User
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -133,15 +133,17 @@ func (q *textMessageController) AdminNew(c fiber.Ctx) (err error) {
 		"textMessage", request,
 		"buyers", buyers,
 	)
-	if buyers, _, err = q.buyerService.FindBuyers(
+	if buyers, _, err = q.userService.FindUsers(
 		ctx,
-		models.NewBuyerFilter().
+		models.NewUserFilter().
+			WithRoles(models.RoleBuyer).
+			WithStatuses(models.UserStatusActive).
 			WithSortings(models.Sorting{
-				Field:     models.BuyerSortingFieldName,
+				Field:     models.SortingFieldName,
 				Direction: models.SortingDirectionAsc,
 			}),
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 		return c.Render("/admin/text_message_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -160,7 +162,7 @@ func (q *textMessageController) AdminCreate(c fiber.Ctx) (err error) {
 	}
 	csrfToken := csrf.TokenFromContext(c)
 	request := &models.TextMessage{}
-	var buyers []*models.Buyer
+	var buyers []*models.User
 	params := models.NewMap().Push(
 		"baseURL", c.BaseURL(),
 		"flash", flash,
@@ -172,15 +174,17 @@ func (q *textMessageController) AdminCreate(c fiber.Ctx) (err error) {
 		"textMessage", request,
 		"buyers", buyers,
 	)
-	if buyers, _, err = q.buyerService.FindBuyers(
+	if buyers, _, err = q.userService.FindUsers(
 		ctx,
-		models.NewBuyerFilter().
+		models.NewUserFilter().
+			WithRoles(models.RoleBuyer).
+			WithStatuses(models.UserStatusActive).
 			WithSortings(models.Sorting{
-				Field:     models.BuyerSortingFieldName,
+				Field:     models.SortingFieldName,
 				Direction: models.SortingDirectionAsc,
 			}),
 	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 		return c.Render("/admin/text_message_new", params.Push(
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
@@ -199,10 +203,10 @@ func (q *textMessageController) AdminCreate(c fiber.Ctx) (err error) {
 			"flash", flash.Danger(err.Error()),
 		), "admin/layouts/authenticated")
 	}
-	mobilePhone, ok := mapBuyerMobilePhones[request.BuyerID]
+	mobilePhone, ok := mapBuyerMobilePhones[request.UserID]
 	if !ok {
 		return c.Render("/admin/text_message_new", params.Push(
-			"flash", flash.Danger("buyer_id: not found"),
+			"flash", flash.Danger("user_id: not found"),
 		), "admin/layouts/authenticated")
 	}
 	createdBy := currentAdmin.ID

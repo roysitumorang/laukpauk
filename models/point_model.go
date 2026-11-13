@@ -52,7 +52,7 @@ type Point struct {
 	ID                         uuid.UUID    `json:"id" form:"id"`
 	RecordStatus               RecordStatus `json:"record_status" form:"-"`
 	PointType                  PointType    `json:"point_type" form:"point_type"`
-	BuyerID                    uuid.UUID    `json:"buyer_id" form:"buyer_id"`
+	UserID                     uuid.UUID    `json:"user_id" form:"user_id"`
 	BuyerName                  string       `json:"buyer_name" form:"-"`
 	BuyerUsername              string       `json:"buyer_username" form:"-"`
 	BuyerMobilePhone           string       `json:"buyer_mobile_phone" form:"-"`
@@ -74,8 +74,8 @@ func (q *Point) Validate() error {
 	if _, ok := MapPointTypes[q.PointType]; !ok {
 		return errors.New("point_type: not found")
 	}
-	if q.BuyerID.Compare(uuid.Nil()) == 0 {
-		return errors.New("buyer_id: is required")
+	if q.UserID.Compare(uuid.Nil()) == 0 {
+		return errors.New("user_id: is required")
 	}
 	if q.Amount < 1 {
 		return errors.New("amount: requires a positive integer")
@@ -96,7 +96,7 @@ func (q *Point) Spendable() bool {
 
 type PointFilter struct {
 	PointIDs,
-	BuyerIDs,
+	UserIDs,
 	TransactionIDs []uuid.UUID
 	RecordStatuses []RecordStatus
 	PointTypes     []PointType
@@ -121,8 +121,8 @@ func (q *PointFilter) WithPointIDs(pointIDs ...uuid.UUID) *PointFilter {
 	return q
 }
 
-func (q *PointFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *PointFilter {
-	q.BuyerIDs = buyerIDs
+func (q *PointFilter) WithUserIDs(userIDs ...uuid.UUID) *PointFilter {
+	q.UserIDs = userIDs
 	return q
 }
 
@@ -172,5 +172,19 @@ func (q *PointFilter) WithPage(page int64) *PointFilter {
 
 func (q *PointFilter) WithUrlValues(urlValues url.Values) *PointFilter {
 	q.UrlValues = urlValues
+	return q
+}
+
+// SetBuyer copies the buyer's display fields onto the point.
+func (q *Point) SetBuyer(buyer *User) *Point {
+	q.BuyerName = buyer.Name
+	q.BuyerMobilePhone = buyer.MobilePhone
+	q.BuyerUsername, q.BuyerReferralCode = "", ""
+	if buyer.Username != nil {
+		q.BuyerUsername = *buyer.Username
+	}
+	if buyer.ReferralCode != nil {
+		q.BuyerReferralCode = *buyer.ReferralCode
+	}
 	return q
 }

@@ -17,14 +17,14 @@ var (
 
 type (
 	Cart struct {
-		RowNo          int64       `json:"-" form:"-"`
-		ID             uuid.UUID   `json:"id" form:"-"`
-		BuyerID        *uuid.UUID  `json:"buyer_id" form:"-"`
-		DeletedBuyerID *uuid.UUID  `json:"-" form:"-"`
-		Quantity       int64       `json:"quantity" form:"-"`
-		CreatedAt      time.Time   `json:"-" form:"-"`
-		UpdatedAt      time.Time   `json:"-" form:"-"`
-		Items          []*CartItem `json:"items" form:"-"`
+		RowNo         int64       `json:"-" form:"-"`
+		ID            uuid.UUID   `json:"id" form:"-"`
+		UserID        *uuid.UUID  `json:"user_id" form:"-"`
+		DeletedUserID *uuid.UUID  `json:"-" form:"-"`
+		Quantity      int64       `json:"quantity" form:"-"`
+		CreatedAt     time.Time   `json:"-" form:"-"`
+		UpdatedAt     time.Time   `json:"-" form:"-"`
+		Items         []*CartItem `json:"items" form:"-"`
 	}
 
 	CartItem struct {
@@ -38,7 +38,7 @@ type (
 	}
 
 	CartFilter struct {
-		BuyerIDs      []uuid.UUID
+		UserIDs       []uuid.UUID
 		PaginationURL string
 		Sortings      []Sorting
 		MapSortings   Map
@@ -55,8 +55,8 @@ func NewCartFilter() *CartFilter {
 	}
 }
 
-func (q *CartFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *CartFilter {
-	q.BuyerIDs = buyerIDs
+func (q *CartFilter) WithUserIDs(userIDs ...uuid.UUID) *CartFilter {
+	q.UserIDs = userIDs
 	return q
 }
 
