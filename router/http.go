@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"uuid"
 
 	"github.com/coregx/coregex"
 	"github.com/dustin/go-humanize"
@@ -22,18 +21,14 @@ import (
 	fibersentry "github.com/gofiber/contrib/v3/sentry"
 	"github.com/gofiber/contrib/v3/swaggo"
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/extractors"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/compress"
 	"github.com/gofiber/fiber/v3/middleware/cors"
-	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	"github.com/gofiber/fiber/v3/middleware/pprof"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/gofiber/fiber/v3/middleware/rewrite"
-	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/gofiber/fiber/v3/middleware/skip"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/jet/v3"
 	"github.com/gofiber/utils/v2"
@@ -65,13 +60,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	engine.AddFunc("QueryEscape", func(s string) string {
 		return url.QueryEscape(s)
 	})
-	sessionMiddleware, sessionStore := session.NewWithStore(session.Config{
-		Storage:         q.Storage,
-		IdleTimeout:     30 * time.Minute,
-		AbsoluteTimeout: 24 * time.Hour,
-	})
-	sessionStore.RegisterType(&helper.FlashMessage{})
-	sessionStore.RegisterType(uuid.UUID{})
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
@@ -97,18 +85,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			}
 			return helper.NewResponse(statusCode).SetMessage(err.Error()).WriteResponse(ctx)
 		},
-	})
-	csrfMiddleware := csrf.New(csrf.Config{
-		CookieName:        "__Host-csrf_",
-		CookieSecure:      true,
-		CookieHTTPOnly:    true, // false for SPAs
-		CookieSameSite:    "Lax",
-		CookieSessionOnly: true,
-		Extractor:         extractors.FromForm("_csrf"),
-		Session:           sessionStore,
-		// Redaction is enabled by default. Set DisableValueRedaction when you must expose tokens or storage keys in diagnostics.
-		// DisableValueRedaction: true,
-		SingleUseToken: false,
 	})
 	basicAuth := middlewares.BasicAuthMiddleware()
 	middlewares := []any{
@@ -208,12 +184,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		cors.New(),
 		pprof.New(),
 		helmet.New(),
-		skip.New(sessionMiddleware, func(c fiber.Ctx) bool {
-			return strings.HasPrefix(c.OriginalURL(), "/v1/")
-		}),
-		skip.New(csrfMiddleware, func(c fiber.Ctx) bool {
-			return strings.HasPrefix(c.OriginalURL(), "/v1/")
-		}),
 	}
 	if sentryEnabled := os.Getenv("SENTRY_ENABLED") == "1"; sentryEnabled {
 		_ = sentry.Init(sentry.ClientOptions{
