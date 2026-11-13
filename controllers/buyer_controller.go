@@ -23,27 +23,23 @@ import (
 type buyerController struct {
 	sellerService       services.SellerService
 	buyerService        services.BuyerService
-	companyService      services.CompanyService
 	notificationService services.NotificationService
 }
 
 func NewBuyerController(
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
-	companyService services.CompanyService,
 	notificationService services.NotificationService,
 ) *buyerController {
 	return &buyerController{
 		sellerService:       sellerService,
 		buyerService:        buyerService,
-		companyService:      companyService,
 		notificationService: notificationService,
 	}
 }
 
 func (q *buyerController) Mount(r fiber.Router) {
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
-	r.Group("/v1/buyer", companyVerify).
+	r.Group("/v1/buyer").
 		Post("", q.BuyerCreate)
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
 	r.Group("/seller", sellerSessionAuth).

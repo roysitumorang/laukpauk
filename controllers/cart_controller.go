@@ -21,7 +21,6 @@ type (
 	cartController struct {
 		buyerService          services.BuyerService
 		productVariantService services.ProductVariantService
-		companyService        services.CompanyService
 		cartService           services.CartService
 		jsonWebTokenService   services.JsonWebTokenService
 	}
@@ -30,14 +29,12 @@ type (
 func NewCartController(
 	buyerService services.BuyerService,
 	productVariantService services.ProductVariantService,
-	companyService services.CompanyService,
 	cartService services.CartService,
 	jsonWebTokenService services.JsonWebTokenService,
 ) *cartController {
 	return &cartController{
 		buyerService:          buyerService,
 		productVariantService: productVariantService,
-		companyService:        companyService,
 		cartService:           cartService,
 		jsonWebTokenService:   jsonWebTokenService,
 	}
@@ -45,8 +42,7 @@ func NewCartController(
 
 func (q *cartController) Mount(r fiber.Router) {
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex).
 		Post("", q.V1BuyerSave)
 }

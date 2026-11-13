@@ -22,7 +22,6 @@ import (
 
 type voucherController struct {
 	sellerService       services.SellerService
-	companyService      services.CompanyService
 	voucherService      services.VoucherService
 	buyerService        services.BuyerService
 	jsonWebTokenService services.JsonWebTokenService
@@ -31,7 +30,6 @@ type voucherController struct {
 
 func NewVoucherController(
 	sellerService services.SellerService,
-	companyService services.CompanyService,
 	voucherService services.VoucherService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
@@ -39,7 +37,6 @@ func NewVoucherController(
 ) *voucherController {
 	return &voucherController{
 		sellerService:       sellerService,
-		companyService:      companyService,
 		voucherService:      voucherService,
 		buyerService:        buyerService,
 		jsonWebTokenService: jsonWebTokenService,
@@ -56,9 +53,8 @@ func (q *voucherController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex)
 }
 

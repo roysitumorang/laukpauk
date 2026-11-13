@@ -22,7 +22,6 @@ import (
 )
 
 type transactionController struct {
-	companyService      services.CompanyService
 	sellerService       services.SellerService
 	buyerService        services.BuyerService
 	transactionService  services.TransactionService
@@ -32,7 +31,6 @@ type transactionController struct {
 }
 
 func NewTransactionController(
-	companyService services.CompanyService,
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
 	transactionService services.TransactionService,
@@ -41,7 +39,6 @@ func NewTransactionController(
 	kafkaClient *externals.KafkaClient,
 ) *transactionController {
 	return &transactionController{
-		companyService:      companyService,
 		sellerService:       sellerService,
 		buyerService:        buyerService,
 		transactionService:  transactionService,
@@ -52,9 +49,8 @@ func NewTransactionController(
 }
 
 func (q *transactionController) Mount(r fiber.Router) {
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify).
+	r.Group("/v1/buyer").
 		Get("", buyerKeyAuth, q.V1BuyerIndex).
 		Post("", buyerKeyAuth, q.V1BuyerCreate).
 		Get("/:id", buyerKeyAuth, q.V1BuyerShow).
@@ -105,7 +101,6 @@ func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1BuyerCreate"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	request, statusCode, err := sanitizers.ValidateTransaction(ctx, c)
 	if err != nil {
@@ -116,7 +111,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	request.BuyerID = currentBuyer.ID
-	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, company, currentBuyer, request)
+	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, currentBuyer, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).

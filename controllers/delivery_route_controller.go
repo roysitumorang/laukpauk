@@ -22,7 +22,7 @@ type (
 	deliveryRouteController struct {
 		buyerService         services.BuyerService
 		deliveryRouteService services.DeliveryRouteService
-		companyService       services.CompanyService
+		settingService       services.SettingService
 		jsonWebTokenService  services.JsonWebTokenService
 		routesApiClient      *externals.RoutesApiClient
 	}
@@ -31,31 +31,36 @@ type (
 func NewDeliveryRouteController(
 	buyerService services.BuyerService,
 	deliveryRouteService services.DeliveryRouteService,
-	companyService services.CompanyService,
+	settingService services.SettingService,
 	jsonWebTokenService services.JsonWebTokenService,
 	routesApiClient *externals.RoutesApiClient,
 ) *deliveryRouteController {
 	return &deliveryRouteController{
 		buyerService:         buyerService,
 		deliveryRouteService: deliveryRouteService,
-		companyService:       companyService,
+		settingService:       settingService,
 		jsonWebTokenService:  jsonWebTokenService,
 		routesApiClient:      routesApiClient,
 	}
 }
 
 func (q *deliveryRouteController) Mount(r fiber.Router) {
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Post("", q.V1BuyerSave)
 }
 
 func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryRouteController-V1BuyerSave"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
+	setting, err := q.settingService.FindSetting(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	request, statusCode, err := sanitizers.ValidateDeliveryRoute(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryRoute")
@@ -66,8 +71,8 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 	response, err := q.deliveryRouteService.FindDeliveryRoute(
 		ctx,
 		models.NewDeliveryRouteFilter().
-			WithOriginLongitudes(company.DeliveryOriginLongitude).
-			WithOriginLatitudes(company.DeliveryOriginLatitude).
+			WithOriginLongitudes(setting.DeliveryOriginLongitude).
+			WithOriginLatitudes(setting.DeliveryOriginLatitude).
 			WithDestinationLongitudes(request.DestinationLongitude).
 			WithDestinationLatitudes(request.DestinationLatitude),
 	)
@@ -84,8 +89,8 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 	}
 	if request.DistanceMeters, err = q.routesApiClient.ComputeDistanceMeters(
 		ctx,
-		company.DeliveryOriginLongitude.String(),
-		company.DeliveryOriginLatitude.String(),
+		setting.DeliveryOriginLongitude.String(),
+		setting.DeliveryOriginLatitude.String(),
 		request.DestinationLongitude.String(),
 		request.DestinationLatitude.String(),
 	); err != nil {
@@ -109,8 +114,8 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	now := time.Now()
-	request.OriginLongitude = company.DeliveryOriginLongitude
-	request.OriginLatitude = company.DeliveryOriginLatitude
+	request.OriginLongitude = setting.DeliveryOriginLongitude
+	request.OriginLatitude = setting.DeliveryOriginLatitude
 	request.DistanceKM, _, _ = distanceKM.Ceil(0).Int64(0)
 	request.CreatedAt = now
 	request.UpdatedAt = now
@@ -135,7 +140,7 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if request.DistanceKM <= company.DeliveryMaxDistanceKM {
+	if request.DistanceKM <= setting.DeliveryMaxDistanceKM {
 		currentBuyer.DeliveryRouteID = &response.ID
 		if _, err = q.buyerService.UpdateBuyer(ctx, tx, currentBuyer); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
@@ -150,7 +155,7 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if request.DistanceKM > company.DeliveryMaxDistanceKM {
+	if request.DistanceKM > setting.DeliveryMaxDistanceKM {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("your coordinates is out of our coverage area").
 			WriteResponse(c)

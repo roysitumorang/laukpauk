@@ -145,9 +145,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/text_messages/*", To: "/text_messages/admin/$1"},
 				{From: "/admin/notifications", To: "/notifications/admin"},
 				{From: "/admin/notifications/*", To: "/notifications/admin/$1"},
-				{From: "/admin/companies", To: "/companies/admin"},
-				{From: "/admin/companies/*", To: "/companies/admin/$1"},
-				{From: "/admin/companies/*/*", To: "/companies/admin/$1/$2"},
 				{From: "/seller/auth/sessions", To: "/auth/seller/sessions"},
 				{From: "/seller/auth/sessions/*", To: "/auth/seller/sessions/$1"},
 				{From: "/seller/auth/*", To: "/auth/seller/$1"},
@@ -192,7 +189,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/seller/transactions", To: "/transactions/seller"},
 				{From: "/seller/transactions/*", To: "/transactions/seller/$1"},
 				{From: "/seller/transactions/*/*", To: "/transactions/seller/$1/$2"},
-				{From: "/seller/companies/*", To: "/companies/seller/$1"},
 				{From: "/v1/seller/users", To: "/users/v1/seller"},
 				{From: "/v1/seller/users/*", To: "/users/v1/seller/$1"},
 				{From: "/v1/seller/users/*/*", To: "/users/v1/seller/$1/$2"},
@@ -222,7 +218,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/point_earning_caps", To: "/point_earning_caps/v1/buyer"},
 				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
-				{From: "/v1/buyer/companies/*", To: "/companies/v1/buyer/$1"},
 				{From: "/", To: "/home"},
 				{From: "/contact-us", To: "/home/contact-us"},
 				{From: "/faq", To: "/home/faq"},
@@ -295,7 +290,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.AdminService,
 		q.SellerService,
 		q.BuyerService,
-		q.CompanyService,
 		q.JsonWebTokenService,
 		q.TextMessageService,
 		q.NotificationService,
@@ -309,7 +303,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/home"))
 	controllers.NewProductCategoryController(
 		q.SellerService,
-		q.CompanyService,
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,
@@ -317,7 +310,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/product_categories"))
 	controllers.NewProductController(
 		q.SellerService,
-		q.CompanyService,
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,
@@ -327,7 +319,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/products"))
 	controllers.NewDeliveryPlanController(
 		q.SellerService,
-		q.CompanyService,
 		q.DeliveryPlanService,
 		q.BuyerService,
 		q.JsonWebTokenService,
@@ -341,7 +332,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/points"))
 	controllers.NewVoucherController(
 		q.SellerService,
-		q.CompanyService,
 		q.VoucherService,
 		q.BuyerService,
 		q.JsonWebTokenService,
@@ -349,7 +339,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(
 		q.SellerService,
-		q.CompanyService,
 		q.PointEarningCapService,
 		q.BuyerService,
 		q.JsonWebTokenService,
@@ -357,14 +346,12 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(
 		q.SellerService,
-		q.CompanyService,
 		q.PointSpendingCapService,
 		q.BuyerService,
 		q.JsonWebTokenService,
 		q.NotificationService,
 	).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(
-		q.CompanyService,
 		q.SellerService,
 		q.BuyerService,
 		q.TransactionService,
@@ -376,7 +363,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.AdminService,
 		q.SellerService,
 		q.BuyerService,
-		q.CompanyService,
 		q.NotificationTargetService,
 		q.JsonWebTokenService,
 		q.NotificationService,
@@ -384,14 +370,13 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewCartController(
 		q.BuyerService,
 		q.ProductVariantService,
-		q.CompanyService,
 		q.CartService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/cart"))
 	controllers.NewDeliveryRouteController(
 		q.BuyerService,
 		q.DeliveryRouteService,
-		q.CompanyService,
+		q.SettingService,
 		q.JsonWebTokenService,
 		q.RoutesApiClient,
 	).Mount(app.Group("/delivery_routes"))
@@ -402,7 +387,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/setting"))
 	controllers.NewPaymentChannelController(
 		q.BuyerService,
-		q.CompanyService,
 		q.PaymentChannelService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/payment_channels"))
@@ -421,7 +405,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	controllers.NewBuyerController(
 		q.SellerService,
 		q.BuyerService,
-		q.CompanyService,
 		q.NotificationService,
 	).Mount(app.Group("/buyers"))
 	controllers.NewAdminController(
@@ -449,14 +432,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.ProductVariantService,
 		q.NotificationService,
 	).Mount(app.Group("/recipes"))
-	controllers.NewCompanyController(
-		q.AdminService,
-		q.SellerService,
-		q.BuyerService,
-		q.CompanyService,
-		q.JsonWebTokenService,
-		q.NotificationService,
-	).Mount(app.Group("/companies"))
 	controllers.NewSellerController(
 		q.SellerService,
 		q.NotificationService,

@@ -21,7 +21,6 @@ import (
 
 type pointSpendingCapController struct {
 	sellerService           services.SellerService
-	companyService          services.CompanyService
 	pointSpendingCapService services.PointSpendingCapService
 	buyerService            services.BuyerService
 	jsonWebTokenService     services.JsonWebTokenService
@@ -30,7 +29,6 @@ type pointSpendingCapController struct {
 
 func NewPointSpendingCapController(
 	sellerService services.SellerService,
-	companyService services.CompanyService,
 	pointSpendingCapService services.PointSpendingCapService,
 	buyerService services.BuyerService,
 	jsonWebTokenService services.JsonWebTokenService,
@@ -38,7 +36,6 @@ func NewPointSpendingCapController(
 ) *pointSpendingCapController {
 	return &pointSpendingCapController{
 		sellerService:           sellerService,
-		companyService:          companyService,
 		pointSpendingCapService: pointSpendingCapService,
 		buyerService:            buyerService,
 		jsonWebTokenService:     jsonWebTokenService,
@@ -55,9 +52,8 @@ func (q *pointSpendingCapController) Mount(r fiber.Router) {
 		Get("/:id/edit", q.SellerEdit).
 		Post("/:id", q.SellerUpdate).
 		Post("/:id/delete", q.SellerDelete)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify, buyerKeyAuth).
+	r.Group("/v1/buyer", buyerKeyAuth).
 		Get("", q.V1BuyerIndex)
 }
 

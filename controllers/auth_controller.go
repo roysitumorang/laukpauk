@@ -26,7 +26,6 @@ type authController struct {
 	adminService        services.AdminService
 	sellerService       services.SellerService
 	buyerService        services.BuyerService
-	companyService      services.CompanyService
 	jsonWebTokenService services.JsonWebTokenService
 	textMessageService  services.TextMessageService
 	notificationService services.NotificationService
@@ -37,7 +36,6 @@ func NewAuthController(
 	adminService services.AdminService,
 	sellerService services.SellerService,
 	buyerService services.BuyerService,
-	companyService services.CompanyService,
 	jsonWebTokenService services.JsonWebTokenService,
 	textMessageService services.TextMessageService,
 	notificationService services.NotificationService,
@@ -47,7 +45,6 @@ func NewAuthController(
 		adminService:        adminService,
 		sellerService:       sellerService,
 		buyerService:        buyerService,
-		companyService:      companyService,
 		jsonWebTokenService: jsonWebTokenService,
 		textMessageService:  textMessageService,
 		notificationService: notificationService,
@@ -68,9 +65,8 @@ func (q *authController) Mount(r fiber.Router) {
 		Post("/sessions", q.SellerCreate).
 		Get("/me", sellerSessionAuth, q.SellerShow).
 		Get("/logout", q.SellerLogout)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
-	r.Group("/v1/buyer", companyVerify).
+	r.Group("/v1/buyer").
 		Post("/login", q.V1BuyerCreate).
 		Get("/me", buyerKeyAuth, q.V1BuyerShow)
 }

@@ -25,7 +25,6 @@ import (
 
 type productController struct {
 	sellerService          services.SellerService
-	companyService         services.CompanyService
 	productCategoryService services.ProductCategoryService
 	productService         services.ProductService
 	productVariantService  services.ProductVariantService
@@ -36,7 +35,6 @@ type productController struct {
 
 func NewProductController(
 	sellerService services.SellerService,
-	companyService services.CompanyService,
 	productCategoryService services.ProductCategoryService,
 	productService services.ProductService,
 	productVariantService services.ProductVariantService,
@@ -46,7 +44,6 @@ func NewProductController(
 ) *productController {
 	return &productController{
 		sellerService:          sellerService,
-		companyService:         companyService,
 		productCategoryService: productCategoryService,
 		productService:         productService,
 		productVariantService:  productVariantService,
@@ -58,7 +55,6 @@ func NewProductController(
 
 func (q *productController) Mount(r fiber.Router) {
 	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
-	companyVerify := middlewares.CompanyVerifyMiddleware(q.companyService)
 	r.Group("/seller", sellerSessionAuth).
 		Get("", q.SellerIndex).
 		Get("/new", q.SellerNew).
@@ -72,7 +68,7 @@ func (q *productController) Mount(r fiber.Router) {
 		Get("/:id/variants/:product_variant_id/edit", q.SellerEditVariant).
 		Post("/:id/variants/:product_variant_id", q.SellerUpdateVariant).
 		Post("/:id/variants/:product_variant_id/delete", q.SellerDeleteVariant)
-	r.Group("/v1/buyer", companyVerify).
+	r.Group("/v1/buyer").
 		Get("", q.V1BuyerIndex).
 		Get("/:id", q.V1BuyerShow)
 }

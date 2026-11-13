@@ -177,29 +177,6 @@
 								<p>Dashboard</p>
 							</a>
 						</li>
-						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/companies") }} menu-open{{ end }}">
-							<a href="#" class="nav-link">
-								<i class="nav-icon fa fa-newspaper"></i>
-								<p>
-									Companies
-									<i class="fas fa-angle-left right"></i>
-								</p>
-							</a>
-							<ul class="nav nav-treeview"{{ if HasPrefix(path, "/admin/companies") }} style="display:block"{{ end }}>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/companies" class="nav-link">
-										<i class="fa fa-list nav-icon"></i>
-										<p>List Data Company</p>
-									</a>
-								</li>
-								<li class="nav-item">
-									<a href="{{ baseURL }}/admin/companies/new" class="nav-link">
-										<i class="fa fa-plus-circle nav-icon"></i>
-										<p>Company Baru</p>
-									</a>
-								</li>
-							</ul>
-						</li>
 						{{ if currentAdmin.SuperAdmin() }}
 						<li class="nav-item has-treeview{{ if HasPrefix(path, "/admin/admins") }} menu-open{{ end }}">
 							<a href="#" class="nav-link">
