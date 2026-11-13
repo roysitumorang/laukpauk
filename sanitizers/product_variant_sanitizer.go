@@ -18,6 +18,7 @@ func ValidateProductVariant(ctx context.Context, c fiber.Ctx) (*models.ProductVa
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, fiberErr.Code, err
 	}
+	keepFormFields(&response)
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, fiber.StatusBadRequest, err

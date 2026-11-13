@@ -92,6 +92,7 @@ func ValidateProduct(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, nil, nil, fiberErr.Code, err
 	}
+	keepFormFields(&response)
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, nil, nil, fiber.StatusBadRequest, err

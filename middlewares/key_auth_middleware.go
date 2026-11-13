@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"errors"
+	"slices"
 	"time"
 	"uuid"
 
@@ -69,6 +70,7 @@ func KeyAuthMiddleware(
 	role string,
 	userService services.UserService,
 	jsonWebTokenService services.JsonWebTokenService,
+	userLevels ...string,
 ) fiber.Handler {
 	return keyauth.New(keyauth.Config{
 		SuccessHandler: func(c fiber.Ctx) error {
@@ -77,6 +79,9 @@ func KeyAuthMiddleware(
 		ErrorHandler: func(c fiber.Ctx, err error) error {
 			if err == nil {
 				err = keyauth.ErrMissingOrMalformedAPIKey
+			}
+			if errors.Is(err, models.ErrAccessDenied) {
+				return helper.NewResponse(fiber.StatusForbidden).SetMessage(err.Error()).WriteResponse(c)
 			}
 			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).WriteResponse(c)
 		},
@@ -98,6 +103,9 @@ func KeyAuthMiddleware(
 			)
 			if err != nil || currentUser == nil {
 				return false, keyauth.ErrMissingOrMalformedAPIKey
+			}
+			if len(userLevels) > 0 && !slices.Contains(userLevels, currentUser.UserLevel) {
+				return false, models.ErrAccessDenied
 			}
 			jsonWebTokenID, err := uuid.Parse(claims.Subject)
 			if err != nil {

@@ -49,25 +49,25 @@ var MapRewardPointSortings = map[string]struct{}{
 
 type Point struct {
 	RowNo                      int64        `json:"-" form:"-"`
-	ID                         uuid.UUID    `json:"-" form:"id"`
-	RecordStatus               RecordStatus `json:"-" form:"-"`
-	PointType                  PointType    `json:"-" form:"point_type"`
-	BuyerID                    uuid.UUID    `json:"-" form:"buyer_id"`
-	BuyerName                  string       `json:"-" form:"-"`
-	BuyerUsername              string       `json:"-" form:"-"`
-	BuyerMobilePhone           string       `json:"-" form:"-"`
-	BuyerReferralCode          string       `json:"-" form:"-"`
-	Amount                     int64        `json:"-" form:"amount"`
-	TransactionID              *uuid.UUID   `json:"-" form:"-"`
-	TransactionReferenceNumber *string      `json:"-" form:"-"`
-	Description                string       `json:"-" form:"description"`
-	CreatedBy                  *uuid.UUID   `json:"-" form:"-"`
-	CreatedAt                  time.Time    `json:"-" form:"-"`
-	UpdatedBy                  *uuid.UUID   `json:"-" form:"-"`
-	UpdatedAt                  time.Time    `json:"-" form:"-"`
-	DeletedBy                  *uuid.UUID   `json:"-" form:"-"`
-	DeletedAt                  *time.Time   `json:"-" form:"-"`
-	DeletionReason             *string      `json:"-" form:"-"`
+	ID                         uuid.UUID    `json:"id" form:"id"`
+	RecordStatus               RecordStatus `json:"record_status" form:"-"`
+	PointType                  PointType    `json:"point_type" form:"point_type"`
+	BuyerID                    uuid.UUID    `json:"buyer_id" form:"buyer_id"`
+	BuyerName                  string       `json:"buyer_name" form:"-"`
+	BuyerUsername              string       `json:"buyer_username" form:"-"`
+	BuyerMobilePhone           string       `json:"buyer_mobile_phone" form:"-"`
+	BuyerReferralCode          string       `json:"buyer_referral_code" form:"-"`
+	Amount                     int64        `json:"amount" form:"amount"`
+	TransactionID              *uuid.UUID   `json:"transaction_id" form:"-"`
+	TransactionReferenceNumber *string      `json:"transaction_reference_number" form:"-"`
+	Description                string       `json:"description" form:"description"`
+	CreatedBy                  *uuid.UUID   `json:"created_by" form:"-"`
+	CreatedAt                  time.Time    `json:"created_at" form:"-"`
+	UpdatedBy                  *uuid.UUID   `json:"updated_by" form:"-"`
+	UpdatedAt                  time.Time    `json:"updated_at" form:"-"`
+	DeletedBy                  *uuid.UUID   `json:"deleted_by" form:"-"`
+	DeletedAt                  *time.Time   `json:"deleted_at" form:"-"`
+	DeletionReason             *string      `json:"deletion_reason" form:"-"`
 }
 
 func (q *Point) Validate() error {

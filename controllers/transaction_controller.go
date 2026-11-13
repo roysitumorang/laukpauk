@@ -9,8 +9,6 @@ import (
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/csrf"
-	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -22,29 +20,26 @@ import (
 )
 
 type transactionController struct {
-	sellerService       services.SellerService
 	buyerService        services.BuyerService
 	transactionService  services.TransactionService
 	jsonWebTokenService services.JsonWebTokenService
-	notificationService services.NotificationService
 	kafkaClient         *externals.KafkaClient
+	userService         services.UserService
 }
 
 func NewTransactionController(
-	sellerService services.SellerService,
 	buyerService services.BuyerService,
 	transactionService services.TransactionService,
 	jsonWebTokenService services.JsonWebTokenService,
-	notificationService services.NotificationService,
 	kafkaClient *externals.KafkaClient,
+	userService services.UserService,
 ) *transactionController {
 	return &transactionController{
-		sellerService:       sellerService,
 		buyerService:        buyerService,
 		transactionService:  transactionService,
 		jsonWebTokenService: jsonWebTokenService,
-		notificationService: notificationService,
 		kafkaClient:         kafkaClient,
+		userService:         userService,
 	}
 }
 
@@ -56,15 +51,14 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Get("/:id", buyerKeyAuth, q.V1BuyerShow).
 		Post("/pay", q.V1Pay).
 		Post("/:id/withdraw", buyerKeyAuth, q.V1BuyerWithdraw)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
-	r.Group("/seller", sellerSessionAuth).
-		Get("", q.SellerIndex).
-		Get("/:id", q.SellerShow).
-		Get("/:id/edit", q.SellerEdit).
-		Post("/:id/withdraw", q.SellerWithdraw).
-		Post("/:id/process", q.SellerProcess).
-		Post("/:id/ship", q.SellerShip).
-		Post("/:id/complete", q.SellerComplete)
+	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
+	r.Group("/v1/seller", sellerKeyAuth).
+		Get("", q.V1SellerIndex).
+		Get("/:id", q.V1SellerShow).
+		Post("/:id/withdraw", q.V1SellerWithdraw).
+		Post("/:id/process", q.V1SellerProcess).
+		Post("/:id/ship", q.V1SellerShip).
+		Post("/:id/complete", q.V1SellerComplete)
 
 }
 
@@ -290,165 +284,104 @@ func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 		WriteResponse(c)
 }
 
-func (q *transactionController) SellerIndex(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-SellerIndex"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	request := &models.TransactionFilter{}
-	rows := []*models.Transaction{}
-	pagination := &models.Pagination{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", "Data Transaction",
-		"limits", models.Limits,
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-		"sortings", []models.Sorting{
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Newest-Oldest",
-			},
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Oldest-Newest",
-			},
-		},
-	)
-	if request, err = sanitizers.FindTransactions(ctx, c); err != nil {
+func (q *transactionController) V1SellerIndex(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-V1SellerIndex"
+	ctx := c.Context()
+	request, err := sanitizers.FindTransactions(ctx, c)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-		return c.Render("seller/transaction_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	if rows, pagination, err = q.transactionService.FindTransactions(
+	rows, pagination, err := q.transactionService.FindTransactions(
 		ctx,
 		request,
-	); err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-		return c.Render("seller/transaction_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
-	}
-	return c.Render("seller/transaction_index", params.Push(
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-	), "seller/layouts/authenticated")
-}
-
-func (q *transactionController) SellerShow(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-SellerShow"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	_, params, err := q.prepareTransaction(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/transactions")
-	}
-	return c.Render("seller/transaction_show", params, "seller/layouts/authenticated")
-}
-
-func (q *transactionController) SellerEdit(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-SellerEdit"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	transaction, params, err := q.prepareTransaction(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	if transaction == nil {
-		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/seller/transactions")
+	pagination.Rows = make([]any, len(rows))
+	for i := range rows {
+		pagination.Rows[i] = rows[i]
 	}
-	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
-	return c.Render("seller/transaction_edit", params, "seller/layouts/authenticated")
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
 }
 
-func (q *transactionController) SellerWithdraw(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-SellerWithdraw"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	request, _, err := q.prepareTransaction(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		false,
-		models.TransactionStatusWithdrawalPending,
-	)
+func (q *transactionController) V1SellerShow(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-V1SellerShow"
+	ctx := c.Context()
+	transaction, err := q.prepareTransaction(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(transaction).
+		WriteResponse(c)
+}
+
+func (q *transactionController) V1SellerWithdraw(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-V1SellerWithdraw"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	request, err := q.prepareTransaction(ctx, c, models.TransactionStatusWithdrawalPending)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if request == nil {
-		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
 	}
 	request.Status = models.TransactionStatusWithdrawn
-	request.WithdrawnBy = &currentSeller.ID
+	request.WithdrawnBy = &currentUser.ID
 	request.WithdrawnAt = new(time.Now().In(time.Local))
-	if _, err = q.transactionService.WithdrawTransaction(ctx, request); err != nil {
+	saved, err := q.transactionService.WithdrawTransaction(ctx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrWithdrawTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", request.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("transaction withdrawn successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", request.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("transaction withdrawn successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *transactionController) SellerProcess(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-SellerProcess"
-	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	transaction, params, err := q.prepareTransaction(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		notifications,
-		true,
-		models.TransactionStatusPaid,
-	)
+func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-V1SellerProcess"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	transaction, err := q.prepareTransaction(ctx, c, models.TransactionStatusPaid)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if transaction == nil {
-		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
 	}
-	params.Push("pageTitle", helper.Sprintf("Edit Data Transaction|%s", transaction.ReferenceNumber))
 	request, statusCode, err := sanitizers.ValidateTransaction(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/transaction_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	n := len(transaction.Items)
 	mapTransactionItemIDs := make(map[uuid.UUID]int, n)
@@ -458,20 +391,20 @@ func (q *transactionController) SellerProcess(c fiber.Ctx) (err error) {
 	for i, requestItem := range request.Items {
 		j, ok := mapTransactionItemIDs[requestItem.ID]
 		if !ok {
-			return c.Render("seller/transaction_edit", params.Push(
-				"flash", flash.Danger(helper.Sprintf("items[%d].id: not found", i)),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(helper.Sprintf("items[%d].id: not found", i)).
+				WriteResponse(c)
 		}
 		transactionItem := transaction.Items[j]
 		requestItem.RevisionNote = strings.TrimSpace(requestItem.RevisionNote)
 		if requestItem.Quantity > transactionItem.Quantity {
-			return c.Render("seller/transaction_edit", params.Push(
-				"flash", flash.Danger(helper.Sprintf("items[%d].quantity: cannot exceed %d", i, transactionItem.Quantity)),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(helper.Sprintf("items[%d].quantity: cannot exceed %d", i, transactionItem.Quantity)).
+				WriteResponse(c)
 		} else if requestItem.Quantity < transactionItem.Quantity && requestItem.RevisionNote == "" {
-			return c.Render("seller/transaction_edit", params.Push(
-				"flash", flash.Danger(helper.Sprintf("items[%d].revison_note: is required", i)),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(helper.Sprintf("items[%d].revison_note: is required", i)).
+				WriteResponse(c)
 		}
 		transactionItem.Quantity = max(requestItem.Quantity, 0)
 		transactionItem.OutOfStock = transactionItem.Quantity == 0
@@ -481,16 +414,15 @@ func (q *transactionController) SellerProcess(c fiber.Ctx) (err error) {
 	transaction.Revise()
 	now := time.Now()
 	transaction.Status = models.TransactionStatusProcessed
-	transaction.ProcessedBy = &currentSeller.ID
+	transaction.ProcessedBy = &currentUser.ID
 	transaction.ProcessedAt = &now
 	transaction.UpdatedAt = now
-	params.Push("request", transaction)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/transaction_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -500,57 +432,60 @@ func (q *transactionController) SellerProcess(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.transactionService.UpdateTransaction(ctx, tx, transaction); err != nil {
+	saved, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-		return c.Render("seller/transaction_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/transaction_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("transaction processed successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("transaction processed successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *transactionController) SellerShip(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-SellerShip"
-	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	transaction, _, err := q.prepareTransaction(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		nil,
-		false,
-		models.TransactionStatusProcessed,
-	)
+func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-V1SellerShip"
+	ctx := c.Context()
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	transaction, err := q.prepareTransaction(ctx, c, models.TransactionStatusProcessed)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if transaction == nil {
-		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
 	}
 	request, _, err := sanitizers.ValidateTransactionShipment(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransactionShipment")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	now := time.Now()
 	transaction.Status = models.TransactionStatusShipped
-	transaction.ShippedBy = &currentSeller.ID
+	transaction.ShippedBy = &currentUser.ID
 	transaction.ShippedAt = &now
 	transaction.DeliveryActualCost = request.DeliveryActualCost
 	transaction.UpdatedAt = now
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -560,82 +495,64 @@ func (q *transactionController) SellerShip(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.transactionService.UpdateTransaction(ctx, tx, transaction); err != nil {
+	saved, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("transaction shipped successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("transaction shipped successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *transactionController) SellerComplete(c fiber.Ctx) (err error) {
-	ctxt := "TransactionController-SellerComplete"
-	ctx, sess, flash, currentSeller, csrfToken, _ := q.prepare(c)
-	defer flash.Clear(c, sess.Session)
-	transaction, _, err := q.prepareTransaction(
-		ctx,
-		c,
-		flash,
-		currentSeller,
-		csrfToken,
-		nil,
-		false,
-		models.TransactionStatusShipped,
-	)
+func (q *transactionController) V1SellerComplete(c fiber.Ctx) (err error) {
+	ctxt := "TransactionController-V1SellerComplete"
+	ctx := c.Context()
+	transaction, err := q.prepareTransaction(ctx, c, models.TransactionStatusShipped)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(notFoundStatusCode(err)).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if transaction == nil {
-		return flash.Danger(models.ErrTransactionNotFound.Error()).Redirect(c, sess.Session, "/seller/transactions")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
 	}
-	if _, err = q.transactionService.CompleteTransaction(ctx, transaction); err != nil {
+	saved, err := q.transactionService.CompleteTransaction(ctx, transaction)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCompleteTransaction")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Success("transaction completed successfully").Redirect(c, sess.Session, helper.Sprintf("/seller/transactions/%s", transaction.ID))
-}
-
-func (q *transactionController) prepare(c fiber.Ctx) (
-	context.Context,
-	*session.Middleware,
-	*helper.FlashMessage,
-	*models.Seller,
-	string,
-	[]*models.Notification,
-) {
-	ctx := c.Context()
-	sess := session.FromContext(c)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	csrfToken := csrf.TokenFromContext(c)
-	return ctx, sess, flash, currentSeller, csrfToken, notifications
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("transaction completed successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
 func (q *transactionController) prepareTransaction(
 	ctx context.Context,
 	c fiber.Ctx,
-	flash *helper.FlashMessage,
-	currentSeller *models.Seller,
-	csrfToken string,
-	notifications []*models.Notification,
-	withParams bool,
 	transactionStatuses ...models.TransactionStatus,
 ) (
 	*models.Transaction,
-	models.Map,
 	error,
 ) {
 	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return nil, nil, models.ErrTransactionNotFound
+		return nil, models.ErrTransactionNotFound
 	}
 	request := models.NewTransactionFilter().
 		WithTransactionIDs(transactionID)
@@ -644,24 +561,10 @@ func (q *transactionController) prepareTransaction(
 	}
 	transaction, err := q.transactionService.FindTransaction(ctx, request)
 	if err != nil && !errors.Is(err, models.ErrTransactionNotFound) {
-		return nil, nil, err
+		return nil, err
 	}
 	if transaction == nil {
-		return nil, nil, models.ErrTransactionNotFound
+		return nil, models.ErrTransactionNotFound
 	}
-	var params models.Map
-	if withParams {
-		params = models.NewMap().Push(
-			"baseURL", c.BaseURL(),
-			"flash", flash,
-			"path", c.OriginalURL(),
-			"csrfToken", csrfToken,
-			"currentSeller", currentSeller,
-			"notifications", notifications,
-			"pageTitle", helper.Sprintf("Detail Data Transaction|%s", transaction.ReferenceNumber),
-			"transaction", transaction,
-			"request", transaction,
-		)
-	}
-	return transaction, params, nil
+	return transaction, nil
 }

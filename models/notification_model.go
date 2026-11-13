@@ -30,25 +30,25 @@ const TopicNotificationEventSend TopicEvent = "send"
 
 type Notification struct {
 	RowNo             int64             `json:"-" form:"-"`
-	ID                uuid.UUID         `json:"-" form:"-"`
-	AdminID           uuid.UUID         `json:"-" form:"admin_id"`
-	SellerID          uuid.UUID         `json:"-" form:"seller_id"`
-	BuyerID           uuid.UUID         `json:"-" form:"buyer_id"`
-	NotificationType  NotificationType  `json:"-" form:"-"`
-	AdminLink         *string           `json:"-" form:"-"`
-	SellerLink        *string           `json:"-" form:"-"`
-	BuyerLink         *string           `json:"-" form:"-"`
-	LinkID            *uuid.UUID        `json:"-" form:"-"`
-	Subject           string            `json:"-" form:"subject"`
-	Body              string            `json:"-" form:"body"`
-	Photo             *string           `json:"-" form:"photo"`
-	Params            map[string]string `json:"-" form:"-"`
-	CreatedByAdminID  uuid.UUID         `json:"-" form:"-"`
-	CreatedBySellerID uuid.UUID         `json:"-" form:"-"`
-	CreatedByBuyerID  uuid.UUID         `json:"-" form:"-"`
-	CreatedAt         time.Time         `json:"-" form:"-"`
-	SentAt            *time.Time        `json:"-" form:"-"`
-	ReadAt            *time.Time        `json:"-" form:"-"`
+	ID                uuid.UUID         `json:"id" form:"-"`
+	AdminID           uuid.UUID         `json:"admin_id" form:"admin_id"`
+	SellerID          uuid.UUID         `json:"seller_id" form:"seller_id"`
+	BuyerID           uuid.UUID         `json:"buyer_id" form:"buyer_id"`
+	NotificationType  NotificationType  `json:"notification_type" form:"-"`
+	AdminLink         *string           `json:"admin_link" form:"-"`
+	SellerLink        *string           `json:"seller_link" form:"-"`
+	BuyerLink         *string           `json:"buyer_link" form:"-"`
+	LinkID            *uuid.UUID        `json:"link_id" form:"-"`
+	Subject           string            `json:"subject" form:"subject"`
+	Body              string            `json:"body" form:"body"`
+	Photo             *string           `json:"photo" form:"photo"`
+	Params            map[string]string `json:"params" form:"-"`
+	CreatedByAdminID  uuid.UUID         `json:"created_by_admin_id" form:"-"`
+	CreatedBySellerID uuid.UUID         `json:"created_by_seller_id" form:"-"`
+	CreatedByBuyerID  uuid.UUID         `json:"created_by_buyer_id" form:"-"`
+	CreatedAt         time.Time         `json:"created_at" form:"-"`
+	SentAt            *time.Time        `json:"sent_at" form:"-"`
+	ReadAt            *time.Time        `json:"read_at" form:"-"`
 }
 
 func (q *Notification) New() bool {

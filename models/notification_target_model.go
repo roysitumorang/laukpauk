@@ -14,13 +14,13 @@ var ErrNotificationTargetNotFound = errors.New("notification target not found")
 
 type NotificationTarget struct {
 	RowNo                  int64     `json:"-" form:"-"`
-	ID                     uuid.UUID `json:"-" form:"-"`
-	AdminID                uuid.UUID `json:"-" form:"-"`
-	SellerID               uuid.UUID `json:"-" form:"-"`
-	BuyerID                uuid.UUID `json:"-" form:"-"`
+	ID                     uuid.UUID `json:"id" form:"-"`
+	AdminID                uuid.UUID `json:"admin_id" form:"-"`
+	SellerID               uuid.UUID `json:"seller_id" form:"-"`
+	BuyerID                uuid.UUID `json:"buyer_id" form:"-"`
 	FirebaseInstallationID string    `json:"fid" form:"fid"`
-	CreatedAt              time.Time `json:"-" form:"-"`
-	UpdatedAt              time.Time `json:"-" form:"-"`
+	CreatedAt              time.Time `json:"created_at" form:"-"`
+	UpdatedAt              time.Time `json:"updated_at" form:"-"`
 }
 
 func (q *NotificationTarget) Validate() error {

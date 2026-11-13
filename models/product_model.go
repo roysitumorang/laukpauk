@@ -46,7 +46,7 @@ func (q ProductType) String() string {
 type Product struct {
 	RowNo               int64             `json:"-" form:"-"`
 	ID                  uuid.UUID         `json:"id" form:"id"`
-	RecordStatus        RecordStatus      `json:"-" form:"-"`
+	RecordStatus        RecordStatus      `json:"record_status" form:"-"`
 	ProductCategoryID   uuid.UUID         `json:"category_id" form:"product_category_id"`
 	ProductCategoryName string            `json:"category_name" form:"-"`
 	ProductType         ProductType       `json:"product_type" form:"product_type"`
@@ -55,16 +55,16 @@ type Product struct {
 	Photo               string            `json:"photo" form:"photo"`
 	Description         string            `json:"description" form:"description"`
 	ReadyStock          bool              `json:"ready_stock" form:"ready_stock"`
-	Pinned              bool              `json:"-" form:"pinned"`
-	Hits                int64             `json:"-" form:"-"`
+	Pinned              bool              `json:"pinned" form:"pinned"`
+	Hits                int64             `json:"hits" form:"-"`
 	LowestSellingPrice  int64             `json:"lowest_selling_price" form:"-"`
-	CreatedBy           uuid.UUID         `json:"-" form:"-"`
-	CreatedAt           time.Time         `json:"-" form:"-"`
-	UpdatedBy           uuid.UUID         `json:"-" form:"-"`
-	UpdatedAt           time.Time         `json:"-" form:"-"`
-	DeletedBy           *uuid.UUID        `json:"-" form:"-"`
-	DeletedAt           *time.Time        `json:"-" form:"-"`
-	DeletionReason      *string           `json:"-" form:"-"`
+	CreatedBy           uuid.UUID         `json:"created_by" form:"-"`
+	CreatedAt           time.Time         `json:"created_at" form:"-"`
+	UpdatedBy           uuid.UUID         `json:"updated_by" form:"-"`
+	UpdatedAt           time.Time         `json:"updated_at" form:"-"`
+	DeletedBy           *uuid.UUID        `json:"deleted_by" form:"-"`
+	DeletedAt           *time.Time        `json:"deleted_at" form:"-"`
+	DeletionReason      *string           `json:"deletion_reason" form:"-"`
 	Variants            []*ProductVariant `json:"variants" form:"-"`
 }
 
@@ -203,5 +203,15 @@ func (q *ProductFilter) WithPage(page int64) *ProductFilter {
 
 func (q *ProductFilter) WithUrlValues(urlValues url.Values) *ProductFilter {
 	q.UrlValues = urlValues
+	return q
+}
+
+// HideBasePrices clears the variants' base (cost) prices, which only sellers see.
+func (q *Product) HideBasePrices() *Product {
+	for _, variant := range q.Variants {
+		if variant != nil {
+			variant.BasePrice = 0
+		}
+	}
 	return q
 }

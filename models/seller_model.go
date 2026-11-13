@@ -62,35 +62,35 @@ func (q SellerLevel) Int() uint8 {
 type Seller struct {
 	RowNo                         int64        `json:"-" form:"-"`
 	ID                            uuid.UUID    `json:"id" form:"-"`
-	Status                        SellerStatus `json:"-" form:"-"`
-	SellerLevel                   SellerLevel  `json:"-" form:"seller_level"`
+	Status                        SellerStatus `json:"status" form:"-"`
+	SellerLevel                   SellerLevel  `json:"seller_level" form:"seller_level"`
 	Name                          string       `json:"name" form:"name"`
-	UnconfirmedMobilePhone        *string      `json:"-" form:"-"`
-	MobilePhoneConfirmationSentAt *time.Time   `json:"-" form:"-"`
+	UnconfirmedMobilePhone        *string      `json:"unconfirmed_mobile_phone" form:"-"`
+	MobilePhoneConfirmationSentAt *time.Time   `json:"mobile_phone_confirmation_sent_at" form:"-"`
 	MobilePhoneConfirmationToken  *string      `json:"-" form:"-"`
-	MobilePhoneConfirmedAt        *time.Time   `json:"-" form:"-"`
+	MobilePhoneConfirmedAt        *time.Time   `json:"mobile_phone_confirmed_at" form:"-"`
 	MobilePhone                   string       `json:"mobile_phone" form:"mobile_phone"`
 	Username                      string       `json:"username" form:"username"`
-	UnconfirmedEmail              *string      `json:"-" form:"-"`
-	EmailConfirmationSentAt       *time.Time   `json:"-" form:"-"`
+	UnconfirmedEmail              *string      `json:"unconfirmed_email" form:"-"`
+	EmailConfirmationSentAt       *time.Time   `json:"email_confirmation_sent_at" form:"-"`
 	EmailConfirmationToken        *string      `json:"-" form:"-"`
-	EmailConfirmedAt              *time.Time   `json:"-" form:"-"`
+	EmailConfirmedAt              *time.Time   `json:"email_confirmed_at" form:"-"`
 	Email                         *string      `json:"email" form:"email"`
 	EncryptedPassword             *string      `json:"-" form:"-"`
-	PasswordResetAt               *time.Time   `json:"-" form:"-"`
+	PasswordResetAt               *time.Time   `json:"password_reset_at" form:"-"`
 	PasswordResetToken            *string      `json:"-" form:"-"`
-	PasswordChangedAt             *time.Time   `json:"-" form:"-"`
-	Photo                         string       `json:"-" form:"photo"`
-	UnreadNotifications           int64        `json:"-" form:"-"`
+	PasswordChangedAt             *time.Time   `json:"password_changed_at" form:"-"`
+	Photo                         string       `json:"photo" form:"photo"`
+	UnreadNotifications           int64        `json:"unread_notifications" form:"-"`
 	TelegramChatID                *int64       `json:"telegram_chat_id" form:"telegram_chat_id"`
 	TelegramUsername              *string      `json:"telegram_username" form:"telegram_username"`
-	CreatedBy                     *uuid.UUID   `json:"-" form:"-"`
+	CreatedBy                     *uuid.UUID   `json:"created_by" form:"-"`
 	CreatedAt                     time.Time    `json:"created_at" form:"-"`
-	UpdatedBy                     *uuid.UUID   `json:"-" form:"-"`
-	UpdatedAt                     time.Time    `json:"-" form:"-"`
-	DeactivatedBy                 *uuid.UUID   `json:"-" form:"-"`
-	DeactivatedAt                 *time.Time   `json:"-" form:"-"`
-	DeactivationReason            *string      `json:"-" form:"-"`
+	UpdatedBy                     *uuid.UUID   `json:"updated_by" form:"-"`
+	UpdatedAt                     time.Time    `json:"updated_at" form:"-"`
+	DeactivatedBy                 *uuid.UUID   `json:"deactivated_by" form:"-"`
+	DeactivatedAt                 *time.Time   `json:"deactivated_at" form:"-"`
+	DeactivationReason            *string      `json:"deactivation_reason" form:"-"`
 }
 
 func (q *Seller) Validate() error {

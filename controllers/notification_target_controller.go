@@ -20,40 +20,37 @@ import (
 type (
 	notificationTargetController struct {
 		adminService              services.AdminService
-		sellerService             services.SellerService
 		buyerService              services.BuyerService
 		notificationTargetService services.NotificationTargetService
 		jsonWebTokenService       services.JsonWebTokenService
-		notificationService       services.NotificationService
+		userService               services.UserService
 	}
 )
 
 func NewNotificationTargetController(
 	adminService services.AdminService,
-	sellerService services.SellerService,
 	buyerService services.BuyerService,
 	notificationTargetService services.NotificationTargetService,
 	jsonWebTokenService services.JsonWebTokenService,
-	notificationService services.NotificationService,
+	userService services.UserService,
 ) *notificationTargetController {
 	return &notificationTargetController{
 		adminService:              adminService,
-		sellerService:             sellerService,
 		buyerService:              buyerService,
 		notificationTargetService: notificationTargetService,
 		jsonWebTokenService:       jsonWebTokenService,
-		notificationService:       notificationService,
+		userService:               userService,
 	}
 }
 
 func (q *notificationTargetController) Mount(r fiber.Router) {
 	adminSessionAuth := middlewares.AdminSessionAuthMiddleware(q.adminService)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
+	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
 	buyerKeyAuth := middlewares.BuyerKeyAuthMiddleware(q.buyerService, q.jsonWebTokenService)
 	r.Group("/admin", adminSessionAuth).
 		Post("", q.AdminCreate)
-	r.Group("/seller", sellerSessionAuth).
-		Post("", q.SellerCreate)
+	r.Group("/v1/seller", sellerKeyAuth).
+		Post("", q.V1SellerCreate)
 	r.Group("/v1/buyer", buyerKeyAuth).
 		Post("", q.V1BuyerSave)
 }
@@ -108,10 +105,10 @@ func (q *notificationTargetController) AdminCreate(c fiber.Ctx) (err error) {
 		WriteResponse(c)
 }
 
-func (q *notificationTargetController) SellerCreate(c fiber.Ctx) (err error) {
+func (q *notificationTargetController) V1SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "NotificationTargetController-SellerCreate"
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
+	ctxt := "NotificationTargetController-V1SellerCreate"
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, statusCode, err := sanitizers.ValidateNotificationTarget(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNotificationTarget")
@@ -121,7 +118,7 @@ func (q *notificationTargetController) SellerCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now()
 	request.AdminID = uuid.Nil()
-	request.SellerID = currentSeller.ID
+	request.SellerID = currentUser.ID
 	request.BuyerID = uuid.Nil()
 	request.CreatedAt = now
 	request.UpdatedAt = now

@@ -18,6 +18,7 @@ func ValidateRecipeGuide(ctx context.Context, c fiber.Ctx) (*models.RecipeGuide,
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return nil, fiberErr.Code, err
 	}
+	keepFormFields(&response)
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, fiber.StatusBadRequest, err

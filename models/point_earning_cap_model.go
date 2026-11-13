@@ -18,18 +18,18 @@ var MapPointEarningCapSortings = map[string]struct{}{
 
 type PointEarningCap struct {
 	RowNo               int64        `json:"-" form:"-"`
-	ID                  uuid.UUID    `json:"-" form:"id"`
-	RecordStatus        RecordStatus `json:"-" form:"-"`
+	ID                  uuid.UUID    `json:"id" form:"id"`
+	RecordStatus        RecordStatus `json:"record_status" form:"-"`
 	MinimumShoppingCost int64        `json:"minimum_shopping_cost" form:"minimum_shopping_cost"`
 	MaximumShoppingCost int64        `json:"maximum_shopping_cost" form:"maximum_shopping_cost"`
 	EarnedPoints        int64        `json:"earned_points" form:"earned_points"`
-	CreatedBy           uuid.UUID    `json:"-" form:"-"`
-	CreatedAt           time.Time    `json:"-" form:"-"`
-	UpdatedBy           uuid.UUID    `json:"-" form:"-"`
-	UpdatedAt           time.Time    `json:"-" form:"-"`
-	DeletedBy           *uuid.UUID   `json:"-" form:"-"`
-	DeletedAt           *time.Time   `json:"-" form:"-"`
-	DeletionReason      *string      `json:"-" form:"-"`
+	CreatedBy           uuid.UUID    `json:"created_by" form:"-"`
+	CreatedAt           time.Time    `json:"created_at" form:"-"`
+	UpdatedBy           uuid.UUID    `json:"updated_by" form:"-"`
+	UpdatedAt           time.Time    `json:"updated_at" form:"-"`
+	DeletedBy           *uuid.UUID   `json:"deleted_by" form:"-"`
+	DeletedAt           *time.Time   `json:"deleted_at" form:"-"`
+	DeletionReason      *string      `json:"deletion_reason" form:"-"`
 }
 
 func (q *PointEarningCap) Validate() error {

@@ -113,5 +113,6 @@ func ValidateTransactionShipment(ctx context.Context, c fiber.Ctx) (*models.Tran
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, fiberErr.Code, err
 	}
+	keepFormFields(&response)
 	return &response, fiber.StatusOK, nil
 }

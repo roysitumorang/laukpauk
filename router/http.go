@@ -73,7 +73,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	sessionStore.RegisterType(&helper.FlashMessage{})
 	sessionStore.RegisterType(uuid.UUID{})
 	sessionStore.RegisterType(&models.Admin{})
-	sessionStore.RegisterType(&models.Seller{})
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
@@ -145,50 +144,46 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/text_messages/*", To: "/text_messages/admin/$1"},
 				{From: "/admin/notifications", To: "/notifications/admin"},
 				{From: "/admin/notifications/*", To: "/notifications/admin/$1"},
-				{From: "/seller/auth/sessions", To: "/auth/seller/sessions"},
-				{From: "/seller/auth/sessions/*", To: "/auth/seller/sessions/$1"},
-				{From: "/seller/auth/*", To: "/auth/seller/$1"},
-				{From: "/seller", To: "/home/seller"},
-				{From: "/seller/product_categories", To: "/product_categories/seller"},
-				{From: "/seller/product_categories/*", To: "/product_categories/seller/$1"},
-				{From: "/seller/product_categories/*/*", To: "/product_categories/seller/$1/$2"},
-				{From: "/seller/products", To: "/products/seller"},
-				{From: "/seller/products/*", To: "/products/seller/$1"},
-				{From: "/seller/products/*/*", To: "/products/seller/$1/$2"},
-				{From: "/seller/vouchers", To: "/vouchers/seller"},
-				{From: "/seller/vouchers/*", To: "/vouchers/seller/$1"},
-				{From: "/seller/vouchers/*/*", To: "/vouchers/seller/$1/$2"},
-				{From: "/seller/delivery_plans", To: "/delivery_plans/seller"},
-				{From: "/seller/delivery_plans/*", To: "/delivery_plans/seller/$1"},
-				{From: "/seller/delivery_plans/*/*", To: "/delivery_plans/seller/$1/$2"},
-				{From: "/seller/point_earning_caps", To: "/point_earning_caps/seller"},
-				{From: "/seller/point_earning_caps/*", To: "/point_earning_caps/seller/$1"},
-				{From: "/seller/point_earning_caps/*/*", To: "/point_earning_caps/seller/$1/$2"},
-				{From: "/seller/point_spending_caps", To: "/point_spending_caps/seller"},
-				{From: "/seller/point_spending_caps/*", To: "/point_spending_caps/seller/$1"},
-				{From: "/seller/point_spending_caps/*/*", To: "/point_spending_caps/seller/$1/$2"},
-				{From: "/seller/banners", To: "/banners/seller"},
-				{From: "/seller/banners/*", To: "/banners/seller/$1"},
-				{From: "/seller/banners/*/*", To: "/banners/seller/$1/$2"},
-				{From: "/seller/sellers", To: "/sellers/seller"},
-				{From: "/seller/sellers/*", To: "/sellers/seller/$1"},
-				{From: "/seller/sellers/*/*", To: "/sellers/seller/$1/$2"},
-				{From: "/seller/buyers", To: "/buyers/seller"},
-				{From: "/seller/buyers/*", To: "/buyers/seller/$1"},
-				{From: "/seller/buyers/*/*", To: "/buyers/seller/$1/$2"},
-				{From: "/seller/recipes", To: "/recipes/seller"},
-				{From: "/seller/recipes/*", To: "/recipes/seller/$1"},
-				{From: "/seller/recipes/*/*", To: "/recipes/seller/$1/$2"},
-				{From: "/seller/points", To: "/points/seller"},
-				{From: "/seller/points/*", To: "/points/seller/$1"},
-				{From: "/seller/points/*/*", To: "/points/seller/$1/$2"},
-				{From: "/seller/notifications", To: "/notifications/seller"},
-				{From: "/seller/notifications/*", To: "/notifications/seller/$1"},
-				{From: "/seller/notifications/*/*", To: "/notifications/seller/$1/$2"},
-				{From: "/seller/notification_targets", To: "/notification_targets/seller"},
-				{From: "/seller/transactions", To: "/transactions/seller"},
-				{From: "/seller/transactions/*", To: "/transactions/seller/$1"},
-				{From: "/seller/transactions/*/*", To: "/transactions/seller/$1/$2"},
+				{From: "/v1/seller/product_categories", To: "/product_categories/v1/seller"},
+				{From: "/v1/seller/product_categories/*", To: "/product_categories/v1/seller/$1"},
+				{From: "/v1/seller/product_categories/*/*", To: "/product_categories/v1/seller/$1/$2"},
+				{From: "/v1/seller/products", To: "/products/v1/seller"},
+				{From: "/v1/seller/products/*", To: "/products/v1/seller/$1"},
+				{From: "/v1/seller/products/*/*", To: "/products/v1/seller/$1/$2"},
+				{From: "/v1/seller/vouchers", To: "/vouchers/v1/seller"},
+				{From: "/v1/seller/vouchers/*", To: "/vouchers/v1/seller/$1"},
+				{From: "/v1/seller/vouchers/*/*", To: "/vouchers/v1/seller/$1/$2"},
+				{From: "/v1/seller/delivery_plans", To: "/delivery_plans/v1/seller"},
+				{From: "/v1/seller/delivery_plans/*", To: "/delivery_plans/v1/seller/$1"},
+				{From: "/v1/seller/delivery_plans/*/*", To: "/delivery_plans/v1/seller/$1/$2"},
+				{From: "/v1/seller/point_earning_caps", To: "/point_earning_caps/v1/seller"},
+				{From: "/v1/seller/point_earning_caps/*", To: "/point_earning_caps/v1/seller/$1"},
+				{From: "/v1/seller/point_earning_caps/*/*", To: "/point_earning_caps/v1/seller/$1/$2"},
+				{From: "/v1/seller/point_spending_caps", To: "/point_spending_caps/v1/seller"},
+				{From: "/v1/seller/point_spending_caps/*", To: "/point_spending_caps/v1/seller/$1"},
+				{From: "/v1/seller/point_spending_caps/*/*", To: "/point_spending_caps/v1/seller/$1/$2"},
+				{From: "/v1/seller/banners", To: "/banners/v1/seller"},
+				{From: "/v1/seller/banners/*", To: "/banners/v1/seller/$1"},
+				{From: "/v1/seller/banners/*/*", To: "/banners/v1/seller/$1/$2"},
+				{From: "/v1/seller/sellers", To: "/sellers/v1/seller"},
+				{From: "/v1/seller/sellers/*", To: "/sellers/v1/seller/$1"},
+				{From: "/v1/seller/sellers/*/*", To: "/sellers/v1/seller/$1/$2"},
+				{From: "/v1/seller/buyers", To: "/buyers/v1/seller"},
+				{From: "/v1/seller/buyers/*", To: "/buyers/v1/seller/$1"},
+				{From: "/v1/seller/buyers/*/*", To: "/buyers/v1/seller/$1/$2"},
+				{From: "/v1/seller/recipes", To: "/recipes/v1/seller"},
+				{From: "/v1/seller/recipes/*", To: "/recipes/v1/seller/$1"},
+				{From: "/v1/seller/recipes/*/*", To: "/recipes/v1/seller/$1/$2"},
+				{From: "/v1/seller/points", To: "/points/v1/seller"},
+				{From: "/v1/seller/points/*", To: "/points/v1/seller/$1"},
+				{From: "/v1/seller/points/*/*", To: "/points/v1/seller/$1/$2"},
+				{From: "/v1/seller/notifications", To: "/notifications/v1/seller"},
+				{From: "/v1/seller/notifications/*", To: "/notifications/v1/seller/$1"},
+				{From: "/v1/seller/notifications/*/*", To: "/notifications/v1/seller/$1/$2"},
+				{From: "/v1/seller/notification_targets", To: "/notification_targets/v1/seller"},
+				{From: "/v1/seller/transactions", To: "/transactions/v1/seller"},
+				{From: "/v1/seller/transactions/*", To: "/transactions/v1/seller/$1"},
+				{From: "/v1/seller/transactions/*/*", To: "/transactions/v1/seller/$1/$2"},
 				{From: "/v1/seller/users", To: "/users/v1/seller"},
 				{From: "/v1/seller/users/*", To: "/users/v1/seller/$1"},
 				{From: "/v1/seller/users/*/*", To: "/users/v1/seller/$1/$2"},
@@ -288,84 +283,74 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		}))
 	controllers.NewAuthController(
 		q.AdminService,
-		q.SellerService,
 		q.BuyerService,
 		q.JsonWebTokenService,
 		q.TextMessageService,
-		q.NotificationService,
 		q.KafkaClient,
 	).Mount(app.Group("/auth"))
 	controllers.NewHomeController(
 		q.AdminService,
-		q.SellerService,
 		q.MessageService,
-		q.NotificationService,
 	).Mount(app.Group("/home"))
 	controllers.NewProductCategoryController(
-		q.SellerService,
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,
-		q.NotificationService,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/product_categories"))
 	controllers.NewProductController(
-		q.SellerService,
 		q.ProductCategoryService,
 		q.ProductService,
 		q.ProductVariantService,
 		q.RecipeItemService,
-		q.NotificationService,
 		q.Storage,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/products"))
 	controllers.NewDeliveryPlanController(
-		q.SellerService,
 		q.DeliveryPlanService,
 		q.BuyerService,
 		q.JsonWebTokenService,
-		q.NotificationService,
+		q.UserService,
 	).Mount(app.Group("/delivery_plans"))
 	controllers.NewPointController(
-		q.SellerService,
 		q.BuyerService,
 		q.PointService,
-		q.NotificationService,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/points"))
 	controllers.NewVoucherController(
-		q.SellerService,
 		q.VoucherService,
 		q.BuyerService,
 		q.JsonWebTokenService,
-		q.NotificationService,
+		q.UserService,
 	).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(
-		q.SellerService,
 		q.PointEarningCapService,
 		q.BuyerService,
 		q.JsonWebTokenService,
-		q.NotificationService,
+		q.UserService,
 	).Mount(app.Group("/point_earning_caps"))
 	controllers.NewPointSpendingCapController(
-		q.SellerService,
 		q.PointSpendingCapService,
 		q.BuyerService,
 		q.JsonWebTokenService,
-		q.NotificationService,
+		q.UserService,
 	).Mount(app.Group("/point_spending_caps"))
 	controllers.NewTransactionController(
-		q.SellerService,
 		q.BuyerService,
 		q.TransactionService,
 		q.JsonWebTokenService,
-		q.NotificationService,
 		q.KafkaClient,
+		q.UserService,
 	).Mount(app.Group("/transactions"))
 	controllers.NewNotificationTargetController(
 		q.AdminService,
-		q.SellerService,
 		q.BuyerService,
 		q.NotificationTargetService,
 		q.JsonWebTokenService,
-		q.NotificationService,
+		q.UserService,
 	).Mount(app.Group("/notification_targets"))
 	controllers.NewCartController(
 		q.BuyerService,
@@ -391,9 +376,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/payment_channels"))
 	controllers.NewBannerController(
-		q.SellerService,
 		q.BannerService,
-		q.NotificationService,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/banners"))
 	controllers.NewUserController(
 		q.UserService,
@@ -403,9 +388,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.KafkaClient,
 	).Mount(app.Group("/users"))
 	controllers.NewBuyerController(
-		q.SellerService,
 		q.BuyerService,
-		q.NotificationService,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/buyers"))
 	controllers.NewAdminController(
 		q.AdminService,
@@ -417,24 +402,26 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	).Mount(app.Group("/text_messages"))
 	controllers.NewNotificationController(
 		q.AdminService,
-		q.SellerService,
 		q.BuyerService,
 		q.NotificationService,
 		q.KafkaClient,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/notifications"))
 	controllers.NewRecipeController(
-		q.SellerService,
 		q.BuyerService,
 		q.RecipeService,
 		q.RecipeGuideService,
 		q.RecipeItemService,
 		q.ProductService,
 		q.ProductVariantService,
-		q.NotificationService,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/recipes"))
 	controllers.NewSellerController(
 		q.SellerService,
-		q.NotificationService,
+		q.UserService,
+		q.JsonWebTokenService,
 	).Mount(app.Group("/sellers"))
 	app.Use(func(c fiber.Ctx) error {
 		if strings.HasPrefix(c.OriginalURL(), "/v1/") {

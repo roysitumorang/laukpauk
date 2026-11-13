@@ -9,8 +9,6 @@ import (
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/csrf"
-	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
@@ -21,34 +19,33 @@ import (
 )
 
 type buyerController struct {
-	sellerService       services.SellerService
 	buyerService        services.BuyerService
-	notificationService services.NotificationService
+	userService         services.UserService
+	jsonWebTokenService services.JsonWebTokenService
 }
 
 func NewBuyerController(
-	sellerService services.SellerService,
 	buyerService services.BuyerService,
-	notificationService services.NotificationService,
+	userService services.UserService,
+	jsonWebTokenService services.JsonWebTokenService,
 ) *buyerController {
 	return &buyerController{
-		sellerService:       sellerService,
 		buyerService:        buyerService,
-		notificationService: notificationService,
+		userService:         userService,
+		jsonWebTokenService: jsonWebTokenService,
 	}
 }
 
 func (q *buyerController) Mount(r fiber.Router) {
 	r.Group("/v1/buyer").
 		Post("", q.BuyerCreate)
-	sellerSessionAuth := middlewares.SellerSessionAuthMiddleware(q.sellerService, q.notificationService)
-	r.Group("/seller", sellerSessionAuth).
-		Get("", q.SellerIndex).
-		Get("/new", q.SellerNew).
-		Post("", q.SellerCreate).
-		Get("/:id/edit", q.SellerEdit).
-		Post("/:id", q.SellerUpdate).
-		Post("/:id/delete", q.SellerDelete)
+	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
+	r.Group("/v1/seller", sellerKeyAuth).
+		Get("", q.V1SellerIndex).
+		Post("", q.V1SellerCreate).
+		Get("/:id", q.V1SellerShow).
+		Post("/:id", q.V1SellerUpdate).
+		Post("/:id/delete", q.V1SellerDelete)
 
 }
 
@@ -159,168 +156,44 @@ func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
 		WriteResponse(c)
 }
 
-func (q *buyerController) SellerIndex(c fiber.Ctx) (err error) {
+func (q *buyerController) V1SellerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BuyerController-SellerIndex"
-	sess := session.FromContext(c)
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	defer flash.Clear(c, sess.Session)
-	csrfToken := csrf.TokenFromContext(c)
-	request := &models.BuyerFilter{}
-	rows := []*models.Buyer{}
-	pagination := &models.Pagination{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", "Buyer Laukpauk",
-		"limits", models.Limits,
-		"request", request,
-		"rows", rows,
-		"pagination", pagination,
-		"sortings", []models.Sorting{
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Newest-Oldest",
-			},
-			{
-				Field:     models.SortingFieldID,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Oldest-Newest",
-			},
-			{
-				Field:     models.BuyerSortingFieldName,
-				Direction: models.SortingDirectionAsc,
-				Label:     "Name A-Z",
-			},
-			{
-				Field:     models.BuyerSortingFieldName,
-				Direction: models.SortingDirectionDesc,
-				Label:     "Name Z-A",
-			},
-		},
-	)
-	request, err = sanitizers.FindBuyers(ctx, c)
-	params.Push("request", request)
+	ctxt := "BuyerController-V1SellerIndex"
+	request, err := sanitizers.FindBuyers(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
-		return c.Render("seller/buyer_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	if rows, pagination, err = q.buyerService.FindBuyers(
+	rows, pagination, err := q.buyerService.FindBuyers(
 		ctx,
 		request.WithStatuses(models.BuyerStatusActive),
-	); err != nil {
+	)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
-		return c.Render("seller/buyer_index", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return c.Render("seller/buyer_index", params.Push(
-		"rows", rows,
-		"pagination", pagination,
-	), "seller/layouts/authenticated")
+	pagination.Rows = make([]any, len(rows))
+	for i := range rows {
+		pagination.Rows[i] = rows[i]
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
 }
 
-func (q *buyerController) SellerNew(c fiber.Ctx) (err error) {
+func (q *buyerController) V1SellerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	sess := session.FromContext(c)
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	defer flash.Clear(c, sess.Session)
-	csrfToken := csrf.TokenFromContext(c)
-	request := &models.Buyer{}
-	buyers := []*models.Buyer{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", "Add New Buyer",
-		"request", request,
-		"buyer", request,
-		"buyers", buyers,
-	)
-	if buyers, _, err = q.buyerService.FindBuyers(
-		ctx,
-		models.NewBuyerFilter().
-			WithStatuses(models.BuyerStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.BuyerSortingFieldName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
-	}
-	return c.Render("seller/buyer_new", params.Push("buyers", buyers), "seller/layouts/authenticated")
-}
-
-func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
-	ctx := c.Context()
-	ctxt := "BuyerController-SellerCreate"
-	sess := session.FromContext(c)
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	csrfToken := csrf.TokenFromContext(c)
-	request := &models.Buyer{}
-	buyers := []*models.Buyer{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", "Add New Buyer",
-		"request", request,
-		"buyer", request,
-		"buyers", buyers,
-	)
-	if buyers, _, err = q.buyerService.FindBuyers(
-		ctx,
-		models.NewBuyerFilter().
-			WithStatuses(models.BuyerStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.BuyerSortingFieldName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
-	}
-	params.Push("buyers", buyers)
+	ctxt := "BuyerController-V1SellerCreate"
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c)
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyer")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
@@ -329,16 +202,14 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if buyer != nil {
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(models.ErrUniqueBuyerUsernameViolation.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrUniqueBuyerUsernameViolation.Error()).
+			WriteResponse(c)
 	}
 	if buyer, err = q.buyerService.FindBuyer(
 		ctx,
@@ -346,16 +217,14 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 			WithMobilePhone(request.MobilePhone),
 	); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if buyer != nil {
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(models.ErrUniqueBuyerMobilePhoneViolation.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrUniqueBuyerMobilePhoneViolation.Error()).
+			WriteResponse(c)
 	}
 	if request.Email != nil {
 		if buyer, err = q.buyerService.FindBuyer(
@@ -364,16 +233,14 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 				WithEmail(*request.Email),
 		); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return c.Render("seller/buyer_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(""),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if buyer != nil {
-			return c.Render("seller/buyer_new", params.Push(
-				"flash", flash.Danger(models.ErrUniqueBuyerEmailViolation.Error()),
-				"request", request.SetPhoto(""),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueBuyerEmailViolation.Error()).
+				WriteResponse(c)
 		}
 	}
 	now := time.Now().In(time.Local)
@@ -386,14 +253,12 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 	if photo == nil {
 		request.Photo = os.Getenv("BUYER_DEFAULT_PHOTO")
 	}
-	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -403,50 +268,42 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.buyerService.CreateBuyer(ctx, tx, request); err != nil {
+	saved, err := q.buyerService.CreateBuyer(ctx, tx, request)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateBuyer")
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if photo != nil {
 		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("seller/buyer_new", params.Push(
-				"flash", flash.Danger(err.Error()),
-				"request", request.SetPhoto(""),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/buyer_new", params.Push(
-			"flash", flash.Danger(err.Error()),
-			"request", request.SetPhoto(""),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Clear(c, sess.Session).
-		Success("buyer created successfully").
-		Redirect(c, sess.Session, "/seller/buyers")
+	return helper.NewResponse(fiber.StatusCreated).
+		SetMessage("buyer created successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *buyerController) SellerEdit(c fiber.Ctx) (err error) {
+func (q *buyerController) V1SellerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BuyerController-SellerEdit"
-	sess := session.FromContext(c)
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	defer flash.Clear(c, sess.Session)
-	csrfToken := csrf.TokenFromContext(c)
+	ctxt := "BuyerController-V1SellerShow"
 	buyerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrBuyerNotFound.Error()).
+			WriteResponse(c)
 	}
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
@@ -456,56 +313,29 @@ func (q *buyerController) SellerEdit(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if buyer == nil {
-		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrBuyerNotFound.Error()).
+			WriteResponse(c)
 	}
-	buyers := []*models.Buyer{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", helper.Sprintf("Edit Data Buyer|%s", buyer.Name),
-		"request", buyer,
-		"buyer", buyer,
-		"buyers", buyers,
-	)
-	if buyers, _, err = q.buyerService.FindBuyers(
-		ctx,
-		models.NewBuyerFilter().
-			WithStatuses(models.BuyerStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.BuyerSortingFieldName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		return c.Render("seller/buyer_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
-	}
-	params.Push("buyers", buyers)
-	return c.Render("seller/buyer_edit", params, "seller/layouts/authenticated")
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(buyer).
+		WriteResponse(c)
 }
 
-func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
+func (q *buyerController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BuyerController-SellerUpdate"
-	sess := session.FromContext(c)
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	notifications, _ := c.Locals(models.CurrentNotifications).([]*models.Notification)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
-	csrfToken := csrf.TokenFromContext(c)
+	ctxt := "BuyerController-V1SellerUpdate"
 	buyerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrBuyerNotFound.Error()).
+			WriteResponse(c)
 	}
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
@@ -515,49 +345,24 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if buyer == nil {
-		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrBuyerNotFound.Error()).
+			WriteResponse(c)
 	}
-	buyers := []*models.Buyer{}
-	params := models.NewMap().Push(
-		"baseURL", c.BaseURL(),
-		"flash", flash,
-		"path", c.OriginalURL(),
-		"csrfToken", csrfToken,
-		"currentSeller", currentSeller,
-		"notifications", notifications,
-		"pageTitle", helper.Sprintf("Edit Data Buyer|%s", buyer.Name),
-		"request", buyer,
-		"buyer", buyer,
-		"buyers", buyers,
-	)
-	if buyers, _, err = q.buyerService.FindBuyers(
-		ctx,
-		models.NewBuyerFilter().
-			WithStatuses(models.BuyerStatusActive).
-			WithSortings(models.Sorting{
-				Field:     models.BuyerSortingFieldName,
-				Direction: models.SortingDirectionAsc,
-			}),
-	); err != nil {
-		return c.Render("seller/buyer_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
-	}
-	params.Push("buyers", buyers)
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateBuyer(ctx, c)
 	if photo == nil {
 		request.Photo = buyer.Photo
 	}
-	params.Push("request", request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyer")
-		c.Response().SetStatusCode(statusCode)
-		return c.Render("seller/buyer_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if buyer.Username != request.Username {
 		otherBuyer, err := q.buyerService.FindBuyer(
@@ -568,14 +373,14 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 		)
 		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return c.Render("seller/buyer_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if otherBuyer != nil {
-			return c.Render("seller/buyer_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueBuyerUsernameViolation.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueBuyerUsernameViolation.Error()).
+				WriteResponse(c)
 		}
 	}
 	if buyer.MobilePhone != request.MobilePhone {
@@ -587,14 +392,14 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 		)
 		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return c.Render("seller/buyer_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if otherBuyer != nil {
-			return c.Render("seller/seller_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueBuyerMobilePhoneViolation.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueBuyerMobilePhoneViolation.Error()).
+				WriteResponse(c)
 		}
 	}
 	if request.Email != nil &&
@@ -608,14 +413,14 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 		)
 		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-			return c.Render("seller/buyer_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 		if otherBuyer != nil {
-			return c.Render("seller/buyer_edit", params.Push(
-				"flash", flash.Danger(models.ErrUniqueBuyerEmailViolation.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(models.ErrUniqueBuyerEmailViolation.Error()).
+				WriteResponse(c)
 		}
 	}
 	now := time.Now().In(time.Local)
@@ -632,13 +437,12 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 	buyer.DeactivatedBy = nil
 	buyer.DeactivatedAt = nil
 	buyer.DeactivationReason = nil
-	params.Push("request", request)
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return c.Render("seller/buyer_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -648,44 +452,43 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
+	saved, err := q.buyerService.UpdateBuyer(ctx, tx, buyer)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
-		return c.Render("seller/buyer_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if photo != nil {
 		if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
-			return c.Render("seller/buyer_edit", params.Push(
-				"flash", flash.Danger(err.Error()),
-			), "seller/layouts/authenticated")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return c.Render("seller/buyer_edit", params.Push(
-			"flash", flash.Danger(err.Error()),
-		), "seller/layouts/authenticated")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Clear(c, sess.Session).
-		Success("buyer updated successfully").
-		Redirect(c, sess.Session, "/seller/buyers")
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("buyer updated successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
 
-func (q *buyerController) SellerDelete(c fiber.Ctx) (err error) {
+func (q *buyerController) V1SellerDelete(c fiber.Ctx) (err error) {
 	ctx := c.Context()
-	ctxt := "BuyerController-SellerDelete"
-	sess := session.FromContext(c)
-	currentSeller, _ := c.Locals(models.CurrentSeller).(*models.Seller)
-	flash, ok := sess.Get(helper.Flash).(*helper.FlashMessage)
-	if !ok {
-		flash = helper.NewFlashMessage()
-	}
+	ctxt := "BuyerController-V1SellerDelete"
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	buyerID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrBuyerNotFound.Error()).
+			WriteResponse(c)
 	}
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
@@ -695,19 +498,25 @@ func (q *buyerController) SellerDelete(c fiber.Ctx) (err error) {
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if buyer == nil {
-		return flash.Danger(models.ErrBuyerNotFound.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrBuyerNotFound.Error()).
+			WriteResponse(c)
 	}
 	buyer.Status = models.BuyerStatusDeactivated
-	buyer.DeactivatedBy = &currentSeller.ID
+	buyer.DeactivatedBy = &currentUser.ID
 	buyer.DeactivatedAt = new(time.Now())
 	buyer.DeactivationReason = nil
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -717,15 +526,21 @@ func (q *buyerController) SellerDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = q.buyerService.UpdateBuyer(ctx, tx, buyer); err != nil {
+	saved, err := q.buyerService.UpdateBuyer(ctx, tx, buyer)
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateBuyer")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
-		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/buyers")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
-	return flash.Clear(c, sess.Session).
-		Success("buyer deactivated successfully").
-		Redirect(c, sess.Session, "/seller/buyers")
+	return helper.NewResponse(fiber.StatusOK).
+		SetMessage("buyer deactivated successfully").
+		SetData(saved).
+		WriteResponse(c)
 }
