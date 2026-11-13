@@ -19,7 +19,6 @@ var MapPointSpendingCapSortings = map[string]struct{}{
 type PointSpendingCap struct {
 	RowNo               int64        `json:"-" form:"-"`
 	ID                  uuid.UUID    `json:"-" form:"id"`
-	CompanyID           uuid.UUID    `json:"-" form:"-"`
 	RecordStatus        RecordStatus `json:"-" form:"-"`
 	MinimumShoppingCost int64        `json:"minimum_shopping_cost" form:"minimum_shopping_cost"`
 	MaximumShoppingCost int64        `json:"maximum_shopping_cost" form:"maximum_shopping_cost"`
@@ -59,8 +58,7 @@ func (q *PointSpendingCap) New() bool {
 
 type PointSpendingCapFilter struct {
 	PointSpendingCapIDs,
-	ExcludedPointSpendingCapIDs,
-	CompanyIDs []uuid.UUID
+	ExcludedPointSpendingCapIDs []uuid.UUID
 	MinimumShoppingCost,
 	MaximumShoppingCost int64
 	RecordStatuses []RecordStatus
@@ -87,11 +85,6 @@ func (q *PointSpendingCapFilter) WithPointSpendingCapIDs(pointSpendingIDs ...uui
 
 func (q *PointSpendingCapFilter) WithExcludedPointSpendingCapIDs(excludedPointSpendingIDs ...uuid.UUID) *PointSpendingCapFilter {
 	q.ExcludedPointSpendingCapIDs = excludedPointSpendingIDs
-	return q
-}
-
-func (q *PointSpendingCapFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *PointSpendingCapFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

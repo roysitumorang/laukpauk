@@ -128,8 +128,7 @@ func (q *recipeController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.recipeService.FindRecipes(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipes")
 		return c.Render("seller/recipe_index", params.Push(
@@ -177,7 +176,6 @@ func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 		recipe, err = q.recipeService.FindRecipe(
 			ctx,
 			models.NewRecipeFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithNames(*request.Name),
 		)
 		if err != nil && !errors.Is(err, models.ErrRecipeNotFound) {
@@ -191,7 +189,6 @@ func (q *recipeController) SellerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = currentSeller.ID
 	request.CreatedAt = now
@@ -353,7 +350,6 @@ func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherRecipe, err := q.recipeService.FindRecipe(
 			ctx,
 			models.NewRecipeFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithNames(*request.Name).
 				WithExcludedRecipeIDs(recipe.ID),
 		)
@@ -372,7 +368,6 @@ func (q *recipeController) SellerUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = recipe.ID
-	request.CompanyID = recipe.CompanyID
 	request.RecordStatus = recipe.RecordStatus
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
@@ -526,7 +521,6 @@ func (q *recipeController) SellerCreateGuide(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.RecipeID = recipe.ID
 	request.CreatedBy = currentSeller.ID
@@ -610,7 +604,6 @@ func (q *recipeController) SellerUpdateGuide(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	request.ID = recipeGuide.ID
-	request.CompanyID = recipeGuide.CompanyID
 	request.RecordStatus = recipeGuide.RecordStatus
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
@@ -758,7 +751,6 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 	if recipeItem, err = q.recipeItemService.FindRecipeItem(
 		ctx,
 		models.NewRecipeItemFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecipeIDs(recipe.ID).
 			WithProductIDs(request.ProductID),
 	); err != nil && !errors.Is(err, models.ErrRecipeItemNotFound) {
@@ -768,7 +760,6 @@ func (q *recipeController) SellerCreateItem(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.RecipeID = recipe.ID
 	request.CreatedBy = currentSeller.ID
@@ -877,7 +868,6 @@ func (q *recipeController) SellerUpdateItem(c fiber.Ctx) (err error) {
 		request.ProductVariantStockUnit = variant.StockUnit
 	}
 	request.ID = recipeItem.ID
-	request.CompanyID = recipeItem.CompanyID
 	request.ProductVariantID = recipeItem.ProductVariantID
 	request.RecordStatus = recipeItem.RecordStatus
 	request.UpdatedBy = currentSeller.ID
@@ -1021,7 +1011,6 @@ func (q *recipeController) prepareRecipe(
 		if recipe, err = q.recipeService.FindRecipe(
 			ctx,
 			models.NewRecipeFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithRecipeIDs(recipeID),
 		); err != nil && !errors.Is(err, models.ErrRecipeNotFound) {
@@ -1044,7 +1033,6 @@ func (q *recipeController) prepareRecipe(
 			if recipeGuides, _, err = q.recipeGuideService.FindRecipeGuides(
 				ctx,
 				models.NewRecipeGuideFilter().
-					WithCompanyIDs(currentSeller.CompanyID).
 					WithRecipeIDs(recipe.ID).
 					WithRecordStatuses(models.RecordStatusActive).
 					WithSortings(models.DefaultAscendingSortBy),
@@ -1054,7 +1042,6 @@ func (q *recipeController) prepareRecipe(
 			if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
 				ctx,
 				models.NewRecipeItemFilter().
-					WithCompanyIDs(currentSeller.CompanyID).
 					WithRecipeIDs(recipe.ID).
 					WithRecordStatuses(models.RecordStatusActive).
 					WithSortings(models.DefaultAscendingSortBy),
@@ -1073,7 +1060,6 @@ func (q *recipeController) prepareRecipe(
 func (q *recipeController) prepareRecipeByID(
 	ctx context.Context,
 	c fiber.Ctx,
-	companyID uuid.UUID,
 ) (
 	*models.Recipe,
 	error,
@@ -1085,7 +1071,6 @@ func (q *recipeController) prepareRecipeByID(
 	recipe, err := q.recipeService.FindRecipe(
 		ctx,
 		models.NewRecipeFilter().
-			WithCompanyIDs(companyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithRecipeIDs(recipeID),
 	)
@@ -1112,7 +1097,7 @@ func (q *recipeController) prepareRecipeGuide(
 	models.Map,
 	error,
 ) {
-	recipe, err := q.prepareRecipeByID(ctx, c, currentSeller.CompanyID)
+	recipe, err := q.prepareRecipeByID(ctx, c)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -1138,7 +1123,6 @@ func (q *recipeController) prepareRecipeGuide(
 		if recipeGuides, _, err = q.recipeGuideService.FindRecipeGuides(
 			ctx,
 			models.NewRecipeGuideFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecipeIDs(recipe.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithSortings(models.DefaultAscendingSortBy),
@@ -1148,7 +1132,6 @@ func (q *recipeController) prepareRecipeGuide(
 		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
 			ctx,
 			models.NewRecipeItemFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecipeIDs(recipe.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithSortings(models.DefaultAscendingSortBy),
@@ -1168,7 +1151,6 @@ func (q *recipeController) prepareRecipeGuide(
 		if recipeGuide, err = q.recipeGuideService.FindRecipeGuide(
 			ctx,
 			models.NewRecipeGuideFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithRecipeIDs(recipe.ID).
 				WithRecipeGuideIDs(recipeGuideID),
@@ -1203,7 +1185,7 @@ func (q *recipeController) prepareRecipeItem(
 	models.Map,
 	error,
 ) {
-	recipe, err := q.prepareRecipeByID(ctx, c, currentSeller.CompanyID)
+	recipe, err := q.prepareRecipeByID(ctx, c)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -1232,7 +1214,6 @@ func (q *recipeController) prepareRecipeItem(
 		if recipeGuides, _, err = q.recipeGuideService.FindRecipeGuides(
 			ctx,
 			models.NewRecipeGuideFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecipeIDs(recipe.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithSortings(models.DefaultAscendingSortBy),
@@ -1242,7 +1223,6 @@ func (q *recipeController) prepareRecipeItem(
 		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
 			ctx,
 			models.NewRecipeItemFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecipeIDs(recipe.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithSortings(models.DefaultAscendingSortBy),
@@ -1266,7 +1246,6 @@ func (q *recipeController) prepareRecipeItem(
 		if recipeItem, err = q.recipeItemService.FindRecipeItem(
 			ctx,
 			models.NewRecipeItemFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithRecipeIDs(recipe.ID).
 				WithRecipeItemIDs(recipeItemID),

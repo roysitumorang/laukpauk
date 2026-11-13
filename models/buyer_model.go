@@ -36,7 +36,6 @@ const (
 type Buyer struct {
 	RowNo                         int64       `json:"-" form:"-"`
 	ID                            uuid.UUID   `json:"id" form:"id"`
-	CompanyID                     uuid.UUID   `json:"-" form:"-"`
 	Status                        BuyerStatus `json:"-" form:"-"`
 	Name                          string      `json:"name" form:"name"`
 	UnconfirmedMobilePhone        *string     `json:"-" form:"-"`
@@ -111,7 +110,6 @@ func (q *Buyer) PhotoPath(baseURLs ...string) string {
 }
 
 type BuyerFilter struct {
-	CompanyIDs,
 	BuyerIDs,
 	ExcludedBuyerIDs []uuid.UUID
 	TelegramChatIDs []int64
@@ -145,11 +143,6 @@ func (q *BuyerFilter) WithBuyerIDs(buyerIDs ...uuid.UUID) *BuyerFilter {
 
 func (q *BuyerFilter) WithExcludedBuyerIDs(excludedBuyerIDs ...uuid.UUID) *BuyerFilter {
 	q.ExcludedBuyerIDs = excludedBuyerIDs
-	return q
-}
-
-func (q *BuyerFilter) WithCompanyIDs(companyIDs ...uuid.UUID) *BuyerFilter {
-	q.CompanyIDs = companyIDs
 	return q
 }
 

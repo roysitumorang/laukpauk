@@ -19,7 +19,6 @@ func init() {
 			ctx,
 			`CREATE TABLE delivery_plans (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status smallint NOT NULL
 				, name character varying COLLATE "natural_sort"
 				, weekday bigint NOT NULL
@@ -39,18 +38,10 @@ func init() {
 				, deleted_at timestamp with time zone
 				, deletion_reason character varying
 				, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
-					company_id WITH =,
 					weekday WITH =,
 					transaction_window WITH &&
 				)
 			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON delivery_plans (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
@@ -108,17 +99,6 @@ func init() {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return
 		}
-		var companyID uuid.UUID
-		if err = tx.QueryRow(
-			ctx,
-			`SELECT id
-			FROM companies
-			WHERE subdomain = $1`,
-			"laukpauk",
-		).Scan(&companyID); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-			return
-		}
 		now := time.Now().In(time.Local)
 		deliveryTimeInterval := 2 * time.Hour
 		today000000 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
@@ -136,7 +116,6 @@ func init() {
 		deliveryPlans := [][]any{
 			// weekdays
 			{
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
 				models.DeliveryWeekdayWeekdays,
@@ -157,7 +136,6 @@ func init() {
 				sellerID,
 				now,
 			}, {
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
 				models.DeliveryWeekdayWeekdays,
@@ -178,7 +156,6 @@ func init() {
 				sellerID,
 				now,
 			}, {
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
 				models.DeliveryWeekdayWeekdays,
@@ -201,7 +178,6 @@ func init() {
 			},
 			// friday
 			{
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
 				models.DeliveryWeekdayFriday,
@@ -222,7 +198,6 @@ func init() {
 				sellerID,
 				now,
 			}, {
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
 				models.DeliveryWeekdayFriday,
@@ -243,7 +218,6 @@ func init() {
 				sellerID,
 				now,
 			}, {
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
 				models.DeliveryWeekdayFriday,
@@ -266,7 +240,6 @@ func init() {
 			},
 			// saturday
 			{
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi sebelum jam 10:00",
 				models.DeliveryWeekdaySaturday,
@@ -287,7 +260,6 @@ func init() {
 				sellerID,
 				now,
 			}, {
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi jam 10:00 - 21:59",
 				models.DeliveryWeekdaySaturday,
@@ -308,7 +280,6 @@ func init() {
 				sellerID,
 				now,
 			}, {
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
 				models.DeliveryWeekdaySaturday,
@@ -331,7 +302,6 @@ func init() {
 			},
 			// sunday
 			{
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi sebelum jam 22:00",
 				models.DeliveryWeekdaySunday,
@@ -352,7 +322,6 @@ func init() {
 				sellerID,
 				now,
 			}, {
-				companyID,
 				models.RecordStatusActive,
 				"Estimasi pengantaran untuk transaksi mulai jam 22:00",
 				models.DeliveryWeekdaySunday,
@@ -378,8 +347,7 @@ func init() {
 			if _, err = tx.Exec(
 				ctx,
 				`INSERT INTO delivery_plans (
-					company_id
-					, record_status
+					record_status
 					, name
 					, weekday
 					, transaction_window
@@ -398,19 +366,18 @@ func init() {
 					$1
 					, $2
 					, $3
-					, $4
-					, tstzrange($5, $6, '[]')
+					, tstzrange($4, $5, '[]')
+					, $6
 					, $7
-					, $8
-					, tstzrange($9, $10)
-					, $11
-					, tstzrange($12, $13, '[]')
-					, $14
-					, tstzrange($15, $16, '[]')
+					, tstzrange($8, $9)
+					, $10
+					, tstzrange($11, $12, '[]')
+					, $13
+					, tstzrange($14, $15, '[]')
+					, $16
 					, $17
 					, $18
 					, $19
-					, $20
 				)`,
 				deliveryPlans[i]...,
 			); err != nil {

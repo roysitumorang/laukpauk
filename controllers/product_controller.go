@@ -360,7 +360,7 @@ func (q *productController) SellerShow(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerShow"
 	ctx, sess, flash, currentSeller, csrfToken, notifications := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	product, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
+	product, err := q.prepareProductByID(ctx, c)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
@@ -593,7 +593,7 @@ func (q *productController) SellerDelete(c fiber.Ctx) (err error) {
 	ctxt := "ProductController-SellerDelete"
 	ctx, sess, flash, currentSeller, _, _ := q.prepare(c)
 	defer flash.Clear(c, sess.Session)
-	request, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
+	request, err := q.prepareProductByID(ctx, c)
 	if err != nil && !errors.Is(err, models.ErrProductNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductByID")
 		return flash.Danger(err.Error()).Redirect(c, sess.Session, "/seller/products")
@@ -957,7 +957,6 @@ func (q *productController) prepare(c fiber.Ctx) (
 func (q *productController) prepareProductByID(
 	ctx context.Context,
 	c fiber.Ctx,
-	companyID uuid.UUID,
 ) (
 	*models.Product,
 	error,
@@ -1013,7 +1012,7 @@ func (q *productController) prepareProduct(
 		)
 	}
 	if c.Params("id") != "" {
-		if product, err = q.prepareProductByID(ctx, c, currentSeller.CompanyID); err != nil {
+		if product, err = q.prepareProductByID(ctx, c); err != nil {
 			return nil, nil, nil, err
 		}
 		if withParams && params.Size() > 0 && product != nil {
@@ -1066,7 +1065,7 @@ func (q *productController) prepareProductVariant(
 	models.Map,
 	error,
 ) {
-	product, err := q.prepareProductByID(ctx, c, currentSeller.CompanyID)
+	product, err := q.prepareProductByID(ctx, c)
 	if err != nil {
 		return nil, nil, nil, err
 	}

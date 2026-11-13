@@ -79,7 +79,6 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, record_status
 		, recipe_id
 		, instruction
@@ -140,7 +139,6 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		var recipeGuide models.RecipeGuide
 		if err = rows.Scan(
 			&recipeGuide.ID,
-			&recipeGuide.CompanyID,
 			&recipeGuide.RecordStatus,
 			&recipeGuide.RecipeID,
 			&recipeGuide.Instruction,
@@ -179,7 +177,6 @@ func (q *recipeGuideRepository) FindRecipeGuide(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, recipe_id
 			, instruction
@@ -196,7 +193,6 @@ func (q *recipeGuideRepository) FindRecipeGuide(
 	var response models.RecipeGuide
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.Instruction,
@@ -228,17 +224,15 @@ func (q *recipeGuideRepository) CreateRecipeGuide(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO recipe_guides (
-			company_id
-			, record_status
+			record_status
 			, recipe_id
 			, instruction
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
-			, company_id
 			, record_status
 			, recipe_id
 			, instruction
@@ -249,7 +243,6 @@ func (q *recipeGuideRepository) CreateRecipeGuide(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.CompanyID,
 		request.RecordStatus,
 		request.RecipeID,
 		request.Instruction,
@@ -259,7 +252,6 @@ func (q *recipeGuideRepository) CreateRecipeGuide(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.Instruction,
@@ -288,7 +280,6 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, recipe_id
 			, instruction
@@ -305,7 +296,6 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.Instruction,
@@ -399,7 +389,6 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, record_status
 			, recipe_id
 			, instruction
@@ -414,7 +403,6 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.RecipeID,
 		&response.Instruction,
@@ -434,19 +422,6 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 
 func (q *recipeGuideRepository) buildCondition(request *models.RecipeGuideFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
 	if len(request.RecipeIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("recipe_id IN (")

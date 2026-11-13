@@ -82,7 +82,6 @@ func (q *transactionRepository) FindTransactions(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, parent_id
 		, reordered
 		, buyer_id
@@ -228,7 +227,6 @@ func (q *transactionRepository) FindTransactions(
 		var transaction models.Transaction
 		if err = rows.Scan(
 			&transaction.ID,
-			&transaction.CompanyID,
 			&transaction.ParentID,
 			&transaction.Reordered,
 			&transaction.BuyerID,
@@ -372,7 +370,6 @@ func (q *transactionRepository) FindTransaction(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, parent_id
 			, reordered
 			, buyer_id
@@ -446,7 +443,6 @@ func (q *transactionRepository) FindTransaction(
 	var response models.Transaction
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.ParentID,
 		&response.Reordered,
 		&response.BuyerID,
@@ -596,8 +592,7 @@ func (q *transactionRepository) CreateTransaction(
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO transactions (
-			company_id
-			, parent_id
+			parent_id
 			, reordered
 			, buyer_id
 			, cart_id
@@ -644,10 +639,9 @@ func (q *transactionRepository) CreateTransaction(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41, $42, $43
+			, $41, $42
 		)
 		RETURNING id
-			, company_id
 			, parent_id
 			, reordered
 			, buyer_id
@@ -714,7 +708,6 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_actual_cost
 			, completed_by
 			, completed_at`,
-		request.CompanyID,
 		request.ParentID,
 		request.Reordered,
 		request.BuyerID,
@@ -759,7 +752,6 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryActualCost,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.ParentID,
 		&response.Reordered,
 		&response.BuyerID,
@@ -985,7 +977,6 @@ func (q *transactionRepository) UpdateTransaction(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, parent_id
 			, reordered
 			, buyer_id
@@ -1058,7 +1049,6 @@ func (q *transactionRepository) UpdateTransaction(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.ParentID,
 		&response.Reordered,
 		&response.BuyerID,
@@ -1371,7 +1361,6 @@ func (q *transactionRepository) UpdateTransaction(
 			`, updated_at = $%d
 			WHERE id = $%d
 			RETURNING id
-				, company_id
 				, parent_id
 				, reordered
 				, buyer_id
@@ -1440,7 +1429,6 @@ func (q *transactionRepository) UpdateTransaction(
 		)
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&response.ID,
-			&response.CompanyID,
 			&response.ParentID,
 			&response.Reordered,
 			&response.BuyerID,
@@ -1671,19 +1659,6 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedTransactionID := range request.ExcludedTransactionIDs {
 			params = append(params, excludedTransactionID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

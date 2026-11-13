@@ -111,8 +111,7 @@ func (q *pointEarningCapController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.pointEarningCapService.FindPointEarningCaps(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointEarningCaps")
 		return c.Render("/seller/point_earning_cap_index", params.Push(
@@ -185,7 +184,6 @@ func (q *pointEarningCapController) SellerCreate(c fiber.Ctx) (err error) {
 	}
 	createdBy := currentSeller.ID
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = createdBy
 	request.CreatedAt = now
@@ -196,7 +194,6 @@ func (q *pointEarningCapController) SellerCreate(c fiber.Ctx) (err error) {
 		pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 			ctx,
 			models.NewPointEarningCapFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost),
 		)
 		if err != nil && !errors.Is(err, models.ErrPointEarningCapNotFound) {
@@ -270,7 +267,6 @@ func (q *pointEarningCapController) SellerEdit(c fiber.Ctx) (err error) {
 	pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 		ctx,
 		models.NewPointEarningCapFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointEarningCapIDs(pointEarningCapID),
 	)
@@ -314,7 +310,6 @@ func (q *pointEarningCapController) SellerUpdate(c fiber.Ctx) (err error) {
 	pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 		ctx,
 		models.NewPointEarningCapFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointEarningCapIDs(pointEarningCapID),
 	)
@@ -350,7 +345,6 @@ func (q *pointEarningCapController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherPointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 			ctx,
 			models.NewPointEarningCapFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithShoppingCost(request.MinimumShoppingCost, request.MaximumShoppingCost).
 				WithExcludedPointEarningCapIDs(pointEarningCap.ID),
 		)
@@ -367,7 +361,6 @@ func (q *pointEarningCapController) SellerUpdate(c fiber.Ctx) (err error) {
 		}
 	}
 	request.ID = pointEarningCap.ID
-	request.CompanyID = currentSeller.CompanyID
 	request.UpdatedBy = currentSeller.ID
 	request.UpdatedAt = time.Now()
 	params.Push("request", request)
@@ -420,7 +413,6 @@ func (q *pointEarningCapController) SellerDelete(c fiber.Ctx) (err error) {
 	pointEarningCap, err := q.pointEarningCapService.FindPointEarningCap(
 		ctx,
 		models.NewPointEarningCapFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointEarningCapIDs(pointEarningCapID),
 	)
@@ -464,11 +456,9 @@ func (q *pointEarningCapController) SellerDelete(c fiber.Ctx) (err error) {
 func (q *pointEarningCapController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PointEarningCapController-V1BuyerIndex"
-	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	response, _, err := q.pointEarningCapService.FindPointEarningCaps(
 		ctx,
 		models.NewPointEarningCapFilter().
-			WithCompanyIDs(currentBuyer.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive),
 	)
 	if err != nil {

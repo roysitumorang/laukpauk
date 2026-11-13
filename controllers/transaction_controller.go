@@ -75,7 +75,6 @@ func (q *transactionController) Mount(r fiber.Router) {
 func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "TransactionController-V1BuyerIndex"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	currentBuyer, _ := c.Locals(models.CurrentBuyer).(*models.Buyer)
 	request, err := sanitizers.FindTransactions(ctx, c)
 	if err != nil {
@@ -86,8 +85,7 @@ func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	rows, pagination, err := q.transactionService.FindTransactions(
 		ctx,
-		request.WithCompanyIDs(company.ID).
-			WithBuyerIDs(currentBuyer.ID),
+		request.WithBuyerIDs(currentBuyer.ID),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
@@ -117,7 +115,6 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	request.CompanyID = company.ID
 	request.BuyerID = currentBuyer.ID
 	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, company, currentBuyer, request)
 	if err != nil {
@@ -338,7 +335,7 @@ func (q *transactionController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.transactionService.FindTransactions(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID),
+		request,
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
 		return c.Render("seller/transaction_index", params.Push(
@@ -646,7 +643,6 @@ func (q *transactionController) prepareTransaction(
 		return nil, nil, models.ErrTransactionNotFound
 	}
 	request := models.NewTransactionFilter().
-		WithCompanyIDs(currentSeller.CompanyID).
 		WithTransactionIDs(transactionID)
 	if len(transactionStatuses) > 0 {
 		request.WithTransactionStatuses(transactionStatuses...)

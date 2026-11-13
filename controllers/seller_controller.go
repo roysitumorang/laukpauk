@@ -106,8 +106,7 @@ func (q *sellerController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.sellerService.FindSellers(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithStatuses(models.SellerStatusActive),
+		request.WithStatuses(models.SellerStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSellers")
 		return c.Render("seller/seller_index", params.Push(
@@ -149,7 +148,6 @@ func (q *sellerController) SellerNew(c fiber.Ctx) (err error) {
 	if sellers, _, err = q.sellerService.FindSellers(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.SellerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.SellerSortingFieldName,
@@ -192,7 +190,6 @@ func (q *sellerController) SellerCreate(c fiber.Ctx) (err error) {
 	if sellers, _, err = q.sellerService.FindSellers(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.SellerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.SellerSortingFieldName,
@@ -217,7 +214,6 @@ func (q *sellerController) SellerCreate(c fiber.Ctx) (err error) {
 	seller, err := q.sellerService.FindSeller(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithUsername(request.Username),
 	)
 	if err != nil && !errors.Is(err, models.ErrSellerNotFound) {
@@ -236,7 +232,6 @@ func (q *sellerController) SellerCreate(c fiber.Ctx) (err error) {
 	if seller, err = q.sellerService.FindSeller(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithMobilePhone(request.MobilePhone),
 	); err != nil && !errors.Is(err, models.ErrSellerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSeller")
@@ -255,7 +250,6 @@ func (q *sellerController) SellerCreate(c fiber.Ctx) (err error) {
 		if seller, err = q.sellerService.FindSeller(
 			ctx,
 			models.NewSellerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithEmail(*request.Email),
 		); err != nil && !errors.Is(err, models.ErrSellerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSeller")
@@ -273,7 +267,6 @@ func (q *sellerController) SellerCreate(c fiber.Ctx) (err error) {
 	}
 	now := time.Now().In(time.Local)
 	createdBy := currentSeller.ID
-	request.CompanyID = currentSeller.CompanyID
 	request.SellerLevel = models.SellerLevelStaff
 	request.CreatedBy = &createdBy
 	request.CreatedAt = now
@@ -347,7 +340,6 @@ func (q *sellerController) SellerEdit(c fiber.Ctx) (err error) {
 	seller, err := q.sellerService.FindSeller(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.SellerStatusActive).
 			WithSellerIDs(sellerID),
 	)
@@ -375,7 +367,6 @@ func (q *sellerController) SellerEdit(c fiber.Ctx) (err error) {
 	if sellers, _, err = q.sellerService.FindSellers(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.SellerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.SellerSortingFieldName,
@@ -409,7 +400,6 @@ func (q *sellerController) SellerUpdate(c fiber.Ctx) (err error) {
 	seller, err := q.sellerService.FindSeller(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.SellerStatusActive).
 			WithSellerIDs(sellerID),
 	)
@@ -437,7 +427,6 @@ func (q *sellerController) SellerUpdate(c fiber.Ctx) (err error) {
 	if sellers, _, err = q.sellerService.FindSellers(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.SellerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.SellerSortingFieldName,
@@ -465,7 +454,6 @@ func (q *sellerController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherSeller, err := q.sellerService.FindSeller(
 			ctx,
 			models.NewSellerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithUsername(request.Username).
 				WithExcludedSellerIDs(seller.ID),
 		)
@@ -485,7 +473,6 @@ func (q *sellerController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherSeller, err := q.sellerService.FindSeller(
 			ctx,
 			models.NewSellerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithMobilePhone(request.MobilePhone).
 				WithExcludedSellerIDs(seller.ID),
 		)
@@ -506,7 +493,6 @@ func (q *sellerController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherSeller, err := q.sellerService.FindSeller(
 			ctx,
 			models.NewSellerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithEmail(*request.Email).
 				WithExcludedSellerIDs(seller.ID),
 		)
@@ -594,7 +580,6 @@ func (q *sellerController) SellerDelete(c fiber.Ctx) (err error) {
 	seller, err := q.sellerService.FindSeller(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.SellerStatusActive).
 			WithSellerIDs(sellerID),
 	)

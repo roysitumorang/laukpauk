@@ -66,7 +66,6 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 	response, err := q.deliveryRouteService.FindDeliveryRoute(
 		ctx,
 		models.NewDeliveryRouteFilter().
-			WithCompanyIDs(currentBuyer.CompanyID).
 			WithOriginLongitudes(company.DeliveryOriginLongitude).
 			WithOriginLatitudes(company.DeliveryOriginLatitude).
 			WithDestinationLongitudes(request.DestinationLongitude).
@@ -110,7 +109,6 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	now := time.Now()
-	request.CompanyID = currentBuyer.CompanyID
 	request.OriginLongitude = company.DeliveryOriginLongitude
 	request.OriginLatitude = company.DeliveryOriginLatitude
 	request.DistanceKM, _, _ = distanceKM.Ceil(0).Int64(0)

@@ -359,7 +359,6 @@ func (q *authController) SellerLogout(c fiber.Ctx) error {
 func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
 	ctx := c.Context()
 	ctxt := "AuthController-V1BuyerCreate"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	loginRequest, statusCode, err := sanitizers.ValidateOtpLogin(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateOtpLogin")
@@ -370,7 +369,6 @@ func (q *authController) V1BuyerCreate(c fiber.Ctx) error {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(company.ID).
 			WithLogin(loginRequest.Login).
 			WithStatuses(models.BuyerStatusActive),
 	)

@@ -81,7 +81,6 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		query,
 		"COUNT(1)",
 		`id
-		, company_id
 		, record_status
 		, name
 		, weekday
@@ -154,7 +153,6 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		var deliveryPlan models.DeliveryPlan
 		if err = rows.Scan(
 			&deliveryPlan.ID,
-			&deliveryPlan.CompanyID,
 			&deliveryPlan.RecordStatus,
 			&deliveryPlan.Name,
 			&deliveryPlan.Weekday,
@@ -209,7 +207,6 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		sb,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, name
 			, weekday
@@ -238,7 +235,6 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 	var response models.DeliveryPlan
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Weekday,
@@ -300,8 +296,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	_, _ = fmt.Fprintf(
 		sb,
 		`INSERT INTO delivery_plans (
-			company_id
-			, record_status
+			record_status
 			, name
 			, weekday
 			, transaction_window
@@ -320,22 +315,20 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			$1
 			, $2
 			, $3
-			, $4
-			, tstzrange($5, $6, '[]')
+			, tstzrange($4, $5, '[]')
+			, $6
 			, $7
-			, $8
-			, tstzrange($9, $10%s)
-			, $11
-			, tstzrange($12, $13%s)
-			, $14
-			, tstzrange($15, $16%s)
+			, tstzrange($8, $9%s)
+			, $10
+			, tstzrange($11, $12%s)
+			, $13
+			, tstzrange($14, $15%s)
+			, $16
 			, $17
 			, $18
 			, $19
-			, $20
 		)
 		RETURNING id
-			, company_id
 			, record_status
 			, name
 			, weekday
@@ -365,7 +358,6 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	err := tx.QueryRow(
 		ctx,
 		sb.String(),
-		request.CompanyID,
 		request.RecordStatus,
 		request.Name,
 		request.Weekday,
@@ -387,7 +379,6 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		request.UpdatedAt,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Weekday,
@@ -435,7 +426,6 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		ctx,
 		`SELECT
 			id
-			, company_id
 			, record_status
 			, name
 			, weekday
@@ -464,7 +454,6 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Weekday,
@@ -629,7 +618,6 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, company_id
 			, record_status
 			, name
 			, weekday
@@ -656,7 +644,6 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.CompanyID,
 		&response.RecordStatus,
 		&response.Name,
 		&response.Weekday,
@@ -712,19 +699,6 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		_, _ = sb.WriteString("id NOT IN (")
 		for i, excludedDeliveryPlanID := range request.ExcludedDeliveryPlanIDs {
 			params = append(params, excludedDeliveryPlanID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.CompanyIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("company_id IN (")
-		for i, companyID := range request.CompanyIDs {
-			params = append(params, companyID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}

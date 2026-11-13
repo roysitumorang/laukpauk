@@ -220,7 +220,6 @@ func (q *companyController) AdminCreate(c fiber.Ctx) (err error) {
 		), "admin/layouts/authenticated")
 	}
 	seller, err := q.sellerService.CreateSeller(ctx, tx, &models.Seller{
-		CompanyID:   company.ID,
 		Status:      models.SellerStatusActive,
 		SellerLevel: models.SellerLevelOwner,
 		Name:        company.Name,
@@ -452,8 +451,7 @@ func (q *companyController) SellerEdit(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	company, err := q.companyService.FindCompany(
 		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(currentSeller.CompanyID),
+		models.NewCompanyFilter(),
 	)
 	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompany")
@@ -489,8 +487,7 @@ func (q *companyController) SellerUpdate(c fiber.Ctx) (err error) {
 	csrfToken := csrf.TokenFromContext(c)
 	company, err := q.companyService.FindCompany(
 		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(currentSeller.CompanyID),
+		models.NewCompanyFilter(),
 	)
 	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompany")

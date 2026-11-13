@@ -16,7 +16,6 @@ func init() {
 			ctx,
 			`CREATE TABLE transactions (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, parent_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, reordered BOOLEAN NOT NULL
 				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -100,13 +99,6 @@ func init() {
 		if _, err = tx.Exec(
 			ctx,
 			`CREATE INDEX ON transactions (reordered);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transactions (company_id);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return

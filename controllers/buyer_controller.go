@@ -59,7 +59,6 @@ func (q *buyerController) Mount(r fiber.Router) {
 func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "BuyerController-BuyerCreate"
-	company, _ := c.Locals(models.CurrentCompany).(*models.Company)
 	request, statusCode, err := sanitizers.ValidateBuyerRegistration(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateBuyerRegistration")
@@ -70,7 +69,6 @@ func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(company.ID).
 			WithUsername(request.Username),
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -87,7 +85,6 @@ func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
 	if buyer, err = q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(company.ID).
 			WithMobilePhone(request.MobilePhone),
 	); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
@@ -109,7 +106,6 @@ func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	buyer = &models.Buyer{
-		CompanyID:         company.ID,
 		Name:              request.Name,
 		Username:          request.Username,
 		MobilePhone:       request.MobilePhone,
@@ -122,7 +118,6 @@ func (q *buyerController) BuyerCreate(c fiber.Ctx) (err error) {
 		referrer, err := q.buyerService.FindBuyer(
 			ctx,
 			models.NewBuyerFilter().
-				WithCompanyIDs(company.ID).
 				WithReferralCodes(request.ReferralCode),
 		)
 		if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -228,8 +223,7 @@ func (q *buyerController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.buyerService.FindBuyers(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithStatuses(models.BuyerStatusActive),
+		request.WithStatuses(models.BuyerStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
 		return c.Render("seller/buyer_index", params.Push(
@@ -270,7 +264,6 @@ func (q *buyerController) SellerNew(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
@@ -312,7 +305,6 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
@@ -337,7 +329,6 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithUsername(request.Username),
 	)
 	if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -356,7 +347,6 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 	if buyer, err = q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithMobilePhone(request.MobilePhone),
 	); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
@@ -375,7 +365,6 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 		if buyer, err = q.buyerService.FindBuyer(
 			ctx,
 			models.NewBuyerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithEmail(*request.Email),
 		); err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyer")
@@ -392,7 +381,6 @@ func (q *buyerController) SellerCreate(c fiber.Ctx) (err error) {
 		}
 	}
 	now := time.Now().In(time.Local)
-	request.CompanyID = currentSeller.CompanyID
 	request.ReferralPoints = 0
 	request.RewardPoints = 0
 	request.Wallet = 0
@@ -467,7 +455,6 @@ func (q *buyerController) SellerEdit(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.BuyerStatusActive).
 			WithBuyerIDs(buyerID),
 	)
@@ -494,7 +481,6 @@ func (q *buyerController) SellerEdit(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
@@ -528,7 +514,6 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.BuyerStatusActive).
 			WithBuyerIDs(buyerID),
 	)
@@ -555,7 +540,6 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.BuyerStatusActive).
 			WithSortings(models.Sorting{
 				Field:     models.BuyerSortingFieldName,
@@ -583,7 +567,6 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherBuyer, err := q.buyerService.FindBuyer(
 			ctx,
 			models.NewBuyerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithUsername(request.Username).
 				WithExcludedBuyerIDs(buyer.ID),
 		)
@@ -603,7 +586,6 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherBuyer, err := q.buyerService.FindBuyer(
 			ctx,
 			models.NewBuyerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithMobilePhone(request.MobilePhone).
 				WithExcludedBuyerIDs(buyer.ID),
 		)
@@ -625,7 +607,6 @@ func (q *buyerController) SellerUpdate(c fiber.Ctx) (err error) {
 		otherBuyer, err := q.buyerService.FindBuyer(
 			ctx,
 			models.NewBuyerFilter().
-				WithCompanyIDs(currentSeller.CompanyID).
 				WithEmail(*request.Email).
 				WithExcludedBuyerIDs(buyer.ID),
 		)
@@ -713,7 +694,6 @@ func (q *buyerController) SellerDelete(c fiber.Ctx) (err error) {
 	buyer, err := q.buyerService.FindBuyer(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithStatuses(models.BuyerStatusActive).
 			WithBuyerIDs(buyerID),
 	)

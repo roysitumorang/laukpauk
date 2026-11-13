@@ -176,7 +176,6 @@ func (q *transactionService) CreateTransaction(
 	deliveryRoute, err := q.deliveryRouteRepository.FindDeliveryRoute(
 		ctx,
 		models.NewDeliveryRouteFilter().
-			WithCompanyIDs(company.ID).
 			WithDeliveryRouteIDs(request.DeliveryRouteID),
 	)
 	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
@@ -193,7 +192,6 @@ func (q *transactionService) CreateTransaction(
 	deliveryPlan, err := q.deliveryPlanRepository.FindDeliveryPlan(
 		ctx,
 		models.NewDeliveryPlanFilter().
-			WithCompanyIDs(company.ID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now),
 	)
@@ -266,7 +264,6 @@ func (q *transactionService) CreateTransaction(
 			referrer, err := q.buyerRepository.FindBuyer(
 				ctx,
 				models.NewBuyerFilter().
-					WithCompanyIDs(company.ID).
 					WithReferralCodes(*request.ReferralCode),
 			)
 			if err != nil && !errors.Is(err, models.ErrBuyerNotFound) {
@@ -279,7 +276,6 @@ func (q *transactionService) CreateTransaction(
 			_, total, _, err := q.transactionRepository.FindTransactions(
 				ctx,
 				models.NewTransactionFilter().
-					WithCompanyIDs(company.ID).
 					WithBuyerIDs(buyer.ID).
 					WithExcludedTransactionStatuses(
 						models.TransactionStatusCancelled,
@@ -310,7 +306,6 @@ func (q *transactionService) CreateTransaction(
 		pointSpendingCap, err := q.pointSpendingCapRepository.FindPointSpendingCap(
 			ctx,
 			models.NewPointSpendingCapFilter().
-				WithCompanyIDs(company.ID).
 				WithRecordStatuses(models.RecordStatusActive).
 				WithShoppingCost(request.ShoppingCost, request.ShoppingCost),
 		)
@@ -326,7 +321,6 @@ func (q *transactionService) CreateTransaction(
 			voucher, err := q.voucherRepository.FindVoucher(
 				ctx,
 				models.NewVoucherFilter().
-					WithCompanyIDs(company.ID).
 					WithRecordStatuses(models.RecordStatusActive).
 					WithCodes(*request.VoucherCode).
 					WithTransactionDatetime(now).
@@ -343,7 +337,6 @@ func (q *transactionService) CreateTransaction(
 				_, total, _, err := q.transactionRepository.FindTransactions(
 					ctx,
 					models.NewTransactionFilter().
-						WithCompanyIDs(company.ID).
 						WithBuyerIDs(buyer.ID).
 						WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
 						WithVoucherIDs(voucher.ID).
@@ -370,7 +363,6 @@ func (q *transactionService) CreateTransaction(
 	sellers, _, _, err := q.sellerRepository.FindSellers(
 		ctx,
 		models.NewSellerFilter().
-			WithCompanyIDs(company.ID).
 			WithStatuses(models.SellerStatusActive),
 	)
 	if err != nil {
@@ -387,7 +379,6 @@ func (q *transactionService) CreateTransaction(
 	counter, err := q.transactionCounterRepository.SaveTransactionCounter(
 		ctx,
 		&models.TransactionCounter{
-			CompanyID:         company.ID,
 			TransactionWindow: sb.String(),
 			CreatedAt:         now,
 			UpdatedAt:         now,
@@ -596,8 +587,7 @@ func (q *transactionService) RequestWithdrawal(
 	ctxt := "TransactionService-RequestWithdrawal"
 	setting, err := q.companyRepository.FindCompany(
 		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(request.CompanyID),
+		models.NewCompanyFilter(),
 	)
 	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
@@ -764,14 +754,9 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		return nil
 	}
 	now := time.Now().In(time.Local)
-	var companyIDs, buyerIDs []uuid.UUID
-	mapCompanyIDs := map[uuid.UUID]struct{}{}
+	var buyerIDs []uuid.UUID
 	mapBuyerIDs := map[uuid.UUID]struct{}{}
 	for _, transaction := range transactions {
-		if _, ok := mapCompanyIDs[transaction.CompanyID]; !ok {
-			companyIDs = append(buyerIDs, transaction.CompanyID)
-			mapCompanyIDs[transaction.CompanyID] = struct{}{}
-		}
 		if _, ok := mapBuyerIDs[transaction.BuyerID]; !ok {
 			buyerIDs = append(buyerIDs, transaction.BuyerID)
 			mapBuyerIDs[transaction.BuyerID] = struct{}{}
@@ -783,18 +768,16 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 			}
 		}
 	}
-	companies, _, _, err := q.companyRepository.FindCompanies(
+	company, err := q.companyRepository.FindCompany(
 		ctx,
-		models.NewCompanyFilter().
-			WithCompanyIDs(companyIDs...),
+		models.NewCompanyFilter(),
 	)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompanies")
+	if err != nil && !errors.Is(err, models.ErrCompanyNotFound) {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCompany")
 		return err
 	}
-	mapCompanies := make(map[uuid.UUID]*models.Company, len(companies))
-	for _, company := range companies {
-		mapCompanies[company.ID] = company
+	if company == nil {
+		return nil
 	}
 	buyers, _, _, err := q.buyerRepository.FindBuyers(
 		ctx,
@@ -823,8 +806,7 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		}
 	}(ctx)
 	for _, transaction := range transactions {
-		company, ok := mapCompanies[transaction.CompanyID]
-		if !ok || !transaction.ShippedAt.Before(now.Add(-company.MaximumDeliveryTime.Duration)) {
+		if !transaction.ShippedAt.Before(now.Add(-company.MaximumDeliveryTime.Duration)) {
 			continue
 		}
 		transaction.Status = models.TransactionStatusCompleted

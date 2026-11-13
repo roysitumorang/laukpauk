@@ -101,8 +101,7 @@ func (q *pointController) SellerIndex(c fiber.Ctx) (err error) {
 	}
 	if rows, pagination, err = q.pointService.FindPoints(
 		ctx,
-		request.WithCompanyIDs(currentSeller.CompanyID).
-			WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoints")
 		return c.Render("/seller/point_index", params.Push(
@@ -145,8 +144,7 @@ func (q *pointController) SellerNew(c fiber.Ctx) (err error) {
 	)
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
-		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID),
+		models.NewBuyerFilter(),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
 		return c.Render("/seller/point_new", params.Push(
@@ -184,8 +182,7 @@ func (q *pointController) SellerCreate(c fiber.Ctx) (err error) {
 	)
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
-		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID),
+		models.NewBuyerFilter(),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
 		return c.Render("/seller/point_new", params.Push(
@@ -213,7 +210,6 @@ func (q *pointController) SellerCreate(c fiber.Ctx) (err error) {
 	}
 	createdBy := currentSeller.ID
 	now := time.Now()
-	request.CompanyID = currentSeller.CompanyID
 	request.RecordStatus = models.RecordStatusActive
 	request.CreatedBy = &createdBy
 	request.CreatedAt = now
@@ -272,7 +268,6 @@ func (q *pointController) SellerEdit(c fiber.Ctx) (err error) {
 	point, err := q.pointService.FindPoint(
 		ctx,
 		models.NewPointFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointIDs(pointID),
 	)
@@ -300,7 +295,6 @@ func (q *pointController) SellerEdit(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithBuyerIDs(point.BuyerID),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
@@ -330,7 +324,6 @@ func (q *pointController) SellerUpdate(c fiber.Ctx) (err error) {
 	point, err := q.pointService.FindPoint(
 		ctx,
 		models.NewPointFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointIDs(pointID),
 	)
@@ -358,7 +351,6 @@ func (q *pointController) SellerUpdate(c fiber.Ctx) (err error) {
 	if buyers, _, err = q.buyerService.FindBuyers(
 		ctx,
 		models.NewBuyerFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithBuyerIDs(point.BuyerID),
 	); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBuyers")
@@ -377,7 +369,6 @@ func (q *pointController) SellerUpdate(c fiber.Ctx) (err error) {
 		), "seller/layouts/authenticated")
 	}
 	request.ID = point.ID
-	request.CompanyID = point.CompanyID
 	request.RecordStatus = point.RecordStatus
 	request.PointType = point.PointType
 	request.BuyerID = point.BuyerID
@@ -436,7 +427,6 @@ func (q *pointController) SellerDelete(c fiber.Ctx) (err error) {
 	point, err := q.pointService.FindPoint(
 		ctx,
 		models.NewPointFilter().
-			WithCompanyIDs(currentSeller.CompanyID).
 			WithRecordStatuses(models.RecordStatusActive).
 			WithPointIDs(pointID),
 	)

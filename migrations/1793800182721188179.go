@@ -16,7 +16,6 @@ func init() {
 			ctx,
 			`CREATE TABLE recipes (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, company_id UUID NOT NULL REFERENCES companies (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, record_status smallint NOT NULL
 				, name character varying
 				, deleted_name character varying
@@ -38,13 +37,6 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE INDEX ON recipes (company_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-			return
-		}
-		if _, err = tx.Exec(
-			ctx,
 			`CREATE INDEX ON recipes (record_status);`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -52,7 +44,7 @@ func init() {
 		}
 		if _, err = tx.Exec(
 			ctx,
-			`CREATE UNIQUE INDEX ON recipes (LOWER(name), company_id) WHERE record_status = 0;`,
+			`CREATE UNIQUE INDEX ON recipes (LOWER(name)) WHERE record_status = 0;`,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return
