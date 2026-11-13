@@ -80,9 +80,7 @@ func (q *notificationTargetRepository) FindNotificationTargets(
 		query,
 		"COUNT(1)",
 		`id
-		, admin_id
-		, seller_id
-		, buyer_id
+		, user_id
 		, firebase_installation_id
 		, created_at
 		, updated_at`,
@@ -136,9 +134,7 @@ func (q *notificationTargetRepository) FindNotificationTargets(
 		var notificationTarget models.NotificationTarget
 		if err = rows.Scan(
 			&notificationTarget.ID,
-			&notificationTarget.AdminID,
-			&notificationTarget.SellerID,
-			&notificationTarget.BuyerID,
+			&notificationTarget.UserID,
 			&notificationTarget.FirebaseInstallationID,
 			&notificationTarget.CreatedAt,
 			&notificationTarget.UpdatedAt,
@@ -170,9 +166,7 @@ func (q *notificationTargetRepository) FindNotificationTarget(
 		sb,
 		`SELECT
 			id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, firebase_installation_id
 			, created_at
 			, updated_at
@@ -183,9 +177,7 @@ func (q *notificationTargetRepository) FindNotificationTarget(
 	var response models.NotificationTarget
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.FirebaseInstallationID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -211,9 +203,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		ctx,
 		`SELECT
 			id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, firebase_installation_id
 			, created_at
 			, updated_at
@@ -223,9 +213,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		request.FirebaseInstallationID,
 	).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.FirebaseInstallationID,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -241,31 +229,23 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		if err = tx.QueryRow(
 			ctx,
 			`INSERT INTO notification_targets (
-				admin_id
-				, seller_id
-				, buyer_id
+				user_id
 				, firebase_installation_id
 				, created_at
 				, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6)
+			) VALUES ($1, $2, $3, $4)
 			RETURNING id
-				, admin_id
-				, seller_id
-				, buyer_id
+				, user_id
 				, firebase_installation_id
 				, created_at
 				, updated_at`,
-			request.AdminID,
-			request.SellerID,
-			request.BuyerID,
+			request.UserID,
 			request.FirebaseInstallationID,
 			request.CreatedAt,
 			request.UpdatedAt,
 		).Scan(
 			&response.ID,
-			&response.AdminID,
-			&response.SellerID,
-			&response.BuyerID,
+			&response.UserID,
 			&response.FirebaseInstallationID,
 			&response.CreatedAt,
 			&response.UpdatedAt,
@@ -283,26 +263,12 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		}()
 		sb.Reset()
 		_, _ = sb.WriteString("UPDATE notification_targets SET")
-		if response.AdminID != request.AdminID {
-			params = append(params, request.AdminID)
+		if response.UserID != request.UserID {
+			params = append(params, request.UserID)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " admin_id = $%d", n)
-		}
-		if response.SellerID != request.SellerID {
-			params = append(params, request.SellerID)
-			if n = len(params); n > 1 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, " seller_id = $%d", n)
-		}
-		if response.BuyerID != request.BuyerID {
-			params = append(params, request.BuyerID)
-			if n = len(params); n > 1 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, " buyer_id = $%d", n)
+			_, _ = fmt.Fprintf(sb, " user_id = $%d", n)
 		}
 		if len(params) == 0 {
 			return &response, nil
@@ -319,9 +285,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 			sb,
 			` WHERE id = $%d
 			RETURNING id
-				, admin_id
-				, seller_id
-				, buyer_id
+				, user_id
 				, firebase_installation_id
 				, created_at
 				, updated_at`,
@@ -329,9 +293,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		)
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&response.ID,
-			&response.AdminID,
-			&response.SellerID,
-			&response.BuyerID,
+			&response.UserID,
 			&response.FirebaseInstallationID,
 			&response.CreatedAt,
 			&response.UpdatedAt,
@@ -384,11 +346,11 @@ func (q *notificationTargetRepository) buildCondition(request *models.Notificati
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.AdminIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("admin_id IN (")
-		for i, adminID := range request.AdminIDs {
-			params = append(params, adminID)
+		_, _ = sb.WriteString("user_id IN (")
+		for i, userID := range request.UserIDs {
+			params = append(params, userID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -397,32 +359,7 @@ func (q *notificationTargetRepository) buildCondition(request *models.Notificati
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.SellerIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("seller_id IN (")
-		for i, sellerID := range request.SellerIDs {
-			params = append(params, sellerID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.BuyerIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("buyer_id IN (")
-		for i, buyerID := range request.BuyerIDs {
-			params = append(params, buyerID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
+
 	if len(request.FirebaseInstallationIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("firebase_installation_id IN (")

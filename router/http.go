@@ -139,11 +139,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/admin/admins", To: "/admins/admin"},
 				{From: "/admin/admins/*", To: "/admins/admin/$1"},
 				{From: "/admin/admins/*/*", To: "/admins/admin/$1/$2"},
-				{From: "/admin/notification_targets", To: "/notification_targets/admin"},
 				{From: "/admin/text_messages", To: "/text_messages/admin"},
 				{From: "/admin/text_messages/*", To: "/text_messages/admin/$1"},
-				{From: "/admin/notifications", To: "/notifications/admin"},
-				{From: "/admin/notifications/*", To: "/notifications/admin/$1"},
 				{From: "/v1/seller/product_categories", To: "/product_categories/v1/seller"},
 				{From: "/v1/seller/product_categories/*", To: "/product_categories/v1/seller/$1"},
 				{From: "/v1/seller/product_categories/*/*", To: "/product_categories/v1/seller/$1/$2"},
@@ -346,7 +343,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 	).Mount(app.Group("/transactions"))
 	controllers.NewNotificationTargetController(
-		q.AdminService,
 		q.BuyerService,
 		q.NotificationTargetService,
 		q.JsonWebTokenService,
@@ -401,8 +397,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TextMessageService,
 	).Mount(app.Group("/text_messages"))
 	controllers.NewNotificationController(
-		q.AdminService,
-		q.BuyerService,
 		q.NotificationService,
 		q.KafkaClient,
 		q.UserService,
@@ -419,7 +413,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/recipes"))
 	controllers.NewSellerController(
-		q.SellerService,
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/sellers"))

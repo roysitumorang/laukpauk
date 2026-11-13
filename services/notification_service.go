@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"time"
-	"uuid"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/externals"
@@ -155,17 +154,10 @@ func (q *notificationService) ConsumeMessage(
 		if notification == nil {
 			return nil
 		}
-		notificationTargetFilter := models.NewNotificationTargetFilter()
-		if notification.AdminID.Compare(uuid.Nil()) != 0 {
-			notificationTargetFilter.WithAdminIDs(notification.AdminID)
-		} else if notification.SellerID.Compare(uuid.Nil()) != 0 {
-			notificationTargetFilter.WithSellerIDs(notification.SellerID)
-		} else if notification.BuyerID.Compare(uuid.Nil()) != 0 {
-			notificationTargetFilter.WithBuyerIDs(notification.BuyerID)
-		}
 		notificationTargets, _, _, err := q.notificationTargetRepository.FindNotificationTargets(
 			ctx,
-			notificationTargetFilter,
+			models.NewNotificationTargetFilter().
+				WithUserIDs(notification.UserID),
 		)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNotificationTargets")

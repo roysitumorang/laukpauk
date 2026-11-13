@@ -22,12 +22,6 @@ const BuyerID = "buyer_id"
 
 var ErrLoginFailed = errors.New("login failed")
 
-type SellerLoginResponse struct {
-	IDToken   string    `json:"id_token"`
-	ExpiredAt time.Time `json:"expired_at"`
-	Seller    *Seller   `json:"seller"`
-}
-
 type BuyerLoginResponse struct {
 	IDToken   string    `json:"id_token"`
 	ExpiredAt time.Time `json:"expired_at"`

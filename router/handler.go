@@ -59,7 +59,6 @@ type Service struct {
 	RecipeService             services.RecipeService
 	RecipeGuideService        services.RecipeGuideService
 	RecipeItemService         services.RecipeItemService
-	SellerService             services.SellerService
 	PointEarningService       services.PointEarningService
 }
 
@@ -166,7 +165,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeRepository := repositories.NewRecipeRepository(dbRead, dbWrite)
 	recipeGuideRepository := repositories.NewRecipeGuideRepository(dbRead, dbWrite)
 	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
-	sellerRepository := repositories.NewSellerRepository(dbRead, dbWrite)
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	adminService := services.NewAdminService(adminRepository)
@@ -199,7 +197,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		pointRepository,
 		productVariantRepository,
 		paymentChannelRepository,
-		sellerRepository,
+		userRepository,
 		notificationRepository,
 		xenditClient,
 	)
@@ -219,7 +217,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeService := services.NewRecipeService(recipeRepository)
 	recipeGuideService := services.NewRecipeGuideService(recipeGuideRepository)
 	recipeItemService := services.NewRecipeItemService(recipeItemRepository)
-	sellerService := services.NewSellerService(sellerRepository)
 	pointEarningService := services.NewPointEarningService(pointEarningRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
@@ -257,7 +254,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		RecipeService:             recipeService,
 		RecipeGuideService:        recipeGuideService,
 		RecipeItemService:         recipeItemService,
-		SellerService:             sellerService,
 		PointEarningService:       pointEarningService,
 	}, nil
 }

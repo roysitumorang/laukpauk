@@ -79,21 +79,15 @@ func (q *notificationRepository) FindNotifications(
 		query,
 		"COUNT(1)",
 		`id
-		, admin_id
-		, seller_id
-		, buyer_id
+		, user_id
 		, notification_type
-		, admin_link
-		, seller_link
-		, buyer_link
+		, link
 		, link_id
 		, subject
 		, body
 		, photo
 		, params
-		, created_by_admin_id
-		, created_by_seller_id
-		, created_by_buyer_id
+		, created_by
 		, created_at
 		, read_at`,
 	)
@@ -146,21 +140,15 @@ func (q *notificationRepository) FindNotifications(
 		var notification models.Notification
 		if err = rows.Scan(
 			&notification.ID,
-			&notification.AdminID,
-			&notification.SellerID,
-			&notification.BuyerID,
+			&notification.UserID,
 			&notification.NotificationType,
-			&notification.AdminLink,
-			&notification.SellerLink,
-			&notification.BuyerLink,
+			&notification.Link,
 			&notification.LinkID,
 			&notification.Subject,
 			&notification.Body,
 			&notification.Photo,
 			&notification.Params,
-			&notification.CreatedByAdminID,
-			&notification.CreatedBySellerID,
-			&notification.CreatedByBuyerID,
+			&notification.CreatedBy,
 			&notification.CreatedAt,
 			&notification.ReadAt,
 		); err != nil {
@@ -191,21 +179,15 @@ func (q *notificationRepository) FindNotification(
 		sb,
 		`SELECT
 			id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, notification_type
-			, admin_link
-			, seller_link
-			, buyer_link
+			, link
 			, link_id
 			, subject
 			, body
 			, photo
 			, params
-			, created_by_admin_id
-			, created_by_seller_id
-			, created_by_buyer_id
+			, created_by
 			, created_at
 			, read_at
 		FROM notifications %s`,
@@ -214,21 +196,15 @@ func (q *notificationRepository) FindNotification(
 	var response models.Notification
 	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.NotificationType,
-		&response.AdminLink,
-		&response.SellerLink,
-		&response.BuyerLink,
+		&response.Link,
 		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedByAdminID,
-		&response.CreatedByBuyerID,
-		&response.CreatedBySellerID,
+		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.ReadAt,
 	)
@@ -252,75 +228,51 @@ func (q *notificationRepository) CreateNotification(
 	if err := tx.QueryRow(
 		ctx,
 		`INSERT INTO notifications (
-			admin_id
-			, seller_id
-			, buyer_id
+			user_id
 			, notification_type
-			, admin_link
-			, seller_link
-			, buyer_link
+			, link
 			, link_id
 			, subject
 			, body
 			, photo
 			, params
-			, created_by_admin_id
-			, created_by_seller_id
-			, created_by_buyer_id
+			, created_by
 			, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, notification_type
-			, admin_link
-			, seller_link
-			, buyer_link
+			, link
 			, link_id
 			, subject
 			, body
 			, photo
 			, params
-			, created_by_admin_id
-			, created_by_seller_id
-			, created_by_buyer_id
+			, created_by
 			, created_at
 			, sent_at
 			, read_at`,
-		request.AdminID,
-		request.SellerID,
-		request.BuyerID,
+		request.UserID,
 		request.NotificationType,
-		request.AdminLink,
-		request.SellerLink,
-		request.BuyerLink,
+		request.Link,
 		request.LinkID,
 		request.Subject,
 		request.Body,
 		request.Photo,
 		request.Params,
-		request.CreatedByAdminID,
-		request.CreatedBySellerID,
-		request.CreatedByBuyerID,
+		request.CreatedBy,
 		request.CreatedAt,
 	).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.NotificationType,
-		&response.AdminLink,
-		&response.SellerLink,
-		&response.BuyerLink,
+		&response.Link,
 		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedByAdminID,
-		&response.CreatedBySellerID,
-		&response.CreatedByBuyerID,
+		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.SentAt,
 		&response.ReadAt,
@@ -342,21 +294,15 @@ func (q *notificationRepository) UpdateNotification(
 		ctx,
 		`SELECT
 			id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, notification_type
-			, admin_link
-			, seller_link
-			, buyer_link
+			, link
 			, link_id
 			, subject
 			, body
 			, photo
 			, params
-			, created_by_admin_id
-			, created_by_seller_id
-			, created_by_buyer_id
+			, created_by
 			, created_at
 			, sent_at
 			, read_at
@@ -366,21 +312,15 @@ func (q *notificationRepository) UpdateNotification(
 		request.ID,
 	).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.NotificationType,
-		&response.AdminLink,
-		&response.SellerLink,
-		&response.BuyerLink,
+		&response.Link,
 		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedByAdminID,
-		&response.CreatedBySellerID,
-		&response.CreatedByBuyerID,
+		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.SentAt,
 		&response.ReadAt,
@@ -429,21 +369,15 @@ func (q *notificationRepository) UpdateNotification(
 		sb,
 		` WHERE id = $%d
 		RETURNING id
-			, admin_id
-			, seller_id
-			, buyer_id
+			, user_id
 			, notification_type
-			, admin_link
-			, seller_link
-			, buyer_link
+			, link
 			, link_id
 			, subject
 			, body
 			, photo
 			, params
-			, created_by_admin_id
-			, created_by_seller_id
-			, created_by_buyer_id
+			, created_by
 			, created_at
 			, sent_at
 			, read_at`,
@@ -451,21 +385,15 @@ func (q *notificationRepository) UpdateNotification(
 	)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
-		&response.AdminID,
-		&response.SellerID,
-		&response.BuyerID,
+		&response.UserID,
 		&response.NotificationType,
-		&response.AdminLink,
-		&response.SellerLink,
-		&response.BuyerLink,
+		&response.Link,
 		&response.LinkID,
 		&response.Subject,
 		&response.Body,
 		&response.Photo,
 		&response.Params,
-		&response.CreatedByAdminID,
-		&response.CreatedBySellerID,
-		&response.CreatedByBuyerID,
+		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.SentAt,
 		&response.ReadAt,
@@ -491,37 +419,11 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.AdminIDs) > 0 {
+	if len(request.UserIDs) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("admin_id IN (")
-		for i, adminID := range request.AdminIDs {
-			params = append(params, adminID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.SellerIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("seller_id IN (")
-		for i, sellerID := range request.SellerIDs {
-			params = append(params, sellerID)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
-	if len(request.BuyerIDs) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("buyer_id IN (")
-		for i, buyerID := range request.BuyerIDs {
-			params = append(params, buyerID)
+		_, _ = sb.WriteString("user_id IN (")
+		for i, userID := range request.UserIDs {
+			params = append(params, userID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -532,7 +434,7 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 	}
 	if len(request.NotificationTypes) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("message_type IN (")
+		_, _ = sb.WriteString("notification_type IN (")
 		for i, notificationType := range request.NotificationTypes {
 			params = append(params, notificationType)
 			if i > 0 {
@@ -565,37 +467,18 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
-			`(EXISTS(
+			`EXISTS(
 				SELECT 1
-				FROM admins
-				WHERE admins.id = notifications.admin_id
+				FROM users
+				WHERE users.id = notifications.user_id
 					AND (
-						LOWER(admins.name) LIKE $%d
-						OR admins.username LIKE $%d
-						OR admins.email LIKE $%d
-						OR admins.mobile_phone LIKE $%d
+						LOWER(users.name) LIKE $%d
+						OR users.username LIKE $%d
+						OR users.email LIKE $%d
+						OR users.mobile_phone LIKE $%d
 					)
-			) OR EXISTS(
-				SELECT 1
-				FROM sellers
-				WHERE sellers.id = notifications.seller_id
-					AND (
-						LOWER(sellers.name) LIKE $%d
-						OR sellers.username LIKE $%d
-						OR sellers.email LIKE $%d
-						OR sellers.mobile_phone LIKE $%d
-					)
-			) OR EXISTS(
-				SELECT 1
-				FROM buyers
-				WHERE buyers.id = notifications.buyer_id
-					AND (
-						LOWER(buyers.name) LIKE $%d
-						OR buyers.username LIKE $%d
-						OR buyers.mobile_phone LIKE $%d
-					)
-			))`,
-			n, n, n, n, n, n, n, n, n, n, n,
+			)`,
+			n, n, n, n,
 		)
 		conds = append(conds, sb.String())
 	}

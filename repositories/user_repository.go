@@ -773,7 +773,7 @@ func (q *userRepository) UpdateUser(
 		&response.DeactivationReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrBuyerNotFound
+		return nil, models.ErrUserNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -793,7 +793,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " user_status = $%d", n)
+		_, _ = fmt.Fprintf(sb, " status = $%d", n)
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)

@@ -66,7 +66,7 @@ type transactionService struct {
 	pointRepository              repositories.PointRepository
 	productVariantRepository     repositories.ProductVariantRepository
 	paymentChannelRepository     repositories.PaymentChannelRepository
-	sellerRepository             repositories.SellerRepository
+	userRepository               repositories.UserRepository
 	notificationRepository       repositories.NotificationRepository
 	xenditClient                 *externals.XenditClient
 }
@@ -84,7 +84,7 @@ func NewTransactionService(
 	pointRepository repositories.PointRepository,
 	productVariantRepository repositories.ProductVariantRepository,
 	paymentChannelRepository repositories.PaymentChannelRepository,
-	sellerRepository repositories.SellerRepository,
+	userRepository repositories.UserRepository,
 	notificationRepository repositories.NotificationRepository,
 	xenditClient *externals.XenditClient,
 ) TransactionService {
@@ -101,7 +101,7 @@ func NewTransactionService(
 		pointRepository:              pointRepository,
 		productVariantRepository:     productVariantRepository,
 		paymentChannelRepository:     paymentChannelRepository,
-		sellerRepository:             sellerRepository,
+		userRepository:               userRepository,
 		notificationRepository:       notificationRepository,
 		xenditClient:                 xenditClient,
 	}
@@ -363,13 +363,14 @@ func (q *transactionService) CreateTransaction(
 		}
 	}
 	request.CalculateDiscount()
-	sellers, _, _, err := q.sellerRepository.FindSellers(
+	sellers, _, _, err := q.userRepository.FindUsers(
 		ctx,
-		models.NewSellerFilter().
-			WithStatuses(models.SellerStatusActive),
+		models.NewUserFilter().
+			WithRoles(models.RoleSeller).
+			WithStatuses(models.UserStatusActive),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSellers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 		return nil, nil, err
 	}
 	sb := pools.BuilderPool.Get()
@@ -489,26 +490,21 @@ func (q *transactionService) CreateTransaction(
 			ctx,
 			tx,
 			&models.Notification{
-				SellerID:         seller.ID,
+				UserID:           seller.ID,
 				NotificationType: models.NotificationTypeTransaction,
-				SellerLink:       new(helper.Sprintf("/seller/transactions/%s", response.ID.String())),
+				Link:             new(helper.Sprintf("/v1/seller/transactions/%s", response.ID.String())),
 				LinkID:           &response.ID,
 				Subject:          "New Order",
 				Body:             helper.Sprintf(`New Order Reference No "%s"`, response.ReferenceNumber),
 				Params: map[string]string{
 					"id": response.ID.String(),
 				},
-				CreatedByBuyerID: buyer.ID,
-				CreatedAt:        response.CreatedAt,
+				CreatedBy: buyer.ID,
+				CreatedAt: response.CreatedAt,
 			},
 		)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateNotification")
-			return nil, nil, err
-		}
-		seller.UnreadNotifications = 1
-		if _, err = q.sellerRepository.UpdateSeller(ctx, tx, seller); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSeller")
 			return nil, nil, err
 		}
 		notificationIDs[i] = notification.ID
