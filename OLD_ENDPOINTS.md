@@ -519,8 +519,6 @@ cartCode=<cartCode>&idProduk=<idProduk>&jenisProduk=nonpaket&idSatuan=<idSatuan>
 
 Conditional fields: `idPromo` (optional); `idUser` (when logged in).
 
-> **App bug:** this method's `Map` parameter has no `@FieldMap` annotation, so Retrofit rejects the call at runtime. The fields above are what the app intends to send.
-
 Response (`AddToCartResult`):
 
 ```json
