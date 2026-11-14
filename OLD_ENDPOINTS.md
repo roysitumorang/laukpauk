@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)) and buyer registration is `POST users` ([laukpauk_mobile#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -12,6 +12,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - **Auth:** JWT. While a user is signed in, every backend request carries `Authorization: Bearer <JWT>` (the `id_token` returned by `POST users/sign_in`, until its `expired_at` passes). The examples show the header on the calls that need a signed-in user; no call sends the token in the URL or the body.
 - **Bodies:** every `POST` sends `Content-Type: application/json` with a JSON object, except `Transaksi/pesananDiterima/{id}`, which is sent with no body. Keys whose value is null are left out. Most values are JSON strings, because the app holds them as text. The profile photo is sent as a base64 string.
 - **Path parameters** are shown as `{name}`; placeholder values as `<name>`.
+- **Errors:** a failed call answers a non-2xx status; the app takes the reason from the `message` of the JSON error body when there is one.
 - **Responses** are JSON. The examples list only the fields the app reads (from its response classes), with type placeholders: `"string"`, `0`, `0.0`, `true`.
 - **Overloads:** where the app calls a path both with and without a trailing `/{id}`, both forms are listed.
 
@@ -49,7 +50,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Auth/jumlahGantiNomorHPForToday` | yes | `AccountApi.jumlahGantiNomorHPForToday` |
 | GET | `Pengaturan/getReferralConfiguration` | yes | `AccountApi.getReferralConfiguration` |
 | POST | `users/sign_in` | no | `AuthApi.signIn` |
-| POST | `Auth/register` | no | `AuthApi.register` |
+| POST | `users` | no | `AuthApi.signUp` |
 | POST | `Auth/konfirmasiOTP` | no | `AuthApi.konfirmasiOTP` |
 | POST | `Auth/verifikasiUser` | no | `AuthApi.verifikasiUser` |
 | POST | `Auth/resendOTP` | yes | `AuthApi.resendOTP` |
@@ -302,39 +303,50 @@ Response (`id_token`, `expired_at`, `user`):
 }
 ```
 
-The app reads the three attributes from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It stores `id_token` as the session JWT, `expired_at` (RFC 3339 date-time) as its expiry, and `user` as the current user. From `user` it reads `id` (the user id) and `mobile_phone_confirmed_at` (null opens the phone-verification screen); the other `user` fields shown are the ones the backend's user model sends, and are stored as they come. After `expired_at` the app treats the session as signed out and stops sending the token. A 4xx status means the login or password is wrong. In the request, `password` is always the standard base64 (with padding) of the password's UTF-8 bytes, for example `cmFoYXNpYTEyMw==` for `rahasia123`; `Auth/register` and `User/gantiPassword` still send their passwords as typed.
+The app reads the three attributes from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It stores `id_token` as the session JWT, `expired_at` (RFC 3339 date-time) as its expiry, and `user` as the current user. From `user` it reads `id` (the user id) and `mobile_phone_confirmed_at` (null opens the phone-verification screen); the other `user` fields shown are the ones the backend's user model sends, and are stored as they come. After `expired_at` the app treats the session as signed out and stops sending the token. A 4xx status means the login or password is wrong. In the request, `password` is always the standard base64 (with padding) of the password's UTF-8 bytes, for example `cmFoYXNpYTEyMw==` for `rahasia123`; registration (`POST users`) encodes its password the same way, while `User/gantiPassword` still sends its passwords as typed.
 
-### `POST Auth/register`
+### `POST users`
 
-App method: `AuthApi.register`.
+App method: `AuthApi.signUp`.
+
+Buyer registration. Body: `name`, `username`, `mobile_phone`, `password` (base64 of the UTF-8 password) and `referral_code` (all strings). Answers the new user, shaped like `user` of sign-in, either at the top level or inside the backend's `data` envelope. A 4xx status carries the reason in `message`.
 
 Request:
 
 ```http
-POST Auth/register
+POST users
 Content-Type: application/json
 
 {
-  "namaLengkap": "<namaLengkap>",
-  "nomorHP": "<nomorHP>",
-  "password": "<password>",
-  "konfirmasiPassword": "<konfirmasiPassword>",
-  "kodeReferal": "<kodeReferal>"
+  "name": "<name>",
+  "username": "<username>",
+  "mobile_phone": "<phone number>",
+  "password": "<base64 of the password>",
+  "referral_code": "<referral code>"
 }
 ```
 
-Response (`AuthResponses.Register`):
+Response (the new user, shaped like `user` of sign-in):
 
 ```json
 {
-  "statusRegister": true,
-  "returnData": {
-    "idUser": "string",
-    "message": "string",
-    "authToken": "string"
+  "data": {
+    "id": "<uuid>",
+    "role": "buyer",
+    "name": "string",
+    "mobile_phone": "string",
+    "mobile_phone_confirmed_at": "2026-11-14T21:09:00+07:00",
+    "username": "string",
+    "email": "string",
+    "photo": "string",
+    "user_level": "string",
+    "referral_code": "string",
+    "address": "string"
   }
 }
 ```
+
+The app reads the user from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It keeps `id` for the OTP confirmation that follows (`Auth/konfirmasiOTP`); the user is not signed in yet, and a new user's `mobile_phone_confirmed_at` is null. In the request, `password` is the standard base64 of the password's UTF-8 bytes, `referral_code` is left out when empty, and the password confirmation is checked in the app, not sent. A 4xx status means the registration was refused; the app shows the `message` of the error body.
 
 ### `POST Auth/konfirmasiOTP`
 
