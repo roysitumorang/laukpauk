@@ -1,46 +1,41 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. These are the legacy endpoints the app calls today, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller code and views were removed ([laukpauk_mobile#9](https://github.com/roysitumorang/laukpauk_mobile/pull/9)): seller-mode endpoints are gone, seller fields are dropped from the examples, and the cart and repeat-order calls no longer group by seller. These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
 - **Base URL:** paths are relative to `API_BASE_URL` (a build setting, e.g. `https://<host>/api/`).
 - **`versionCode`:** the app adds `versionCode=<build number>` to the query string of every request, and as the first field of every form-encoded body. Examples below leave it out.
 - **Auth:** endpoints that need a signed-in user take the session token as the query parameter `authToken`. There are no auth headers.
-- **Bodies:** every `POST` is `application/x-www-form-urlencoded` except `Transaksi/pesananDiterima/{id}`, which is sent with no body; there are no JSON or multipart request bodies. Product images are sent as base64 form fields.
+- **Bodies:** every `POST` is `application/x-www-form-urlencoded` except `Transaksi/pesananDiterima/{id}`, which is sent with no body; there are no JSON or multipart request bodies. The profile photo is sent as a base64 form field.
 - **Path parameters** are shown as `{name}`; placeholder values as `<name>`.
 - **Responses** are JSON. The examples list only the fields the app reads (from its response classes), with type placeholders: `"string"`, `0`, `0.0`, `true`.
 - **Overloads:** where the app calls a path both with and without a trailing `/{id}`, both forms are listed.
 
 ## Contents
 
-- [AccountApi](#accountapi) (7)
-- [AuthApi](#authapi) (8)
+- [AccountApi](#accountapi) (5)
+- [AuthApi](#authapi) (7)
 - [CartApi](#cartapi) (10)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
-- [HistoriPenjualanApi](#historipenjualanapi) (3)
 - [HomeApi](#homeapi) (13)
 - [NotifikasiApi](#notifikasiapi) (7)
 - [PaketApi](#paketapi) (3)
 - [PasarApi](#pasarapi) (3)
 - [PaymentApi](#paymentapi) (2)
-- [PesananMasukApi](#pesananmasukapi) (6)
-- [ProdukApi](#produkapi) (6)
-- [ProdukPenjualApi](#produkpenjualapi) (18)
-- [PromoApi](#promoapi) (3)
+- [ProdukApi](#produkapi) (5)
+- [PromoApi](#promoapi) (2)
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
 - [ResepApi](#resepapi) (5)
 - [SearchApi](#searchapi) (1)
 - [SettingApi](#settingapi) (2)
-- [ShopApi](#shopapi) (3)
-- [TokoSayaApi](#tokosayaapi) (14)
 - [TransaksiApi](#transaksiapi) (8)
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-156 endpoint definitions in total.
+107 endpoint definitions in total.
 
 ## Index
 
@@ -51,8 +46,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Auth/verifikasiNomor` | yes | `AccountApi.verifikasiNomor` |
 | GET | `Auth/jumlahGantiNomorHPForToday` | yes | `AccountApi.jumlahGantiNomorHPForToday` |
 | GET | `Pengaturan/getReferralConfiguration` | yes | `AccountApi.getReferralConfiguration` |
-| GET | `Pasar/getPasar` | no | `AccountApi.getPasar` |
-| POST | `Penjual/ajukanRequestPenjual` | yes | `AccountApi.ajukanRequestPenjual` |
 | GET | `Auth/loginAuthentication` | no | `AuthApi.login` |
 | POST | `Auth/register` | no | `AuthApi.register` |
 | POST | `Auth/konfirmasiOTP` | no | `AuthApi.konfirmasiOTP` |
@@ -60,9 +53,8 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Auth/resendOTP` | yes | `AuthApi.resendOTP` |
 | POST | `Auth/lupaPassword` | no | `AuthApi.lupaPassword` |
 | GET | `User/getDetailUser` | yes | `AuthApi.getDetailUser` |
-| GET | `Pasar/getPasar` | no | `AuthApi.getPasar` |
 | GET | `User/getJumlahCart` | no | `CartApi.getJumlahCart` |
-| GET | `User/getCartDividedBySeller` | no | `CartApi.getCartDividedBySeller` |
+| GET | `User/getCart` | no | `CartApi.getCart` |
 | GET | `User/getTotalKeranjang` | no | `CartApi.getTotalKeranjang` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.bersihkanKeranjang` |
 | POST | `Keranjang/saveCart` | no | `CartApi.saveCart` |
@@ -90,9 +82,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.bersihkanKeranjang` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
-| GET | `Penjual/getHistoriPenjualan` | yes | `HistoriPenjualanApi.getHistoriPenjualan` |
-| GET | `Penjual/getHistoriPenjualan/{idPenjual}` | yes | `HistoriPenjualanApi.getHistoriPenjualan` |
-| GET | `Transaksi/getTotalTransaksiForThisPenjual/{idTransaksi}` | yes | `HistoriPenjualanApi.getTotalTransaksi` |
 | GET | `Banner/getBanner` | no | `HomeApi.getBanner` |
 | GET | `Artikel/getArtikel` | no | `HomeApi.getArtikel` |
 | GET | `User/getJumlahVoucher` | yes | `HomeApi.getJumlahVoucher` |
@@ -121,43 +110,17 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Pasar/getPasarOverOfThisLatLong` | no | `PasarApi.getPasarOver` |
 | GET | `Xendit/getPaymentChannels` | yes | `PaymentApi.getPaymentChannels` |
 | POST | `Transaksi/checkout` | yes | `PaymentApi.checkout` |
-| GET | `Penjual/getPesananMasuk` | yes | `PesananMasukApi.getPesananMasuk` |
-| GET | `Transaksi/getTransaksi/{id}` | yes | `PesananMasukApi.getTransaksi` |
-| GET | `Penjual/getPesananMasukItem/{id}` | yes | `PesananMasukApi.getPesananMasukItem` |
-| POST | `Transaksi/prosesPesanan/{id}` | yes | `PesananMasukApi.prosesPesanan` |
-| POST | `Transaksi/pembatalanKlaimTidakAda` | yes | `PesananMasukApi.pembatalanKlaimTidakAda` |
-| POST | `Transaksi/klaimProdukTidakTersedia` | yes | `PesananMasukApi.klaimProdukTidakTersedia` |
 | GET | `Produk/detailProduk` | no | `ProdukApi.detailProduk` |
 | GET | `Produk/getLowestPriceOfThisProduct/{idProduk}` | no | `ProdukApi.getLowestPrice` |
 | GET | `Produk/getHargaProduk` | no | `ProdukApi.getHargaProduk` |
 | GET | `Produk/getProdukLainnya` | no | `ProdukApi.getProdukLainnya` |
 | GET | `Produk/isThisProductInCA` | no | `ProdukApi.isThisProductInCA` |
-| GET | `Produk/isProductSellerAvailable` | no | `ProdukApi.isProductSellerAvailable` |
-| GET | `Produk/getHargaProduk` | no | `ProdukPenjualApi.getHargaProduk` |
-| GET | `Produk/detailProduk` | no | `ProdukPenjualApi.getDetailProduk` |
-| GET | `Produk/detailPaket` | no | `ProdukPenjualApi.getDetailPaket` |
-| GET | `KategoriProduk/getKategoriProduk` | no | `ProdukPenjualApi.getKategoriProduk` |
-| GET | `Penjual/getProdukPenjual` | yes | `ProdukPenjualApi.getProdukPenjual` |
-| GET | `Penjual/getPaketPenjual` | yes | `ProdukPenjualApi.getPaketPenjual` |
-| GET | `Produk/toggleProdukPalingLaris/{id}` | yes | `ProdukPenjualApi.toggleProdukPalingLaris` |
-| GET | `Produk/togglePaketPalingLaris/{id}` | yes | `ProdukPenjualApi.togglePaketPalingLaris` |
-| POST | `Produk/ubahKategoriProduk/{id}` | yes | `ProdukPenjualApi.ubahKategoriProduk` |
-| POST | `Produk/ubahDeskripsiProduk/{id}` | yes | `ProdukPenjualApi.ubahDeskripsiProduk` |
-| POST | `Produk/ubahDeskripsiPaket/{id}` | yes | `ProdukPenjualApi.ubahDeskripsiPaket` |
-| GET | `Produk/hapusProduk/{id}` | yes | `ProdukPenjualApi.hapusProduk` |
-| GET | `Produk/hapusPaket/{id}` | yes | `ProdukPenjualApi.hapusPaket` |
-| POST | `Produk/saveProduk` | yes | `ProdukPenjualApi.saveProduk` |
-| POST | `Produk/saveProduk/{id}` | yes | `ProdukPenjualApi.saveProduk` |
-| GET | `HargaProduk/hapusHargaProduk/{id}` | yes | `ProdukPenjualApi.hapusHargaProduk` |
-| POST | `HargaProduk/saveHargaProduk` | yes | `ProdukPenjualApi.saveHargaProduk` |
-| POST | `HargaProduk/saveHargaProduk/{id}` | yes | `ProdukPenjualApi.saveHargaProduk` |
 | GET | `Promo/getPromoAroundOfThisLatLong` | yes | `PromoApi.getPromoAroundOfThisLatLong` |
 | GET | `Promo/getPromoItem/{idPromoItem}` | no | `PromoApi.getPromoItem` |
-| GET | `User/getDetailUser` | yes | `PromoApi.getDetailUser` |
 | POST | `User/registerFcmToken` | yes | `PushApi.registerFcmToken` |
 | POST | `User/unregisterFcmToken` | yes | `PushApi.unregisterFcmToken` |
 | GET | `RO/getItemTransaksi` | yes | `RepeatOrderApi.getItemTransaksi` |
-| POST | `RO/addToCartThesePenjual` | yes | `RepeatOrderApi.addToCartThesePenjual` |
+| POST | `RO/addToCart` | yes | `RepeatOrderApi.addToCart` |
 | GET | `Resep/getResep` | no | `ResepApi.getResep` |
 | GET | `Resep/getResep/{idResep}` | no | `ResepApi.getDetailResep` |
 | GET | `Resep/getResepItemFromThisResep/{idResep}` | no | `ResepApi.getResepItem` |
@@ -166,23 +129,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Konten/pencarian` | no | `SearchApi.pencarian` |
 | GET | `Pengaturan/getSettingValue/{key}` | no | `SettingApi.getSettingValue` |
 | GET | `Pengaturan/getContactUsWhatsappConfiguration` | no | `SettingApi.getContactUsWhatsappConfiguration` |
-| GET | `Penjual/getDetailPenjual/{idPenjual}` | no | `ShopApi.getDetailPenjual` |
-| GET | `Penjual/getProdukPenjual/{idPenjual}` | no | `ShopApi.getProdukPenjual` |
-| GET | `Penjual/getPaketPenjual/{idPenjual}` | no | `ShopApi.getPaketPenjual` |
-| GET | `User/getDetailUser` | yes | `TokoSayaApi.getDetailUserId` |
-| GET | `Penjual/getDetailPenjual/{idPenjual}` | yes | `TokoSayaApi.getDetailPenjual` |
-| GET | `Penjual/getDetailPenjual/{idPenjual}` | no | `TokoSayaApi.getDetailPenjualEntities` |
-| GET | `Penjual/getTotalPenjualan` | yes | `TokoSayaApi.getTotalPenjualan` |
-| GET | `Penjual/getTotalSaldo` | yes | `TokoSayaApi.getTotalSaldo` |
-| GET | `TagihanPenjual/getTagihan` | yes | `TokoSayaApi.getTagihan` |
-| GET | `Penjual/getJumlahProdukPenjual` | yes | `TokoSayaApi.getJumlahProdukPenjual` |
-| GET | `Penjual/getJadwalDeliveryPenjual` | yes | `TokoSayaApi.getJadwalDeliveryPenjual` |
-| POST | `Penjual/toggleJadwalDelivery` | yes | `TokoSayaApi.toggleJadwalDelivery` |
-| GET | `Pasar/getPasar` | no | `TokoSayaApi.getPasar` |
-| GET | `https://maps.googleapis.com/maps/api/geocode/json` (full URL) | no | `TokoSayaApi.reverseGeocode` |
-| POST | `Penjual/ubahLokasiBerjualan/{idPenjual}` | yes | `TokoSayaApi.ubahLokasiBerjualan` |
-| POST | `Penjual/ubahNamaToko` | yes | `TokoSayaApi.ubahNamaToko` |
-| POST | `Penjual/ajukanRPD` | yes | `TokoSayaApi.ajukanRpd` |
 | GET | `User/getRiwayatTransaksi` | yes | `TransaksiApi.getRiwayatTransaksi` |
 | GET | `Transaksi/getTransaksi/{id}` | yes | `TransaksiApi.getTransaksi` |
 | GET | `Transaksi/getItemTransaksiFromTransaksi/{id}` | yes | `TransaksiApi.getItemTransaksi` |
@@ -304,55 +250,6 @@ Response (`AccountResponses.ReferralConfiguration`):
 }
 ```
 
-### `GET Pasar/getPasar`
-
-App method: `AccountApi.getPasar`.
-
-Request:
-
-```http
-GET Pasar/getPasar?jenisPasar=<jenisPasar>
-```
-
-Response (`AccountResponses.PasarList`):
-
-```json
-{
-  "dataPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string"
-    }
-  ]
-}
-```
-
-### `POST Penjual/ajukanRequestPenjual`
-
-App method: `AccountApi.ajukanRequestPenjual`.
-
-Fields: namaToko, alamatToko, bio, lokasiBerjualan, pasar, nomorRekening, (lat, long).
-
-Request:
-
-```http
-POST Penjual/ajukanRequestPenjual?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-namaToko=<namaToko>&alamatToko=<alamatToko>&bio=<bio>&lokasiBerjualan=<lokasiBerjualan>&pasar=<pasar>&nomorRekening=<nomorRekening>&lat=<lat>&long=<long>
-```
-
-Conditional fields: `lat` (optional); `long` (optional).
-
-Response (`AccountResponses.RequestPenjual`):
-
-```json
-{
-  "statusRequest": true
-}
-```
-
 ## AuthApi
 
 ### `GET Auth/loginAuthentication`
@@ -438,7 +335,7 @@ Request:
 POST Auth/verifikasiUser
 Content-Type: application/x-www-form-urlencoded
 
-idUser=<idUser>&verificationCode=<verificationCode>&isSeller=<isSeller>&idPasar=<idPasar>
+idUser=<idUser>&verificationCode=<verificationCode>
 ```
 
 Response (`AuthResponses.VerifikasiUser`):
@@ -512,33 +409,8 @@ Response (`AuthResponses.DetailUserResponse`):
 ```json
 {
   "detailUser": {
-    "isSeller": "string",
     "nomorHP": "string"
   }
-}
-```
-
-### `GET Pasar/getPasar`
-
-App method: `AuthApi.getPasar`.
-
-Request:
-
-```http
-GET Pasar/getPasar?jenisPasar=<jenisPasar>
-```
-
-Response (`AuthResponses.PasarList`):
-
-```json
-{
-  "dataPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string"
-    }
-  ]
 }
 ```
 
@@ -562,43 +434,35 @@ Response (`CartResponses.Count`):
 }
 ```
 
-### `GET User/getCartDividedBySeller`
+### `GET User/getCart`
 
-App method: `CartApi.getCartDividedBySeller`.
+App method: `CartApi.getCart`.
 
 Request:
 
 ```http
-GET User/getCartDividedBySeller?cartCode=<cartCode>
+GET User/getCart?cartCode=<cartCode>
 ```
 
-Response (`CartResponses.SellerList`):
+Response (`CartResponses.ProductList`):
 
 ```json
 {
   "listCart": [
     {
-      "idPenjual": "string",
-      "namaPenjual": "string",
-      "lokasiPasar": "string",
-      "pasarPenjual": "string",
-      "produkPenjual": [
-        {
-          "idCart": "string",
-          "idProduk": "string",
-          "jenisProduk": "string",
-          "idSatuan": "string",
-          "namaSatuan": "string",
-          "jenisSatuan": "string",
-          "namaProduk": "string",
-          "fotoProduk": "string",
-          "harga": "string",
-          "diskon": "string",
-          "quantity": "string",
-          "catatan": "string",
-          "idPromo": "string"
-        }
-      ]
+      "idCart": "string",
+      "idProduk": "string",
+      "jenisProduk": "string",
+      "idSatuan": "string",
+      "namaSatuan": "string",
+      "jenisSatuan": "string",
+      "namaProduk": "string",
+      "fotoProduk": "string",
+      "harga": "string",
+      "diskon": "string",
+      "quantity": "string",
+      "catatan": "string",
+      "idPromo": "string"
     }
   ]
 }
@@ -1192,78 +1056,6 @@ Response (`DeliveryResponses.PlaceSearch`):
 }
 ```
 
-## HistoriPenjualanApi
-
-### `GET Penjual/getHistoriPenjualan`
-
-App method: `HistoriPenjualanApi.getHistoriPenjualan`.
-
-Request:
-
-```http
-GET Penjual/getHistoriPenjualan?selectTransaksi=<select>&statusTransaksi=<statusTransaksi>&authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.HistoriList`):
-
-```json
-{
-  "historiPenjualan": [
-    {
-      "id": "string",
-      "namaUser": "string",
-      "waktuCheckout": "string",
-      "nomorTransaksi": "string",
-      "status": "string"
-    }
-  ]
-}
-```
-
-### `GET Penjual/getHistoriPenjualan/{idPenjual}`
-
-App method: `HistoriPenjualanApi.getHistoriPenjualan`.
-
-Request:
-
-```http
-GET Penjual/getHistoriPenjualan/{idPenjual}?selectTransaksi=<select>&statusTransaksi=<statusTransaksi>&authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.HistoriList`):
-
-```json
-{
-  "historiPenjualan": [
-    {
-      "id": "string",
-      "namaUser": "string",
-      "waktuCheckout": "string",
-      "nomorTransaksi": "string",
-      "status": "string"
-    }
-  ]
-}
-```
-
-### `GET Transaksi/getTotalTransaksiForThisPenjual/{idTransaksi}`
-
-App method: `HistoriPenjualanApi.getTotalTransaksi`.
-
-Request:
-
-```http
-GET Transaksi/getTotalTransaksiForThisPenjual/{idTransaksi}?authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.TotalTransaksi`):
-
-```json
-{
-  "totalTransaksi": 0
-}
-```
-
 ## HomeApi
 
 ### `GET Banner/getBanner`
@@ -1454,10 +1246,8 @@ Response (`HomeResponses.ProdukPasar`):
   "listProduk": [
     {
       "id": "string",
-      "idPenjual": "string",
       "nama": "string",
       "foto": "string",
-      "namaToko": "string",
       "namaKategoriProduk": "string",
       "keteranganSingkat": "string",
       "stokAvailable": true,
@@ -1557,10 +1347,8 @@ Response (`HomeResponses.ProdukInKategori`):
   "productInThisCategory": [
     {
       "id": "string",
-      "idPenjual": "string",
       "nama": "string",
       "foto": "string",
-      "namaToko": "string",
       "namaKategoriProduk": "string",
       "keteranganSingkat": "string",
       "stokAvailable": true,
@@ -1783,9 +1571,7 @@ Response (`PaketResponses.Detail`):
     "foto": "string",
     "harga": 0,
     "diskon": 0,
-    "keterangan": "string",
-    "idPenjual": "string",
-    "namaToko": "string"
+    "keterangan": "string"
   }
 }
 ```
@@ -1844,7 +1630,7 @@ Response (`AddToCartResult`):
 
 App method: `PasarApi.getProdukInThisPasar`.
 
-The auth token keeps a seller from seeing (and ordering) their own products.
+Products of a market for the signed-in user.
 
 Request:
 
@@ -1861,8 +1647,6 @@ Response (`PasarResponses.ProdukList`):
       "id": "string",
       "nama": "string",
       "foto": "string",
-      "idPenjual": "string",
-      "namaToko": "string",
       "namaKategoriProduk": "string",
       "keterangan": "string",
       "keteranganSingkat": "string",
@@ -1978,164 +1762,6 @@ Response (`CheckoutResponse`):
 }
 ```
 
-## PesananMasukApi
-
-### `GET Penjual/getPesananMasuk`
-
-App method: `PesananMasukApi.getPesananMasuk`.
-
-Request:
-
-```http
-GET Penjual/getPesananMasuk?authToken=<authToken>&statusTransaksi=<statusTransaksi>
-```
-
-Response (`PesananMasukResponses.Daftar`):
-
-```json
-{
-  "pesananMasuk": [
-    {
-      "id": "string",
-      "dayDelivery": "string",
-      "status": "string",
-      "jadwalDelivery": "string",
-      "waktuCheckout": "string",
-      "namaMetodePembayaran": "string",
-      "nomorTransaksi": "string",
-      "jenisVoucher": "string",
-      "nilaiVoucher": "string",
-      "totalBelanja": "string",
-      "ongkir": "string",
-      "potonganWallet": "string"
-    }
-  ]
-}
-```
-
-### `GET Transaksi/getTransaksi/{id}`
-
-App method: `PesananMasukApi.getTransaksi`.
-
-Request:
-
-```http
-GET Transaksi/getTransaksi/{id}?authToken=<authToken>
-```
-
-Response (`PesananMasukResponses.Detail`):
-
-```json
-{
-  "transaksi": {
-    "id": "string",
-    "status": "string"
-  }
-}
-```
-
-### `GET Penjual/getPesananMasukItem/{id}`
-
-App method: `PesananMasukApi.getPesananMasukItem`.
-
-Request:
-
-```http
-GET Penjual/getPesananMasukItem/{id}?authToken=<authToken>&pesananEntity=<pesananEntity>
-```
-
-Response (`PesananMasukResponses.Items`):
-
-```json
-{
-  "pesananMasukItem": [
-    {
-      "id": "string",
-      "quantity": "string",
-      "namaProduk": "string",
-      "namaSatuan": "string",
-      "harga": "string",
-      "diskon": "string",
-      "fotoProduk": "string",
-      "catatan": "string",
-      "jenisProduk": "string",
-      "status": "string"
-    }
-  ]
-}
-```
-
-### `POST Transaksi/prosesPesanan/{id}`
-
-App method: `PesananMasukApi.prosesPesanan`.
-
-A POST without a body in the legacy app; the map is empty (versionCode is added by the interceptor).
-
-Request:
-
-```http
-POST Transaksi/prosesPesanan/{id}?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-(empty body apart from versionCode)
-```
-
-Response (`PesananMasukResponses.Status`):
-
-```json
-{
-  "statusProsesPesanan": true,
-  "statusPembatalanKlaimTidakTersedia": true,
-  "statusKlaim": true
-}
-```
-
-### `POST Transaksi/pembatalanKlaimTidakAda`
-
-App method: `PesananMasukApi.pembatalanKlaimTidakAda`.
-
-Request:
-
-```http
-POST Transaksi/pembatalanKlaimTidakAda?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-idItem=<idItem>
-```
-
-Response (`PesananMasukResponses.Status`):
-
-```json
-{
-  "statusProsesPesanan": true,
-  "statusPembatalanKlaimTidakTersedia": true,
-  "statusKlaim": true
-}
-```
-
-### `POST Transaksi/klaimProdukTidakTersedia`
-
-App method: `PesananMasukApi.klaimProdukTidakTersedia`.
-
-Request:
-
-```http
-POST Transaksi/klaimProdukTidakTersedia?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-idItem=<idItem>&keterangan=<keterangan>
-```
-
-Response (`PesananMasukResponses.Status`):
-
-```json
-{
-  "statusProsesPesanan": true,
-  "statusPembatalanKlaimTidakTersedia": true,
-  "statusKlaim": true
-}
-```
-
 ## ProdukApi
 
 ### `GET Produk/detailProduk`
@@ -2156,8 +1782,6 @@ Response (`ProdukResponses.Detail`):
     "id": "string",
     "nama": "string",
     "foto": "string",
-    "idPenjual": "string",
-    "namaToko": "string",
     "namaKategoriProduk": "string",
     "keterangan": "string",
     "keteranganSingkat": "string",
@@ -2268,555 +1892,6 @@ Response (`ProdukResponses.InCa`):
 }
 ```
 
-### `GET Produk/isProductSellerAvailable`
-
-App method: `ProdukApi.isProductSellerAvailable`.
-
-Request:
-
-```http
-GET Produk/isProductSellerAvailable?idProduk=<idProduk>&jadwalDeliveryCode=<jadwalDeliveryCode>
-```
-
-Response (`ProdukResponses.SellerAvailable`):
-
-```json
-{
-  "isSellerAvailable": true
-}
-```
-
-## ProdukPenjualApi
-
-### `GET Produk/getHargaProduk`
-
-App method: `ProdukPenjualApi.getHargaProduk`.
-
-Detail of a product; with `entitasHargaProduk` it also returns its units (`hargaProduk`).
-
-Request:
-
-```http
-GET Produk/getHargaProduk?idProduk=<idProduk>&entitasHargaProduk=<entitasHargaProduk>
-```
-
-Response (`ProdukPenjualResponses.HargaProduk`):
-
-```json
-{
-  "detailProduk": {
-    "id": "string",
-    "nama": "string",
-    "foto": "string",
-    "keterangan": "string",
-    "superior": true,
-    "namaKategoriProduk": "string",
-    "idKategoriProduk": "string",
-    "harga": "string",
-    "diskon": "string"
-  },
-  "hargaProduk": [
-    {
-      "id": "string",
-      "idProduk": "string",
-      "nama": "string",
-      "harga": "string",
-      "diskon": "string",
-      "jenisHarga": "string",
-      "keterangan": "string"
-    }
-  ]
-}
-```
-
-### `GET Produk/detailProduk`
-
-App method: `ProdukPenjualApi.getDetailProduk`.
-
-Request:
-
-```http
-GET Produk/detailProduk?idProduk=<idProduk>
-```
-
-Response (`ProdukPenjualResponses.DetailProduk`):
-
-```json
-{
-  "detailProduk": {
-    "id": "string",
-    "nama": "string",
-    "foto": "string",
-    "keterangan": "string",
-    "superior": true,
-    "namaKategoriProduk": "string",
-    "idKategoriProduk": "string",
-    "harga": "string",
-    "diskon": "string"
-  }
-}
-```
-
-### `GET Produk/detailPaket`
-
-App method: `ProdukPenjualApi.getDetailPaket`.
-
-Request:
-
-```http
-GET Produk/detailPaket?idPaket=<idPaket>
-```
-
-Response (`ProdukPenjualResponses.DetailPaket`):
-
-```json
-{
-  "detailPaket": {
-    "id": "string",
-    "nama": "string",
-    "foto": "string",
-    "keterangan": "string",
-    "superior": true,
-    "namaKategoriProduk": "string",
-    "idKategoriProduk": "string",
-    "harga": "string",
-    "diskon": "string"
-  }
-}
-```
-
-### `GET KategoriProduk/getKategoriProduk`
-
-App method: `ProdukPenjualApi.getKategoriProduk`.
-
-Request:
-
-```http
-GET KategoriProduk/getKategoriProduk
-```
-
-Response (`ProdukPenjualResponses.Kategori`):
-
-```json
-{
-  "kategoriProduk": [
-    {
-      "id": "string",
-      "nama": "string"
-    }
-  ]
-}
-```
-
-### `GET Penjual/getProdukPenjual`
-
-App method: `ProdukPenjualApi.getProdukPenjual`.
-
-Request:
-
-```http
-GET Penjual/getProdukPenjual?authToken=<authToken>&getProductEntities=<entities>&term=<term>
-```
-
-Response (`ProdukPenjualResponses.ProdukList`):
-
-```json
-{
-  "produkPenjual": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "namaKategoriProduk": "string",
-      "keterangan": "string",
-      "harga": "string",
-      "diskon": "string"
-    }
-  ]
-}
-```
-
-### `GET Penjual/getPaketPenjual`
-
-App method: `ProdukPenjualApi.getPaketPenjual`.
-
-Request:
-
-```http
-GET Penjual/getPaketPenjual?authToken=<authToken>
-```
-
-Response (`ProdukPenjualResponses.PaketList`):
-
-```json
-{
-  "paketPenjual": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "namaKategoriProduk": "string",
-      "keterangan": "string",
-      "harga": "string",
-      "diskon": "string"
-    }
-  ]
-}
-```
-
-### `GET Produk/toggleProdukPalingLaris/{id}`
-
-App method: `ProdukPenjualApi.toggleProdukPalingLaris`.
-
-Request:
-
-```http
-GET Produk/toggleProdukPalingLaris/{id}?authToken=<authToken>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `GET Produk/togglePaketPalingLaris/{id}`
-
-App method: `ProdukPenjualApi.togglePaketPalingLaris`.
-
-Request:
-
-```http
-GET Produk/togglePaketPalingLaris/{id}?authToken=<authToken>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `POST Produk/ubahKategoriProduk/{id}`
-
-App method: `ProdukPenjualApi.ubahKategoriProduk`.
-
-Request:
-
-```http
-POST Produk/ubahKategoriProduk/{id}?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-kategoriProduk=<kategoriProduk>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `POST Produk/ubahDeskripsiProduk/{id}`
-
-App method: `ProdukPenjualApi.ubahDeskripsiProduk`.
-
-Request:
-
-```http
-POST Produk/ubahDeskripsiProduk/{id}?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-deskripsiProduk=<deskripsi>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `POST Produk/ubahDeskripsiPaket/{id}`
-
-App method: `ProdukPenjualApi.ubahDeskripsiPaket`.
-
-Request:
-
-```http
-POST Produk/ubahDeskripsiPaket/{id}?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-deskripsiPaket=<deskripsi>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `GET Produk/hapusProduk/{id}`
-
-App method: `ProdukPenjualApi.hapusProduk`.
-
-Request:
-
-```http
-GET Produk/hapusProduk/{id}?authToken=<authToken>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `GET Produk/hapusPaket/{id}`
-
-App method: `ProdukPenjualApi.hapusPaket`.
-
-Request:
-
-```http
-GET Produk/hapusPaket/{id}?authToken=<authToken>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `POST Produk/saveProduk`
-
-App method: `ProdukPenjualApi.saveProduk`.
-
-New product. Fields: nama, jenisProduk, keterangan, produkImg/paketImg (base64 image, optional), kategori (satuan) or harga + diskon (paket). The server expects the image as a base64 form field.
-
-Request:
-
-```http
-POST Produk/saveProduk?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-nama=<nama>&jenisProduk=nonpaket&keterangan=<keterangan>&kategori=<kategori>&harga=<harga>&diskon=<diskon>&produkImg=<produkImg>
-```
-
-Conditional fields: `kategori` (satuan only); `harga` (paket only); `diskon` (paket only); `produkImg` (base64 image, optional).
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `POST Produk/saveProduk/{id}`
-
-App method: `ProdukPenjualApi.saveProduk`.
-
-Request:
-
-```http
-POST Produk/saveProduk/{id}?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-nama=<nama>&jenisProduk=nonpaket&keterangan=<keterangan>&kategori=<kategori>&harga=<harga>&diskon=<diskon>&produkImg=<produkImg>
-```
-
-Conditional fields: `kategori` (satuan only); `harga` (paket only); `diskon` (paket only); `produkImg` (base64 image, optional).
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `GET HargaProduk/hapusHargaProduk/{id}`
-
-App method: `ProdukPenjualApi.hapusHargaProduk`.
-
-Request:
-
-```http
-GET HargaProduk/hapusHargaProduk/{id}?authToken=<authToken>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `POST HargaProduk/saveHargaProduk`
-
-App method: `ProdukPenjualApi.saveHargaProduk`.
-
-Fields: idProduk, nama, harga, diskon, jenisHarga, keterangan.
-
-Request:
-
-```http
-POST HargaProduk/saveHargaProduk?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-idProduk=<idProduk>&nama=<nama>&harga=<harga>&diskon=<diskon>&jenisHarga=<jenisHarga>&keterangan=<keterangan>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
-### `POST HargaProduk/saveHargaProduk/{id}`
-
-App method: `ProdukPenjualApi.saveHargaProduk`.
-
-Request:
-
-```http
-POST HargaProduk/saveHargaProduk/{id}?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-idProduk=<idProduk>&nama=<nama>&harga=<harga>&diskon=<diskon>&jenisHarga=<jenisHarga>&keterangan=<keterangan>
-```
-
-Response (`ProdukPenjualResponses.Status`):
-
-```json
-{
-  "statusToggleProdukPalingLaris": true,
-  "statusTogglePaketPalingLaris": true,
-  "statusUbahKategoriProduk": true,
-  "statusUbahDeskripsiProduk": true,
-  "statusUbahDeskripsiPaket": true,
-  "statusHapusProduk": true,
-  "statusHapusPaket": true,
-  "statusHapusHargaProduk": true,
-  "statusSaveHargaProduk": true,
-  "saveProduk": true
-}
-```
-
 ## PromoApi
 
 ### `GET Promo/getPromoAroundOfThisLatLong`
@@ -2840,7 +1915,6 @@ Response (`PromoResponses.ProdukPromoList`):
       "idProduk": "string",
       "idHargaProduk": "string",
       "namaProduk": "string",
-      "namaToko": "string",
       "keteranganSingkat": "string",
       "fotoProduk": "string",
       "maxOrder": "string",
@@ -2881,8 +1955,6 @@ Response (`PromoResponses.Detail`):
       "nama": "string",
       "foto": "string",
       "namaKategoriProduk": "string",
-      "namaToko": "string",
-      "idPenjual": "string",
       "keterangan": "string"
     },
     "detailSatuan": {
@@ -2891,28 +1963,6 @@ Response (`PromoResponses.Detail`):
       "harga": "string",
       "diskon": "string"
     }
-  }
-}
-```
-
-### `GET User/getDetailUser`
-
-App method: `PromoApi.getDetailUser`.
-
-Used for the signed-in user's id (legacy LocalStorage.getIdPenjualFromActiveUser).
-
-Request:
-
-```http
-GET User/getDetailUser?getUserEntities=<getUserEntities>&authToken=<authToken>
-```
-
-Response (`PromoResponses.DetailUser`):
-
-```json
-{
-  "detailUser": {
-    "id": 0
   }
 }
 ```
@@ -2981,45 +2031,35 @@ Response (`RepeatOrderResponses.Items`):
 
 ```json
 {
+  "isAvailable": true,
   "itemTransaksi": [
     {
-      "isAvailable": true,
-      "idTransaksi": "string",
-      "idPenjual": "string",
-      "namaPenjual": "string",
-      "namaPasar": "string",
-      "bannerPenjual": "string",
-      "alamatToko": "string",
-      "itemTransaksi": [
-        {
-          "id": "string",
-          "namaProduk": "string",
-          "namaSatuan": "string",
-          "jenisProduk": "string",
-          "catatan": "string",
-          "status": "string",
-          "quantity": 0,
-          "harga": 0,
-          "diskon": 0,
-          "diskonPromo": 0
-        }
-      ]
+      "id": "string",
+      "namaProduk": "string",
+      "namaSatuan": "string",
+      "jenisProduk": "string",
+      "catatan": "string",
+      "status": "string",
+      "quantity": 0,
+      "harga": 0,
+      "diskon": 0,
+      "diskonPromo": 0
     }
   ]
 }
 ```
 
-### `POST RO/addToCartThesePenjual`
+### `POST RO/addToCart`
 
-App method: `RepeatOrderApi.addToCartThesePenjual`.
+App method: `RepeatOrderApi.addToCart`.
 
 Request:
 
 ```http
-POST RO/addToCartThesePenjual?authToken=<authToken>
+POST RO/addToCart?authToken=<authToken>
 Content-Type: application/x-www-form-urlencoded
 
-idTransaksi=<idTransaksi>&cartCode=<cartCode>&selectedSellers=<selectedSellers>
+idTransaksi=<idTransaksi>&cartCode=<cartCode>
 ```
 
 Response (`RepeatOrderResponses.AddToCart`):
@@ -3180,11 +2220,7 @@ Response (`SearchResponses.Suggestions`):
       "id": "string",
       "jenisItem": "string",
       "fotoProduk": "string",
-      "namaProduk": "string",
-      "namaPenjual": "string",
-      "bannerToko": "string",
-      "namaToko": "string",
-      "alamatToko": "string"
+      "namaProduk": "string"
     }
   ]
 }
@@ -3229,392 +2265,6 @@ Response (`Map<String, Object>`):
 ```json
 {
   "<key>": "<value>"
-}
-```
-
-## ShopApi
-
-### `GET Penjual/getDetailPenjual/{idPenjual}`
-
-App method: `ShopApi.getDetailPenjual`.
-
-Request:
-
-```http
-GET Penjual/getDetailPenjual/{idPenjual}
-```
-
-Response (`ShopResponses.Detail`):
-
-```json
-{
-  "detailPenjual": {
-    "id": "string",
-    "namaToko": "string",
-    "namaPasar": "string",
-    "alamatToko": "string",
-    "banner": "string",
-    "pasar": "string"
-  }
-}
-```
-
-### `GET Penjual/getProdukPenjual/{idPenjual}`
-
-App method: `ShopApi.getProdukPenjual`.
-
-Request:
-
-```http
-GET Penjual/getProdukPenjual/{idPenjual}?getProductEntities=<entities>
-```
-
-Response (`ShopResponses.ProdukList`):
-
-```json
-{
-  "produkPenjual": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "idPenjual": "string",
-      "namaToko": "string",
-      "namaKategoriProduk": "string",
-      "keterangan": "string",
-      "keteranganSingkat": "string",
-      "stokAvailable": true,
-      "promo": [
-        "<any JSON>"
-      ]
-    }
-  ]
-}
-```
-
-### `GET Penjual/getPaketPenjual/{idPenjual}`
-
-App method: `ShopApi.getPaketPenjual`.
-
-Request:
-
-```http
-GET Penjual/getPaketPenjual/{idPenjual}?getPaketEntities=<entities>
-```
-
-Response (`ShopResponses.PaketList`):
-
-```json
-{
-  "paketPenjual": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "harga": 0,
-      "diskon": 0,
-      "keterangan": "string",
-      "idPenjual": "string",
-      "namaToko": "string"
-    }
-  ]
-}
-```
-
-## TokoSayaApi
-
-### `GET User/getDetailUser`
-
-App method: `TokoSayaApi.getDetailUserId`.
-
-Request:
-
-```http
-GET User/getDetailUser?getUserEntities=<entities>&authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.DetailUser`):
-
-```json
-{
-  "detailUser": {
-    "id": 0
-  }
-}
-```
-
-### `GET Penjual/getDetailPenjual/{idPenjual}`
-
-App method: `TokoSayaApi.getDetailPenjual`.
-
-Request:
-
-```http
-GET Penjual/getDetailPenjual/{idPenjual}?authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.Detail`):
-
-```json
-{
-  "detailPenjual": {
-    "id": "string",
-    "status": "string",
-    "statusReason": "string",
-    "namaToko": "string",
-    "pasarUmum": "string",
-    "namaPasar": "string",
-    "alamatToko": "string",
-    "banner": "string",
-    "nomorRekening": "string",
-    "namaUser": "string"
-  }
-}
-```
-
-### `GET Penjual/getDetailPenjual/{idPenjual}`
-
-App method: `TokoSayaApi.getDetailPenjualEntities`.
-
-Legacy RequestPencairanDana: only some columns, no authToken.
-
-Request:
-
-```http
-GET Penjual/getDetailPenjual/{idPenjual}?getPenjualEntities=<entities>
-```
-
-Response (`TokoSayaResponses.Detail`):
-
-```json
-{
-  "detailPenjual": {
-    "id": "string",
-    "status": "string",
-    "statusReason": "string",
-    "namaToko": "string",
-    "pasarUmum": "string",
-    "namaPasar": "string",
-    "alamatToko": "string",
-    "banner": "string",
-    "nomorRekening": "string",
-    "namaUser": "string"
-  }
-}
-```
-
-### `GET Penjual/getTotalPenjualan`
-
-App method: `TokoSayaApi.getTotalPenjualan`.
-
-Request:
-
-```http
-GET Penjual/getTotalPenjualan?authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.TotalPenjualan`):
-
-```json
-{
-  "totalPenjualan": 0
-}
-```
-
-### `GET Penjual/getTotalSaldo`
-
-App method: `TokoSayaApi.getTotalSaldo`.
-
-Request:
-
-```http
-GET Penjual/getTotalSaldo?authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.TotalSaldo`):
-
-```json
-{
-  "totalSaldo": 0
-}
-```
-
-### `GET TagihanPenjual/getTagihan`
-
-App method: `TokoSayaApi.getTagihan`.
-
-Request:
-
-```http
-GET TagihanPenjual/getTagihan?authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.Tagihan`):
-
-```json
-{
-  "tagihan": 0
-}
-```
-
-### `GET Penjual/getJumlahProdukPenjual`
-
-App method: `TokoSayaApi.getJumlahProdukPenjual`.
-
-Request:
-
-```http
-GET Penjual/getJumlahProdukPenjual?authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.JumlahProduk`):
-
-```json
-{
-  "jumlahProduk": {
-    "produk": 0,
-    "paket": 0
-  }
-}
-```
-
-### `GET Penjual/getJadwalDeliveryPenjual`
-
-App method: `TokoSayaApi.getJadwalDeliveryPenjual`.
-
-Request:
-
-```http
-GET Penjual/getJadwalDeliveryPenjual?authToken=<authToken>
-```
-
-Response (`TokoSayaResponses.JadwalList`):
-
-```json
-{
-  "jadwalDeliveryPenjual": [
-    {
-      "jadwalDeliveryCode": 0
-    }
-  ]
-}
-```
-
-### `POST Penjual/toggleJadwalDelivery`
-
-App method: `TokoSayaApi.toggleJadwalDelivery`.
-
-Request:
-
-```http
-POST Penjual/toggleJadwalDelivery?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-jadwalDeliveryCode=<jadwalDeliveryCode>
-```
-
-Response (`TokoSayaResponses.Toggle`):
-
-```json
-{
-  "toggleStatus": true
-}
-```
-
-### `GET Pasar/getPasar`
-
-App method: `TokoSayaApi.getPasar`.
-
-Request:
-
-```http
-GET Pasar/getPasar?jenisPasar=<jenisPasar>
-```
-
-Response (`TokoSayaResponses.PasarList`):
-
-```json
-{
-  "dataPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string"
-    }
-  ]
-}
-```
-
-### `GET https://maps.googleapis.com/maps/api/geocode/json` (`reverseGeocode`)
-
-Google reverse geocoding, called with a full URL (not the backend).
-
-```http
-GET https://maps.googleapis.com/maps/api/geocode/json?latlng=<lat>,<lng>&key=<Google API key>
-```
-
-### `POST Penjual/ubahLokasiBerjualan/{idPenjual}`
-
-App method: `TokoSayaApi.ubahLokasiBerjualan`.
-
-Null fields are not sent: idPasarBaru for a listed market, latPasarBaru/longPasarBaru for an own location.
-
-Request:
-
-```http
-POST Penjual/ubahLokasiBerjualan/{idPenjual}?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-jenisPasarBaru=<jenisPasarBaru>&idPasarBaru=<idPasarBaru>&latPasarBaru=<latPasarBaru>&longPasarBaru=<longPasarBaru>
-```
-
-Response (`TokoSayaResponses.UbahLokasi`):
-
-```json
-{
-  "statusUbahLokasiBerjualan": true
-}
-```
-
-### `POST Penjual/ubahNamaToko`
-
-App method: `TokoSayaApi.ubahNamaToko`.
-
-Request:
-
-```http
-POST Penjual/ubahNamaToko?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-namaToko=<namaToko>
-```
-
-Response (`TokoSayaResponses.UbahNama`):
-
-```json
-{
-  "statusUbahNamaToko": true
-}
-```
-
-### `POST Penjual/ajukanRPD`
-
-App method: `TokoSayaApi.ajukanRpd`.
-
-Request:
-
-```http
-POST Penjual/ajukanRPD?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
-
-nomorRekening=<nomorRekening>&namaPenerima=<namaPenerima>&nominal=<nominal>&keterangan=<keterangan>
-```
-
-Response (`TokoSayaResponses.AjukanRpd`):
-
-```json
-{
-  "statusRequest": true
 }
 ```
 
@@ -3717,7 +2367,7 @@ App method: `TransaksiApi.getItemTransaksi`.
 Request:
 
 ```http
-GET Transaksi/getItemTransaksiFromTransaksi/{id}?authToken=<authToken>&entitasItemTransaksi=<entitasItemTransaksi>&idPenjual=<idPenjual>
+GET Transaksi/getItemTransaksiFromTransaksi/{id}?authToken=<authToken>&entitasItemTransaksi=<entitasItemTransaksi>
 ```
 
 Response (`TransaksiResponses.Items`):
@@ -3874,8 +2524,7 @@ Response (`AccountResponses.DetailUser`):
     "nomorHP": "string",
     "foto": "string",
     "kodeReferal": "string",
-    "createdAt": "string",
-    "isSeller": true
+    "createdAt": "string"
   }
 }
 ```
