@@ -264,7 +264,7 @@ Response (`AccountResponses.ReferralConfiguration`):
 
 App method: `AuthApi.signIn`.
 
-Sign-in. Body: `login` (string) and `password` (string). Answers `id_token` (the JWT), `expired_at` (RFC 3339 date-time) and `user` (the signed-in user), either at the top level or inside the backend's `data` envelope. Wrong credentials answer a 4xx status.
+Sign-in. Body: `login` (string) and `password` (string, base64 of the UTF-8 password). Answers `id_token` (the JWT), `expired_at` (RFC 3339 date-time) and `user` (the signed-in user), either at the top level or inside the backend's `data` envelope. Wrong credentials answer a 4xx status.
 
 Request:
 
@@ -274,7 +274,7 @@ Content-Type: application/json
 
 {
   "login": "<phone number>",
-  "password": "<password>"
+  "password": "<base64 of the password>"
 }
 ```
 
@@ -302,7 +302,7 @@ Response (`id_token`, `expired_at`, `user`):
 }
 ```
 
-The app reads the three attributes from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It stores `id_token` as the session JWT, `expired_at` (RFC 3339 date-time) as its expiry, and `user` as the current user. From `user` it reads `id` (the user id) and `mobile_phone_confirmed_at` (null opens the phone-verification screen); the other `user` fields shown are the ones the backend's user model sends, and are stored as they come. After `expired_at` the app treats the session as signed out and stops sending the token. A 4xx status means the login or password is wrong.
+The app reads the three attributes from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It stores `id_token` as the session JWT, `expired_at` (RFC 3339 date-time) as its expiry, and `user` as the current user. From `user` it reads `id` (the user id) and `mobile_phone_confirmed_at` (null opens the phone-verification screen); the other `user` fields shown are the ones the backend's user model sends, and are stored as they come. After `expired_at` the app treats the session as signed out and stops sending the token. A 4xx status means the login or password is wrong. In the request, `password` is always the standard base64 (with padding) of the password's UTF-8 bytes, for example `cmFoYXNpYTEyMw==` for `rahasia123`; `Auth/register` and `User/gantiPassword` still send their passwords as typed.
 
 ### `POST Auth/register`
 
