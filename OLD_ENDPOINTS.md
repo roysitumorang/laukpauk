@@ -1,13 +1,16 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed ([laukpauk_mobile#9](https://github.com/roysitumorang/laukpauk_mobile/pull/9), [#11](https://github.com/roysitumorang/laukpauk_mobile/pull/11)): all products belong to a single seller, so there are no seller or market endpoints or fields, and the product list is `Produk/getProduk`. These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
 - **Base URL:** paths are relative to `API_BASE_URL` (a build setting, e.g. `https://<host>/api/`).
-- **`versionCode`:** the app adds `versionCode=<build number>` to the query string of every request, and as the first field of every form-encoded body. Examples below leave it out.
-- **Auth:** endpoints that need a signed-in user take the session token as the query parameter `authToken`. There are no auth headers.
-- **Bodies:** every `POST` is `application/x-www-form-urlencoded` except `Transaksi/pesananDiterima/{id}`, which is sent with no body; there are no JSON or multipart request bodies. The profile photo is sent as a base64 form field.
+- **Headers on every backend request** (the examples below leave the first two out):
+  - `X-Version-Code`: the app's version code (build number).
+  - `X-Request-Id`: a random UUID v4, new for each request.
+  - `Accept: application/json`.
+- **Auth:** JWT. While a user is signed in, every backend request carries `Authorization: Bearer <JWT>` (the `authToken` returned by sign-in). The examples show the header on the calls that need a signed-in user; no call sends the token in the URL or the body.
+- **Bodies:** every `POST` sends `Content-Type: application/json` with a JSON object, except `Transaksi/pesananDiterima/{id}`, which is sent with no body. Keys whose value is null are left out. Most values are JSON strings, because the app holds them as text. The profile photo is sent as a base64 string.
 - **Path parameters** are shown as `{name}`; placeholder values as `<name>`.
 - **Responses** are JSON. The examples list only the fields the app reads (from its response classes), with type placeholders: `"string"`, `0`, `0.0`, `true`.
 - **Overloads:** where the app calls a path both with and without a trailing `/{id}`, both forms are listed.
@@ -38,7 +41,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 
 ## Index
 
-| Method | Path | `authToken` | App method |
+| Method | Path | JWT required | App method |
 |---|---|---|---|
 | GET | `Auth/removeToken` | yes | `AccountApi.removeToken` |
 | POST | `Auth/gantiNomor` | yes | `AccountApi.gantiNomor` |
@@ -153,7 +156,8 @@ App method: `AccountApi.removeToken`.
 Request:
 
 ```http
-GET Auth/removeToken?authToken=<authToken>&cartCode=<cartCode>
+GET Auth/removeToken?cartCode=<cartCode>
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.RemoveToken`):
@@ -171,10 +175,13 @@ App method: `AccountApi.gantiNomor`.
 Request:
 
 ```http
-POST Auth/gantiNomor?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST Auth/gantiNomor
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-nomorBaru=<nomorBaru>
+{
+  "nomorBaru": "<nomorBaru>"
+}
 ```
 
 Response (`AccountResponses.GantiNomor`):
@@ -193,10 +200,14 @@ App method: `AccountApi.verifikasiNomor`.
 Request:
 
 ```http
-POST Auth/verifikasiNomor?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST Auth/verifikasiNomor
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-idPenggantianNomor=<idPenggantianNomor>&kodeVerifikasi=<kodeVerifikasi>
+{
+  "idPenggantianNomor": "<idPenggantianNomor>",
+  "kodeVerifikasi": "<kodeVerifikasi>"
+}
 ```
 
 Response (`AccountResponses.VerifikasiNomor`):
@@ -214,7 +225,8 @@ App method: `AccountApi.jumlahGantiNomorHPForToday`.
 Request:
 
 ```http
-GET Auth/jumlahGantiNomorHPForToday?authToken=<authToken>
+GET Auth/jumlahGantiNomorHPForToday
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.JumlahGantiNomor`):
@@ -232,7 +244,8 @@ App method: `AccountApi.getReferralConfiguration`.
 Request:
 
 ```http
-GET Pengaturan/getReferralConfiguration?authToken=<authToken>
+GET Pengaturan/getReferralConfiguration
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.ReferralConfiguration`):
@@ -276,9 +289,15 @@ Request:
 
 ```http
 POST Auth/register
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-namaLengkap=<namaLengkap>&nomorHP=<nomorHP>&password=<password>&konfirmasiPassword=<konfirmasiPassword>&kodeReferal=<kodeReferal>
+{
+  "namaLengkap": "<namaLengkap>",
+  "nomorHP": "<nomorHP>",
+  "password": "<password>",
+  "konfirmasiPassword": "<konfirmasiPassword>",
+  "kodeReferal": "<kodeReferal>"
+}
 ```
 
 Response (`AuthResponses.Register`):
@@ -302,9 +321,12 @@ Request:
 
 ```http
 POST Auth/konfirmasiOTP
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-idUser=<idUser>&otp=<otp>
+{
+  "idUser": "<idUser>",
+  "otp": "<otp>"
+}
 ```
 
 Response (`AuthResponses.KonfirmasiOTP`):
@@ -328,9 +350,12 @@ Request:
 
 ```http
 POST Auth/verifikasiUser
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-idUser=<idUser>&verificationCode=<verificationCode>
+{
+  "idUser": "<idUser>",
+  "verificationCode": "<verificationCode>"
+}
 ```
 
 Response (`AuthResponses.VerifikasiUser`):
@@ -348,10 +373,13 @@ App method: `AuthApi.resendOTP`.
 Request:
 
 ```http
-POST Auth/resendOTP?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST Auth/resendOTP
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-nomorTelepon=<nomorTelepon>
+{
+  "nomorTelepon": "<nomorTelepon>"
+}
 ```
 
 Response (`AuthResponses.ResendOTP`):
@@ -371,9 +399,11 @@ Request:
 
 ```http
 POST Auth/lupaPassword
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-nomorHP=<nomorHP>
+{
+  "nomorHP": "<nomorHP>"
+}
 ```
 
 Response (`AuthResponses.LupaPassword`):
@@ -396,7 +426,8 @@ App method: `AuthApi.getDetailUser`.
 Request:
 
 ```http
-GET User/getDetailUser?authToken=<authToken>&getUserEntities=<getUserEntities>
+GET User/getDetailUser?getUserEntities=<getUserEntities>
+Authorization: Bearer <JWT>
 ```
 
 Response (`AuthResponses.DetailUserResponse`):
@@ -507,9 +538,19 @@ Request:
 
 ```http
 POST Keranjang/saveCart
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-cartCode=<cartCode>&idProduk=<idProduk>&jenisProduk=nonpaket&idSatuan=<idSatuan>&quantity=1&jadwalDeliveryCode=<jadwalDeliveryCode>&dayDelivery=Hari Pengantaran&idPromo=<idPromo>&idUser=<idUser>
+{
+  "cartCode": "<cartCode>",
+  "idProduk": "<idProduk>",
+  "jenisProduk": "nonpaket",
+  "idSatuan": "<idSatuan>",
+  "quantity": "1",
+  "jadwalDeliveryCode": "<jadwalDeliveryCode>",
+  "dayDelivery": "Hari Pengantaran",
+  "idPromo": "<idPromo>",
+  "idUser": "<idUser>"
+}
 ```
 
 Conditional fields: `idPromo` (optional); `idUser` (when logged in).
@@ -531,9 +572,12 @@ Request:
 
 ```http
 POST Keranjang/saveCart/{idItem}
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-quantity=1&catatan=<catatan>
+{
+  "quantity": "1",
+  "catatan": "<catatan>"
+}
 ```
 
 Response (`AddToCartResult`):
@@ -549,15 +593,15 @@ Response (`AddToCartResult`):
 
 App method: `CartApi.deleteCart`.
 
-The body is empty apart from the versionCode field added by ApiClient.
+The body is an empty JSON object.
 
 Request:
 
 ```http
 POST Keranjang/deleteCart/{idCart}
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-(empty body apart from versionCode)
+{}
 ```
 
 Response (`CartResponses.Delete`):
@@ -647,7 +691,8 @@ App method: `CheckoutApi.cekVerifikasiUser`.
 Request:
 
 ```http
-GET Auth/cekVerifikasiUser?authToken=<authToken>
+GET Auth/cekVerifikasiUser
+Authorization: Bearer <JWT>
 ```
 
 Response (`CheckoutResponses.Verified`):
@@ -665,7 +710,8 @@ App method: `CheckoutApi.getDetailUser`.
 Request:
 
 ```http
-GET User/getDetailUser?authToken=<authToken>&getUserEntities=<select>
+GET User/getDetailUser?getUserEntities=<select>
+Authorization: Bearer <JWT>
 ```
 
 Response (`CheckoutResponses.DetailUserResponse`):
@@ -689,9 +735,13 @@ Request:
 
 ```http
 POST JadwalDelivery/isJadwalDeliveryOpened
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-kode=<kode>&day=<day>&setOn=<setOn>
+{
+  "kode": "<kode>",
+  "day": "<day>",
+  "setOn": "<setOn>"
+}
 ```
 
 Response (`CheckoutResponses.JadwalOpened`):
@@ -822,7 +872,8 @@ App method: `CheckoutApi.getTotalDompet`.
 Request:
 
 ```http
-GET User/getTotalDompet?authToken=<authToken>
+GET User/getTotalDompet
+Authorization: Bearer <JWT>
 ```
 
 Response (`CheckoutResponses.TotalDompet`):
@@ -840,7 +891,8 @@ App method: `CheckoutApi.getPoint`.
 Request:
 
 ```http
-GET Point/getPoint?authToken=<authToken>&point=<point>
+GET Point/getPoint?point=<point>
+Authorization: Bearer <JWT>
 ```
 
 Response (`CheckoutResponses.PointResponse`):
@@ -860,7 +912,8 @@ App method: `CheckoutApi.getVoucher`.
 Request:
 
 ```http
-GET User/getVoucher?authToken=<authToken>&entitasVoucher=<entitasVoucher>&forThisTotalBelanja=<totalBelanja>
+GET User/getVoucher?entitasVoucher=<entitasVoucher>&forThisTotalBelanja=<totalBelanja>
+Authorization: Bearer <JWT>
 ```
 
 Response (`CheckoutResponses.VoucherList`):
@@ -889,7 +942,8 @@ App method: `CheckoutApi.getStatusVoucher`.
 Request:
 
 ```http
-GET Voucher/getStatusVoucher/{id}?authToken=<authToken>
+GET Voucher/getStatusVoucher/{id}
+Authorization: Bearer <JWT>
 ```
 
 Response (`CheckoutResponses.StatusVoucher`):
@@ -907,7 +961,8 @@ App method: `CheckoutApi.cekKodePromo`.
 Request:
 
 ```http
-GET Promo/cekKodePromo/{kode}?authToken=<authToken>
+GET Promo/cekKodePromo/{kode}
+Authorization: Bearer <JWT>
 ```
 
 Response (`CheckoutResponses.KodePromo`):
@@ -1105,7 +1160,8 @@ App method: `HomeApi.getJumlahVoucher`.
 Request:
 
 ```http
-GET User/getJumlahVoucher?authToken=<authToken>
+GET User/getJumlahVoucher
+Authorization: Bearer <JWT>
 ```
 
 Response (`HomeResponses.JumlahVoucher`):
@@ -1123,7 +1179,8 @@ App method: `HomeApi.getTotalDompet`.
 Request:
 
 ```http
-GET User/getTotalDompet?authToken=<authToken>
+GET User/getTotalDompet
+Authorization: Bearer <JWT>
 ```
 
 Response (`HomeResponses.TotalDompet`):
@@ -1141,7 +1198,8 @@ App method: `HomeApi.getPoint`.
 Request:
 
 ```http
-GET Point/getPoint?authToken=<authToken>&point=<point>
+GET Point/getPoint?point=<point>
+Authorization: Bearer <JWT>
 ```
 
 Response (`HomeResponses.Point`):
@@ -1163,7 +1221,8 @@ The first page of the product list (see ProdukApi.getProduk).
 Request:
 
 ```http
-GET Produk/getProduk?jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&authToken=<authToken>
+GET Produk/getProduk?jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>
+Authorization: Bearer <JWT>
 ```
 
 Response (`HomeResponses.ProdukList`):
@@ -1316,7 +1375,8 @@ App method: `NotifikasiApi.getNotifikasi`.
 Request:
 
 ```http
-GET User/getNotifikasi?authToken=<authToken>
+GET User/getNotifikasi
+Authorization: Bearer <JWT>
 ```
 
 Response (`NotifikasiResponses.InfoList`):
@@ -1343,7 +1403,8 @@ App method: `NotifikasiApi.getNotifikasiKhusus`.
 Request:
 
 ```http
-GET User/getNotifikasiKhusus?authToken=<authToken>
+GET User/getNotifikasiKhusus
+Authorization: Bearer <JWT>
 ```
 
 Response (`NotifikasiResponses.KhususList`):
@@ -1372,7 +1433,8 @@ App method: `NotifikasiApi.getNotifikasiKhusus`.
 Request:
 
 ```http
-GET User/getNotifikasiKhusus/{idUser}?authToken=<authToken>
+GET User/getNotifikasiKhusus/{idUser}
+Authorization: Bearer <JWT>
 ```
 
 Response (`NotifikasiResponses.KhususList`):
@@ -1401,7 +1463,8 @@ App method: `NotifikasiApi.getJumlahNotifikasi`.
 Request:
 
 ```http
-GET User/getJumlahNotifikasi?status=<status>&authToken=<authToken>
+GET User/getJumlahNotifikasi?status=<status>
+Authorization: Bearer <JWT>
 ```
 
 Response (`NotifikasiResponses.Count`):
@@ -1419,7 +1482,8 @@ App method: `NotifikasiApi.getJumlahNotifikasiKhusus`.
 Request:
 
 ```http
-GET User/getJumlahNotifikasiKhusus?status=<status>&authToken=<authToken>
+GET User/getJumlahNotifikasiKhusus?status=<status>
+Authorization: Bearer <JWT>
 ```
 
 Response (`NotifikasiResponses.Count`):
@@ -1437,7 +1501,8 @@ App method: `NotifikasiApi.getDetailNotifikasi`.
 Request:
 
 ```http
-GET Notifikasi/getNotifikasi/{idNotifikasi}?authToken=<authToken>
+GET Notifikasi/getNotifikasi/{idNotifikasi}
+Authorization: Bearer <JWT>
 ```
 
 Response (`NotifikasiResponses.Detail`):
@@ -1462,10 +1527,15 @@ App method: `NotifikasiApi.setAs`.
 Request:
 
 ```http
-POST Notifikasi/setAs?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST Notifikasi/setAs
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-idNotifikasiItem=<idNotifikasiItem>&setAs=<setAs>&jenisNotifikasi=<jenisNotifikasi>
+{
+  "idNotifikasiItem": "<idNotifikasiItem>",
+  "setAs": "<setAs>",
+  "jenisNotifikasi": "<jenisNotifikasi>"
+}
 ```
 
 Response (`NotifikasiResponses.SetAs`):
@@ -1537,9 +1607,16 @@ Request:
 
 ```http
 POST Keranjang/saveCart
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-cartCode=<cartCode>&idProduk=<idPaket>&jenisProduk=nonpaket&quantity=1&jadwalDeliveryCode=<jadwalDeliveryCode>&dayDelivery=Hari Pengantaran
+{
+  "cartCode": "<cartCode>",
+  "idProduk": "<idProduk>",
+  "jenisProduk": "nonpaket",
+  "quantity": "1",
+  "jadwalDeliveryCode": "<jadwalDeliveryCode>",
+  "dayDelivery": "Hari Pengantaran"
+}
 ```
 
 Response (`AddToCartResult`):
@@ -1560,7 +1637,8 @@ App method: `PaymentApi.getPaymentChannels`.
 Request:
 
 ```http
-GET Xendit/getPaymentChannels?authToken=<authToken>
+GET Xendit/getPaymentChannels
+Authorization: Bearer <JWT>
 ```
 
 Response (`PaymentChannelsResponse`):
@@ -1584,10 +1662,29 @@ App method: `PaymentApi.checkout`.
 Request:
 
 ```http
-POST Transaksi/checkout?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST Transaksi/checkout
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-namaPenerima=<namaPenerima>&nomorHPPenerima=<nomorHPPenerima>&alamatDetailLengkap=<alamatDetailLengkap>&catatanTambahan=<catatanTambahan>&jadwalPengiriman=<jadwalPengiriman>&cartCode=<cartCode>&voucher=0&latDelivery=<latDelivery>&longDelivery=<longDelivery>&jadwalDeliveryCode=<jadwalDeliveryCode>&isPointUsed=false&diskonKategori=<diskonKategori>&kodePromo=<kodePromo>&metodePembayaran=<metodePembayaran>&namaMetodePembayaran=<namaMetodePembayaran>&moreDataMetodePembayaran=<moreDataMetodePembayaran>&alamatDelivery=<alamatDelivery>
+{
+  "namaPenerima": "<namaPenerima>",
+  "nomorHPPenerima": "<nomorHPPenerima>",
+  "alamatDetailLengkap": "<alamatDetailLengkap>",
+  "catatanTambahan": "<catatanTambahan>",
+  "jadwalPengiriman": "<jadwalPengiriman>",
+  "cartCode": "<cartCode>",
+  "voucher": "0",
+  "latDelivery": "<latDelivery>",
+  "longDelivery": "<longDelivery>",
+  "jadwalDeliveryCode": "<jadwalDeliveryCode>",
+  "isPointUsed": "false",
+  "diskonKategori": "<diskonKategori>",
+  "kodePromo": "<kodePromo>",
+  "metodePembayaran": "<metodePembayaran>",
+  "namaMetodePembayaran": "<namaMetodePembayaran>",
+  "moreDataMetodePembayaran": "<moreDataMetodePembayaran>",
+  "alamatDelivery": "<alamatDelivery>"
+}
 ```
 
 Response (`CheckoutResponse`):
@@ -1613,7 +1710,8 @@ The product list, a page of 10 at a time (`useLimit` "y"), optionally filtered b
 Request:
 
 ```http
-GET Produk/getProduk?authToken=<authToken>&jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&cariProduk=<cariProduk>
+GET Produk/getProduk?jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&cariProduk=<cariProduk>
+Authorization: Bearer <JWT>
 ```
 
 Response (`ProdukResponses.ProdukList`):
@@ -1774,7 +1872,8 @@ App method: `PromoApi.getPromoAroundOfThisLatLong`.
 Request:
 
 ```http
-GET Promo/getPromoAroundOfThisLatLong?authToken=<authToken>&latitude=<latitude>&longitude=<longitude>&jadwalDeliveryCode=<jadwalDeliveryCode>
+GET Promo/getPromoAroundOfThisLatLong?latitude=<latitude>&longitude=<longitude>&jadwalDeliveryCode=<jadwalDeliveryCode>
+Authorization: Bearer <JWT>
 ```
 
 Response (`PromoResponses.ProdukPromoList`):
@@ -1852,9 +1951,13 @@ Request:
 
 ```http
 POST User/registerFcmToken
-Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-authToken=<authToken>&fcmToken=<fcmToken>&platform=<platform>
+{
+  "fcmToken": "<fcmToken>",
+  "platform": "<platform>"
+}
 ```
 
 Response (`PushResponses.Register`):
@@ -1875,9 +1978,12 @@ Request:
 
 ```http
 POST User/unregisterFcmToken
-Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-authToken=<authToken>&fcmToken=<fcmToken>
+{
+  "fcmToken": "<fcmToken>"
+}
 ```
 
 Response (`PushResponses.Unregister`):
@@ -1897,7 +2003,8 @@ App method: `RepeatOrderApi.getItemTransaksi`.
 Request:
 
 ```http
-GET RO/getItemTransaksi?authToken=<authToken>&idTransaksi=<idTransaksi>&latDelivery=<latDelivery>&longDelivery=<longDelivery>&jadwalDeliveryCode=<jadwalDeliveryCode>
+GET RO/getItemTransaksi?idTransaksi=<idTransaksi>&latDelivery=<latDelivery>&longDelivery=<longDelivery>&jadwalDeliveryCode=<jadwalDeliveryCode>
+Authorization: Bearer <JWT>
 ```
 
 Response (`RepeatOrderResponses.Items`):
@@ -1929,10 +2036,14 @@ App method: `RepeatOrderApi.addToCart`.
 Request:
 
 ```http
-POST RO/addToCart?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST RO/addToCart
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-idTransaksi=<idTransaksi>&cartCode=<cartCode>
+{
+  "idTransaksi": "<idTransaksi>",
+  "cartCode": "<cartCode>"
+}
 ```
 
 Response (`RepeatOrderResponses.AddToCart`):
@@ -2059,9 +2170,21 @@ Request:
 
 ```http
 POST Keranjang/belanjaResep
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-cartCode=<cartCode>&selectedItems=<selectedItems>&dayDelivery=Hari Pengantaran&jadwalDeliveryCode=<jadwalDeliveryCode>
+{
+  "cartCode": "<cartCode>",
+  "selectedItems": {
+    "<idItem>": {
+      "idProduk": "<idProduk>",
+      "quantity": "<quantity>",
+      "idSatuan": "<idSatuan>",
+      "subTotal": 0
+    }
+  },
+  "dayDelivery": "Hari Pengantaran",
+  "jadwalDeliveryCode": "<jadwalDeliveryCode>"
+}
 ```
 
 Response (`RecipeResponses.Belanja`):
@@ -2150,7 +2273,8 @@ App method: `TransaksiApi.getRiwayatTransaksi`.
 Request:
 
 ```http
-GET User/getRiwayatTransaksi?authToken=<authToken>&statusTransaksi=<statusTransaksi>&statusTransaksiHariIni=<statusTransaksiHariIni>&rentangAwal=<rentangAwal>&rentangAkhir=<rentangAkhir>
+GET User/getRiwayatTransaksi?statusTransaksi=<statusTransaksi>&statusTransaksiHariIni=<statusTransaksiHariIni>&rentangAwal=<rentangAwal>&rentangAkhir=<rentangAkhir>
+Authorization: Bearer <JWT>
 ```
 
 Response (`TransaksiResponses.RiwayatList`):
@@ -2196,7 +2320,8 @@ App method: `TransaksiApi.getTransaksi`.
 Request:
 
 ```http
-GET Transaksi/getTransaksi/{id}?authToken=<authToken>&entitasTransaksi=<entitasTransaksi>
+GET Transaksi/getTransaksi/{id}?entitasTransaksi=<entitasTransaksi>
+Authorization: Bearer <JWT>
 ```
 
 Response (`TransaksiResponses.Detail`):
@@ -2240,7 +2365,8 @@ App method: `TransaksiApi.getItemTransaksi`.
 Request:
 
 ```http
-GET Transaksi/getItemTransaksiFromTransaksi/{id}?authToken=<authToken>&entitasItemTransaksi=<entitasItemTransaksi>
+GET Transaksi/getItemTransaksiFromTransaksi/{id}?entitasItemTransaksi=<entitasItemTransaksi>
+Authorization: Bearer <JWT>
 ```
 
 Response (`TransaksiResponses.Items`):
@@ -2271,7 +2397,8 @@ App method: `TransaksiApi.getJumlahItemDiantar`.
 Request:
 
 ```http
-GET Transaksi/getJumlahItemDiantar/{id}?authToken=<authToken>
+GET Transaksi/getJumlahItemDiantar/{id}
+Authorization: Bearer <JWT>
 ```
 
 Response (`TransaksiResponses.Diantar`):
@@ -2286,12 +2413,13 @@ Response (`TransaksiResponses.Diantar`):
 
 App method: `TransaksiApi.pesananDiterima`.
 
-POST without a form body.
+POST without a body.
 
 Request:
 
 ```http
-POST Transaksi/pesananDiterima/{id}?authToken=<authToken>
+POST Transaksi/pesananDiterima/{id}
+Authorization: Bearer <JWT>
 ```
 
 Response (`TransaksiResponses.PesananDiterima`):
@@ -2310,9 +2438,13 @@ Request:
 
 ```http
 POST Transaksi/belanjaUlang/{id}
-Content-Type: application/x-www-form-urlencoded
+Content-Type: application/json
 
-dayDelivery=Hari Pengantaran&jadwalDeliveryCode=<jadwalDeliveryCode>&cartCode=<cartCode>
+{
+  "dayDelivery": "Hari Pengantaran",
+  "jadwalDeliveryCode": "<jadwalDeliveryCode>",
+  "cartCode": "<cartCode>"
+}
 ```
 
 Response (`TransaksiResponses.BelanjaUlang`):
@@ -2382,7 +2514,8 @@ App method: `UserApi.getDetailUser`.
 Request:
 
 ```http
-GET User/getDetailUser?authToken=<authToken>&getUserEntities=<select>
+GET User/getDetailUser?getUserEntities=<select>
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.DetailUser`):
@@ -2409,7 +2542,8 @@ App method: `UserApi.getTotalDompet`.
 Request:
 
 ```http
-GET User/getTotalDompet?authToken=<authToken>
+GET User/getTotalDompet
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.TotalDompet`):
@@ -2427,7 +2561,8 @@ App method: `UserApi.getJumlahVoucher`.
 Request:
 
 ```http
-GET User/getJumlahVoucher?authToken=<authToken>
+GET User/getJumlahVoucher
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.JumlahVoucher`):
@@ -2447,7 +2582,8 @@ Legacy getPoint("point=true").
 Request:
 
 ```http
-GET Point/getPoint?authToken=<authToken>&point=<point>
+GET Point/getPoint?point=<point>
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.Point`):
@@ -2469,7 +2605,8 @@ App method: `UserApi.getRiwayatDompet`.
 Request:
 
 ```http
-GET User/getRiwayatDompet?authToken=<authToken>&jenisDompet=<jenisDompet>
+GET User/getRiwayatDompet?jenisDompet=<jenisDompet>
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.RiwayatDompetList`):
@@ -2494,7 +2631,8 @@ App method: `UserApi.getRiwayatPoint`.
 Request:
 
 ```http
-GET User/getRiwayatPoint?authToken=<authToken>
+GET User/getRiwayatPoint
+Authorization: Bearer <JWT>
 ```
 
 Response (`AccountResponses.RiwayatPointList`):
@@ -2518,10 +2656,15 @@ App method: `UserApi.updateProfil`.
 Request:
 
 ```http
-POST User/updateProfil?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST User/updateProfil
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-namaLengkap=<namaLengkap>&alamat=<alamat>&username=<username>
+{
+  "namaLengkap": "<namaLengkap>",
+  "alamat": "<alamat>",
+  "username": "<username>"
+}
 ```
 
 Response (`AccountResponses.UpdateProfil`):
@@ -2539,10 +2682,13 @@ App method: `UserApi.updateFotoProfil`.
 Request:
 
 ```http
-POST User/updateFotoProfil?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST User/updateFotoProfil
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-fotoProfil=<fotoProfilBase64>
+{
+  "fotoProfil": "<fotoProfil>"
+}
 ```
 
 Response (`AccountResponses.UpdateFoto`):
@@ -2560,10 +2706,15 @@ App method: `UserApi.gantiPassword`.
 Request:
 
 ```http
-POST User/gantiPassword?authToken=<authToken>
-Content-Type: application/x-www-form-urlencoded
+POST User/gantiPassword
+Authorization: Bearer <JWT>
+Content-Type: application/json
 
-passwordLama=<passwordLama>&passwordBaru=<passwordBaru>&konfirmasiPasswordBaru=<konfirmasi>
+{
+  "passwordLama": "<passwordLama>",
+  "passwordBaru": "<passwordBaru>",
+  "konfirmasiPasswordBaru": "<konfirmasiPasswordBaru>"
+}
 ```
 
 Response (`AccountResponses.GantiPassword`):
@@ -2583,7 +2734,8 @@ App method: `VoucherApi.getVoucher`.
 Request:
 
 ```http
-GET User/getVoucher?entitasVoucher=<entitasVoucher>&authToken=<authToken>
+GET User/getVoucher?entitasVoucher=<entitasVoucher>
+Authorization: Bearer <JWT>
 ```
 
 Response (`VoucherResponses.VoucherList`):
@@ -2616,7 +2768,8 @@ App method: `VoucherApi.getVoucherDetail`.
 Request:
 
 ```http
-GET Voucher/getVoucher/{idVoucher}?authToken=<authToken>
+GET Voucher/getVoucher/{idVoucher}
+Authorization: Bearer <JWT>
 ```
 
 Response (`VoucherResponses.Detail`):
