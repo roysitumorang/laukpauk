@@ -142,9 +142,11 @@ type Transaction struct {
 }
 
 type TransactionItem struct {
-	RowNo                   int64      `json:"-" form:"-"`
-	ID                      uuid.UUID  `json:"id" form:"-"`
-	TransactionID           uuid.UUID  `json:"transaction_id" form:"-"`
+	RowNo         int64     `json:"-" form:"-"`
+	ID            uuid.UUID `json:"id" form:"-"`
+	TransactionID uuid.UUID `json:"transaction_id" form:"-"`
+	// CartItemID is input only: it picks the cart item a new transaction item
+	// comes from. It is not stored, so it is empty when read back.
 	CartItemID              *uuid.UUID `json:"cart_item_id,omitempty" form:"cart_item_id"`
 	ProductVariantID        uuid.UUID  `json:"product_variant_id" form:"-"`
 	ProductID               uuid.UUID  `json:"product_id" form:"-"`
