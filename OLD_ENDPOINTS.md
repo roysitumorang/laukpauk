@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller code and views were removed ([laukpauk_mobile#9](https://github.com/roysitumorang/laukpauk_mobile/pull/9)): seller-mode endpoints are gone, seller fields are dropped from the examples, and the cart and repeat-order calls no longer group by seller. These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed ([laukpauk_mobile#9](https://github.com/roysitumorang/laukpauk_mobile/pull/9), [#11](https://github.com/roysitumorang/laukpauk_mobile/pull/11)): all products belong to a single seller, so there are no seller or market endpoints or fields, and the product list is `Produk/getProduk`. These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -19,12 +19,11 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [CartApi](#cartapi) (10)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
-- [HomeApi](#homeapi) (13)
+- [HomeApi](#homeapi) (11)
 - [NotifikasiApi](#notifikasiapi) (7)
 - [PaketApi](#paketapi) (3)
-- [PasarApi](#pasarapi) (3)
 - [PaymentApi](#paymentapi) (2)
-- [ProdukApi](#produkapi) (5)
+- [ProdukApi](#produkapi) (6)
 - [PromoApi](#promoapi) (2)
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
@@ -35,7 +34,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-107 endpoint definitions in total.
+103 endpoint definitions in total.
 
 ## Index
 
@@ -87,9 +86,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `User/getJumlahVoucher` | yes | `HomeApi.getJumlahVoucher` |
 | GET | `User/getTotalDompet` | yes | `HomeApi.getTotalDompet` |
 | GET | `Point/getPoint` | yes | `HomeApi.getPoint` |
-| GET | `Pasar/getPasar` | no | `HomeApi.getPasar` |
-| GET | `Pasar/getPasarAroundOfThisLatLong` | no | `HomeApi.getPasarAround` |
-| GET | `Pasar/getProdukInThisPasar/{idPasar}` | yes | `HomeApi.getProdukInThisPasar` |
+| GET | `Produk/getProduk` | yes | `HomeApi.getProduk` |
 | GET | `Konten/getKonten` | no | `HomeApi.getKonten` |
 | GET | `Konten/getKontenItemFromThisKonten/{idKonten}` | no | `HomeApi.getKontenItem` |
 | GET | `KategoriProduk/getKategoriProduk` | no | `HomeApi.getKategoriProduk` |
@@ -105,11 +102,9 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Produk/detailPaket` | no | `PaketApi.detailPaket` |
 | GET | `Produk/getPaketLainnya` | no | `PaketApi.getPaketLainnya` |
 | POST | `Keranjang/saveCart` | no | `PaketApi.saveCart` |
-| GET | `Pasar/getProdukInThisPasar/{idPasar}` | yes | `PasarApi.getProdukInThisPasar` |
-| GET | `Pasar/getPasarAroundOfThisLatLong` | no | `PasarApi.getPasarAround` |
-| GET | `Pasar/getPasarOverOfThisLatLong` | no | `PasarApi.getPasarOver` |
 | GET | `Xendit/getPaymentChannels` | yes | `PaymentApi.getPaymentChannels` |
 | POST | `Transaksi/checkout` | yes | `PaymentApi.checkout` |
+| GET | `Produk/getProduk` | yes | `ProdukApi.getProduk` |
 | GET | `Produk/detailProduk` | no | `ProdukApi.detailProduk` |
 | GET | `Produk/getLowestPriceOfThisProduct/{idProduk}` | no | `ProdukApi.getLowestPrice` |
 | GET | `Produk/getHargaProduk` | no | `ProdukApi.getHargaProduk` |
@@ -776,9 +771,7 @@ Response (`CheckoutResponses.JenisOngkir`):
 ```json
 {
   "jenisOngkir": "string",
-  "banyakPasar": 0,
-  "namaPasarTerjauh": "string",
-  "jarakPasarTerjauh": 0.0
+  "jarak": 0.0
 }
 ```
 
@@ -1161,83 +1154,19 @@ Response (`HomeResponses.Point`):
 }
 ```
 
-### `GET Pasar/getPasar`
+### `GET Produk/getProduk`
 
-App method: `HomeApi.getPasar`.
+App method: `HomeApi.getProduk`.
 
-Request:
-
-```http
-GET Pasar/getPasar?limitPasar=<limitPasar>&namaPasar=<namaPasar>
-```
-
-Response (`HomeResponses.Pasars`):
-
-```json
-{
-  "dataPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string",
-      "distance": "string"
-    }
-  ],
-  "listPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string",
-      "distance": "string"
-    }
-  ]
-}
-```
-
-### `GET Pasar/getPasarAroundOfThisLatLong`
-
-App method: `HomeApi.getPasarAround`.
+The first page of the product list (see ProdukApi.getProduk).
 
 Request:
 
 ```http
-GET Pasar/getPasarAroundOfThisLatLong?latitude=<latitude>&longitude=<longitude>&jadwalDeliveryCode=<jadwalDeliveryCode>&limitPasar=<limitPasar>&namaPasar=<namaPasar>
+GET Produk/getProduk?jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&authToken=<authToken>
 ```
 
-Response (`HomeResponses.Pasars`):
-
-```json
-{
-  "dataPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string",
-      "distance": "string"
-    }
-  ],
-  "listPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string",
-      "distance": "string"
-    }
-  ]
-}
-```
-
-### `GET Pasar/getProdukInThisPasar/{idPasar}`
-
-App method: `HomeApi.getProdukInThisPasar`.
-
-Request:
-
-```http
-GET Pasar/getProdukInThisPasar/{idPasar}?jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&authToken=<authToken>
-```
-
-Response (`HomeResponses.ProdukPasar`):
+Response (`HomeResponses.ProdukList`):
 
 ```json
 {
@@ -1622,93 +1551,6 @@ Response (`AddToCartResult`):
 }
 ```
 
-## PasarApi
-
-### `GET Pasar/getProdukInThisPasar/{idPasar}`
-
-App method: `PasarApi.getProdukInThisPasar`.
-
-Products of a market for the signed-in user.
-
-Request:
-
-```http
-GET Pasar/getProdukInThisPasar/{idPasar}?authToken=<authToken>&jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&cariProduk=<cariProduk>
-```
-
-Response (`PasarResponses.ProdukList`):
-
-```json
-{
-  "listProduk": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "namaKategoriProduk": "string",
-      "keterangan": "string",
-      "keteranganSingkat": "string",
-      "stokAvailable": true,
-      "promo": [
-        "<any JSON>"
-      ]
-    }
-  ]
-}
-```
-
-### `GET Pasar/getPasarAroundOfThisLatLong`
-
-App method: `PasarApi.getPasarAround`.
-
-Request:
-
-```http
-GET Pasar/getPasarAroundOfThisLatLong?latitude=<latitude>&longitude=<longitude>&exclude=<exclude>&jadwalDeliveryCode=<jadwalDeliveryCode>
-```
-
-Response (`PasarResponses.PasarList`):
-
-```json
-{
-  "listPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string",
-      "pasarUmum": "string",
-      "distance": 0.0
-    }
-  ]
-}
-```
-
-### `GET Pasar/getPasarOverOfThisLatLong`
-
-App method: `PasarApi.getPasarOver`.
-
-Request:
-
-```http
-GET Pasar/getPasarOverOfThisLatLong?latitude=<latitude>&longitude=<longitude>&jadwalDeliveryCode=<jadwalDeliveryCode>
-```
-
-Response (`PasarResponses.PasarList`):
-
-```json
-{
-  "listPasar": [
-    {
-      "id": "string",
-      "nama": "string",
-      "gambar": "string",
-      "pasarUmum": "string",
-      "distance": 0.0
-    }
-  ]
-}
-```
-
 ## PaymentApi
 
 ### `GET Xendit/getPaymentChannels`
@@ -1761,6 +1603,39 @@ Response (`CheckoutResponse`):
 ```
 
 ## ProdukApi
+
+### `GET Produk/getProduk`
+
+App method: `ProdukApi.getProduk`.
+
+The product list, a page of 10 at a time (`useLimit` "y"), optionally filtered by name.
+
+Request:
+
+```http
+GET Produk/getProduk?authToken=<authToken>&jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&cariProduk=<cariProduk>
+```
+
+Response (`ProdukResponses.ProdukList`):
+
+```json
+{
+  "listProduk": [
+    {
+      "id": "string",
+      "nama": "string",
+      "foto": "string",
+      "namaKategoriProduk": "string",
+      "keterangan": "string",
+      "keteranganSingkat": "string",
+      "stokAvailable": true,
+      "promo": [
+        "<any JSON>"
+      ]
+    }
+  ]
+}
+```
 
 ### `GET Produk/detailProduk`
 
