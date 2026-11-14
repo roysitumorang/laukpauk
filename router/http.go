@@ -177,7 +177,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/", To: "/home"},
 				{From: "/contact-us", To: "/home/contact-us"},
 				{From: "/faq", To: "/home/faq"},
-				{From: "/privacy-policy", To: "/home/privacy-policy"},
 				{From: "/firebase-messaging-sw.js", To: "/assets/js/firebase-messaging-sw.js"},
 			},
 		}),
@@ -236,9 +235,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		Get("/images*", static.New("", static.Config{
 			FS: os.DirFS("images"),
 		}))
-	controllers.NewHomeController(
-		q.MessageService,
-	).Mount(app.Group("/home"))
 	controllers.NewProductCategoryController(
 		q.ProductCategoryService,
 		q.ProductService,

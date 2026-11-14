@@ -1591,7 +1591,6 @@ func (q *transactionRepository) UpdateTransaction(
 			` WHERE id = $%d
 			RETURNING id
 				, transaction_id
-				, cart_item_id
 				, product_variant_id
 				, product_id
 				, product_name
@@ -1613,7 +1612,6 @@ func (q *transactionRepository) UpdateTransaction(
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&itemResponse.ID,
 			&itemResponse.TransactionID,
-			&itemResponse.CartItemID,
 			&itemResponse.ProductVariantID,
 			&itemResponse.ProductID,
 			&itemResponse.ProductName,
