@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -9,7 +9,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
   - `X-Version-Code`: the app's version code (build number).
   - `X-Request-Id`: a random UUID v4, new for each request.
   - `Accept: application/json`.
-- **Auth:** JWT. While a user is signed in, every backend request carries `Authorization: Bearer <JWT>` (the `authToken` returned by sign-in). The examples show the header on the calls that need a signed-in user; no call sends the token in the URL or the body.
+- **Auth:** JWT. While a user is signed in, every backend request carries `Authorization: Bearer <JWT>` (the `id_token` returned by `POST users/sign_in`, until its `expired_at` passes). The examples show the header on the calls that need a signed-in user; no call sends the token in the URL or the body.
 - **Bodies:** every `POST` sends `Content-Type: application/json` with a JSON object, except `Transaksi/pesananDiterima/{id}`, which is sent with no body. Keys whose value is null are left out. Most values are JSON strings, because the app holds them as text. The profile photo is sent as a base64 string.
 - **Path parameters** are shown as `{name}`; placeholder values as `<name>`.
 - **Responses** are JSON. The examples list only the fields the app reads (from its response classes), with type placeholders: `"string"`, `0`, `0.0`, `true`.
@@ -48,7 +48,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Auth/verifikasiNomor` | yes | `AccountApi.verifikasiNomor` |
 | GET | `Auth/jumlahGantiNomorHPForToday` | yes | `AccountApi.jumlahGantiNomorHPForToday` |
 | GET | `Pengaturan/getReferralConfiguration` | yes | `AccountApi.getReferralConfiguration` |
-| GET | `Auth/loginAuthentication` | no | `AuthApi.login` |
+| POST | `users/sign_in` | no | `AuthApi.signIn` |
 | POST | `Auth/register` | no | `AuthApi.register` |
 | POST | `Auth/konfirmasiOTP` | no | `AuthApi.konfirmasiOTP` |
 | POST | `Auth/verifikasiUser` | no | `AuthApi.verifikasiUser` |
@@ -260,26 +260,49 @@ Response (`AccountResponses.ReferralConfiguration`):
 
 ## AuthApi
 
-### `GET Auth/loginAuthentication`
+### `POST users/sign_in`
 
-App method: `AuthApi.login`.
+App method: `AuthApi.signIn`.
+
+Sign-in. Body: `login` (string) and `password` (string). Answers `id_token` (the JWT), `expired_at` (RFC 3339 date-time) and `user` (the signed-in user), either at the top level or inside the backend's `data` envelope. Wrong credentials answer a 4xx status.
 
 Request:
 
 ```http
-GET Auth/loginAuthentication?nomorHP=<nomorHP>&password=<password>&cartCode=<cartCode>
+POST users/sign_in
+Content-Type: application/json
+
+{
+  "login": "<phone number>",
+  "password": "<password>"
+}
 ```
 
-Response (`AuthResponses.Login`):
+Response (`id_token`, `expired_at`, `user`):
 
 ```json
 {
-  "loginAuthentication": true,
-  "authToken": "string",
-  "idUser": "string",
-  "isVerified": true
+  "data": {
+    "id_token": "<JWT>",
+    "expired_at": "2026-11-15T21:09:00+07:00",
+    "user": {
+      "id": "<uuid>",
+      "role": "buyer",
+      "name": "string",
+      "mobile_phone": "string",
+      "mobile_phone_confirmed_at": "2026-11-14T21:09:00+07:00",
+      "username": "string",
+      "email": "string",
+      "photo": "string",
+      "user_level": "string",
+      "referral_code": "string",
+      "address": "string"
+    }
+  }
 }
 ```
+
+The app reads the three attributes from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It stores `id_token` as the session JWT, `expired_at` (RFC 3339 date-time) as its expiry, and `user` as the current user. From `user` it reads `id` (the user id) and `mobile_phone_confirmed_at` (null opens the phone-verification screen); the other `user` fields shown are the ones the backend's user model sends, and are stored as they come. After `expired_at` the app treats the session as signed out and stops sending the token. A 4xx status means the login or password is wrong.
 
 ### `POST Auth/register`
 
