@@ -24,17 +24,17 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (11)
-- [NotifikasiApi](#notifikasiapi) (7)
-- [PaketApi](#paketapi) (3)
+- [NotificationApi](#notificationapi) (7)
+- [PackApi](#packapi) (3)
 - [PaymentApi](#paymentapi) (2)
-- [ProdukApi](#produkapi) (6)
+- [ProductApi](#productapi) (6)
 - [PromoApi](#promoapi) (2)
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
-- [ResepApi](#resepapi) (5)
+- [RecipeApi](#recipeapi) (5)
 - [SearchApi](#searchapi) (1)
 - [SettingApi](#settingapi) (2)
-- [TransaksiApi](#transaksiapi) (8)
+- [TransactionApi](#transactionapi) (8)
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
@@ -45,106 +45,106 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | Method | Path | JWT required | App method |
 |---|---|---|---|
 | GET | `Auth/removeToken` | yes | `AccountApi.removeToken` |
-| POST | `Auth/gantiNomor` | yes | `AccountApi.gantiNomor` |
-| POST | `Auth/verifikasiNomor` | yes | `AccountApi.verifikasiNomor` |
-| GET | `Auth/jumlahGantiNomorHPForToday` | yes | `AccountApi.jumlahGantiNomorHPForToday` |
+| POST | `Auth/gantiNomor` | yes | `AccountApi.changeNumber` |
+| POST | `Auth/verifikasiNomor` | yes | `AccountApi.numberVerification` |
+| GET | `Auth/jumlahGantiNomorHPForToday` | yes | `AccountApi.phoneNumberChangeCountForToday` |
 | GET | `Pengaturan/getReferralConfiguration` | yes | `AccountApi.getReferralConfiguration` |
 | POST | `users/sign_in` | no | `AuthApi.signIn` |
 | POST | `users` | no | `AuthApi.signUp` |
-| POST | `Auth/konfirmasiOTP` | no | `AuthApi.konfirmasiOTP` |
-| POST | `Auth/verifikasiUser` | no | `AuthApi.verifikasiUser` |
+| POST | `Auth/konfirmasiOTP` | no | `AuthApi.confirmOtp` |
+| POST | `Auth/verifikasiUser` | no | `AuthApi.userVerification` |
 | POST | `Auth/resendOTP` | yes | `AuthApi.resendOTP` |
-| POST | `Auth/lupaPassword` | no | `AuthApi.lupaPassword` |
+| POST | `Auth/lupaPassword` | no | `AuthApi.forgotPassword` |
 | GET | `User/getDetailUser` | yes | `AuthApi.getDetailUser` |
-| GET | `User/getJumlahCart` | no | `CartApi.getJumlahCart` |
+| GET | `User/getJumlahCart` | no | `CartApi.getCartQuantity` |
 | GET | `User/getCart` | no | `CartApi.getCart` |
-| GET | `User/getTotalKeranjang` | no | `CartApi.getTotalKeranjang` |
-| GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.bersihkanKeranjang` |
+| GET | `User/getTotalKeranjang` | no | `CartApi.getCartTotal` |
+| GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.clearCart` |
 | POST | `Keranjang/saveCart` | no | `CartApi.saveCart` |
 | POST | `Keranjang/saveCart/{idItem}` | no | `CartApi.updateCart` |
 | POST | `Keranjang/deleteCart/{idCart}` | no | `CartApi.deleteCart` |
 | GET | `Pengaturan/getWalletConfiguration` | no | `CartApi.getWalletConfiguration` |
-| GET | `gift/gift-transaksi` | no | `CartApi.getGiftTransaksi` |
+| GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
-| GET | `Auth/cekVerifikasiUser` | yes | `CheckoutApi.cekVerifikasiUser` |
+| GET | `Auth/cekVerifikasiUser` | yes | `CheckoutApi.checkUserVerification` |
 | GET | `User/getDetailUser` | yes | `CheckoutApi.getDetailUser` |
-| POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isJadwalDeliveryOpened` |
-| GET | `User/getTotalKeranjang` | no | `CheckoutApi.getTotalKeranjang` |
-| GET | `User/getTotalOngkir` | no | `CheckoutApi.getTotalOngkir` |
-| GET | `User/getJumlahCart` | no | `CheckoutApi.getJumlahCart` |
-| GET | `Transaksi/getJenisOngkir` | no | `CheckoutApi.getJenisOngkir` |
-| GET | `User/getDiskonKategori` | no | `CheckoutApi.getDiskonKategori` |
+| POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
+| GET | `User/getTotalKeranjang` | no | `CheckoutApi.getCartTotal` |
+| GET | `User/getTotalOngkir` | no | `CheckoutApi.getTotalShippingFee` |
+| GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
+| GET | `Transaksi/getJenisOngkir` | no | `CheckoutApi.getShippingFeeType` |
+| GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
 | GET | `Pengaturan/getWalletConfiguration` | no | `CheckoutApi.getWalletConfiguration` |
-| GET | `User/getTotalDompet` | yes | `CheckoutApi.getTotalDompet` |
+| GET | `User/getTotalDompet` | yes | `CheckoutApi.getWalletTotal` |
 | GET | `Point/getPoint` | yes | `CheckoutApi.getPoint` |
 | GET | `User/getVoucher` | yes | `CheckoutApi.getVoucher` |
 | GET | `Voucher/getStatusVoucher/{id}` | yes | `CheckoutApi.getStatusVoucher` |
-| GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.cekKodePromo` |
-| GET | `JadwalDelivery/getAvailableJadwalDelivery` | no | `DeliveryApi.getAvailableJadwalDelivery` |
+| GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
+| GET | `JadwalDelivery/getAvailableJadwalDelivery` | no | `DeliveryApi.getAvailableDeliverySchedule` |
 | GET | `Gift/getGift` | no | `DeliveryApi.getGifts` |
-| GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.bersihkanKeranjang` |
+| GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
 | GET | `Banner/getBanner` | no | `HomeApi.getBanner` |
-| GET | `Artikel/getArtikel` | no | `HomeApi.getArtikel` |
-| GET | `User/getJumlahVoucher` | yes | `HomeApi.getJumlahVoucher` |
-| GET | `User/getTotalDompet` | yes | `HomeApi.getTotalDompet` |
+| GET | `Artikel/getArtikel` | no | `HomeApi.getArticle` |
+| GET | `User/getJumlahVoucher` | yes | `HomeApi.getVoucherCount` |
+| GET | `User/getTotalDompet` | yes | `HomeApi.getWalletTotal` |
 | GET | `Point/getPoint` | yes | `HomeApi.getPoint` |
-| GET | `Produk/getProduk` | yes | `HomeApi.getProduk` |
-| GET | `Konten/getKonten` | no | `HomeApi.getKonten` |
-| GET | `Konten/getKontenItemFromThisKonten/{idKonten}` | no | `HomeApi.getKontenItem` |
-| GET | `KategoriProduk/getKategoriProduk` | no | `HomeApi.getKategoriProduk` |
-| GET | `Produk/getProductsInThisCategory/{idKategoriProduk}` | no | `HomeApi.getProdukInThisCategory` |
+| GET | `Produk/getProduk` | yes | `HomeApi.getProduct` |
+| GET | `Konten/getKonten` | no | `HomeApi.getContent` |
+| GET | `Konten/getKontenItemFromThisKonten/{idKonten}` | no | `HomeApi.getContentItem` |
+| GET | `KategoriProduk/getKategoriProduk` | no | `HomeApi.getProductCategory` |
+| GET | `Produk/getProductsInThisCategory/{idKategoriProduk}` | no | `HomeApi.getProductInThisCategory` |
 | GET | `Produk/getLowestPriceOfThisProduct/{idProduk}` | no | `HomeApi.getLowestPrice` |
-| GET | `User/getNotifikasi` | yes | `NotifikasiApi.getNotifikasi` |
-| GET | `User/getNotifikasiKhusus` | yes | `NotifikasiApi.getNotifikasiKhusus` |
-| GET | `User/getNotifikasiKhusus/{idUser}` | yes | `NotifikasiApi.getNotifikasiKhusus` |
-| GET | `User/getJumlahNotifikasi` | yes | `NotifikasiApi.getJumlahNotifikasi` |
-| GET | `User/getJumlahNotifikasiKhusus` | yes | `NotifikasiApi.getJumlahNotifikasiKhusus` |
-| GET | `Notifikasi/getNotifikasi/{idNotifikasi}` | yes | `NotifikasiApi.getDetailNotifikasi` |
-| POST | `Notifikasi/setAs` | yes | `NotifikasiApi.setAs` |
-| GET | `Produk/detailPaket` | no | `PaketApi.detailPaket` |
-| GET | `Produk/getPaketLainnya` | no | `PaketApi.getPaketLainnya` |
-| POST | `Keranjang/saveCart` | no | `PaketApi.saveCart` |
+| GET | `User/getNotifikasi` | yes | `NotificationApi.getNotification` |
+| GET | `User/getNotifikasiKhusus` | yes | `NotificationApi.getSpecialNotification` |
+| GET | `User/getNotifikasiKhusus/{idUser}` | yes | `NotificationApi.getSpecialNotification` |
+| GET | `User/getJumlahNotifikasi` | yes | `NotificationApi.getNotificationCount` |
+| GET | `User/getJumlahNotifikasiKhusus` | yes | `NotificationApi.getSpecialNotificationCount` |
+| GET | `Notifikasi/getNotifikasi/{idNotifikasi}` | yes | `NotificationApi.getNotificationDetail` |
+| POST | `Notifikasi/setAs` | yes | `NotificationApi.setAs` |
+| GET | `Produk/detailPaket` | no | `PackApi.packDetail` |
+| GET | `Produk/getPaketLainnya` | no | `PackApi.getOtherPacks` |
+| POST | `Keranjang/saveCart` | no | `PackApi.saveCart` |
 | GET | `Xendit/getPaymentChannels` | yes | `PaymentApi.getPaymentChannels` |
 | POST | `Transaksi/checkout` | yes | `PaymentApi.checkout` |
-| GET | `Produk/getProduk` | yes | `ProdukApi.getProduk` |
-| GET | `Produk/detailProduk` | no | `ProdukApi.detailProduk` |
-| GET | `Produk/getLowestPriceOfThisProduct/{idProduk}` | no | `ProdukApi.getLowestPrice` |
-| GET | `Produk/getHargaProduk` | no | `ProdukApi.getHargaProduk` |
-| GET | `Produk/getProdukLainnya` | no | `ProdukApi.getProdukLainnya` |
-| GET | `Produk/isThisProductInCA` | no | `ProdukApi.isThisProductInCA` |
+| GET | `Produk/getProduk` | yes | `ProductApi.getProduct` |
+| GET | `Produk/detailProduk` | no | `ProductApi.productDetail` |
+| GET | `Produk/getLowestPriceOfThisProduct/{idProduk}` | no | `ProductApi.getLowestPrice` |
+| GET | `Produk/getHargaProduk` | no | `ProductApi.getProductPrice` |
+| GET | `Produk/getProdukLainnya` | no | `ProductApi.getOtherProducts` |
+| GET | `Produk/isThisProductInCA` | no | `ProductApi.isThisProductInCA` |
 | GET | `Promo/getPromoAroundOfThisLatLong` | yes | `PromoApi.getPromoAroundOfThisLatLong` |
 | GET | `Promo/getPromoItem/{idPromoItem}` | no | `PromoApi.getPromoItem` |
 | POST | `User/registerFcmToken` | yes | `PushApi.registerFcmToken` |
 | POST | `User/unregisterFcmToken` | yes | `PushApi.unregisterFcmToken` |
-| GET | `RO/getItemTransaksi` | yes | `RepeatOrderApi.getItemTransaksi` |
+| GET | `RO/getItemTransaksi` | yes | `RepeatOrderApi.getTransactionItem` |
 | POST | `RO/addToCart` | yes | `RepeatOrderApi.addToCart` |
-| GET | `Resep/getResep` | no | `ResepApi.getResep` |
-| GET | `Resep/getResep/{idResep}` | no | `ResepApi.getDetailResep` |
-| GET | `Resep/getResepItemFromThisResep/{idResep}` | no | `ResepApi.getResepItem` |
-| GET | `Produk/getHargaProduk` | no | `ResepApi.getHargaProduk` |
-| POST | `Keranjang/belanjaResep` | no | `ResepApi.belanjaResep` |
-| GET | `Konten/pencarian` | no | `SearchApi.pencarian` |
+| GET | `Resep/getResep` | no | `RecipeApi.getRecipe` |
+| GET | `Resep/getResep/{idResep}` | no | `RecipeApi.getRecipeDetail` |
+| GET | `Resep/getResepItemFromThisResep/{idResep}` | no | `RecipeApi.getRecipeItem` |
+| GET | `Produk/getHargaProduk` | no | `RecipeApi.getProductPrice` |
+| POST | `Keranjang/belanjaResep` | no | `RecipeApi.shopRecipe` |
+| GET | `Konten/pencarian` | no | `SearchApi.search` |
 | GET | `Pengaturan/getSettingValue/{key}` | no | `SettingApi.getSettingValue` |
 | GET | `Pengaturan/getContactUsWhatsappConfiguration` | no | `SettingApi.getContactUsWhatsappConfiguration` |
-| GET | `User/getRiwayatTransaksi` | yes | `TransaksiApi.getRiwayatTransaksi` |
-| GET | `Transaksi/getTransaksi/{id}` | yes | `TransaksiApi.getTransaksi` |
-| GET | `Transaksi/getItemTransaksiFromTransaksi/{id}` | yes | `TransaksiApi.getItemTransaksi` |
-| GET | `Transaksi/getJumlahItemDiantar/{id}` | yes | `TransaksiApi.getJumlahItemDiantar` |
-| POST | `Transaksi/pesananDiterima/{id}` | yes | `TransaksiApi.pesananDiterima` |
-| POST | `Transaksi/belanjaUlang/{id}` | no | `TransaksiApi.belanjaUlang` |
-| GET | `gift/gift-transaksi` | no | `TransaksiApi.getGiftTransaksi` |
-| GET | `Gift/getGift/{idGift}` | no | `TransaksiApi.getGift` |
+| GET | `User/getRiwayatTransaksi` | yes | `TransactionApi.getTransactionRecords` |
+| GET | `Transaksi/getTransaksi/{id}` | yes | `TransactionApi.getTransaction` |
+| GET | `Transaksi/getItemTransaksiFromTransaksi/{id}` | yes | `TransactionApi.getTransactionItem` |
+| GET | `Transaksi/getJumlahItemDiantar/{id}` | yes | `TransactionApi.getDeliveredItemCount` |
+| POST | `Transaksi/pesananDiterima/{id}` | yes | `TransactionApi.orderReceived` |
+| POST | `Transaksi/belanjaUlang/{id}` | no | `TransactionApi.reorder` |
+| GET | `gift/gift-transaksi` | no | `TransactionApi.getTransactionGift` |
+| GET | `Gift/getGift/{idGift}` | no | `TransactionApi.getGift` |
 | GET | `User/getDetailUser` | yes | `UserApi.getDetailUser` |
-| GET | `User/getTotalDompet` | yes | `UserApi.getTotalDompet` |
-| GET | `User/getJumlahVoucher` | yes | `UserApi.getJumlahVoucher` |
+| GET | `User/getTotalDompet` | yes | `UserApi.getWalletTotal` |
+| GET | `User/getJumlahVoucher` | yes | `UserApi.getVoucherCount` |
 | GET | `Point/getPoint` | yes | `UserApi.getPoint` |
-| GET | `User/getRiwayatDompet` | yes | `UserApi.getRiwayatDompet` |
-| GET | `User/getRiwayatPoint` | yes | `UserApi.getRiwayatPoint` |
-| POST | `User/updateProfil` | yes | `UserApi.updateProfil` |
-| POST | `User/updateFotoProfil` | yes | `UserApi.updateFotoProfil` |
-| POST | `User/gantiPassword` | yes | `UserApi.gantiPassword` |
+| GET | `User/getRiwayatDompet` | yes | `UserApi.getWalletRecords` |
+| GET | `User/getRiwayatPoint` | yes | `UserApi.getPointRecords` |
+| POST | `User/updateProfil` | yes | `UserApi.updateProfile` |
+| POST | `User/updateFotoProfil` | yes | `UserApi.updateProfilePhoto` |
+| POST | `User/gantiPassword` | yes | `UserApi.changePassword` |
 | GET | `User/getVoucher` | yes | `VoucherApi.getVoucher` |
 | GET | `Voucher/getVoucher/{idVoucher}` | yes | `VoucherApi.getVoucherDetail` |
 
@@ -171,7 +171,7 @@ Response (`AccountResponses.RemoveToken`):
 
 ### `POST Auth/gantiNomor`
 
-App method: `AccountApi.gantiNomor`.
+App method: `AccountApi.changeNumber`.
 
 Request:
 
@@ -196,7 +196,7 @@ Response (`AccountResponses.GantiNomor`):
 
 ### `POST Auth/verifikasiNomor`
 
-App method: `AccountApi.verifikasiNomor`.
+App method: `AccountApi.numberVerification`.
 
 Request:
 
@@ -221,7 +221,7 @@ Response (`AccountResponses.VerifikasiNomor`):
 
 ### `GET Auth/jumlahGantiNomorHPForToday`
 
-App method: `AccountApi.jumlahGantiNomorHPForToday`.
+App method: `AccountApi.phoneNumberChangeCountForToday`.
 
 Request:
 
@@ -350,7 +350,7 @@ The app reads the user from `data` (the backend's response envelope) when it is 
 
 ### `POST Auth/konfirmasiOTP`
 
-App method: `AuthApi.konfirmasiOTP`.
+App method: `AuthApi.confirmOtp`.
 
 Request:
 
@@ -379,7 +379,7 @@ Response (`AuthResponses.KonfirmasiOTP`):
 
 ### `POST Auth/verifikasiUser`
 
-App method: `AuthApi.verifikasiUser`.
+App method: `AuthApi.userVerification`.
 
 Request:
 
@@ -428,7 +428,7 @@ Response (`AuthResponses.ResendOTP`):
 
 ### `POST Auth/lupaPassword`
 
-App method: `AuthApi.lupaPassword`.
+App method: `AuthApi.forgotPassword`.
 
 Request:
 
@@ -479,7 +479,7 @@ Response (`AuthResponses.DetailUserResponse`):
 
 ### `GET User/getJumlahCart`
 
-App method: `CartApi.getJumlahCart`.
+App method: `CartApi.getCartQuantity`.
 
 Request:
 
@@ -531,7 +531,7 @@ Response (`CartResponses.ProductList`):
 
 ### `GET User/getTotalKeranjang`
 
-App method: `CartApi.getTotalKeranjang`.
+App method: `CartApi.getCartTotal`.
 
 Request:
 
@@ -549,7 +549,7 @@ Response (`CartResponses.Total`):
 
 ### `GET Keranjang/bersihkanKeranjang`
 
-App method: `CartApi.bersihkanKeranjang`.
+App method: `CartApi.clearCart`.
 
 Request:
 
@@ -673,7 +673,7 @@ Response (`CartResponses.Wallet`):
 
 ### `GET gift/gift-transaksi`
 
-App method: `CartApi.getGiftTransaksi`.
+App method: `CartApi.getTransactionGift`.
 
 Request:
 
@@ -721,7 +721,7 @@ Response (`CartResponses.GiftDetail`):
 
 ### `GET Auth/cekVerifikasiUser`
 
-App method: `CheckoutApi.cekVerifikasiUser`.
+App method: `CheckoutApi.checkUserVerification`.
 
 Request:
 
@@ -764,7 +764,7 @@ Response (`CheckoutResponses.DetailUserResponse`):
 
 ### `POST JadwalDelivery/isJadwalDeliveryOpened`
 
-App method: `CheckoutApi.isJadwalDeliveryOpened`.
+App method: `CheckoutApi.isDeliveryScheduleOpened`.
 
 Request:
 
@@ -789,7 +789,7 @@ Response (`CheckoutResponses.JadwalOpened`):
 
 ### `GET User/getTotalKeranjang`
 
-App method: `CheckoutApi.getTotalKeranjang`.
+App method: `CheckoutApi.getCartTotal`.
 
 Request:
 
@@ -807,7 +807,7 @@ Response (`CheckoutResponses.TotalKeranjang`):
 
 ### `GET User/getTotalOngkir`
 
-App method: `CheckoutApi.getTotalOngkir`.
+App method: `CheckoutApi.getTotalShippingFee`.
 
 Request:
 
@@ -825,7 +825,7 @@ Response (`CheckoutResponses.TotalOngkir`):
 
 ### `GET User/getJumlahCart`
 
-App method: `CheckoutApi.getJumlahCart`.
+App method: `CheckoutApi.getCartQuantity`.
 
 Request:
 
@@ -843,7 +843,7 @@ Response (`CheckoutResponses.JumlahCart`):
 
 ### `GET Transaksi/getJenisOngkir`
 
-App method: `CheckoutApi.getJenisOngkir`.
+App method: `CheckoutApi.getShippingFeeType`.
 
 Request:
 
@@ -862,7 +862,7 @@ Response (`CheckoutResponses.JenisOngkir`):
 
 ### `GET User/getDiskonKategori`
 
-App method: `CheckoutApi.getDiskonKategori`.
+App method: `CheckoutApi.getCategoryDiscount`.
 
 Request:
 
@@ -902,7 +902,7 @@ Response (`CheckoutResponses.WalletConfig`):
 
 ### `GET User/getTotalDompet`
 
-App method: `CheckoutApi.getTotalDompet`.
+App method: `CheckoutApi.getWalletTotal`.
 
 Request:
 
@@ -991,7 +991,7 @@ Response (`CheckoutResponses.StatusVoucher`):
 
 ### `GET Promo/cekKodePromo/{kode}`
 
-App method: `CheckoutApi.cekKodePromo`.
+App method: `CheckoutApi.checkPromoCode`.
 
 Request:
 
@@ -1018,7 +1018,7 @@ Response (`CheckoutResponses.KodePromo`):
 
 ### `GET JadwalDelivery/getAvailableJadwalDelivery`
 
-App method: `DeliveryApi.getAvailableJadwalDelivery`.
+App method: `DeliveryApi.getAvailableDeliverySchedule`.
 
 Request:
 
@@ -1064,7 +1064,7 @@ Response (`DeliveryResponses.Gifts`):
 
 ### `GET Keranjang/bersihkanKeranjang`
 
-App method: `DeliveryApi.bersihkanKeranjang`.
+App method: `DeliveryApi.clearCart`.
 
 Legacy CheckoutModel.bersihkanKeranjang (the response is ignored).
 
@@ -1166,7 +1166,7 @@ Response (`HomeResponses.Banners`):
 
 ### `GET Artikel/getArtikel`
 
-App method: `HomeApi.getArtikel`.
+App method: `HomeApi.getArticle`.
 
 Request:
 
@@ -1190,7 +1190,7 @@ Response (`HomeResponses.Artikels`):
 
 ### `GET User/getJumlahVoucher`
 
-App method: `HomeApi.getJumlahVoucher`.
+App method: `HomeApi.getVoucherCount`.
 
 Request:
 
@@ -1209,7 +1209,7 @@ Response (`HomeResponses.JumlahVoucher`):
 
 ### `GET User/getTotalDompet`
 
-App method: `HomeApi.getTotalDompet`.
+App method: `HomeApi.getWalletTotal`.
 
 Request:
 
@@ -1249,9 +1249,9 @@ Response (`HomeResponses.Point`):
 
 ### `GET Produk/getProduk`
 
-App method: `HomeApi.getProduk`.
+App method: `HomeApi.getProduct`.
 
-The first page of the product list (see ProdukApi.getProduk).
+The first page of the product list (see ProductApi.getProduct).
 
 Request:
 
@@ -1280,7 +1280,7 @@ Response (`HomeResponses.ProdukList`):
 
 ### `GET Konten/getKonten`
 
-App method: `HomeApi.getKonten`.
+App method: `HomeApi.getContent`.
 
 Request:
 
@@ -1305,7 +1305,7 @@ Response (`HomeResponses.KontenList`):
 
 ### `GET Konten/getKontenItemFromThisKonten/{idKonten}`
 
-App method: `HomeApi.getKontenItem`.
+App method: `HomeApi.getContentItem`.
 
 Request:
 
@@ -1329,7 +1329,7 @@ Response (`HomeResponses.KontenItems`):
 
 ### `GET KategoriProduk/getKategoriProduk`
 
-App method: `HomeApi.getKategoriProduk`.
+App method: `HomeApi.getProductCategory`.
 
 Request:
 
@@ -1353,7 +1353,7 @@ Response (`HomeResponses.KategoriList`):
 
 ### `GET Produk/getProductsInThisCategory/{idKategoriProduk}`
 
-App method: `HomeApi.getProdukInThisCategory`.
+App method: `HomeApi.getProductInThisCategory`.
 
 Request:
 
@@ -1401,11 +1401,11 @@ Response (`HomeResponses.LowestPriceResponse`):
 }
 ```
 
-## NotifikasiApi
+## NotificationApi
 
 ### `GET User/getNotifikasi`
 
-App method: `NotifikasiApi.getNotifikasi`.
+App method: `NotificationApi.getNotification`.
 
 Request:
 
@@ -1433,7 +1433,7 @@ Response (`NotifikasiResponses.InfoList`):
 
 ### `GET User/getNotifikasiKhusus`
 
-App method: `NotifikasiApi.getNotifikasiKhusus`.
+App method: `NotificationApi.getSpecialNotification`.
 
 Request:
 
@@ -1463,7 +1463,7 @@ Response (`NotifikasiResponses.KhususList`):
 
 ### `GET User/getNotifikasiKhusus/{idUser}`
 
-App method: `NotifikasiApi.getNotifikasiKhusus`.
+App method: `NotificationApi.getSpecialNotification`.
 
 Request:
 
@@ -1493,7 +1493,7 @@ Response (`NotifikasiResponses.KhususList`):
 
 ### `GET User/getJumlahNotifikasi`
 
-App method: `NotifikasiApi.getJumlahNotifikasi`.
+App method: `NotificationApi.getNotificationCount`.
 
 Request:
 
@@ -1512,7 +1512,7 @@ Response (`NotifikasiResponses.Count`):
 
 ### `GET User/getJumlahNotifikasiKhusus`
 
-App method: `NotifikasiApi.getJumlahNotifikasiKhusus`.
+App method: `NotificationApi.getSpecialNotificationCount`.
 
 Request:
 
@@ -1531,7 +1531,7 @@ Response (`NotifikasiResponses.Count`):
 
 ### `GET Notifikasi/getNotifikasi/{idNotifikasi}`
 
-App method: `NotifikasiApi.getDetailNotifikasi`.
+App method: `NotificationApi.getNotificationDetail`.
 
 Request:
 
@@ -1557,7 +1557,7 @@ Response (`NotifikasiResponses.Detail`):
 
 ### `POST Notifikasi/setAs`
 
-App method: `NotifikasiApi.setAs`.
+App method: `NotificationApi.setAs`.
 
 Request:
 
@@ -1581,11 +1581,11 @@ Response (`NotifikasiResponses.SetAs`):
 }
 ```
 
-## PaketApi
+## PackApi
 
 ### `GET Produk/detailPaket`
 
-App method: `PaketApi.detailPaket`.
+App method: `PackApi.packDetail`.
 
 Request:
 
@@ -1610,7 +1610,7 @@ Response (`PaketResponses.Detail`):
 
 ### `GET Produk/getPaketLainnya`
 
-App method: `PaketApi.getPaketLainnya`.
+App method: `PackApi.getOtherPacks`.
 
 Request:
 
@@ -1634,7 +1634,7 @@ Response (`PaketResponses.LainnyaList`):
 
 ### `POST Keranjang/saveCart`
 
-App method: `PaketApi.saveCart`.
+App method: `PackApi.saveCart`.
 
 Legacy PaketModel.addToCart (jenisProduk=paket, quantity=1).
 
@@ -1734,11 +1734,11 @@ Response (`CheckoutResponse`):
 }
 ```
 
-## ProdukApi
+## ProductApi
 
 ### `GET Produk/getProduk`
 
-App method: `ProdukApi.getProduk`.
+App method: `ProductApi.getProduct`.
 
 The product list, a page of 10 at a time (`useLimit` "y"), optionally filtered by name.
 
@@ -1772,7 +1772,7 @@ Response (`ProdukResponses.ProdukList`):
 
 ### `GET Produk/detailProduk`
 
-App method: `ProdukApi.detailProduk`.
+App method: `ProductApi.productDetail`.
 
 Request:
 
@@ -1801,7 +1801,7 @@ Response (`ProdukResponses.Detail`):
 
 ### `GET Produk/getLowestPriceOfThisProduct/{idProduk}`
 
-App method: `ProdukApi.getLowestPrice`.
+App method: `ProductApi.getLowestPrice`.
 
 Request:
 
@@ -1823,7 +1823,7 @@ Response (`ProdukResponses.LowestPriceResponse`):
 
 ### `GET Produk/getHargaProduk`
 
-App method: `ProdukApi.getHargaProduk`.
+App method: `ProductApi.getProductPrice`.
 
 Request:
 
@@ -1858,7 +1858,7 @@ Response (`ProdukResponses.HargaList`):
 
 ### `GET Produk/getProdukLainnya`
 
-App method: `ProdukApi.getProdukLainnya`.
+App method: `ProductApi.getOtherProducts`.
 
 Request:
 
@@ -1882,7 +1882,7 @@ Response (`ProdukResponses.LainnyaList`):
 
 ### `GET Produk/isThisProductInCA`
 
-App method: `ProdukApi.isThisProductInCA`.
+App method: `ProductApi.isThisProductInCA`.
 
 Request:
 
@@ -2033,7 +2033,7 @@ Response (`PushResponses.Unregister`):
 
 ### `GET RO/getItemTransaksi`
 
-App method: `RepeatOrderApi.getItemTransaksi`.
+App method: `RepeatOrderApi.getTransactionItem`.
 
 Request:
 
@@ -2090,11 +2090,11 @@ Response (`RepeatOrderResponses.AddToCart`):
 }
 ```
 
-## ResepApi
+## RecipeApi
 
 ### `GET Resep/getResep`
 
-App method: `ResepApi.getResep`.
+App method: `RecipeApi.getRecipe`.
 
 Request:
 
@@ -2121,7 +2121,7 @@ Response (`RecipeResponses.ResepList`):
 
 ### `GET Resep/getResep/{idResep}`
 
-App method: `ResepApi.getDetailResep`.
+App method: `RecipeApi.getRecipeDetail`.
 
 Request:
 
@@ -2146,7 +2146,7 @@ Response (`RecipeResponses.ResepDetail`):
 
 ### `GET Resep/getResepItemFromThisResep/{idResep}`
 
-App method: `ResepApi.getResepItem`.
+App method: `RecipeApi.getRecipeItem`.
 
 Request:
 
@@ -2171,7 +2171,7 @@ Response (`RecipeResponses.ItemList`):
 
 ### `GET Produk/getHargaProduk`
 
-App method: `ResepApi.getHargaProduk`.
+App method: `RecipeApi.getProductPrice`.
 
 Duplicate of the product slice's endpoint (units + prices of a product).
 
@@ -2199,7 +2199,7 @@ Response (`RecipeResponses.SatuanList`):
 
 ### `POST Keranjang/belanjaResep`
 
-App method: `ResepApi.belanjaResep`.
+App method: `RecipeApi.shopRecipe`.
 
 Request:
 
@@ -2234,7 +2234,7 @@ Response (`RecipeResponses.Belanja`):
 
 ### `GET Konten/pencarian`
 
-App method: `SearchApi.pencarian`.
+App method: `SearchApi.search`.
 
 Request:
 
@@ -2299,11 +2299,11 @@ Response (`Map<String, Object>`):
 }
 ```
 
-## TransaksiApi
+## TransactionApi
 
 ### `GET User/getRiwayatTransaksi`
 
-App method: `TransaksiApi.getRiwayatTransaksi`.
+App method: `TransactionApi.getTransactionRecords`.
 
 Request:
 
@@ -2350,7 +2350,7 @@ Response (`TransaksiResponses.RiwayatList`):
 
 ### `GET Transaksi/getTransaksi/{id}`
 
-App method: `TransaksiApi.getTransaksi`.
+App method: `TransactionApi.getTransaction`.
 
 Request:
 
@@ -2395,7 +2395,7 @@ Response (`TransaksiResponses.Detail`):
 
 ### `GET Transaksi/getItemTransaksiFromTransaksi/{id}`
 
-App method: `TransaksiApi.getItemTransaksi`.
+App method: `TransactionApi.getTransactionItem`.
 
 Request:
 
@@ -2427,7 +2427,7 @@ Response (`TransaksiResponses.Items`):
 
 ### `GET Transaksi/getJumlahItemDiantar/{id}`
 
-App method: `TransaksiApi.getJumlahItemDiantar`.
+App method: `TransactionApi.getDeliveredItemCount`.
 
 Request:
 
@@ -2446,7 +2446,7 @@ Response (`TransaksiResponses.Diantar`):
 
 ### `POST Transaksi/pesananDiterima/{id}`
 
-App method: `TransaksiApi.pesananDiterima`.
+App method: `TransactionApi.orderReceived`.
 
 POST without a body.
 
@@ -2467,7 +2467,7 @@ Response (`TransaksiResponses.PesananDiterima`):
 
 ### `POST Transaksi/belanjaUlang/{id}`
 
-App method: `TransaksiApi.belanjaUlang`.
+App method: `TransactionApi.reorder`.
 
 Request:
 
@@ -2493,7 +2493,7 @@ Response (`TransaksiResponses.BelanjaUlang`):
 
 ### `GET gift/gift-transaksi`
 
-App method: `TransaksiApi.getGiftTransaksi`.
+App method: `TransactionApi.getTransactionGift`.
 
 Request:
 
@@ -2518,7 +2518,7 @@ Response (`TransaksiResponses.GiftList`):
 
 ### `GET Gift/getGift/{idGift}`
 
-App method: `TransaksiApi.getGift`.
+App method: `TransactionApi.getGift`.
 
 Request:
 
@@ -2572,7 +2572,7 @@ Response (`AccountResponses.DetailUser`):
 
 ### `GET User/getTotalDompet`
 
-App method: `UserApi.getTotalDompet`.
+App method: `UserApi.getWalletTotal`.
 
 Request:
 
@@ -2591,7 +2591,7 @@ Response (`AccountResponses.TotalDompet`):
 
 ### `GET User/getJumlahVoucher`
 
-App method: `UserApi.getJumlahVoucher`.
+App method: `UserApi.getVoucherCount`.
 
 Request:
 
@@ -2633,7 +2633,7 @@ Response (`AccountResponses.Point`):
 
 ### `GET User/getRiwayatDompet`
 
-App method: `UserApi.getRiwayatDompet`.
+App method: `UserApi.getWalletRecords`.
 
 `jenisDompet`: "referral", "potongantransaksi" or null for all.
 
@@ -2661,7 +2661,7 @@ Response (`AccountResponses.RiwayatDompetList`):
 
 ### `GET User/getRiwayatPoint`
 
-App method: `UserApi.getRiwayatPoint`.
+App method: `UserApi.getPointRecords`.
 
 Request:
 
@@ -2686,7 +2686,7 @@ Response (`AccountResponses.RiwayatPointList`):
 
 ### `POST User/updateProfil`
 
-App method: `UserApi.updateProfil`.
+App method: `UserApi.updateProfile`.
 
 Request:
 
@@ -2712,7 +2712,7 @@ Response (`AccountResponses.UpdateProfil`):
 
 ### `POST User/updateFotoProfil`
 
-App method: `UserApi.updateFotoProfil`.
+App method: `UserApi.updateProfilePhoto`.
 
 Request:
 
@@ -2736,7 +2736,7 @@ Response (`AccountResponses.UpdateFoto`):
 
 ### `POST User/gantiPassword`
 
-App method: `UserApi.gantiPassword`.
+App method: `UserApi.changePassword`.
 
 Request:
 
