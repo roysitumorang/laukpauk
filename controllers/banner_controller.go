@@ -404,7 +404,8 @@ func (q *bannerController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	rows, pagination, err := q.bannerService.FindBanners(
 		ctx,
-		request.WithRecordStatuses(models.RecordStatusActive),
+		request.WithRecordStatuses(models.RecordStatusActive).
+			WithVisible(new(true)),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanners")

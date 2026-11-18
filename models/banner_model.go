@@ -62,6 +62,7 @@ func (q *Banner) PhotoPath(baseURLs ...string) string {
 type BannerFilter struct {
 	BannerIDs      []uuid.UUID
 	RecordStatuses []RecordStatus
+	Visible        *bool
 	Keyword,
 	PaginationURL string
 	Sortings    []Sorting
@@ -85,6 +86,11 @@ func (q *BannerFilter) WithBannerIDs(bannerIDs ...uuid.UUID) *BannerFilter {
 
 func (q *BannerFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *BannerFilter {
 	q.RecordStatuses = recordStatuses
+	return q
+}
+
+func (q *BannerFilter) WithVisible(visible *bool) *BannerFilter {
+	q.Visible = visible
 	return q
 }
 

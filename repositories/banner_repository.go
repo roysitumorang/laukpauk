@@ -482,6 +482,13 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if request.Visible != nil {
+		if *request.Visible {
+			conds = append(conds, "visible")
+		} else {
+			conds = append(conds, "NOT visible")
+		}
+	}
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
