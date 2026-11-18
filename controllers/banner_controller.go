@@ -45,6 +45,8 @@ func (q *bannerController) Mount(r fiber.Router) {
 		Post("/:id", q.V1SellerUpdate).
 		Post("/:id/switch", q.V1SellerSwitchVisibility).
 		Post("/:id/delete", q.V1SellerDelete)
+	r.Group("/v1/buyer").
+		Get("", q.V1BuyerIndex)
 }
 
 func (q *bannerController) V1SellerIndex(c fiber.Ctx) (err error) {
@@ -387,5 +389,35 @@ func (q *bannerController) V1SellerDelete(c fiber.Ctx) (err error) {
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("banner deleted successfully").
 		SetData(saved).
+		WriteResponse(c)
+}
+
+func (q *bannerController) V1BuyerIndex(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "BannerController-V1BuyerIndex"
+	request, err := sanitizers.FindBanners(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanners")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	rows, pagination, err := q.bannerService.FindBanners(
+		ctx,
+		request.WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindBanners")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	pagination.Rows = make([]any, len(rows))
+	for i, row := range rows {
+		row.Photo = row.PhotoPath(c.BaseURL())
+		pagination.Rows[i] = row
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
 		WriteResponse(c)
 }
