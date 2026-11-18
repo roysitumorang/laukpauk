@@ -14,7 +14,6 @@ require (
 	github.com/gofiber/contrib/v3/swaggo v1.0.17
 	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/gofiber/storage/valkey v0.5.0
-	github.com/gofiber/template/jet/v3 v3.0.14
 	github.com/gofiber/utils/v2 v2.6.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/govalues/decimal v0.1.36
@@ -35,8 +34,6 @@ require (
 )
 
 require (
-	github.com/CloudyKit/fastprinter v0.0.0-20251202014920-1725d2651bd4 // indirect
-	github.com/CloudyKit/jet/v6 v6.3.3 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coregx/ahocorasick v0.3.1 // indirect
@@ -53,7 +50,6 @@ require (
 	github.com/go-openapi/swag/typeutils v0.29.2 // indirect
 	github.com/go-openapi/swag/yamlutils v0.29.2 // indirect
 	github.com/gofiber/schema v1.10.0 // indirect
-	github.com/gofiber/template/v2 v2.1.7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

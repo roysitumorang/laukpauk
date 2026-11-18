@@ -6,15 +6,12 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
-	"net/url"
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/coregx/coregex"
-	"github.com/dustin/go-humanize"
 	"github.com/getsentry/sentry-go"
 	"github.com/goccy/go-json/v2"
 	"github.com/gofiber/contrib/v3/monitor"
@@ -30,7 +27,6 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/gofiber/fiber/v3/middleware/rewrite"
 	"github.com/gofiber/fiber/v3/middleware/static"
-	"github.com/gofiber/template/jet/v3"
 	"github.com/gofiber/utils/v2"
 	"github.com/joho/godotenv"
 	"github.com/roysitumorang/laukpauk/config"
@@ -47,18 +43,6 @@ const DefaultPort uint16 = 8080
 func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error {
 	ctxt := "Router-HTTPServerMain"
 	debug := helper.GetEnv() == "development"
-	// Create a new engine
-	engine := jet.New("./views", ".jet")
-	engine.Debug(debug)
-	engine.AddFunc("Comma", func(v int64) string {
-		return humanize.Comma(v)
-	})
-	engine.AddFunc("HasPrefix", func(s, prefix string) bool {
-		return strings.HasPrefix(s, prefix)
-	})
-	engine.AddFunc("QueryEscape", func(s string) string {
-		return url.QueryEscape(s)
-	})
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
@@ -76,7 +60,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		JSONDecoder: func(data []byte, v any) error {
 			return json.Unmarshal(data, v)
 		},
-		Views: engine,
 		ErrorHandler: func(ctx fiber.Ctx, err error) error {
 			statusCode := fiber.StatusInternalServerError
 			if e, ok := errors.AsType[*fiber.Error](err); ok {
@@ -173,10 +156,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/point_earning_caps", To: "/point_earning_caps/v1/buyer"},
 				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
-				{From: "/", To: "/home"},
-				{From: "/contact-us", To: "/home/contact-us"},
-				{From: "/faq", To: "/home/faq"},
-				{From: "/firebase-messaging-sw.js", To: "/assets/js/firebase-messaging-sw.js"},
 			},
 		}),
 		cors.New(),
@@ -345,15 +324,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.JsonWebTokenService,
 	).Mount(app.Group("/sellers"))
 	app.Use(func(c fiber.Ctx) error {
-		if strings.HasPrefix(c.OriginalURL(), "/v1/") {
-			return helper.NewResponse(fiber.StatusNotFound).
-				SetMessage(utils.StatusMessage(fiber.StatusNotFound)).
-				WriteResponse(c)
-		}
-		c.Response().SetStatusCode(fiber.StatusNotFound)
-		return c.Render("404", fiber.Map{
-			"baseURL": c.BaseURL(),
-		})
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(utils.StatusMessage(fiber.StatusNotFound)).
+			WriteResponse(c)
 	})
 	port := DefaultPort
 	if envPort, ok := os.LookupEnv("PORT"); ok && envPort != "" {
