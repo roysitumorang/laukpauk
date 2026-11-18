@@ -150,7 +150,7 @@ func init() {
 			"2024-12-11 07:41:55.000 +0700",
 			"benni.surbakti@gmail.com",
 			encryptedPassword,
-			"admin-default.png",
+			"seller-default.png",
 			models.UserLevelSellerOwner,
 			"2021-12-16 17:26:51.000 +0700",
 			"2024-12-11 07:41:55.000 +0700",
