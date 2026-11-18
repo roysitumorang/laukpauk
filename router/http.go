@@ -38,7 +38,6 @@ import (
 	_ "github.com/roysitumorang/laukpauk/docs"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
-	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
 	slogfiber "github.com/samber/slog-fiber"
 )

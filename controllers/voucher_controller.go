@@ -84,22 +84,6 @@ func (q *voucherController) V1SellerCreate(c fiber.Ctx) (err error) {
 	ctxt := "VoucherController-V1SellerCreate"
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	now := time.Now().In(time.Local)
-	t := time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		0,
-		0,
-		0,
-		0,
-		now.Location(),
-	).Format(time.DateOnly)
-	request := &models.Voucher{
-		RawEffectiveStartTime: "00:00:00",
-		RawEffectiveEndTime:   "23:59:59",
-		RawEffectiveStartDate: t,
-		RawEffectiveEndDate:   t,
-	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateVoucher")
