@@ -23,7 +23,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [CartApi](#cartapi) (10)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
-- [HomeApi](#homeapi) (11)
+- [HomeApi](#homeapi) (10)
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
 - [PaymentApi](#paymentapi) (2)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-103 endpoint definitions in total.
+102 endpoint definitions in total.
 
 ## Index
 
@@ -86,7 +86,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
 | GET | `Banner/getBanner` | no | `HomeApi.getBanner` |
-| GET | `Artikel/getArtikel` | no | `HomeApi.getArticle` |
 | GET | `User/getJumlahVoucher` | yes | `HomeApi.getVoucherCount` |
 | GET | `User/getTotalDompet` | yes | `HomeApi.getWalletTotal` |
 | GET | `Point/getPoint` | yes | `HomeApi.getPoint` |
@@ -1159,30 +1158,6 @@ Response (`HomeResponses.Banners`):
       "gambar": "string",
       "nama": "string",
       "keterangan": "string"
-    }
-  ]
-}
-```
-
-### `GET Artikel/getArtikel`
-
-App method: `HomeApi.getArticle`.
-
-Request:
-
-```http
-GET Artikel/getArtikel
-```
-
-Response (`HomeResponses.Artikels`):
-
-```json
-{
-  "listArtikel": [
-    {
-      "judul": "string",
-      "foto": "string",
-      "link": "string"
     }
   ]
 }
