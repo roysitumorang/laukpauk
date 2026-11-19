@@ -30,6 +30,7 @@ func (q *Cart) Validate() error {
 			return fmt.Errorf("items[%d].product_variant_id: is required", i)
 		}
 		cartItem.Quantity = max(cartItem.Quantity, 0)
+		cartItem.Note = strings.TrimSpace(cartItem.Note)
 		q.Items[i] = cartItem
 	}
 	return nil
