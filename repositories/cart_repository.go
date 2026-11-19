@@ -133,6 +133,21 @@ func (q *cartRepository) FindCarts(
 			id
 			, cart_id
 			, product_variant_id
+			, product_category_id
+			, product_category_name
+			, product_id
+			, product_name
+			, product_photo
+			, product_ready_stock
+			, stock_unit
+			, base_price
+			, selling_price
+			, discount_type
+			, discount_rate
+			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
+			, description
 			, quantity
 			, created_at
 			, updated_at
@@ -181,6 +196,21 @@ func (q *cartRepository) FindCarts(
 			&cartItem.ID,
 			&cartItem.CartID,
 			&cartItem.ProductVariantID,
+			&cartItem.ProductCategoryID,
+			&cartItem.ProductCategoryName,
+			&cartItem.ProductID,
+			&cartItem.ProductName,
+			&cartItem.ProductPhoto,
+			&cartItem.ProductReadyStock,
+			&cartItem.StockUnit,
+			&cartItem.BasePrice,
+			&cartItem.SellingPrice,
+			&cartItem.DiscountType,
+			&cartItem.DiscountRate,
+			&cartItem.DiscountMinimumQuantity,
+			&cartItem.DiscountAmount,
+			&cartItem.SalePrice,
+			&cartItem.Description,
 			&cartItem.Quantity,
 			&cartItem.CreatedAt,
 			&cartItem.UpdatedAt,
@@ -242,6 +272,21 @@ func (q *cartRepository) FindCart(
 			id
 			, cart_id
 			, product_variant_id
+			, product_category_id
+			, product_category_name
+			, product_id
+			, product_name
+			, product_photo
+			, product_ready_stock
+			, stock_unit
+			, base_price
+			, selling_price
+			, discount_type
+			, discount_rate
+			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
+			, description
 			, quantity
 			, created_at
 			, updated_at
@@ -264,6 +309,21 @@ func (q *cartRepository) FindCart(
 			&cartItem.ID,
 			&cartItem.CartID,
 			&cartItem.ProductVariantID,
+			&cartItem.ProductCategoryID,
+			&cartItem.ProductCategoryName,
+			&cartItem.ProductID,
+			&cartItem.ProductName,
+			&cartItem.ProductPhoto,
+			&cartItem.ProductReadyStock,
+			&cartItem.StockUnit,
+			&cartItem.BasePrice,
+			&cartItem.SellingPrice,
+			&cartItem.DiscountType,
+			&cartItem.DiscountRate,
+			&cartItem.DiscountMinimumQuantity,
+			&cartItem.DiscountAmount,
+			&cartItem.SalePrice,
+			&cartItem.Description,
 			&cartItem.Quantity,
 			&cartItem.CreatedAt,
 			&cartItem.UpdatedAt,
@@ -380,6 +440,21 @@ func (q *cartRepository) SaveCart(
 		`INSERT INTO cart_items (
 			cart_id
 			, product_variant_id
+			, product_category_id
+			, product_category_name
+			, product_id
+			, product_name
+			, product_photo
+			, product_ready_stock
+			, stock_unit
+			, base_price
+			, selling_price
+			, discount_type
+			, discount_rate
+			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
+			, description
 			, quantity
 			, created_at
 			, updated_at
@@ -391,14 +466,37 @@ func (q *cartRepository) SaveCart(
 				params,
 				response.ID,
 				cartItem.ProductVariantID,
+				cartItem.ProductCategoryID,
+				cartItem.ProductCategoryName,
+				cartItem.ProductID,
+				cartItem.ProductName,
+				cartItem.ProductPhoto,
+				cartItem.ProductReadyStock,
+				cartItem.StockUnit,
+				cartItem.BasePrice,
+				cartItem.SellingPrice,
+				cartItem.DiscountType,
+				cartItem.DiscountRate,
+				cartItem.DiscountMinimumQuantity,
+				cartItem.DiscountAmount,
+				cartItem.SalePrice,
+				cartItem.Description,
 				cartItem.Quantity,
 				cartItem.CreatedAt,
 				cartItem.UpdatedAt,
 			)
-			if n = len(params); n > 5 {
+			if n = len(params); n > 24 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " ($%d, $%d, $%d, $%d, $%d)", n-4, n-3, n-2, n-1, n)
+			_, _ = fmt.Fprintf(
+				sb,
+				` ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d
+				, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d
+				, $%d, $%d, $%d, $%d)`,
+				n-23, n-22, n-21, n-20, n-19, n-18, n-17, n-16, n-15, n-14,
+				n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5,
+				n-4, n-3, n-2, n-1, n,
+			)
 		}
 	}
 	if len(params) > 0 {
@@ -409,6 +507,21 @@ func (q *cartRepository) SaveCart(
 			RETURNING id
 				, cart_id
 				, product_variant_id
+				, product_category_id
+				, product_category_name
+				, product_id
+				, product_name
+				, product_photo
+				, product_ready_stock
+				, stock_unit
+				, base_price
+				, selling_price
+				, discount_type
+				, discount_rate
+				, discount_minimum_quantity
+				, discount_amount
+				, sale_price
+				, description
 				, quantity
 				, created_at
 				, updated_at`,
@@ -429,6 +542,21 @@ func (q *cartRepository) SaveCart(
 				&cartItem.ID,
 				&cartItem.CartID,
 				&cartItem.ProductVariantID,
+				&cartItem.ProductCategoryID,
+				&cartItem.ProductCategoryName,
+				&cartItem.ProductID,
+				&cartItem.ProductName,
+				&cartItem.ProductPhoto,
+				&cartItem.ProductReadyStock,
+				&cartItem.StockUnit,
+				&cartItem.BasePrice,
+				&cartItem.SellingPrice,
+				&cartItem.DiscountType,
+				&cartItem.DiscountRate,
+				&cartItem.DiscountMinimumQuantity,
+				&cartItem.DiscountAmount,
+				&cartItem.SalePrice,
+				&cartItem.Description,
 				&cartItem.Quantity,
 				&cartItem.CreatedAt,
 				&cartItem.UpdatedAt,
