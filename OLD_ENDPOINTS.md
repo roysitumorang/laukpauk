@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)), and checkout's delivery address comes from `buyer/addresses` ([laukpauk_mobile#28](https://github.com/roysitumorang/laukpauk_mobile/pull/28)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -19,6 +19,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 ## Contents
 
 - [AccountApi](#accountapi) (5)
+- [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (7)
 - [CartApi](#cartapi) (7)
 - [CheckoutApi](#checkoutapi) (14)
@@ -37,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-99 endpoint definitions in total.
+103 endpoint definitions in total.
 
 ## Index
 
@@ -48,6 +49,10 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Auth/verifikasiNomor` | yes | `AccountApi.numberVerification` |
 | GET | `Auth/jumlahGantiNomorHPForToday` | yes | `AccountApi.phoneNumberChangeCountForToday` |
 | GET | `Pengaturan/getReferralConfiguration` | yes | `AccountApi.getReferralConfiguration` |
+| GET | `buyer/addresses` | yes | `AddressApi.list` |
+| GET | `data.links.next` of `buyer/addresses` | yes | `AddressApi.page` |
+| POST | `buyer/addresses` | yes | `AddressApi.create` |
+| POST | `buyer/addresses/{id}` | yes | `AddressApi.update` |
 | POST | `buyer/users/sign_in` | no | `AuthApi.signIn` |
 | POST | `buyer/users` | no | `AuthApi.signUp` |
 | POST | `Auth/konfirmasiOTP` | no | `AuthApi.confirmOtp` |
@@ -253,6 +258,121 @@ Response (`AccountResponses.ReferralConfiguration`):
   }
 }
 ```
+
+## AddressApi
+
+### `GET buyer/addresses`
+
+App method: `AddressApi.list`.
+
+The signed-in buyer's delivery addresses, listed when the buyer taps Checkout. The app asks `limit=100&sort_by=main:desc` (main address first). Page-based: `data.info` and `data.links` (`next` is empty on the last page); the addresses are `data.rows`. The app shows `label` (+ "UTAMA" when `main`), `recipient_name`, `recipient_mobile_phone`, `street_address` and `delivery_note`; choosing one sets the delivery `latitude`, `longitude` and `street_address`. An empty list goes straight to adding an address.
+
+Request:
+
+```http
+GET buyer/addresses?limit=100&sort_by=main:desc
+Authorization: Bearer <JWT>
+```
+
+Response (`AddressResponses.AddressList`):
+
+```json
+{
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "links": {
+      "first": "https://sadia.id/v1/buyer/addresses?limit=100&page=1&sort_by=main%3Adesc",
+      "previous": "",
+      "current": "https://sadia.id/v1/buyer/addresses?limit=100&page=1&sort_by=main%3Adesc",
+      "next": "",
+      "last": "https://sadia.id/v1/buyer/addresses?limit=100&page=1&sort_by=main%3Adesc"
+    },
+    "info": {
+      "limit": 100,
+      "page": 1,
+      "pages": 1,
+      "total": 1
+    },
+    "rows": [
+      {
+        "id": "string",
+        "record_status": 0,
+        "user_id": "string",
+        "longitude": "98.6722",
+        "latitude": "3.5952",
+        "street_address": "Jl. Merdeka No. 1, Medan",
+        "delivery_note": "Pagar hijau",
+        "label": "Rumah",
+        "recipient_name": "Budi",
+        "recipient_mobile_phone": "+6281234567890",
+        "main": true
+      }
+    ]
+  }
+}
+```
+
+### `GET` `data.links.next` of `buyer/addresses`
+
+App method: `AddressApi.page`.
+
+The next page, requested as is when a page came back full. Same response as `GET buyer/addresses`.
+
+### `POST buyer/addresses`
+
+App method: `AddressApi.create`.
+
+"Tambah Alamat Baru" (or the first address) at checkout, after the location was detected (activation popup, permission, turn location on, GPS) and the reverse-geocoded address was confirmed or picked on the map. `longitude` / `latitude` come from that location, the other fields from the form; required: `longitude`, `latitude`, `street_address`, `label`, `recipient_name`, `recipient_mobile_phone` (stored in E.164). `main: true` makes it the main address. Answers `201` with the saved address in `data`; a validation error answers `400` with the reason in `message`, shown on the form.
+
+Request:
+
+```http
+POST buyer/addresses
+Content-Type: application/json
+Authorization: Bearer <JWT>
+
+{
+  "longitude": "98.6722",
+  "latitude": "3.5952",
+  "street_address": "Jl. Merdeka No. 1, Medan",
+  "delivery_note": "Pagar hijau",
+  "label": "Rumah",
+  "recipient_name": "Budi",
+  "recipient_mobile_phone": "081234567890",
+  "main": true
+}
+```
+
+Response (`AddressResponses.Saved`):
+
+```json
+{
+  "status_code": 201,
+  "status": "Created",
+  "message": "address created successfully",
+  "data": {
+    "id": "string",
+    "record_status": 0,
+    "user_id": "string",
+    "longitude": "98.6722",
+    "latitude": "3.5952",
+    "street_address": "Jl. Merdeka No. 1, Medan",
+    "delivery_note": "Pagar hijau",
+    "label": "Rumah",
+    "recipient_name": "Budi",
+    "recipient_mobile_phone": "+6281234567890",
+    "main": true
+  }
+}
+```
+
+### `POST buyer/addresses/{id}`
+
+App method: `AddressApi.update`.
+
+"Ubah" of an address at checkout: the location is detected again and the form starts from the address's label, recipient, note and main flag. Same body and response as `POST buyer/addresses` (`200`, "address updated successfully"); `404` when the address is not the buyer's.
 
 ## AuthApi
 
