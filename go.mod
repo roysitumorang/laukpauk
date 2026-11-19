@@ -9,9 +9,9 @@ require (
 	github.com/getsentry/sentry-go v0.50.0
 	github.com/goccy/go-json v0.12.0
 	github.com/godruoyi/go-snowflake v0.0.2
-	github.com/gofiber/contrib/v3/monitor v1.2.6
-	github.com/gofiber/contrib/v3/sentry v1.1.17
-	github.com/gofiber/contrib/v3/swaggo v1.0.17
+	github.com/gofiber/contrib/v3/monitor v1.2.7
+	github.com/gofiber/contrib/v3/sentry v1.1.18
+	github.com/gofiber/contrib/v3/swaggo v1.0.18
 	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/gofiber/storage/valkey v0.5.0
 	github.com/gofiber/utils/v2 v2.6.5
