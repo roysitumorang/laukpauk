@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)) and the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -20,7 +20,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 
 - [AccountApi](#accountapi) (5)
 - [AuthApi](#authapi) (7)
-- [CartApi](#cartapi) (10)
+- [CartApi](#cartapi) (7)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (9)
@@ -37,7 +37,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-102 endpoint definitions in total.
+99 endpoint definitions in total.
 
 ## Index
 
@@ -55,13 +55,10 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Auth/resendOTP` | yes | `AuthApi.resendOTP` |
 | POST | `Auth/lupaPassword` | no | `AuthApi.forgotPassword` |
 | GET | `User/getDetailUser` | yes | `AuthApi.getDetailUser` |
-| GET | `User/getJumlahCart` | no | `CartApi.getCartQuantity` |
-| GET | `User/getCart` | no | `CartApi.getCart` |
-| GET | `User/getTotalKeranjang` | no | `CartApi.getCartTotal` |
+| GET | `buyer/cart` | yes | `CartApi.buyerCart` |
+| POST | `buyer/cart` | yes | `CartApi.saveBuyerCart` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.clearCart` |
 | POST | `Keranjang/saveCart` | no | `CartApi.saveCart` |
-| POST | `Keranjang/saveCart/{idItem}` | no | `CartApi.updateCart` |
-| POST | `Keranjang/deleteCart/{idCart}` | no | `CartApi.deleteCart` |
 | GET | `Pengaturan/getWalletConfiguration` | no | `CartApi.getWalletConfiguration` |
 | GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
@@ -475,75 +472,81 @@ Response (`AuthResponses.DetailUserResponse`):
 
 ## CartApi
 
-### `GET User/getJumlahCart`
+### `GET buyer/cart`
 
-App method: `CartApi.getCartQuantity`.
+App method: `CartApi.buyerCart`.
+
+The signed-in buyer's cart. The Keranjang screen shows it (signed out: an empty cart without a request), the header badge shows its `quantity`, and every change ("Beli" on the product detail, a new quantity, delete, "Bersihkan Keranjang") reads it before `POST buyer/cart`. Each item carries its product variant's attributes. The app shows `product_photo`, `product_name` (opens the product `product_id`), `quantity` and `stock_unit`, the unit price — `sale_price` when `quantity` ≥ `discount_minimum_quantity` and there is a discount (`selling_price` struck through), otherwise `selling_price` — the line total (unit price × quantity), and a warning when `product_ready_stock` is false; the subtotal is the sum of the line totals. A buyer without a cart gets an empty one (all-zero `id`, no `items`).
 
 Request:
 
 ```http
-GET User/getJumlahCart?cartCode=<cartCode>
+GET buyer/cart
+Authorization: Bearer <JWT>
 ```
 
-Response (`CartResponses.Count`):
+Response (`CartResponses.BuyerCartEnvelope`):
 
 ```json
 {
-  "jumlahKeranjang": 0
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "id": "string",
+    "user_id": "string",
+    "quantity": 3,
+    "items": [
+      {
+        "id": "string",
+        "product_variant_id": "string",
+        "product_category_id": "string",
+        "product_category_name": "Sayur",
+        "product_id": "string",
+        "product_name": "Bayam",
+        "product_photo": "https://sadia.id/images/bayam.webp",
+        "product_ready_stock": true,
+        "stock_unit": "ikat",
+        "selling_price": 5000,
+        "discount_type": 1,
+        "discount_type_name": "persentase",
+        "discount_rate": 10,
+        "discount_minimum_quantity": 3,
+        "discount_amount": 500,
+        "sale_price": 4500,
+        "description": "string",
+        "quantity": 3
+      }
+    ]
+  }
 }
 ```
 
-### `GET User/getCart`
+### `POST buyer/cart`
 
-App method: `CartApi.getCart`.
+App method: `CartApi.saveBuyerCart`.
+
+Saves the buyer's whole cart: every listed variant gets the given `quantity` and the cart's other items are deleted. The app always sends the items of `GET buyer/cart` with one change: "Beli" on the product detail (a signed-out buyer logs in first) increases the chosen variant by 1 or appends it with 1; the Keranjang quantity dialog sets a variant's quantity; delete leaves the variant out; "Bersihkan Keranjang" sends `"items": []`. `id` is the cart's id, left out while the cart has none. A variant that is missing or out of stock answers 400 with `items[<i>].product_variant_id: not found or out of stock`. Answers the saved cart, shaped like `GET buyer/cart`; the Keranjang screen shows it and the badge shows its `quantity`.
 
 Request:
 
 ```http
-GET User/getCart?cartCode=<cartCode>
-```
+POST buyer/cart
+Content-Type: application/json
+Authorization: Bearer <JWT>
 
-Response (`CartResponses.ProductList`):
-
-```json
 {
-  "listCart": [
+  "id": "string",
+  "items": [
     {
-      "idCart": "string",
-      "idProduk": "string",
-      "jenisProduk": "string",
-      "idSatuan": "string",
-      "namaSatuan": "string",
-      "jenisSatuan": "string",
-      "namaProduk": "string",
-      "fotoProduk": "string",
-      "harga": "string",
-      "diskon": "string",
-      "quantity": "string",
-      "catatan": "string",
-      "idPromo": "string"
+      "product_variant_id": "string",
+      "quantity": 1
     }
   ]
 }
 ```
 
-### `GET User/getTotalKeranjang`
-
-App method: `CartApi.getCartTotal`.
-
-Request:
-
-```http
-GET User/getTotalKeranjang?cartCode=<cartCode>&latDelivery=<latDelivery>&longDelivery=<longDelivery>
-```
-
-Response (`CartResponses.Total`):
-
-```json
-{
-  "totalKeranjang": 0
-}
-```
+Response (`CartResponses.BuyerCartEnvelope`): same as `GET buyer/cart`.
 
 ### `GET Keranjang/bersihkanKeranjang`
 
@@ -594,54 +597,6 @@ Response (`AddToCartResult`):
 {
   "statusAddCart": true,
   "message": "string"
-}
-```
-
-### `POST Keranjang/saveCart/{idItem}`
-
-App method: `CartApi.updateCart`.
-
-Request:
-
-```http
-POST Keranjang/saveCart/{idItem}
-Content-Type: application/json
-
-{
-  "quantity": "1",
-  "catatan": "<catatan>"
-}
-```
-
-Response (`AddToCartResult`):
-
-```json
-{
-  "statusAddCart": true,
-  "message": "string"
-}
-```
-
-### `POST Keranjang/deleteCart/{idCart}`
-
-App method: `CartApi.deleteCart`.
-
-The body is an empty JSON object.
-
-Request:
-
-```http
-POST Keranjang/deleteCart/{idCart}
-Content-Type: application/json
-
-{}
-```
-
-Response (`CartResponses.Delete`):
-
-```json
-{
-  "statusDeleteCart": true
 }
 ```
 
