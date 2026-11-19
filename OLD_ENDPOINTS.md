@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)) and the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -20,7 +20,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 
 - [AccountApi](#accountapi) (5)
 - [AuthApi](#authapi) (7)
-- [CartApi](#cartapi) (10)
+- [CartApi](#cartapi) (12)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (9)
@@ -37,7 +37,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-102 endpoint definitions in total.
+104 endpoint definitions in total.
 
 ## Index
 
@@ -55,6 +55,8 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Auth/resendOTP` | yes | `AuthApi.resendOTP` |
 | POST | `Auth/lupaPassword` | no | `AuthApi.forgotPassword` |
 | GET | `User/getDetailUser` | yes | `AuthApi.getDetailUser` |
+| GET | `buyer/cart` | yes | `CartApi.buyerCart` |
+| POST | `buyer/cart` | yes | `CartApi.saveBuyerCart` |
 | GET | `User/getJumlahCart` | no | `CartApi.getCartQuantity` |
 | GET | `User/getCart` | no | `CartApi.getCart` |
 | GET | `User/getTotalKeranjang` | no | `CartApi.getCartTotal` |
@@ -474,6 +476,67 @@ Response (`AuthResponses.DetailUserResponse`):
 ```
 
 ## CartApi
+
+### `GET buyer/cart`
+
+App method: `CartApi.buyerCart`.
+
+The signed-in buyer's cart, read by "Beli" on the product detail before `POST buyer/cart`. A buyer without a cart gets an empty one (all-zero `id`, no `items`).
+
+Request:
+
+```http
+GET buyer/cart
+Authorization: Bearer <JWT>
+```
+
+Response (`CartResponses.BuyerCartEnvelope`):
+
+```json
+{
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "id": "string",
+    "user_id": "string",
+    "quantity": 3,
+    "items": [
+      {
+        "id": "string",
+        "product_variant_id": "string",
+        "quantity": 3
+      }
+    ]
+  }
+}
+```
+
+### `POST buyer/cart`
+
+App method: `CartApi.saveBuyerCart`.
+
+Saves the buyer's whole cart: every listed variant gets the given `quantity` and the cart's other items are deleted. "Beli" on the product detail (a signed-out buyer logs in first) sends the items of `GET buyer/cart` with the chosen variant's quantity increased by 1, or the variant appended with quantity 1. `id` is the cart's id, left out while the cart has none. A variant that is missing or out of stock answers 400 with `items[<i>].product_variant_id: not found or out of stock`. Answers the saved cart; the app shows its `quantity` on the cart badge.
+
+Request:
+
+```http
+POST buyer/cart
+Content-Type: application/json
+Authorization: Bearer <JWT>
+
+{
+  "id": "string",
+  "items": [
+    {
+      "product_variant_id": "string",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+Response (`CartResponses.BuyerCartEnvelope`): same as `GET buyer/cart`.
 
 ### `GET User/getJumlahCart`
 
