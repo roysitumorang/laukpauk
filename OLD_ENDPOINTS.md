@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)), buyer registration is `POST users` ([laukpauk_mobile#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14)) and the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)), buyer registration is `POST users` ([laukpauk_mobile#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)) and the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -23,22 +23,21 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [CartApi](#cartapi) (10)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
-- [HomeApi](#homeapi) (10)
+- [HomeApi](#homeapi) (9)
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
 - [PaymentApi](#paymentapi) (2)
-- [ProductApi](#productapi) (6)
+- [ProductApi](#productapi) (7)
 - [PromoApi](#promoapi) (2)
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
 - [RecipeApi](#recipeapi) (5)
-- [SearchApi](#searchapi) (1)
 - [SettingApi](#settingapi) (2)
 - [TransactionApi](#transactionapi) (8)
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-102 endpoint definitions in total.
+101 endpoint definitions in total.
 
 ## Index
 
@@ -89,7 +88,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `User/getJumlahVoucher` | yes | `HomeApi.getVoucherCount` |
 | GET | `User/getTotalDompet` | yes | `HomeApi.getWalletTotal` |
 | GET | `Point/getPoint` | yes | `HomeApi.getPoint` |
-| GET | `Produk/getProduk` | yes | `HomeApi.getProduct` |
 | GET | `Konten/getKonten` | no | `HomeApi.getContent` |
 | GET | `Konten/getKontenItemFromThisKonten/{idKonten}` | no | `HomeApi.getContentItem` |
 | GET | `KategoriProduk/getKategoriProduk` | no | `HomeApi.getProductCategory` |
@@ -107,7 +105,8 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Keranjang/saveCart` | no | `PackApi.saveCart` |
 | GET | `Xendit/getPaymentChannels` | yes | `PaymentApi.getPaymentChannels` |
 | POST | `Transaksi/checkout` | yes | `PaymentApi.checkout` |
-| GET | `Produk/getProduk` | yes | `ProductApi.getProduct` |
+| GET | `buyer/products` | no | `ProductApi.buyerProducts` |
+| GET | `data.next` of `buyer/products` | no | `ProductApi.buyerProductsPage` |
 | GET | `Produk/detailProduk` | no | `ProductApi.productDetail` |
 | GET | `Produk/getLowestPriceOfThisProduct/{idProduk}` | no | `ProductApi.getLowestPrice` |
 | GET | `Produk/getHargaProduk` | no | `ProductApi.getProductPrice` |
@@ -124,7 +123,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Resep/getResepItemFromThisResep/{idResep}` | no | `RecipeApi.getRecipeItem` |
 | GET | `Produk/getHargaProduk` | no | `RecipeApi.getProductPrice` |
 | POST | `Keranjang/belanjaResep` | no | `RecipeApi.shopRecipe` |
-| GET | `Konten/pencarian` | no | `SearchApi.search` |
 | GET | `Pengaturan/getSettingValue/{key}` | no | `SettingApi.getSettingValue` |
 | GET | `Pengaturan/getContactUsWhatsappConfiguration` | no | `SettingApi.getContactUsWhatsappConfiguration` |
 | GET | `User/getRiwayatTransaksi` | yes | `TransactionApi.getTransactionRecords` |
@@ -1238,37 +1236,6 @@ Response (`HomeResponses.Point`):
 }
 ```
 
-### `GET Produk/getProduk`
-
-App method: `HomeApi.getProduct`.
-
-The first page of the product list (see ProductApi.getProduct).
-
-Request:
-
-```http
-GET Produk/getProduk?jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>
-Authorization: Bearer <JWT>
-```
-
-Response (`HomeResponses.ProdukList`):
-
-```json
-{
-  "listProduk": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "namaKategoriProduk": "string",
-      "keteranganSingkat": "string",
-      "stokAvailable": true,
-      "promo": "<any JSON>"
-    }
-  ]
-}
-```
-
 ### `GET Konten/getKonten`
 
 App method: `HomeApi.getContent`.
@@ -1727,38 +1694,70 @@ Response (`CheckoutResponse`):
 
 ## ProductApi
 
-### `GET Produk/getProduk`
+### `GET buyer/products`
 
-App method: `ProductApi.getProduct`.
+App method: `ProductApi.buyerProducts`.
 
-The product list, a page of 10 at a time (`useLimit` "y"), optionally filtered by name.
+Products for the home page "Produk" block, the product grid ("Lihat semua") and the product search (the grid's search box and the header search screen). Query: `limit` (products per page, the app sends 10) and `q` (search text, only when searching). The page is in the backend's `data` envelope: `rows`, `next` (full URL of the next page, `null` on the last page), `current` and `limit`. The app uses `id`, `name`, `photo` (full URL; `http://` is loaded over `https://`), `category_name`, `description`, `ready_stock`, `product_type` (1 = paket, opens the pack detail) and `lowest_selling_price` (the tile price; 0 = no price). The other fields are ignored.
 
 Request:
 
 ```http
-GET Produk/getProduk?jadwalDeliveryCode=<jadwalDeliveryCode>&startFrom=<startFrom>&useLimit=<useLimit>&cariProduk=<cariProduk>
-Authorization: Bearer <JWT>
+GET buyer/products?limit=10&q=<q>
 ```
 
-Response (`ProdukResponses.ProdukList`):
+Response (`ProductResponses.BuyerProducts`):
 
 ```json
 {
-  "listProduk": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "namaKategoriProduk": "string",
-      "keterangan": "string",
-      "keteranganSingkat": "string",
-      "stokAvailable": true,
-      "promo": [
-        "<any JSON>"
-      ]
-    }
-  ]
+  "request_id": "86609e54-c094-4ce5-aaf7-0a1b0d14c4d0",
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "current": "https://sadia.id/v1/buyer/products?limit=10",
+    "next": "https://sadia.id/v1/buyer/products?limit=10&next_row_no=11",
+    "limit": 10,
+    "rows": [
+      {
+        "id": "01a1f1aa-c5ff-73dc-9618-01b224bed65f",
+        "record_status": 0,
+        "category_id": "01a1f1a9-ec59-7f0c-ab72-6be87c24cc24",
+        "category_name": "Paket",
+        "product_type": 1,
+        "product_type_name": "paket",
+        "name": "Belanja hemat 2 Hari Cuma 30 Ribuan!",
+        "photo": "https://sadia.id/images/bundle-default.png",
+        "description": "string",
+        "ready_stock": true,
+        "pinned": false,
+        "hits": 0,
+        "lowest_selling_price": 37000,
+        "created_by": "01a1f1a9-4f55-70b9-b339-24501657e0cc",
+        "created_at": "2021-11-25T10:15:48+07:00",
+        "updated_by": "01a1f1a9-4f55-70b9-b339-24501657e0cc",
+        "updated_at": "2021-11-25T10:15:48+07:00",
+        "deleted_by": null,
+        "deleted_at": null,
+        "deletion_reason": null,
+        "variants": []
+      }
+    ]
+  },
+  "app": "laukpauk"
 }
+```
+
+### `GET` `data.next` of `buyer/products`
+
+App method: `ProductApi.buyerProductsPage`.
+
+The next page of a product list or search: the app requests the full URL in `data.next` as is when the list is scrolled to its end, and stops when `data.next` is `null`. Same response as `GET buyer/products`.
+
+Request:
+
+```http
+GET https://sadia.id/v1/buyer/products?limit=10&next_row_no=11
 ```
 
 ### `GET Produk/detailProduk`
@@ -2218,33 +2217,6 @@ Response (`RecipeResponses.Belanja`):
 ```json
 {
   "statusBelanjaResep": true
-}
-```
-
-## SearchApi
-
-### `GET Konten/pencarian`
-
-App method: `SearchApi.search`.
-
-Request:
-
-```http
-GET Konten/pencarian?term=<term>
-```
-
-Response (`SearchResponses.Suggestions`):
-
-```json
-{
-  "hasilPencarian": [
-    {
-      "id": "string",
-      "jenisItem": "string",
-      "fotoProduk": "string",
-      "namaProduk": "string"
-    }
-  ]
 }
 ```
 
