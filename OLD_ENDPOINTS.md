@@ -20,7 +20,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 
 - [AccountApi](#accountapi) (5)
 - [AuthApi](#authapi) (7)
-- [CartApi](#cartapi) (12)
+- [CartApi](#cartapi) (7)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (9)
@@ -37,7 +37,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-104 endpoint definitions in total.
+99 endpoint definitions in total.
 
 ## Index
 
@@ -57,13 +57,8 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `User/getDetailUser` | yes | `AuthApi.getDetailUser` |
 | GET | `buyer/cart` | yes | `CartApi.buyerCart` |
 | POST | `buyer/cart` | yes | `CartApi.saveBuyerCart` |
-| GET | `User/getJumlahCart` | no | `CartApi.getCartQuantity` |
-| GET | `User/getCart` | no | `CartApi.getCart` |
-| GET | `User/getTotalKeranjang` | no | `CartApi.getCartTotal` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.clearCart` |
 | POST | `Keranjang/saveCart` | no | `CartApi.saveCart` |
-| POST | `Keranjang/saveCart/{idItem}` | no | `CartApi.updateCart` |
-| POST | `Keranjang/deleteCart/{idCart}` | no | `CartApi.deleteCart` |
 | GET | `Pengaturan/getWalletConfiguration` | no | `CartApi.getWalletConfiguration` |
 | GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
@@ -481,7 +476,7 @@ Response (`AuthResponses.DetailUserResponse`):
 
 App method: `CartApi.buyerCart`.
 
-The signed-in buyer's cart, read by "Beli" on the product detail before `POST buyer/cart`. A buyer without a cart gets an empty one (all-zero `id`, no `items`).
+The signed-in buyer's cart. The Keranjang screen shows it (signed out: an empty cart without a request), the header badge shows its `quantity`, and every change ("Beli" on the product detail, a new quantity, delete, "Bersihkan Keranjang") reads it before `POST buyer/cart`. Each item carries its product variant's attributes. The app shows `product_photo`, `product_name` (opens the product `product_id`), `quantity` and `stock_unit`, the unit price — `sale_price` when `quantity` ≥ `discount_minimum_quantity` and there is a discount (`selling_price` struck through), otherwise `selling_price` — the line total (unit price × quantity), and a warning when `product_ready_stock` is false; the subtotal is the sum of the line totals. A buyer without a cart gets an empty one (all-zero `id`, no `items`).
 
 Request:
 
@@ -505,6 +500,21 @@ Response (`CartResponses.BuyerCartEnvelope`):
       {
         "id": "string",
         "product_variant_id": "string",
+        "product_category_id": "string",
+        "product_category_name": "Sayur",
+        "product_id": "string",
+        "product_name": "Bayam",
+        "product_photo": "https://sadia.id/images/bayam.webp",
+        "product_ready_stock": true,
+        "stock_unit": "ikat",
+        "selling_price": 5000,
+        "discount_type": 1,
+        "discount_type_name": "persentase",
+        "discount_rate": 10,
+        "discount_minimum_quantity": 3,
+        "discount_amount": 500,
+        "sale_price": 4500,
+        "description": "string",
         "quantity": 3
       }
     ]
@@ -516,7 +526,7 @@ Response (`CartResponses.BuyerCartEnvelope`):
 
 App method: `CartApi.saveBuyerCart`.
 
-Saves the buyer's whole cart: every listed variant gets the given `quantity` and the cart's other items are deleted. "Beli" on the product detail (a signed-out buyer logs in first) sends the items of `GET buyer/cart` with the chosen variant's quantity increased by 1, or the variant appended with quantity 1. `id` is the cart's id, left out while the cart has none. A variant that is missing or out of stock answers 400 with `items[<i>].product_variant_id: not found or out of stock`. Answers the saved cart; the app shows its `quantity` on the cart badge.
+Saves the buyer's whole cart: every listed variant gets the given `quantity` and the cart's other items are deleted. The app always sends the items of `GET buyer/cart` with one change: "Beli" on the product detail (a signed-out buyer logs in first) increases the chosen variant by 1 or appends it with 1; the Keranjang quantity dialog sets a variant's quantity; delete leaves the variant out; "Bersihkan Keranjang" sends `"items": []`. `id` is the cart's id, left out while the cart has none. A variant that is missing or out of stock answers 400 with `items[<i>].product_variant_id: not found or out of stock`. Answers the saved cart, shaped like `GET buyer/cart`; the Keranjang screen shows it and the badge shows its `quantity`.
 
 Request:
 
@@ -537,76 +547,6 @@ Authorization: Bearer <JWT>
 ```
 
 Response (`CartResponses.BuyerCartEnvelope`): same as `GET buyer/cart`.
-
-### `GET User/getJumlahCart`
-
-App method: `CartApi.getCartQuantity`.
-
-Request:
-
-```http
-GET User/getJumlahCart?cartCode=<cartCode>
-```
-
-Response (`CartResponses.Count`):
-
-```json
-{
-  "jumlahKeranjang": 0
-}
-```
-
-### `GET User/getCart`
-
-App method: `CartApi.getCart`.
-
-Request:
-
-```http
-GET User/getCart?cartCode=<cartCode>
-```
-
-Response (`CartResponses.ProductList`):
-
-```json
-{
-  "listCart": [
-    {
-      "idCart": "string",
-      "idProduk": "string",
-      "jenisProduk": "string",
-      "idSatuan": "string",
-      "namaSatuan": "string",
-      "jenisSatuan": "string",
-      "namaProduk": "string",
-      "fotoProduk": "string",
-      "harga": "string",
-      "diskon": "string",
-      "quantity": "string",
-      "catatan": "string",
-      "idPromo": "string"
-    }
-  ]
-}
-```
-
-### `GET User/getTotalKeranjang`
-
-App method: `CartApi.getCartTotal`.
-
-Request:
-
-```http
-GET User/getTotalKeranjang?cartCode=<cartCode>&latDelivery=<latDelivery>&longDelivery=<longDelivery>
-```
-
-Response (`CartResponses.Total`):
-
-```json
-{
-  "totalKeranjang": 0
-}
-```
 
 ### `GET Keranjang/bersihkanKeranjang`
 
@@ -657,54 +597,6 @@ Response (`AddToCartResult`):
 {
   "statusAddCart": true,
   "message": "string"
-}
-```
-
-### `POST Keranjang/saveCart/{idItem}`
-
-App method: `CartApi.updateCart`.
-
-Request:
-
-```http
-POST Keranjang/saveCart/{idItem}
-Content-Type: application/json
-
-{
-  "quantity": "1",
-  "catatan": "<catatan>"
-}
-```
-
-Response (`AddToCartResult`):
-
-```json
-{
-  "statusAddCart": true,
-  "message": "string"
-}
-```
-
-### `POST Keranjang/deleteCart/{idCart}`
-
-App method: `CartApi.deleteCart`.
-
-The body is an empty JSON object.
-
-Request:
-
-```http
-POST Keranjang/deleteCart/{idCart}
-Content-Type: application/json
-
-{}
-```
-
-Response (`CartResponses.Delete`):
-
-```json
-{
-  "statusDeleteCart": true
 }
 ```
 
