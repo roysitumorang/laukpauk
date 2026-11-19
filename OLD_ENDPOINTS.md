@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)), buyer registration is `POST users` ([laukpauk_mobile#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)) and the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)), buyer registration is `POST users` ([laukpauk_mobile#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)) and the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -27,7 +27,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
 - [PaymentApi](#paymentapi) (2)
-- [ProductApi](#productapi) (7)
+- [ProductApi](#productapi) (8)
 - [PromoApi](#promoapi) (2)
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
@@ -37,7 +37,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-101 endpoint definitions in total.
+102 endpoint definitions in total.
 
 ## Index
 
@@ -107,6 +107,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Transaksi/checkout` | yes | `PaymentApi.checkout` |
 | GET | `buyer/products` | no | `ProductApi.buyerProducts` |
 | GET | `data.next` of `buyer/products` | no | `ProductApi.buyerProductsPage` |
+| GET | `buyer/products/{id}` | no | `ProductApi.buyerProduct` |
 | GET | `Produk/detailProduk` | no | `ProductApi.productDetail` |
 | GET | `Produk/getLowestPriceOfThisProduct/{idProduk}` | no | `ProductApi.getLowestPrice` |
 | GET | `Produk/getHargaProduk` | no | `ProductApi.getProductPrice` |
@@ -1760,9 +1761,70 @@ Request:
 GET https://sadia.id/v1/buyer/products?limit=10&next_row_no=11
 ```
 
+### `GET buyer/products/{id}`
+
+App method: `ProductApi.buyerProduct`.
+
+The product detail screen, for every `product_type` (paket included). The product is in the backend's `data` envelope, with its active `variants`. The app shows `photo` (full URL), `name`, `category_name`, `description`, `ready_stock` (false hides "Beli") and per variant `stock_unit`, `sale_price`, `selling_price` (struck through when discounted), `discount_type` (0 = fixed amount "cash", 1 = percentage "persentase"), `discount_rate`, `discount_amount`, `discount_minimum_quantity` and `description`. A missing or inactive product answers 404. The other fields are ignored.
+
+Request:
+
+```http
+GET buyer/products/01a1f1aa-c5ff-73dc-9618-01b224bed65f
+```
+
+Response (`ProductResponses.BuyerProductDetail`):
+
+```json
+{
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "id": "01a1f1aa-c5ff-73dc-9618-01b224bed65f",
+    "record_status": 0,
+    "category_id": "01a1f1a9-ec59-7f0c-ab72-6be87c24cc24",
+    "category_name": "Paket",
+    "product_type": 1,
+    "product_type_name": "paket",
+    "name": "Belanja hemat 2 Hari Cuma 30 Ribuan!",
+    "photo": "https://sadia.id/images/bundle-default.png",
+    "description": "string",
+    "ready_stock": true,
+    "pinned": false,
+    "hits": 1,
+    "lowest_selling_price": 37000,
+    "variants": [
+      {
+        "id": "string",
+        "record_status": 0,
+        "product_category_id": "string",
+        "product_category_name": "string",
+        "product_id": "string",
+        "product_name": "string",
+        "product_photo": "string",
+        "product_ready_stock": true,
+        "stock_unit": "string",
+        "selling_price": 37000,
+        "discount_type": 0,
+        "discount_type_name": "cash",
+        "discount_rate": 0,
+        "discount_minimum_quantity": 0,
+        "discount_amount": 0,
+        "sale_price": 37000,
+        "description": "string"
+      }
+    ]
+  },
+  "app": "laukpauk"
+}
+```
+
 ### `GET Produk/detailProduk`
 
 App method: `ProductApi.productDetail`.
+
+Now only used by the "Beli" unit sheet (`ProductRepository.loadUnitSheetData`); the detail screen uses `GET buyer/products/{id}`.
 
 Request:
 
