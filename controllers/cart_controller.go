@@ -70,6 +70,9 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetData(response).
 			WriteResponse(c)
 	}
+	for i := range response.Items {
+		response.Items[i].ProductPhoto = response.Items[i].ProductPhotoPath(c.BaseURL())
+	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)
@@ -144,6 +147,9 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
+	}
+	for i := range response.Items {
+		response.Items[i].ProductPhoto = response.Items[i].ProductPhotoPath(c.BaseURL())
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
