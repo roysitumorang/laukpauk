@@ -413,6 +413,9 @@ func (q *bannerController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	for i := range rows {
+		rows[i].Photo = rows[i].PhotoPath(c.BaseURL())
+	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(rows).
 		WriteResponse(c)
