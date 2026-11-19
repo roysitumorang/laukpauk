@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)) and buyer registration is `POST users` ([laukpauk_mobile#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST users/sign_in` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13)), buyer registration is `POST users` ([laukpauk_mobile#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14)) and the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -85,7 +85,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
-| GET | `Banner/getBanner` | no | `HomeApi.getBanner` |
+| GET | `buyer/banners` | no | `HomeApi.getBanner` |
 | GET | `User/getJumlahVoucher` | yes | `HomeApi.getVoucherCount` |
 | GET | `User/getTotalDompet` | yes | `HomeApi.getWalletTotal` |
 | GET | `Point/getPoint` | yes | `HomeApi.getPoint` |
@@ -1138,28 +1138,44 @@ Response (`DeliveryResponses.PlaceSearch`):
 
 ## HomeApi
 
-### `GET Banner/getBanner`
+### `GET buyer/banners`
 
 App method: `HomeApi.getBanner`.
+
+Home page hero banners. The list is in the backend's `data` envelope; each banner has `id`, `name`, `description`, `photo` (a full image URL) and `visible`. The app skips banners with `visible: false`, shows `name` / `description` only when not empty; an `http://` photo is still loaded over `https://`. The other fields are ignored.
 
 Request:
 
 ```http
-GET Banner/getBanner
+GET buyer/banners
 ```
 
 Response (`HomeResponses.Banners`):
 
 ```json
 {
-  "listBanner": [
+  "request_id": "19ecbcb8-2456-4f56-996b-b1ae2cb74abd",
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": [
     {
-      "id": "string",
-      "gambar": "string",
-      "nama": "string",
-      "keterangan": "string"
+      "id": "01a1f1aa-ca52-7972-b7dc-d9ea83a10903",
+      "record_status": 0,
+      "name": "",
+      "description": "",
+      "photo": "https://sadia.id/images/01a1f1aa-ca1f-71b6-9944-975656e8022d.webp",
+      "visible": true,
+      "created_by": "01a1f1a9-4f55-70b9-b339-24501657e0cc",
+      "created_at": "2021-11-19T16:07:41+07:00",
+      "updated_by": "01a1f1a9-4f55-70b9-b339-24501657e0cc",
+      "updated_at": "2021-11-19T16:07:41+07:00",
+      "deleted_by": null,
+      "deleted_at": null,
+      "deletion_reason": null
     }
-  ]
+  ],
+  "app": "laukpauk"
 }
 ```
 
