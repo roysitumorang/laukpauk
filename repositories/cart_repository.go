@@ -509,6 +509,7 @@ func (q *cartRepository) SaveCart(
 		_, _ = sb.WriteString(
 			` ON CONFLICT (cart_id, product_variant_id) DO UPDATE SET
 				quantity = EXCLUDED.quantity
+				, note = EXCLUDED.note
 				, updated_at = EXCLUDED.updated_at
 			RETURNING id
 				, cart_id
