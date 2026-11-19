@@ -97,7 +97,7 @@ func (q *bannerController) V1SellerCreate(c fiber.Ctx) (err error) {
 	request.UpdatedBy = createdBy
 	request.UpdatedAt = now
 	if photo == nil {
-		request.Photo = os.Getenv("ARTICLE_DEFAULT_PHOTO")
+		request.Photo = os.Getenv("BANNER_DEFAULT_PHOTO")
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
