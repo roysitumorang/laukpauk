@@ -402,7 +402,7 @@ func (q *bannerController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	rows, pagination, err := q.bannerService.FindBanners(
+	rows, _, err := q.bannerService.FindBanners(
 		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive).
 			WithVisible(new(true)),
@@ -413,12 +413,7 @@ func (q *bannerController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	pagination.Rows = make([]any, len(rows))
-	for i, row := range rows {
-		row.Photo = row.PhotoPath(c.BaseURL())
-		pagination.Rows[i] = row
-	}
 	return helper.NewResponse(fiber.StatusOK).
-		SetData(pagination).
+		SetData(rows).
 		WriteResponse(c)
 }
