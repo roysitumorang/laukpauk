@@ -67,6 +67,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			}
 			return helper.NewResponse(statusCode).SetMessage(err.Error()).WriteResponse(ctx)
 		},
+		TrustProxy: true,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Private: true,
+		},
 	})
 	basicAuth := middlewares.BasicAuthMiddleware()
 	middlewares := []any{
