@@ -34,6 +34,7 @@ func init() {
 				, sale_price bigint NOT NULL
 				, description character varying NOT NULL
 				, quantity bigint NOT NULL
+				, note character varying NOT NULL
 				, created_at timestamp with time zone NOT NULL
 				, updated_at timestamp with time zone NOT NULL
 				, UNIQUE (cart_id, product_variant_id)

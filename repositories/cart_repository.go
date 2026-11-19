@@ -149,6 +149,7 @@ func (q *cartRepository) FindCarts(
 			, sale_price
 			, description
 			, quantity
+			, note
 			, created_at
 			, updated_at
 		FROM cart_items
@@ -212,6 +213,7 @@ func (q *cartRepository) FindCarts(
 			&cartItem.SalePrice,
 			&cartItem.Description,
 			&cartItem.Quantity,
+			&cartItem.Note,
 			&cartItem.CreatedAt,
 			&cartItem.UpdatedAt,
 		); err != nil {
@@ -288,6 +290,7 @@ func (q *cartRepository) FindCart(
 			, sale_price
 			, description
 			, quantity
+			, note
 			, created_at
 			, updated_at
 		FROM cart_items
@@ -325,6 +328,7 @@ func (q *cartRepository) FindCart(
 			&cartItem.SalePrice,
 			&cartItem.Description,
 			&cartItem.Quantity,
+			&cartItem.Note,
 			&cartItem.CreatedAt,
 			&cartItem.UpdatedAt,
 		); err != nil {
@@ -456,6 +460,7 @@ func (q *cartRepository) SaveCart(
 			, sale_price
 			, description
 			, quantity
+			, note
 			, created_at
 			, updated_at
 		) VALUES`,
@@ -482,19 +487,20 @@ func (q *cartRepository) SaveCart(
 				cartItem.SalePrice,
 				cartItem.Description,
 				cartItem.Quantity,
+				cartItem.Note,
 				cartItem.CreatedAt,
 				cartItem.UpdatedAt,
 			)
-			if n = len(params); n > 24 {
+			if n = len(params); n > 25 {
 				_, _ = sb.WriteString(",")
 			}
 			_, _ = fmt.Fprintf(
 				sb,
 				` ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d
 				, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d
-				, $%d, $%d, $%d, $%d)`,
-				n-23, n-22, n-21, n-20, n-19, n-18, n-17, n-16, n-15, n-14,
-				n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5,
+				, $%d, $%d, $%d, $%d, $%d)`,
+				n-24, n-23, n-22, n-21, n-20, n-19, n-18, n-17, n-16, n-15,
+				n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5,
 				n-4, n-3, n-2, n-1, n,
 			)
 		}
@@ -523,6 +529,7 @@ func (q *cartRepository) SaveCart(
 				, sale_price
 				, description
 				, quantity
+				, note
 				, created_at
 				, updated_at`,
 		)
@@ -558,6 +565,7 @@ func (q *cartRepository) SaveCart(
 				&cartItem.SalePrice,
 				&cartItem.Description,
 				&cartItem.Quantity,
+				&cartItem.Note,
 				&cartItem.CreatedAt,
 				&cartItem.UpdatedAt,
 			); err != nil {

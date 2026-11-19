@@ -61,6 +61,7 @@ type CartItem struct {
 	SalePrice               int64        `json:"sale_price" form:"-"`
 	Description             string       `json:"description" form:"description"`
 	Quantity                int64        `json:"quantity" form:"-"`
+	Note                    string       `json:"note" form:"-"`
 	CreatedAt               time.Time    `json:"-" form:"-"`
 	UpdatedAt               time.Time    `json:"-" form:"-"`
 }
