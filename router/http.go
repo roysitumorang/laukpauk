@@ -69,7 +69,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		},
 		TrustProxy: true,
 		TrustProxyConfig: fiber.TrustProxyConfig{
-			Private: true,
+			Loopback: true,
+			Private:  true,
 		},
 	})
 	basicAuth := middlewares.BasicAuthMiddleware()
