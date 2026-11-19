@@ -161,6 +161,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/point_earning_caps", To: "/point_earning_caps/v1/buyer"},
 				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
+				{From: "/v1/buyer/addresses", To: "/addresses/v1/buyer"},
+				{From: "/v1/buyer/addresses/*", To: "/addresses/v1/buyer/$1"},
+				{From: "/v1/buyer/addresses/*/*", To: "/addresses/v1/buyer/$1/$2"},
 			},
 		}),
 		cors.New(),
@@ -328,6 +331,11 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/sellers"))
+	controllers.NewAddressController(
+		q.AddressService,
+		q.UserService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/addresses"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(utils.StatusMessage(fiber.StatusNotFound)).
