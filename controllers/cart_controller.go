@@ -105,16 +105,33 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	mapProductVariantIDs := make(map[uuid.UUID]bool, len(productVariants))
+	mapProductVariantIDs := make(map[uuid.UUID]*models.ProductVariant, len(productVariants))
 	for _, productVariant := range productVariants {
-		mapProductVariantIDs[productVariant.ID] = productVariant.ProductReadyStock
+		mapProductVariantIDs[productVariant.ID] = productVariant
 	}
 	for i, cartItem := range request.Items {
-		if readyStock, ok := mapProductVariantIDs[cartItem.ProductVariantID]; !ok || !readyStock {
+		productVariant, ok := mapProductVariantIDs[cartItem.ProductVariantID]
+		if !ok || !productVariant.ProductReadyStock {
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(helper.Sprintf("items[%d].product_variant_id: not found or out of stock", i)).
 				WriteResponse(c)
 		}
+		cartItem.ProductCategoryID = productVariant.ProductCategoryID
+		cartItem.ProductCategoryName = productVariant.ProductCategoryName
+		cartItem.ProductID = productVariant.ProductID
+		cartItem.ProductName = productVariant.ProductName
+		cartItem.ProductPhoto = productVariant.ProductPhoto
+		cartItem.ProductReadyStock = productVariant.ProductReadyStock
+		cartItem.StockUnit = productVariant.StockUnit
+		cartItem.BasePrice = productVariant.BasePrice
+		cartItem.SellingPrice = productVariant.SellingPrice
+		cartItem.DiscountType = productVariant.DiscountType
+		cartItem.DiscountRate = productVariant.DiscountRate
+		cartItem.DiscountMinimumQuantity = productVariant.DiscountMinimumQuantity
+		cartItem.DiscountAmount = productVariant.DiscountAmount
+		cartItem.SalePrice = productVariant.SalePrice
+		cartItem.Description = productVariant.Description
+		request.Items[i] = cartItem
 	}
 	now := time.Now().In(time.Local)
 	request.UserID = &currentUser.ID

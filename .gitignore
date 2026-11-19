@@ -28,3 +28,7 @@ laukpauk
 images
 
 default.pgo
+backup.sh
+laukpauk.sql
+laukpauk.sql.xz
+restore.sh

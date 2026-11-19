@@ -463,120 +463,111 @@ func (q *cartRepository) SaveCart(
 			, note
 			, created_at
 			, updated_at
-		) VALUES`,
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+			, $21
+		) ON CONFLICT (cart_id, product_variant_id) DO UPDATE SET
+			product_category_id = $3
+			, product_category_name = $4
+			, product_id = $5
+			, product_name = $6
+			, product_photo = $7
+			, product_ready_stock = $8
+			, stock_unit = $9
+			, base_price = $10
+			, selling_price = $11
+			, discount_type = $12
+			, discount_rate = $13
+			, discount_minimum_quantity = $14
+			, discount_amount = $15
+			, sale_price = $16
+			, description = $17
+			, quantity = $18
+			, note = $19
+			, updated_at = $21
+		RETURNING id
+			, cart_id
+			, product_variant_id
+			, product_category_id
+			, product_category_name
+			, product_id
+			, product_name
+			, product_photo
+			, product_ready_stock
+			, stock_unit
+			, base_price
+			, selling_price
+			, discount_type
+			, discount_rate
+			, discount_minimum_quantity
+			, discount_amount
+			, sale_price
+			, description
+			, quantity
+			, note
+			, created_at
+			, updated_at`,
 	)
-	for _, cartItem := range request.Items {
-		if cartItem.Quantity > 0 {
-			params = append(
-				params,
-				response.ID,
-				cartItem.ProductVariantID,
-				cartItem.ProductCategoryID,
-				cartItem.ProductCategoryName,
-				cartItem.ProductID,
-				cartItem.ProductName,
-				cartItem.ProductPhoto,
-				cartItem.ProductReadyStock,
-				cartItem.StockUnit,
-				cartItem.BasePrice,
-				cartItem.SellingPrice,
-				cartItem.DiscountType,
-				cartItem.DiscountRate,
-				cartItem.DiscountMinimumQuantity,
-				cartItem.DiscountAmount,
-				cartItem.SalePrice,
-				cartItem.Description,
-				cartItem.Quantity,
-				cartItem.Note,
-				cartItem.CreatedAt,
-				cartItem.UpdatedAt,
-			)
-			if n = len(params); n > 25 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(
-				sb,
-				` ($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d
-				, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d
-				, $%d, $%d, $%d, $%d, $%d)`,
-				n-24, n-23, n-22, n-21, n-20, n-19, n-18, n-17, n-16, n-15,
-				n-14, n-13, n-12, n-11, n-10, n-9, n-8, n-7, n-6, n-5,
-				n-4, n-3, n-2, n-1, n,
-			)
+	for _, oldCartItem := range request.Items {
+		if oldCartItem.Quantity < 1 {
+			continue
 		}
-	}
-	if len(params) > 0 {
-		_, _ = sb.WriteString(
-			` ON CONFLICT (cart_id, product_variant_id) DO UPDATE SET
-				quantity = EXCLUDED.quantity
-				, note = EXCLUDED.note
-				, updated_at = EXCLUDED.updated_at
-			RETURNING id
-				, cart_id
-				, product_variant_id
-				, product_category_id
-				, product_category_name
-				, product_id
-				, product_name
-				, product_photo
-				, product_ready_stock
-				, stock_unit
-				, base_price
-				, selling_price
-				, discount_type
-				, discount_rate
-				, discount_minimum_quantity
-				, discount_amount
-				, sale_price
-				, description
-				, quantity
-				, note
-				, created_at
-				, updated_at`,
-		)
-		rows, err := tx.Query(ctx, sb.String(), params...)
-		if errors.Is(err, pgx.ErrNoRows) {
-			err = nil
-		}
-		if err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		var newCartItem models.CartItem
+		if err = tx.QueryRow(
+			ctx,
+			sb.String(),
+			response.ID,
+			oldCartItem.ProductVariantID,
+			oldCartItem.ProductCategoryID,
+			oldCartItem.ProductCategoryName,
+			oldCartItem.ProductID,
+			oldCartItem.ProductName,
+			oldCartItem.ProductPhoto,
+			oldCartItem.ProductReadyStock,
+			oldCartItem.StockUnit,
+			oldCartItem.BasePrice,
+			oldCartItem.SellingPrice,
+			oldCartItem.DiscountType,
+			oldCartItem.DiscountRate,
+			oldCartItem.DiscountMinimumQuantity,
+			oldCartItem.DiscountAmount,
+			oldCartItem.SalePrice,
+			oldCartItem.Description,
+			oldCartItem.Quantity,
+			oldCartItem.Note,
+			oldCartItem.CreatedAt,
+			oldCartItem.UpdatedAt,
+		).Scan(
+			&newCartItem.ID,
+			&newCartItem.CartID,
+			&newCartItem.ProductVariantID,
+			&newCartItem.ProductCategoryID,
+			&newCartItem.ProductCategoryName,
+			&newCartItem.ProductID,
+			&newCartItem.ProductName,
+			&newCartItem.ProductPhoto,
+			&newCartItem.ProductReadyStock,
+			&newCartItem.StockUnit,
+			&newCartItem.BasePrice,
+			&newCartItem.SellingPrice,
+			&newCartItem.DiscountType,
+			&newCartItem.DiscountRate,
+			&newCartItem.DiscountMinimumQuantity,
+			&newCartItem.DiscountAmount,
+			&newCartItem.SalePrice,
+			&newCartItem.Description,
+			&newCartItem.Quantity,
+			&newCartItem.Note,
+			&newCartItem.CreatedAt,
+			&newCartItem.UpdatedAt,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
-		defer rows.Close()
-		params = params[:0]
-		for rows.Next() {
-			var cartItem models.CartItem
-			if err = rows.Scan(
-				&cartItem.ID,
-				&cartItem.CartID,
-				&cartItem.ProductVariantID,
-				&cartItem.ProductCategoryID,
-				&cartItem.ProductCategoryName,
-				&cartItem.ProductID,
-				&cartItem.ProductName,
-				&cartItem.ProductPhoto,
-				&cartItem.ProductReadyStock,
-				&cartItem.StockUnit,
-				&cartItem.BasePrice,
-				&cartItem.SellingPrice,
-				&cartItem.DiscountType,
-				&cartItem.DiscountRate,
-				&cartItem.DiscountMinimumQuantity,
-				&cartItem.DiscountAmount,
-				&cartItem.SalePrice,
-				&cartItem.Description,
-				&cartItem.Quantity,
-				&cartItem.Note,
-				&cartItem.CreatedAt,
-				&cartItem.UpdatedAt,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-				return nil, err
-			}
-			response.Items = append(response.Items, &cartItem)
-			response.Quantity += cartItem.Quantity
-			params = append(params, cartItem.ID)
-		}
+		response.Items = append(response.Items, &newCartItem)
+		response.Quantity += newCartItem.Quantity
+		params = append(params, newCartItem.ID)
 	}
 	params = append([]any{response.ID}, params...)
 	sb.Reset()
