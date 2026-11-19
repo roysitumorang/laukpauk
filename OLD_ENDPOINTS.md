@@ -1142,7 +1142,7 @@ Response (`DeliveryResponses.PlaceSearch`):
 
 App method: `HomeApi.getBanner`.
 
-Home page hero banners. The list is in the backend's `data` envelope; each banner has `id`, `name`, `description`, `photo` (a full image URL) and `visible`. The app skips banners with `visible: false`, shows `name` / `description` only when not empty, and loads an `http://` photo over `https://`. The other fields are ignored.
+Home page hero banners. The list is in the backend's `data` envelope; each banner has `id`, `name`, `description`, `photo` (a full image URL) and `visible`. The app skips banners with `visible: false`, shows `name` / `description` only when not empty; an `http://` photo is still loaded over `https://`. The other fields are ignored.
 
 Request:
 
@@ -1164,7 +1164,7 @@ Response (`HomeResponses.Banners`):
       "record_status": 0,
       "name": "",
       "description": "",
-      "photo": "http://sadia.id/images/01a1f1aa-ca1f-71b6-9944-975656e8022d.webp",
+      "photo": "https://sadia.id/images/01a1f1aa-ca1f-71b6-9944-975656e8022d.webp",
       "visible": true,
       "created_by": "01a1f1a9-4f55-70b9-b339-24501657e0cc",
       "created_at": "2021-11-19T16:07:41+07:00",
