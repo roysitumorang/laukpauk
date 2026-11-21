@@ -498,7 +498,7 @@ func (q *userController) V1BuyerConfirmMobilePhone(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	if currentUser.MobilePhoneConfirmationToken == nil {
-		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+		return helper.NewResponse(fiber.StatusOK).
 			SetMessage("mobile phone already confirmed").
 			WriteResponse(c)
 	}
@@ -510,7 +510,6 @@ func (q *userController) V1BuyerConfirmMobilePhone(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	if !matched {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("mobile phone confirmation failed").
 			WriteResponse(c)
