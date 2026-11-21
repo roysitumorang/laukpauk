@@ -466,7 +466,7 @@ The app reads the user from `data` (the backend's response envelope) when it is 
 
 App method: `AuthApi.confirmMobilePhone`.
 
-Confirms the signed-in buyer's mobile phone with the 6-digit code SMSed at sign-up. Body: `token`, the standard base64 of the code (like passwords). The OTP screen opens after registering (the new buyer is signed in first) and after a sign-in while `user.mobile_phone_confirmed_at` is null; checkout's "verify your number" step uses the same call. Answers `200` with the updated user in `data` (the app stores it). A wrong code answers `422 mobile phone confirmation failed`; `422 mobile phone already confirmed` is treated as confirmed.
+Confirms the signed-in buyer's mobile phone with the 6-digit code SMSed at sign-up. Body: `token`, the standard base64 of the code (like passwords). The OTP screen opens after registering (the new buyer is signed in first) and after a sign-in while `user.mobile_phone_confirmed_at` is null; checkout's "verify your number" step uses the same call. Answers `200` with the updated user in `data` (the app stores it), or `200 mobile phone already confirmed` without `data` when there is nothing to confirm. A wrong code answers `422 mobile phone confirmation failed`.
 
 Request:
 
