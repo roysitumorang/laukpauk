@@ -22,7 +22,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (6)
 - [CartApi](#cartapi) (7)
-- [CheckoutApi](#checkoutapi) (14)
+- [CheckoutApi](#checkoutapi) (13)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (9)
 - [NotificationApi](#notificationapi) (7)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-102 endpoint definitions in total.
+101 endpoint definitions in total.
 
 ## Index
 
@@ -66,7 +66,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Pengaturan/getWalletConfiguration` | no | `CartApi.getWalletConfiguration` |
 | GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
-| GET | `Auth/cekVerifikasiUser` | yes | `CheckoutApi.checkUserVerification` |
 | GET | `User/getDetailUser` | yes | `CheckoutApi.getDetailUser` |
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
 | GET | `User/getTotalKeranjang` | no | `CheckoutApi.getCartTotal` |
@@ -774,25 +773,6 @@ Response (`CartResponses.GiftDetail`):
 ```
 
 ## CheckoutApi
-
-### `GET Auth/cekVerifikasiUser`
-
-App method: `CheckoutApi.checkUserVerification`.
-
-Request:
-
-```http
-GET Auth/cekVerifikasiUser
-Authorization: Bearer <JWT>
-```
-
-Response (`CheckoutResponses.Verified`):
-
-```json
-{
-  "isVerified": true
-}
-```
 
 ### `GET User/getDetailUser`
 
