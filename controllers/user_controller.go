@@ -243,13 +243,21 @@ func (q *userController) V1BuyerSignUp(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	mobilePhoneConfirmationToken := helper.RandomNumber(6)
+	encryptedMobilePhoneConfirmationToken, err := helper.HashPassword(mobilePhoneConfirmationToken)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrHashPassword")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	user = &models.User{
 		Role:                          models.RoleBuyer,
 		Status:                        models.UserStatusActive,
 		Name:                          request.Name,
 		Username:                      &request.Username,
 		MobilePhoneConfirmationSentAt: &now,
-		MobilePhoneConfirmationToken:  new(helper.RandomNumber(6)),
+		MobilePhoneConfirmationToken:  &encryptedMobilePhoneConfirmationToken,
 		MobilePhone:                   request.MobilePhone,
 		EncryptedPassword:             &encryptedPasword,
 		Photo:                         os.Getenv("BUYER_DEFAULT_PHOTO"),
@@ -301,12 +309,40 @@ func (q *userController) V1BuyerSignUp(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	textMessage, err := q.textMessageService.CreateTextMessage(
+		ctx,
+		tx,
+		&models.TextMessage{
+			UserID:      response.ID,
+			MobilePhone: response.MobilePhone,
+			MessageType: models.TextMessageTypeOtp,
+			Body:        helper.Sprintf("Use %s to confirm your mobile number. If you did not sign up, ignore this message.", mobilePhoneConfirmationToken),
+		},
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTextMessage")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	go func() {
+		if err = q.kafkaClient.Publish(
+			ctx,
+			models.TopicMessage{
+				Topic: models.TopicTextMessage,
+				Event: models.TopicTextMessageEventSend,
+				ID:    textMessage.ID,
+			},
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPublish")
+		}
+	}()
 	return helper.NewResponse(fiber.StatusCreated).
 		SetData(response).
 		WriteResponse(c)
