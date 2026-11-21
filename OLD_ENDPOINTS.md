@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)), and checkout's delivery address comes from `buyer/addresses` ([laukpauk_mobile#28](https://github.com/roysitumorang/laukpauk_mobile/pull/28)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)), checkout's delivery address comes from `buyer/addresses` ([laukpauk_mobile#28](https://github.com/roysitumorang/laukpauk_mobile/pull/28)) and its delivery schedule options from `GET buyer/delivery_plans/now` ([laukpauk_mobile#29](https://github.com/roysitumorang/laukpauk_mobile/pull/29)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -81,7 +81,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `User/getVoucher` | yes | `CheckoutApi.getVoucher` |
 | GET | `Voucher/getStatusVoucher/{id}` | yes | `CheckoutApi.getStatusVoucher` |
 | GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
-| GET | `JadwalDelivery/getAvailableJadwalDelivery` | no | `DeliveryApi.getAvailableDeliverySchedule` |
+| GET | `buyer/delivery_plans/now` | yes | `DeliveryApi.deliveryPlanNow` |
 | GET | `Gift/getGift` | no | `DeliveryApi.getGifts` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
@@ -1089,25 +1089,50 @@ Response (`CheckoutResponses.KodePromo`):
 
 ## DeliveryApi
 
-### `GET JadwalDelivery/getAvailableJadwalDelivery`
+### `GET buyer/delivery_plans/now`
 
-App method: `DeliveryApi.getAvailableDeliverySchedule`.
+App method: `DeliveryApi.deliveryPlanNow`.
+
+The delivery schedule options for a signed-in buyer at checkout: the delivery plan whose transaction window covers now, in the backend's `data` envelope. Each `delivery_times` entry (RFC 3339) is one option: the app shows its day ("Hari ini", "Besok", "Lusa", or e.g. "Sel, 24 Nov"), a session from its hour (Pagi < 11, Siang < 15, Sore < 18, otherwise Malam) and its hours (start to start + `delivery_time_interval`, a Go duration such as `1h0m0s`). A time that has already started cannot be chosen. The chosen option keeps the `delivery_time` text exactly (the transaction is checked against the plan's delivery times by instant) together with `delivery_plan_id`; it expires once that time has passed. No plan for now answers `404 delivery plan not found`: no options. Buyers log in before saving the cart, so there is no signed-out schedule request.
 
 Request:
 
 ```http
-GET JadwalDelivery/getAvailableJadwalDelivery
+GET buyer/delivery_plans/now
+Authorization: Bearer <JWT>
 ```
 
-Response (`DeliveryResponses.Jadwal`):
+Response (`DeliveryResponses.PlanNow`):
 
 ```json
 {
-  "availableJadwalDelivery": [
-    {
-      "<key>": "<value>"
-    }
-  ]
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "id": "string",
+    "record_status": 0,
+    "name": "Weekday pagi",
+    "weekday": 1,
+    "transaction_window_min": "2026-11-20T00:00:00+07:00",
+    "transaction_window_max": "2026-11-20T08:00:00+07:00",
+    "delivery_time_interval": "1h0m0s",
+    "same_day": true,
+    "same_day_window_min": "2026-11-20T10:00:00+07:00",
+    "same_day_window_max": "2026-11-20T11:00:00+07:00",
+    "next_day": true,
+    "next_day_window_min": "2026-11-21T08:00:00+07:00",
+    "next_day_window_max": "2026-11-21T08:00:00+07:00",
+    "next_two_day": false,
+    "next_two_day_window_min": null,
+    "next_two_day_window_max": null,
+    "delivery_times": [
+      "2026-11-20T10:00:00+07:00",
+      "2026-11-20T11:00:00+07:00",
+      "2026-11-21T08:00:00+07:00"
+    ]
+  },
+  "app": "laukpauk"
 }
 ```
 
