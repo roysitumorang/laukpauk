@@ -23,7 +23,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AuthApi](#authapi) (7)
 - [CartApi](#cartapi) (7)
 - [CheckoutApi](#checkoutapi) (14)
-- [DeliveryApi](#deliveryapi) (6)
+- [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (9)
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-104 endpoint definitions in total.
+103 endpoint definitions in total.
 
 ## Index
 
@@ -82,7 +82,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Voucher/getStatusVoucher/{id}` | yes | `CheckoutApi.getStatusVoucher` |
 | GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
 | GET | `buyer/delivery_plans/now` | yes | `DeliveryApi.deliveryPlanNow` |
-| GET | `JadwalDelivery/getAvailableJadwalDelivery` | no | `DeliveryApi.getAvailableDeliverySchedule` |
 | GET | `Gift/getGift` | no | `DeliveryApi.getGifts` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
@@ -1094,7 +1093,7 @@ Response (`CheckoutResponses.KodePromo`):
 
 App method: `DeliveryApi.deliveryPlanNow`.
 
-The delivery schedule options for a signed-in buyer at checkout: the delivery plan whose transaction window covers now, in the backend's `data` envelope. Each `delivery_times` entry (RFC 3339) is one option: the app shows its day ("Hari ini", "Besok", "Lusa", or e.g. "Sel, 24 Nov"), a session from its hour (Pagi < 11, Siang < 15, Sore < 18, otherwise Malam) and its hours (start to start + `delivery_time_interval`, a Go duration such as `1h0m0s`). A time that has already started cannot be chosen. The chosen option keeps the `delivery_time` text exactly (the transaction is checked against the plan's delivery times by instant) together with `delivery_plan_id`; it expires once that time has passed. No plan for now answers `404 delivery plan not found`: no options. Signed out, the app still uses `JadwalDelivery/getAvailableJadwalDelivery`.
+The delivery schedule options for a signed-in buyer at checkout: the delivery plan whose transaction window covers now, in the backend's `data` envelope. Each `delivery_times` entry (RFC 3339) is one option: the app shows its day ("Hari ini", "Besok", "Lusa", or e.g. "Sel, 24 Nov"), a session from its hour (Pagi < 11, Siang < 15, Sore < 18, otherwise Malam) and its hours (start to start + `delivery_time_interval`, a Go duration such as `1h0m0s`). A time that has already started cannot be chosen. The chosen option keeps the `delivery_time` text exactly (the transaction is checked against the plan's delivery times by instant) together with `delivery_plan_id`; it expires once that time has passed. No plan for now answers `404 delivery plan not found`: no options. Buyers log in before saving the cart, so there is no signed-out schedule request.
 
 Request:
 
@@ -1134,28 +1133,6 @@ Response (`DeliveryResponses.PlanNow`):
     ]
   },
   "app": "laukpauk"
-}
-```
-
-### `GET JadwalDelivery/getAvailableJadwalDelivery`
-
-App method: `DeliveryApi.getAvailableDeliverySchedule`.
-
-Request:
-
-```http
-GET JadwalDelivery/getAvailableJadwalDelivery
-```
-
-Response (`DeliveryResponses.Jadwal`):
-
-```json
-{
-  "availableJadwalDelivery": [
-    {
-      "<key>": "<value>"
-    }
-  ]
 }
 ```
 
