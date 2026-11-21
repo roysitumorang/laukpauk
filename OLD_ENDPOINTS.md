@@ -20,7 +20,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 
 - [AccountApi](#accountapi) (5)
 - [AddressApi](#addressapi) (4)
-- [AuthApi](#authapi) (7)
+- [AuthApi](#authapi) (6)
 - [CartApi](#cartapi) (7)
 - [CheckoutApi](#checkoutapi) (14)
 - [DeliveryApi](#deliveryapi) (5)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-103 endpoint definitions in total.
+102 endpoint definitions in total.
 
 ## Index
 
@@ -55,8 +55,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `buyer/addresses/{id}` | yes | `AddressApi.update` |
 | POST | `buyer/users/sign_in` | no | `AuthApi.signIn` |
 | POST | `buyer/users` | no | `AuthApi.signUp` |
-| POST | `Auth/konfirmasiOTP` | no | `AuthApi.confirmOtp` |
-| POST | `Auth/verifikasiUser` | no | `AuthApi.userVerification` |
+| POST | `buyer/users/mobile_phone/confirm` | yes | `AuthApi.confirmMobilePhone` |
 | POST | `Auth/resendOTP` | yes | `AuthApi.resendOTP` |
 | POST | `Auth/lupaPassword` | no | `AuthApi.forgotPassword` |
 | GET | `User/getDetailUser` | yes | `AuthApi.getDetailUser` |
@@ -418,7 +417,7 @@ Response (`id_token`, `expired_at`, `user`):
 }
 ```
 
-The app reads the three attributes from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It stores `id_token` as the session JWT, `expired_at` (RFC 3339 date-time) as its expiry, and `user` as the current user. From `user` it reads `id` (the user id); there is no phone-confirmation step after sign-in; the other `user` fields shown are the ones the backend's user model sends, and are stored as they come. After `expired_at` the app treats the session as signed out and stops sending the token. A 4xx status means the login or password is wrong. In the request, `password` is always the standard base64 (with padding) of the password's UTF-8 bytes, for example `cmFoYXNpYTEyMw==` for `rahasia123`; registration (`POST buyer/users`) encodes its password the same way, while `User/gantiPassword` still sends its passwords as typed.
+The app reads the three attributes from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It stores `id_token` as the session JWT, `expired_at` (RFC 3339 date-time) as its expiry, and `user` as the current user. From `user` it reads `id` (the user id) and `mobile_phone_confirmed_at` (null opens the OTP screen, `POST buyer/users/mobile_phone/confirm`); the other `user` fields shown are the ones the backend's user model sends, and are stored as they come. After `expired_at` the app treats the session as signed out and stops sending the token. A 4xx status means the login or password is wrong. In the request, `password` is always the standard base64 (with padding) of the password's UTF-8 bytes, for example `cmFoYXNpYTEyMw==` for `rahasia123`; registration (`POST buyer/users`) encodes its password the same way, while `User/gantiPassword` still sends its passwords as typed.
 
 ### `POST buyer/users`
 
@@ -461,58 +460,42 @@ Response (the new user, shaped like `user` of sign-in):
 }
 ```
 
-The app reads the user from `data` (the backend's response envelope) when it is present, and from the top level otherwise. It keeps `id` for the OTP confirmation that follows (`Auth/konfirmasiOTP`); the user is not signed in yet, and a new user's `mobile_phone_confirmed_at` is null. In the request, `password` is the standard base64 of the password's UTF-8 bytes, `referral_code` is left out when empty, and the password confirmation is checked in the app, not sent. A 4xx status means the registration was refused; the app shows the `message` of the error body.
+The app reads the user from `data` (the backend's response envelope) when it is present, and from the top level otherwise. The backend SMSes a 6-digit confirmation code to `mobile_phone`; the app signs the new buyer in (`POST buyer/users/sign_in`) and opens the OTP screen, which sends the code to `POST buyer/users/mobile_phone/confirm`. A new user's `mobile_phone_confirmed_at` is null. In the request, `password` is the standard base64 of the password's UTF-8 bytes, `referral_code` is left out when empty, and the password confirmation is checked in the app, not sent. A 4xx status means the registration was refused; the app shows the `message` of the error body.
 
-### `POST Auth/konfirmasiOTP`
+### `POST buyer/users/mobile_phone/confirm`
 
-App method: `AuthApi.confirmOtp`.
+App method: `AuthApi.confirmMobilePhone`.
+
+Confirms the signed-in buyer's mobile phone with the 6-digit code SMSed at sign-up. Body: `token`, the standard base64 of the code (like passwords). The OTP screen opens after registering (the new buyer is signed in first) and after a sign-in while `user.mobile_phone_confirmed_at` is null; checkout's "verify your number" step uses the same call. Answers `200` with the updated user in `data` (the app stores it). A wrong code answers `422 mobile phone confirmation failed`; `422 mobile phone already confirmed` is treated as confirmed.
 
 Request:
 
 ```http
-POST Auth/konfirmasiOTP
+POST buyer/users/mobile_phone/confirm
 Content-Type: application/json
+Authorization: Bearer <JWT>
 
 {
-  "idUser": "<idUser>",
-  "otp": "<otp>"
+  "token": "MTIzNDU2"
 }
 ```
 
-Response (`AuthResponses.KonfirmasiOTP`):
+Response:
 
 ```json
 {
-  "statusKonfirmasiOTP": true,
-  "returnData": {
-    "idUser": "string",
-    "message": "string",
-    "authToken": "string"
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "id": "string",
+    "role": 2,
+    "status": 1,
+    "name": "string",
+    "username": "string",
+    "mobile_phone": "+6281234567890",
+    "mobile_phone_confirmed_at": "2026-11-21T16:30:00+07:00"
   }
-}
-```
-
-### `POST Auth/verifikasiUser`
-
-App method: `AuthApi.userVerification`.
-
-Request:
-
-```http
-POST Auth/verifikasiUser
-Content-Type: application/json
-
-{
-  "idUser": "<idUser>",
-  "verificationCode": "<verificationCode>"
-}
-```
-
-Response (`AuthResponses.VerifikasiUser`):
-
-```json
-{
-  "statusVerifikasiUser": true
 }
 ```
 
