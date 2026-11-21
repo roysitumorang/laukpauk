@@ -396,3 +396,20 @@ func (q *UserAccount) Validate(passwordRequired, addressRequired bool) error {
 	}
 	return nil
 }
+
+type MobilePhoneConfirmation struct {
+	Base64Token string `json:"token"`
+	Token       string `json:"-"`
+}
+
+func (q *MobilePhoneConfirmation) Validate() error {
+	if q.Base64Token = strings.TrimSpace(q.Base64Token); q.Base64Token == "" {
+		return errors.New("token: is required")
+	}
+	token, err := helper.Base64Decode(q.Base64Token)
+	if err != nil {
+		return fmt.Errorf("token: %s", err.Error())
+	}
+	q.Token = token
+	return nil
+}

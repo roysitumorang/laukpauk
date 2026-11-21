@@ -52,7 +52,8 @@ func (q *userController) Mount(r fiber.Router) {
 	r.Group("/v1/buyer").
 		Post("", q.V1BuyerSignUp).
 		Post("/sign_in", q.V1BuyerSignIn).
-		Get("/me", buyerKeyAuth, q.V1BuyerMe)
+		Get("/me", buyerKeyAuth, q.V1BuyerMe).
+		Post("/mobile_phone/confirm", buyerKeyAuth, q.V1BuyerConfirmMobilePhone)
 }
 
 func (q *userController) V1SellerSignIn(c fiber.Ctx) error {
@@ -446,5 +447,73 @@ func (q *userController) V1BuyerMe(c fiber.Ctx) error {
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(currentUser).
+		WriteResponse(c)
+}
+
+func (q *userController) V1BuyerConfirmMobilePhone(c fiber.Ctx) error {
+	ctx := c.Context()
+	ctxt := "UserController-V1BuyerConfirmMobilePhone"
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	request, statusCode, err := sanitizers.ConfirmMobilePhone(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrConfirmMobilePhone")
+		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if currentUser.MobilePhoneConfirmationToken == nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("mobile phone already confirmed").
+			WriteResponse(c)
+	}
+	matched, err := helper.VerifyPassword(request.Token, *currentUser.MobilePhoneConfirmationToken)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if !matched {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage("mobile phone confirmation failed").
+			WriteResponse(c)
+	}
+	currentUser.MobilePhoneConfirmationToken = nil
+	currentUser.MobilePhoneConfirmedAt = new(time.Now())
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	response, err := q.userService.UpdateUser(
+		ctx,
+		tx,
+		currentUser,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
 		WriteResponse(c)
 }
