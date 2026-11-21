@@ -22,7 +22,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (6)
 - [CartApi](#cartapi) (7)
-- [CheckoutApi](#checkoutapi) (13)
+- [CheckoutApi](#checkoutapi) (12)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (9)
 - [NotificationApi](#notificationapi) (7)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (9)
 - [VoucherApi](#voucherapi) (2)
 
-101 endpoint definitions in total.
+100 endpoint definitions in total.
 
 ## Index
 
@@ -68,7 +68,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
 | GET | `User/getDetailUser` | yes | `CheckoutApi.getDetailUser` |
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
-| GET | `User/getTotalKeranjang` | no | `CheckoutApi.getCartTotal` |
 | GET | `User/getTotalOngkir` | no | `CheckoutApi.getTotalShippingFee` |
 | GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
 | GET | `Transaksi/getJenisOngkir` | no | `CheckoutApi.getShippingFeeType` |
@@ -820,24 +819,6 @@ Response (`CheckoutResponses.JadwalOpened`):
 ```json
 {
   "isJadwalDeliveryOpened": true
-}
-```
-
-### `GET User/getTotalKeranjang`
-
-App method: `CheckoutApi.getCartTotal`.
-
-Request:
-
-```http
-GET User/getTotalKeranjang?cartCode=<cartCode>&latDelivery=<lat>&longDelivery=<lng>
-```
-
-Response (`CheckoutResponses.TotalKeranjang`):
-
-```json
-{
-  "totalKeranjang": 0
 }
 ```
 
