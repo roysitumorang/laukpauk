@@ -48,8 +48,8 @@ func (q *productCategoryController) Mount(r fiber.Router) {
 		Get("", q.V1SellerIndex).
 		Post("", q.V1SellerCreate).
 		Get("/:id", q.V1SellerShow).
-		Post("/:id", q.V1SellerUpdate).
-		Post("/:id/delete", q.V1SellerDelete)
+		Put("/:id", q.V1SellerUpdate).
+		Delete("/:id", q.V1SellerDelete)
 	r.Group("/v1/buyer").
 		Get("", q.V1BuyerIndex)
 }
@@ -238,15 +238,32 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 func (q *productCategoryController) V1SellerShow(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-V1SellerShow"
 	ctx := c.Context()
-	productCategory, err := q.prepareProductCategory(ctx, c)
+	productCategoryID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
-		return helper.NewResponse(notFoundStatusCode(err)).
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrProductCategoryNotFound.Error()).
+			WriteResponse(c)
+	}
+	response, err := q.productCategoryService.FindProductCategory(
+		ctx,
+		models.NewProductCategoryFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductCategoryIDs(productCategoryID),
+	)
+	if errors.Is(err, models.ErrProductCategoryNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
-		SetData(productCategory).
+		SetData(response).
 		WriteResponse(c)
 }
 
@@ -254,10 +271,27 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-V1SellerUpdate"
 	ctx := c.Context()
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	productCategory, err := q.prepareProductCategory(ctx, c)
+	productCategoryID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
-		return helper.NewResponse(notFoundStatusCode(err)).
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrProductCategoryNotFound.Error()).
+			WriteResponse(c)
+	}
+	productCategory, err := q.productCategoryService.FindProductCategory(
+		ctx,
+		models.NewProductCategoryFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductCategoryIDs(productCategoryID),
+	)
+	if errors.Is(err, models.ErrProductCategoryNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
@@ -392,10 +426,27 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 	ctxt := "ProductCategoryController-V1SellerDelete"
 	ctx := c.Context()
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	productCategory, err := q.prepareProductCategory(ctx, c)
+	productCategoryID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareProductCategory")
-		return helper.NewResponse(notFoundStatusCode(err)).
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrProductCategoryNotFound.Error()).
+			WriteResponse(c)
+	}
+	productCategory, err := q.productCategoryService.FindProductCategory(
+		ctx,
+		models.NewProductCategoryFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithProductCategoryIDs(productCategoryID),
+	)
+	if errors.Is(err, models.ErrProductCategoryNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
@@ -418,8 +469,7 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	saved, err := q.productCategoryService.UpdateProductCategory(ctx, tx, productCategory)
-	if err != nil {
+	if _, err = q.productCategoryService.UpdateProductCategory(ctx, tx, productCategory); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
@@ -431,39 +481,8 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	return helper.NewResponse(fiber.StatusOK).
-		SetMessage("product category deleted successfully").
-		SetData(saved).
+	return helper.NewResponse(fiber.StatusNoContent).
 		WriteResponse(c)
-}
-
-func (q *productCategoryController) prepareProductCategory(
-	ctx context.Context,
-	c fiber.Ctx,
-) (
-	*models.ProductCategory,
-	error,
-) {
-	productCategory := &models.ProductCategory{}
-	productCategory.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
-	if c.Params("id") != "" {
-		productCategoryID, err := uuid.Parse(c.Params("id"))
-		if err != nil {
-			return nil, models.ErrProductCategoryNotFound
-		}
-		if productCategory, err = q.productCategoryService.FindProductCategory(
-			ctx,
-			models.NewProductCategoryFilter().
-				WithRecordStatuses(models.RecordStatusActive).
-				WithProductCategoryIDs(productCategoryID),
-		); err != nil && !errors.Is(err, models.ErrProductCategoryNotFound) {
-			return nil, err
-		}
-		if productCategory == nil {
-			return nil, models.ErrProductCategoryNotFound
-		}
-	}
-	return productCategory, nil
 }
 
 func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {

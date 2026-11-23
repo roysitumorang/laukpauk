@@ -15,35 +15,38 @@ var ErrProductVariantNotFound = errors.New("product variant not found")
 var ErrUniqueProductVariantStockUnitViolation = errors.New("stock_unit: already exists")
 
 type ProductVariant struct {
-	RowNo                   int64        `json:"-" form:"-"`
-	ID                      uuid.UUID    `json:"id" form:"id"`
-	RecordStatus            RecordStatus `json:"record_status" form:"-"`
-	ProductCategoryID       uuid.UUID    `json:"product_category_id" form:"-"`
-	ProductCategoryName     string       `json:"product_category_name" form:"-"`
-	ProductID               uuid.UUID    `json:"product_id" form:"-"`
-	ProductName             string       `json:"product_name" form:"-"`
-	ProductPhoto            string       `json:"product_photo" form:"-"`
-	ProductReadyStock       bool         `json:"product_ready_stock" form:"-"`
-	StockUnit               string       `json:"stock_unit" form:"stock_unit"`
-	BasePrice               int64        `json:"base_price,omitempty" form:"base_price"`
-	SellingPrice            int64        `json:"selling_price" form:"selling_price"`
-	DiscountType            DiscountType `json:"discount_type" form:"discount_type"`
-	DiscountTypeName        string       `json:"discount_type_name" form:"-"`
-	DiscountRate            int64        `json:"discount_rate" form:"discount_rate"`
-	DiscountMinimumQuantity int64        `json:"discount_minimum_quantity" form:"discount_minimum_quantity"`
-	DiscountAmount          int64        `json:"discount_amount" form:"-"`
-	SalePrice               int64        `json:"sale_price" form:"-"`
-	Description             string       `json:"description" form:"description"`
-	CreatedBy               uuid.UUID    `json:"created_by" form:"-"`
-	CreatedAt               time.Time    `json:"created_at" form:"-"`
-	UpdatedBy               uuid.UUID    `json:"updated_by" form:"-"`
-	UpdatedAt               time.Time    `json:"updated_at" form:"-"`
-	DeletedBy               *uuid.UUID   `json:"deleted_by" form:"-"`
-	DeletedAt               *time.Time   `json:"deleted_at" form:"-"`
-	DeletionReason          *string      `json:"deletion_reason" form:"-"`
+	RowNo                   int64        `json:"-"`
+	ID                      uuid.UUID    `json:"id"`
+	RecordStatus            RecordStatus `json:"record_status"`
+	ProductCategoryID       uuid.UUID    `json:"product_category_id"`
+	ProductCategoryName     string       `json:"product_category_name"`
+	ProductID               uuid.UUID    `json:"product_id"`
+	ProductName             string       `json:"product_name"`
+	ProductPhoto            string       `json:"product_photo"`
+	ProductReadyStock       bool         `json:"product_ready_stock"`
+	StockUnit               string       `json:"stock_unit"`
+	BasePrice               int64        `json:"base_price"`
+	SellingPrice            int64        `json:"selling_price"`
+	DiscountType            DiscountType `json:"discount_type"`
+	DiscountTypeName        string       `json:"discount_type_name"`
+	DiscountRate            int64        `json:"discount_rate"`
+	DiscountMinimumQuantity int64        `json:"discount_minimum_quantity"`
+	DiscountAmount          int64        `json:"discount_amount"`
+	SalePrice               int64        `json:"sale_price"`
+	Description             string       `json:"description"`
+	CreatedBy               uuid.UUID    `json:"created_by"`
+	CreatedAt               time.Time    `json:"created_at"`
+	UpdatedBy               uuid.UUID    `json:"updated_by"`
+	UpdatedAt               time.Time    `json:"updated_at"`
+	DeletedBy               *uuid.UUID   `json:"deleted_by"`
+	DeletedAt               *time.Time   `json:"deleted_at"`
+	DeletionReason          *string      `json:"deletion_reason"`
 }
 
 func (q *ProductVariant) Validate() error {
+	if q.ProductID.Compare(uuid.Nil()) == 0 {
+		return errors.New("product_id: is required")
+	}
 	if q.StockUnit = strings.TrimSpace(q.StockUnit); q.StockUnit == "" {
 		return errors.New("stock_unit: is required")
 	}

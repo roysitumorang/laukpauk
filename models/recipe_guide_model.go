@@ -16,21 +16,24 @@ var MapRecipeGuideSortings = map[string]struct{}{
 }
 
 type RecipeGuide struct {
-	RowNo          int64        `json:"-" form:"-"`
-	ID             uuid.UUID    `json:"id" form:"id"`
-	RecordStatus   RecordStatus `json:"record_status" form:"-"`
-	RecipeID       uuid.UUID    `json:"recipe_id" form:"-"`
-	Instruction    string       `json:"instruction" form:"instruction"`
-	CreatedBy      uuid.UUID    `json:"created_by" form:"-"`
-	CreatedAt      time.Time    `json:"created_at" form:"-"`
-	UpdatedBy      uuid.UUID    `json:"updated_by" form:"-"`
-	UpdatedAt      time.Time    `json:"updated_at" form:"-"`
-	DeletedBy      *uuid.UUID   `json:"deleted_by" form:"-"`
-	DeletedAt      *time.Time   `json:"deleted_at" form:"-"`
-	DeletionReason *string      `json:"deletion_reason" form:"-"`
+	RowNo          int64        `json:"-"`
+	ID             uuid.UUID    `json:"id"`
+	RecordStatus   RecordStatus `json:"record_status"`
+	RecipeID       uuid.UUID    `json:"recipe_id"`
+	Instruction    string       `json:"instruction"`
+	CreatedBy      uuid.UUID    `json:"created_by"`
+	CreatedAt      time.Time    `json:"created_at"`
+	UpdatedBy      uuid.UUID    `json:"updated_by"`
+	UpdatedAt      time.Time    `json:"updated_at"`
+	DeletedBy      *uuid.UUID   `json:"deleted_by"`
+	DeletedAt      *time.Time   `json:"deleted_at"`
+	DeletionReason *string      `json:"deletion_reason"`
 }
 
 func (q *RecipeGuide) Validate() error {
+	if q.RecipeID.Compare(uuid.Nil()) == 0 {
+		return errors.New("recipe_id: is required")
+	}
 	if q.Instruction = strings.TrimSpace(q.Instruction); q.Instruction == "" {
 		return errors.New("instruction: is required")
 	}

@@ -47,15 +47,15 @@ func (q *transactionController) Mount(r fiber.Router) {
 		Post("", buyerKeyAuth, q.V1BuyerCreate).
 		Get("/:id", buyerKeyAuth, q.V1BuyerShow).
 		Post("/pay", q.V1Pay).
-		Post("/:id/withdraw", buyerKeyAuth, q.V1BuyerWithdraw)
+		Put("/:id/withdraw", buyerKeyAuth, q.V1BuyerWithdraw)
 	sellerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleSeller, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/seller", sellerKeyAuth).
 		Get("", q.V1SellerIndex).
 		Get("/:id", q.V1SellerShow).
-		Post("/:id/withdraw", q.V1SellerWithdraw).
-		Post("/:id/process", q.V1SellerProcess).
-		Post("/:id/ship", q.V1SellerShip).
-		Post("/:id/complete", q.V1SellerComplete)
+		Put("/:id/withdraw", q.V1SellerWithdraw).
+		Put("/:id/process", q.V1SellerProcess).
+		Put("/:id/ship", q.V1SellerShip).
+		Put("/:id/complete", q.V1SellerComplete)
 
 }
 
@@ -313,15 +313,31 @@ func (q *transactionController) V1SellerIndex(c fiber.Ctx) (err error) {
 func (q *transactionController) V1SellerShow(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-V1SellerShow"
 	ctx := c.Context()
-	transaction, err := q.prepareTransaction(ctx, c)
+	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return helper.NewResponse(notFoundStatusCode(err)).
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	response, err := q.transactionService.FindTransaction(
+		ctx,
+		models.NewTransactionFilter().
+			WithTransactionIDs(transactionID),
+	)
+	if errors.Is(err, models.ErrTransactionNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
-		SetData(transaction).
+		SetData(response).
 		WriteResponse(c)
 }
 
@@ -329,22 +345,34 @@ func (q *transactionController) V1SellerWithdraw(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-V1SellerWithdraw"
 	ctx := c.Context()
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	request, err := q.prepareTransaction(ctx, c, models.TransactionStatusWithdrawalPending)
+	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return helper.NewResponse(notFoundStatusCode(err)).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if request == nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
 			WriteResponse(c)
 	}
-	request.Status = models.TransactionStatusWithdrawn
-	request.WithdrawnBy = &currentUser.ID
-	request.WithdrawnAt = new(time.Now().In(time.Local))
-	saved, err := q.transactionService.WithdrawTransaction(ctx, request)
+	transaction, err := q.transactionService.FindTransaction(
+		ctx,
+		models.NewTransactionFilter().
+			WithTransactionIDs(transactionID).
+			WithTransactionStatuses(models.TransactionStatusWithdrawalPending),
+	)
+	if errors.Is(err, models.ErrTransactionNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	transaction.Status = models.TransactionStatusWithdrawn
+	transaction.WithdrawnBy = &currentUser.ID
+	transaction.WithdrawnAt = new(time.Now().In(time.Local))
+	response, err := q.transactionService.WithdrawTransaction(ctx, transaction)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrWithdrawTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
@@ -353,7 +381,7 @@ func (q *transactionController) V1SellerWithdraw(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction withdrawn successfully").
-		SetData(saved).
+		SetData(response).
 		WriteResponse(c)
 }
 
@@ -361,16 +389,28 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-V1SellerProcess"
 	ctx := c.Context()
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	transaction, err := q.prepareTransaction(ctx, c, models.TransactionStatusPaid)
+	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return helper.NewResponse(notFoundStatusCode(err)).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if transaction == nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	transaction, err := q.transactionService.FindTransaction(
+		ctx,
+		models.NewTransactionFilter().
+			WithTransactionIDs(transactionID).
+			WithTransactionStatuses(models.TransactionStatusPaid),
+	)
+	if errors.Is(err, models.ErrTransactionNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	request, statusCode, err := sanitizers.ValidateTransaction(ctx, c)
@@ -429,7 +469,7 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	saved, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
+	response, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
@@ -444,7 +484,7 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction processed successfully").
-		SetData(saved).
+		SetData(response).
 		WriteResponse(c)
 }
 
@@ -452,16 +492,28 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-V1SellerShip"
 	ctx := c.Context()
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	transaction, err := q.prepareTransaction(ctx, c, models.TransactionStatusProcessed)
+	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return helper.NewResponse(notFoundStatusCode(err)).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if transaction == nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	transaction, err := q.transactionService.FindTransaction(
+		ctx,
+		models.NewTransactionFilter().
+			WithTransactionIDs(transactionID).
+			WithTransactionStatuses(models.TransactionStatusProcessed),
+	)
+	if errors.Is(err, models.ErrTransactionNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
 	request, _, err := sanitizers.ValidateTransactionShipment(ctx, c)
@@ -492,7 +544,7 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	saved, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
+	response, err := q.transactionService.UpdateTransaction(ctx, tx, transaction)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
@@ -507,26 +559,38 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction shipped successfully").
-		SetData(saved).
+		SetData(response).
 		WriteResponse(c)
 }
 
 func (q *transactionController) V1SellerComplete(c fiber.Ctx) (err error) {
 	ctxt := "TransactionController-V1SellerComplete"
 	ctx := c.Context()
-	transaction, err := q.prepareTransaction(ctx, c, models.TransactionStatusShipped)
+	transactionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrPrepareTransaction")
-		return helper.NewResponse(notFoundStatusCode(err)).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if transaction == nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
 			WriteResponse(c)
 	}
-	saved, err := q.transactionService.CompleteTransaction(ctx, transaction)
+	transaction, err := q.transactionService.FindTransaction(
+		ctx,
+		models.NewTransactionFilter().
+			WithTransactionIDs(transactionID).
+			WithTransactionStatuses(models.TransactionStatusShipped),
+	)
+	if errors.Is(err, models.ErrTransactionNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrTransactionNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	response, err := q.transactionService.CompleteTransaction(ctx, transaction)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCompleteTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
@@ -535,33 +599,6 @@ func (q *transactionController) V1SellerComplete(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction completed successfully").
-		SetData(saved).
+		SetData(response).
 		WriteResponse(c)
-}
-
-func (q *transactionController) prepareTransaction(
-	ctx context.Context,
-	c fiber.Ctx,
-	transactionStatuses ...models.TransactionStatus,
-) (
-	*models.Transaction,
-	error,
-) {
-	transactionID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		return nil, models.ErrTransactionNotFound
-	}
-	request := models.NewTransactionFilter().
-		WithTransactionIDs(transactionID)
-	if len(transactionStatuses) > 0 {
-		request.WithTransactionStatuses(transactionStatuses...)
-	}
-	transaction, err := q.transactionService.FindTransaction(ctx, request)
-	if err != nil && !errors.Is(err, models.ErrTransactionNotFound) {
-		return nil, err
-	}
-	if transaction == nil {
-		return nil, models.ErrTransactionNotFound
-	}
-	return transaction, nil
 }

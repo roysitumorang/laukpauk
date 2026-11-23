@@ -17,28 +17,31 @@ var MapRecipeItemSortings = map[string]struct{}{
 }
 
 type RecipeItem struct {
-	RowNo                   int64        `json:"-" form:"-"`
-	ID                      uuid.UUID    `json:"id" form:"id"`
-	RecordStatus            RecordStatus `json:"record_status" form:"-"`
-	RecipeID                uuid.UUID    `json:"recipe_id" form:"-"`
-	ProductID               uuid.UUID    `json:"product_id" form:"-"`
-	ProductName             string       `json:"product_name" form:"-"`
-	ProductPhoto            string       `json:"product_photo" form:"-"`
-	ProductReadyStock       bool         `json:"product_ready_stock" form:"-"`
-	ProductVariantID        uuid.UUID    `json:"product_variant_id" form:"product_variant_id"`
-	ProductVariantStockUnit string       `json:"product_variant_stock_unit" form:"-"`
-	Quantity                int64        `json:"quantity" form:"quantity"`
-	Note                    string       `json:"note" form:"note"`
-	CreatedBy               uuid.UUID    `json:"created_by" form:"-"`
-	CreatedAt               time.Time    `json:"created_at" form:"-"`
-	UpdatedBy               uuid.UUID    `json:"updated_by" form:"-"`
-	UpdatedAt               time.Time    `json:"updated_at" form:"-"`
-	DeletedBy               *uuid.UUID   `json:"deleted_by" form:"-"`
-	DeletedAt               *time.Time   `json:"deleted_at" form:"-"`
-	DeletionReason          *string      `json:"deletion_reason" form:"-"`
+	RowNo                   int64        `json:"-"`
+	ID                      uuid.UUID    `json:"id"`
+	RecordStatus            RecordStatus `json:"record_status"`
+	RecipeID                uuid.UUID    `json:"recipe_id"`
+	ProductID               uuid.UUID    `json:"product_id"`
+	ProductName             string       `json:"product_name"`
+	ProductPhoto            string       `json:"product_photo"`
+	ProductReadyStock       bool         `json:"product_ready_stock"`
+	ProductVariantID        uuid.UUID    `json:"product_variant_id"`
+	ProductVariantStockUnit string       `json:"product_variant_stock_unit"`
+	Quantity                int64        `json:"quantity"`
+	Note                    string       `json:"note"`
+	CreatedBy               uuid.UUID    `json:"created_by"`
+	CreatedAt               time.Time    `json:"created_at"`
+	UpdatedBy               uuid.UUID    `json:"updated_by"`
+	UpdatedAt               time.Time    `json:"updated_at"`
+	DeletedBy               *uuid.UUID   `json:"deleted_by"`
+	DeletedAt               *time.Time   `json:"deleted_at"`
+	DeletionReason          *string      `json:"deletion_reason"`
 }
 
 func (q *RecipeItem) Validate() error {
+	if q.RecipeID.Compare(uuid.Nil()) == 0 {
+		return errors.New("recipe_id: is required")
+	}
 	if q.ProductVariantID.Compare(uuid.Nil()) == 0 {
 		return errors.New("product_variant_id: is required")
 	}

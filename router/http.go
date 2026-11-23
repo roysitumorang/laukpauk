@@ -96,10 +96,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			RuleList: []rewrite.Rule{
 				{From: "/v1/seller/product_categories", To: "/product_categories/v1/seller"},
 				{From: "/v1/seller/product_categories/*", To: "/product_categories/v1/seller/$1"},
-				{From: "/v1/seller/product_categories/*/*", To: "/product_categories/v1/seller/$1/$2"},
 				{From: "/v1/seller/products", To: "/products/v1/seller"},
 				{From: "/v1/seller/products/*", To: "/products/v1/seller/$1"},
-				{From: "/v1/seller/products/*/*", To: "/products/v1/seller/$1/$2"},
+				{From: "/v1/seller/product_variants", To: "/product_variants/v1/seller"},
+				{From: "/v1/seller/product_variants/*", To: "/product_variants/v1/seller/$1"},
 				{From: "/v1/seller/vouchers", To: "/vouchers/v1/seller"},
 				{From: "/v1/seller/vouchers/*", To: "/vouchers/v1/seller/$1"},
 				{From: "/v1/seller/vouchers/*/*", To: "/vouchers/v1/seller/$1/$2"},
@@ -115,12 +115,12 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/seller/banners", To: "/banners/v1/seller"},
 				{From: "/v1/seller/banners/*", To: "/banners/v1/seller/$1"},
 				{From: "/v1/seller/banners/*/*", To: "/banners/v1/seller/$1/$2"},
-				{From: "/v1/seller/sellers", To: "/sellers/v1/seller"},
-				{From: "/v1/seller/sellers/*", To: "/sellers/v1/seller/$1"},
-				{From: "/v1/seller/sellers/*/*", To: "/sellers/v1/seller/$1/$2"},
 				{From: "/v1/seller/recipes", To: "/recipes/v1/seller"},
 				{From: "/v1/seller/recipes/*", To: "/recipes/v1/seller/$1"},
-				{From: "/v1/seller/recipes/*/*", To: "/recipes/v1/seller/$1/$2"},
+				{From: "/v1/seller/recipe_guides", To: "/recipe_guides/v1/seller"},
+				{From: "/v1/seller/recipe_guides/*", To: "/recipe_guides/v1/seller/$1"},
+				{From: "/v1/seller/recipe_items", To: "/recipe_items/v1/seller"},
+				{From: "/v1/seller/recipe_items/*", To: "/recipe_items/v1/seller/$1"},
 				{From: "/v1/seller/points", To: "/points/v1/seller"},
 				{From: "/v1/seller/points/*", To: "/points/v1/seller/$1"},
 				{From: "/v1/seller/points/*/*", To: "/points/v1/seller/$1/$2"},
@@ -234,6 +234,14 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/products"))
+	controllers.NewProductVariantController(
+		q.ProductCategoryService,
+		q.ProductService,
+		q.ProductVariantService,
+		q.RecipeItemService,
+		q.UserService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/product_variants"))
 	controllers.NewDeliveryPlanController(
 		q.DeliveryPlanService,
 		q.JsonWebTokenService,
@@ -320,10 +328,20 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/recipes"))
-	controllers.NewSellerController(
+	controllers.NewRecipeGuideController(
+		q.RecipeService,
+		q.RecipeGuideService,
 		q.UserService,
 		q.JsonWebTokenService,
-	).Mount(app.Group("/sellers"))
+	).Mount(app.Group("/recipe_guides"))
+	controllers.NewRecipeItemController(
+		q.RecipeService,
+		q.RecipeItemService,
+		q.ProductService,
+		q.ProductVariantService,
+		q.UserService,
+		q.JsonWebTokenService,
+	).Mount(app.Group("/recipe_items"))
 	controllers.NewAddressController(
 		q.AddressService,
 		q.UserService,
