@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -85,16 +87,21 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 		return err
 	}
 	defer rows.Close()
-	var versions []int64
+	mapVersions := map[int64]struct{}{}
 	for rows.Next() {
 		var version int64
-		if err := rows.Scan(&version); err != nil {
+		if err = rows.Scan(&version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return err
 		}
-		versions = append(versions, version)
+		mapVersions[version] = struct{}{}
 	}
-	for _, version := range versions {
+	sortedVersions := slices.Collect(maps.Keys(Migrations))
+	slices.Sort(sortedVersions)
+	for _, version := range sortedVersions {
+		if _, ok := mapVersions[version]; ok {
+			continue
+		}
 		migration, ok := Migrations[version]
 		if !ok {
 			return fmt.Errorf("migration version %d not found", version)
