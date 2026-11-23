@@ -71,7 +71,7 @@ func main() {
 						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMakeHandler")
 						return err
 					}
-					if err = service.Migration.Migrate(ctx); err != nil {
+					if err = service.Migrator.Migrate(ctx); err != nil {
 						helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMigrate")
 						return err
 					}
@@ -170,13 +170,13 @@ func main() {
 					var activity string
 					switch cmd.Args().First() {
 					case "new":
-						if err = service.Migration.CreateMigrationFile(); err != nil {
+						if err = service.Migrator.CreateMigrationFile(); err != nil {
 							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCreateMigrationFile")
 							return err
 						}
 						activity = "creating"
 					case "run":
-						if err = service.Migration.Migrate(ctx); err != nil {
+						if err = service.Migrator.Migrate(ctx); err != nil {
 							helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrMigrate")
 							return err
 						}

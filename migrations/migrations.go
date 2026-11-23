@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"os"
-	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -15,22 +13,28 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-type Migration struct {
+type Migrator struct {
 	dbWrite *pgxpool.Pool
 }
 
-var Migrations = map[int64]func(ctx context.Context, tx pgx.Tx) error{}
+type Migration struct {
+	Version int64
+	Up      func(ctx context.Context, tx pgx.Tx) error
+	Down    func(ctx context.Context, tx pgx.Tx) error
+}
 
-func NewMigration(
+var Migrations = map[int64]Migration{}
+
+func NewMigrator(
 	dbWrite *pgxpool.Pool,
-) *Migration {
-	return &Migration{
+) *Migrator {
+	return &Migrator{
 		dbWrite: dbWrite,
 	}
 }
 
-func (m *Migration) Migrate(ctx context.Context) error {
-	ctxt := "Migration-Migrate"
+func (m *Migrator) Migrate(ctx context.Context) error {
+	ctxt := "Migrator-Migrate"
 	tx, err := m.dbWrite.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel: pgx.Serializable,
 	})
@@ -81,27 +85,25 @@ func (m *Migration) Migrate(ctx context.Context) error {
 		return err
 	}
 	defer rows.Close()
-	mapVersions := map[int64]struct{}{}
+	var versions []int64
 	for rows.Next() {
 		var version int64
 		if err := rows.Scan(&version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return err
 		}
-		mapVersions[version] = struct{}{}
+		versions = append(versions, version)
 	}
-	sortedVersions := slices.Collect(maps.Keys(Migrations))
-	slices.Sort(sortedVersions)
-	for _, version := range sortedVersions {
-		if _, ok := mapVersions[version]; ok {
-			continue
-		}
-		function, ok := Migrations[version]
+	for _, version := range versions {
+		migration, ok := Migrations[version]
 		if !ok {
-			return fmt.Errorf("migration function for version %d not found", version)
+			return fmt.Errorf("migration version %d not found", version)
 		}
-		if err = function(ctx, tx); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrFunction")
+		if err = migration.Up(ctx, tx); err != nil {
+			if errRollback := migration.Down(ctx, tx); errRollback != nil {
+				helper.Capture(ctx, slog.LevelError, errRollback, ctxt, "ErrUp")
+			}
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUp")
 			return err
 		}
 		if _, err = tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES ($1)`, version); err != nil {
@@ -117,7 +119,7 @@ func (m *Migration) Migrate(ctx context.Context) error {
 	return nil
 }
 
-func (m *Migration) CreateMigrationFile() error {
+func (m *Migrator) CreateMigrationFile() error {
 	now := time.Now().UTC().UnixNano()
 	filepath := helper.Sprintf("./migrations/%d.go", now)
 	content := helper.Sprintf(
@@ -130,9 +132,16 @@ import (
 )
 
 func init() {
-	Migrations[%d] = func(ctx context.Context, tx pgx.Tx) (err error) {
-		ctxt := "Migration-%d"
-		return
+	Migrations[%d] = Migration{
+		Version: %d,
+		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+			ctxt := "Migration-Up"
+			return
+		},
+		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+			ctxt := "Migration-Down"
+			return
+		},
 	}
 }`,
 		now,

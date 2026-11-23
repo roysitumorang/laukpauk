@@ -9,12 +9,14 @@ import (
 )
 
 func init() {
-	Migrations[1793799170029874258] = func(ctx context.Context, tx pgx.Tx) (err error) {
-		ctxt := "Migration-1793799170029874258"
-		// transaction_items
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE TABLE transaction_items (
+	Migrations[1793799170029874258] = Migration{
+		Version: 1793799170029874258,
+		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+			ctxt := "Migration-Up"
+			// transaction_items
+			if _, err = tx.Exec(
+				ctx,
+				`CREATE TABLE transaction_items (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, transaction_id UUID NOT NULL REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -35,23 +37,34 @@ func init() {
 				, out_of_stock bool NOT NULL
 				, UNIQUE (transaction_id, product_variant_id)
 			);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+			if _, err = tx.Exec(
+				ctx,
+				`CREATE INDEX ON transaction_items (product_variant_id);`,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+			if _, err = tx.Exec(
+				ctx,
+				`CREATE INDEX ON transaction_items (product_id);`,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			}
 			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transaction_items (product_variant_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		},
+		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+			ctxt := "Migration-Down"
+			if _, err = tx.Exec(
+				ctx,
+				"DROP TABLE transaction_items",
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			}
 			return
-		}
-		if _, err = tx.Exec(
-			ctx,
-			`CREATE INDEX ON transaction_items (product_id);`,
-		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		}
-		return
+		},
 	}
 }

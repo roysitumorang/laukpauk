@@ -25,7 +25,7 @@ import (
 
 type Service struct {
 	DbWrite                   *pgxpool.Pool
-	Migration                 *migrations.Migration
+	Migrator                  *migrations.Migrator
 	KafkaClient               *externals.KafkaClient
 	FcmClient                 *externals.FcmClient
 	ZenzivaClient             *externals.ZenzivaClient
@@ -81,7 +81,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCreateDbConnection")
 		return nil, err
 	}
-	migration := migrations.NewMigration(dbWrite)
+	migrator := migrations.NewMigrator(dbWrite)
 	kafkaClient, err := externals.NewKafkaClient(ctx, strings.Split(os.Getenv("KAFKA_BROKERS"), ","))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewKafkaClient")
@@ -211,7 +211,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	addressService := services.NewAddressService(addressRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
-		Migration:                 migration,
+		Migrator:                  migrator,
 		KafkaClient:               kafkaClient,
 		FcmClient:                 fcmClient,
 		ZenzivaClient:             zenzivaClient,
