@@ -28,7 +28,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/twmb/franz-go v1.22.3
 	github.com/urfave/cli/v3 v3.14.0
-	github.com/valyala/fasthttp v1.79.0
+	github.com/valyala/fasthttp v1.80.0
 	golang.org/x/crypto v0.59.0
 	golang.org/x/sync v0.25.0
 )
