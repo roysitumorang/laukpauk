@@ -118,9 +118,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/seller/sellers", To: "/sellers/v1/seller"},
 				{From: "/v1/seller/sellers/*", To: "/sellers/v1/seller/$1"},
 				{From: "/v1/seller/sellers/*/*", To: "/sellers/v1/seller/$1/$2"},
-				{From: "/v1/seller/buyers", To: "/buyers/v1/seller"},
-				{From: "/v1/seller/buyers/*", To: "/buyers/v1/seller/$1"},
-				{From: "/v1/seller/buyers/*/*", To: "/buyers/v1/seller/$1/$2"},
 				{From: "/v1/seller/recipes", To: "/recipes/v1/seller"},
 				{From: "/v1/seller/recipes/*", To: "/recipes/v1/seller/$1"},
 				{From: "/v1/seller/recipes/*/*", To: "/recipes/v1/seller/$1/$2"},
@@ -308,10 +305,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.NotificationService,
 		q.KafkaClient,
 	).Mount(app.Group("/users"))
-	controllers.NewBuyerController(
-		q.UserService,
-		q.JsonWebTokenService,
-	).Mount(app.Group("/buyers"))
 	controllers.NewNotificationController(
 		q.NotificationService,
 		q.KafkaClient,
