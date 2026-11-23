@@ -25,6 +25,7 @@ type ProductVariant struct {
 	ProductPhoto            string       `json:"product_photo"`
 	ProductReadyStock       bool         `json:"product_ready_stock"`
 	StockUnit               string       `json:"stock_unit"`
+	WeightInGrams           int64        `json:"weight_in_grams"`
 	BasePrice               int64        `json:"base_price"`
 	SellingPrice            int64        `json:"selling_price"`
 	DiscountType            DiscountType `json:"discount_type"`
@@ -49,6 +50,9 @@ func (q *ProductVariant) Validate() error {
 	}
 	if q.StockUnit = strings.TrimSpace(q.StockUnit); q.StockUnit == "" {
 		return errors.New("stock_unit: is required")
+	}
+	if q.WeightInGrams < 1 {
+		return errors.New("weight_in_grams: requires a positive integer minimum 1")
 	}
 	if q.BasePrice < 1 {
 		return errors.New("base_price: requires a positive integer minimum 1")

@@ -89,6 +89,7 @@ func (q *productVariantRepository) FindProductVariants(
 		, product_photo
 		, product_ready_stock
 		, stock_unit
+		, weight_in_grams
 		, base_price
 		, selling_price
 		, discount_type
@@ -162,6 +163,7 @@ func (q *productVariantRepository) FindProductVariants(
 			&productVariant.ProductPhoto,
 			&productVariant.ProductReadyStock,
 			&productVariant.StockUnit,
+			&productVariant.WeightInGrams,
 			&productVariant.BasePrice,
 			&productVariant.SellingPrice,
 			&productVariant.DiscountType,
@@ -213,6 +215,7 @@ func (q *productVariantRepository) FindProductVariant(
 			, product_photo
 			, product_ready_stock
 			, stock_unit
+			, weight_in_grams
 			, base_price
 			, selling_price
 			, discount_type
@@ -242,6 +245,7 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
+		&response.WeightInGrams,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,
@@ -286,6 +290,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, product_photo
 			, product_ready_stock
 			, stock_unit
+			, weight_in_grams
 			, base_price
 			, selling_price
 			, discount_type
@@ -298,7 +303,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 		RETURNING id
 			, record_status
 			, product_category_id
@@ -308,6 +313,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, product_photo
 			, product_ready_stock
 			, stock_unit
+			, weight_in_grams
 			, base_price
 			, selling_price
 			, discount_type
@@ -331,6 +337,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		request.ProductPhoto,
 		request.ProductReadyStock,
 		request.StockUnit,
+		request.WeightInGrams,
 		request.BasePrice,
 		request.SellingPrice,
 		request.DiscountType,
@@ -353,6 +360,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
+		&response.WeightInGrams,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,
@@ -400,6 +408,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, product_photo
 			, product_ready_stock
 			, stock_unit
+			, weight_in_grams
 			, base_price
 			, selling_price
 			, discount_type
@@ -429,6 +438,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
+		&response.WeightInGrams,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,
@@ -516,6 +526,13 @@ func (q *productVariantRepository) UpdateProductVariant(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " stock_unit = $%d", n)
+	}
+	if response.WeightInGrams != request.WeightInGrams {
+		params = append(params, request.WeightInGrams)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " weight_in_grams = $%d", n)
 	}
 	if response.BasePrice != request.BasePrice {
 		params = append(params, request.BasePrice)
@@ -633,6 +650,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, product_photo
 			, product_ready_stock
 			, stock_unit
+			, weight_in_grams
 			, base_price
 			, selling_price
 			, discount_type
@@ -660,6 +678,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.ProductPhoto,
 		&response.ProductReadyStock,
 		&response.StockUnit,
+		&response.WeightInGrams,
 		&response.BasePrice,
 		&response.SellingPrice,
 		&response.DiscountType,

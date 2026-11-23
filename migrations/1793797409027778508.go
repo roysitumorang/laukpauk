@@ -26,6 +26,7 @@ func init() {
 					, product_photo character varying NOT NULL
 					, product_ready_stock bool NOT NULL
 					, stock_unit character varying NOT NULL COLLATE "natural_sort"
+					, weight_in_grams bigint NOT NULL
 					, base_price bigint NOT NULL
 					, selling_price bigint NOT NULL
 					, discount_type smallint NOT NULL
