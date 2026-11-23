@@ -18,24 +18,24 @@ var MapRecipeSortings = map[string]struct{}{
 }
 
 type Recipe struct {
-	RowNo          int64          `json:"-" form:"-"`
-	ID             uuid.UUID      `json:"id" form:"id"`
-	RecordStatus   RecordStatus   `json:"record_status" form:"-"`
-	Photo          string         `json:"photo" form:"photo"`
-	Name           *string        `json:"name" form:"name"`
-	DeletedName    *string        `json:"deleted_name" form:"-"`
-	Description    string         `json:"description" form:"description"`
-	InstagramLink  string         `json:"instagram_link" form:"instagram_link"`
-	FacebookLink   string         `json:"facebook_link" form:"facebook_link"`
-	CreatedBy      uuid.UUID      `json:"created_by" form:"-"`
-	CreatedAt      time.Time      `json:"created_at" form:"-"`
-	UpdatedBy      uuid.UUID      `json:"updated_by" form:"-"`
-	UpdatedAt      time.Time      `json:"updated_at" form:"-"`
-	DeletedBy      *uuid.UUID     `json:"deleted_by" form:"-"`
-	DeletedAt      *time.Time     `json:"deleted_at" form:"-"`
-	DeletionReason *string        `json:"deletion_reason" form:"-"`
-	Guides         []*RecipeGuide `json:"guides,omitempty" form:"-"`
-	Items          []*RecipeItem  `json:"items,omitempty" form:"-"`
+	RowNo          int64          `json:"-"`
+	ID             uuid.UUID      `json:"id"`
+	RecordStatus   RecordStatus   `json:"record_status"`
+	Photo          string         `json:"photo"`
+	Name           *string        `json:"name"`
+	DeletedName    *string        `json:"deleted_name"`
+	Description    string         `json:"description"`
+	InstagramLink  string         `json:"instagram_link"`
+	FacebookLink   string         `json:"facebook_link"`
+	CreatedBy      uuid.UUID      `json:"created_by"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedBy      uuid.UUID      `json:"updated_by"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedBy      *uuid.UUID     `json:"deleted_by"`
+	DeletedAt      *time.Time     `json:"deleted_at"`
+	DeletionReason *string        `json:"deletion_reason"`
+	Guides         []*RecipeGuide `json:"guides,omitempty"`
+	Items          []*RecipeItem  `json:"items,omitempty"`
 }
 
 func (q *Recipe) Validate() error {
