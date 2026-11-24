@@ -12,12 +12,12 @@ import (
 
 type (
 	Message struct {
-		RowNo       int64     `json:"-" form:"-"`
-		ID          uuid.UUID `json:"-" form:"-"`
-		Name        string    `json:"-" form:"name"`
-		MobilePhone string    `json:"-" form:"mobile_phone"`
-		Body        string    `json:"-" form:"body"`
-		CreatedAt   time.Time `json:"-" form:"-"`
+		RowNo       int64     `json:"-"`
+		ID          uuid.UUID `json:"-"`
+		Name        string    `json:"-"`
+		MobilePhone string    `json:"-"`
+		Body        string    `json:"-"`
+		CreatedAt   time.Time `json:"-"`
 	}
 )
 

@@ -45,41 +45,41 @@ type (
 	DeliveryWeekday int
 
 	DeliveryPlan struct {
-		RowNo                   int64              `json:"-" form:"-"`
-		ID                      uuid.UUID          `json:"id" form:"-"`
-		RecordStatus            RecordStatus       `json:"record_status" form:"-"`
-		Name                    string             `json:"name" form:"name"`
-		Weekday                 DeliveryWeekday    `json:"weekday" form:"weekday"`
-		TransactionWindowMin    time.Time          `json:"transaction_window_min" form:"-" input:"json"`
-		RawTransactionWindowMin string             `json:"-" form:"transaction_window_min"`
-		TransactionWindowMax    time.Time          `json:"transaction_window_max" form:"-" input:"json"`
-		RawTransactionWindowMax string             `json:"-" form:"transaction_window_max"`
-		DeliveryTimeInterval    time.Duration      `json:"-" form:"-"`
-		RawDeliveryTimeInterval string             `json:"delivery_time_interval" form:"delivery_time_interval"`
-		SameDay                 bool               `json:"same_day" form:"same_day"`
-		SameDayWindowMin        *time.Time         `json:"same_day_window_min" form:"-" input:"json"`
-		RawSameDayWindowMin     string             `json:"-" form:"same_day_window_min"`
-		SameDayWindowMax        *time.Time         `json:"same_day_window_max" form:"-" input:"json"`
-		RawSameDayWindowMax     string             `json:"-" form:"same_day_window_max"`
-		NextDay                 bool               `json:"next_day" form:"next_day"`
-		NextDayWindowMin        *time.Time         `json:"next_day_window_min" form:"-" input:"json"`
-		RawNextDayWindowMin     string             `json:"-" form:"next_day_window_min"`
-		NextDayWindowMax        *time.Time         `json:"next_day_window_max" form:"-" input:"json"`
-		RawNextDayWindowMax     string             `json:"-" form:"next_day_window_max"`
-		NextTwoDay              bool               `json:"next_two_day" form:"next_two_day"`
-		NextTwoDayWindowMin     *time.Time         `json:"next_two_day_window_min" form:"-" input:"json"`
-		RawNextTwoDayWindowMin  string             `json:"-" form:"next_two_day_window_min"`
-		NextTwoDayWindowMax     *time.Time         `json:"next_two_day_window_max" form:"-" input:"json"`
-		RawNextTwoDayWindowMax  string             `json:"-" form:"next_two_day_window_max"`
-		DeliveryTimes           []time.Time        `json:"delivery_times" form:"-"`
-		MapDeliveryTimes        map[int64]struct{} `json:"-" form:"-"`
-		CreatedBy               uuid.UUID          `json:"created_by" form:"-"`
-		CreatedAt               time.Time          `json:"created_at" form:"-"`
-		UpdatedBy               uuid.UUID          `json:"updated_by" form:"-"`
-		UpdatedAt               time.Time          `json:"updated_at" form:"-"`
-		DeletedBy               *uuid.UUID         `json:"deleted_by" form:"-"`
-		DeletedAt               *time.Time         `json:"deleted_at" form:"-"`
-		DeletionReason          *string            `json:"deletion_reason" form:"-"`
+		RowNo                   int64              `json:"-"`
+		ID                      uuid.UUID          `json:"id"`
+		RecordStatus            RecordStatus       `json:"record_status"`
+		Name                    string             `json:"name"`
+		Weekday                 DeliveryWeekday    `json:"weekday"`
+		TransactionWindowMin    time.Time          `json:"transaction_window_min" input:"json"`
+		RawTransactionWindowMin string             `json:"-"`
+		TransactionWindowMax    time.Time          `json:"transaction_window_max" input:"json"`
+		RawTransactionWindowMax string             `json:"-"`
+		DeliveryTimeInterval    time.Duration      `json:"-"`
+		RawDeliveryTimeInterval string             `json:"delivery_time_interval"`
+		SameDay                 bool               `json:"same_day"`
+		SameDayWindowMin        *time.Time         `json:"same_day_window_min" input:"json"`
+		RawSameDayWindowMin     string             `json:"-"`
+		SameDayWindowMax        *time.Time         `json:"same_day_window_max" input:"json"`
+		RawSameDayWindowMax     string             `json:"-"`
+		NextDay                 bool               `json:"next_day"`
+		NextDayWindowMin        *time.Time         `json:"next_day_window_min" input:"json"`
+		RawNextDayWindowMin     string             `json:"-"`
+		NextDayWindowMax        *time.Time         `json:"next_day_window_max" input:"json"`
+		RawNextDayWindowMax     string             `json:"-"`
+		NextTwoDay              bool               `json:"next_two_day"`
+		NextTwoDayWindowMin     *time.Time         `json:"next_two_day_window_min" input:"json"`
+		RawNextTwoDayWindowMin  string             `json:"-"`
+		NextTwoDayWindowMax     *time.Time         `json:"next_two_day_window_max" input:"json"`
+		RawNextTwoDayWindowMax  string             `json:"-"`
+		DeliveryTimes           []time.Time        `json:"delivery_times"`
+		MapDeliveryTimes        map[int64]struct{} `json:"-"`
+		CreatedBy               uuid.UUID          `json:"created_by"`
+		CreatedAt               time.Time          `json:"created_at"`
+		UpdatedBy               uuid.UUID          `json:"updated_by"`
+		UpdatedAt               time.Time          `json:"updated_at"`
+		DeletedBy               *uuid.UUID         `json:"deleted_by"`
+		DeletedAt               *time.Time         `json:"deleted_at"`
+		DeletionReason          *string            `json:"deletion_reason"`
 	}
 
 	DeliveryPlanFilter struct {

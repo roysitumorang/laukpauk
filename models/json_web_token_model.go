@@ -14,11 +14,11 @@ var ErrJsonWebTokenNotFound = errors.New("json web token not found")
 var ErrUniqueJsonWebTokenViolation = errors.New("token: already exists")
 
 type JsonWebToken struct {
-	RowNo     int64     `json:"-" form:"-"`
-	ID        uuid.UUID `json:"-" form:"-"`
-	UserID    uuid.UUID `json:"user_id" form:"-"`
-	CreatedAt time.Time `json:"-" form:"-"`
-	ExpiredAt time.Time `json:"-" form:"-"`
+	RowNo     int64     `json:"-"`
+	ID        uuid.UUID `json:"-"`
+	UserID    uuid.UUID `json:"user_id"`
+	CreatedAt time.Time `json:"-"`
+	ExpiredAt time.Time `json:"-"`
 }
 
 type JsonWebTokenFilter struct {

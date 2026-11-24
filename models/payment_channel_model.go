@@ -24,20 +24,20 @@ const (
 
 type (
 	PaymentChannel struct {
-		RowNo                int64     `json:"-" form:"-"`
-		ID                   uuid.UUID `json:"id" form:"-"`
-		BusinessID           string    `json:"-" form:"-"`
-		Name                 string    `json:"name" form:"-"`
-		ChannelCode          string    `json:"channel_code" form:"-"`
-		Country              string    `json:"-" form:"-"`
-		Currency             string    `json:"-" form:"-"`
-		MinimumAmount        int64     `json:"-" form:"-"`
-		MaximumAmount        int64     `json:"-" form:"-"`
-		PaymentRequestExpiry float64   `json:"-" form:"-"`
-		Refund               bool      `json:"-" form:"-"`
-		ChannelType          string    `json:"-" form:"-"`
-		ChannelCategory      string    `json:"-" form:"-"`
-		CreatedAt            time.Time `json:"-" form:"-"`
+		RowNo                int64     `json:"-"`
+		ID                   uuid.UUID `json:"id"`
+		BusinessID           string    `json:"-"`
+		Name                 string    `json:"name"`
+		ChannelCode          string    `json:"channel_code"`
+		Country              string    `json:"-"`
+		Currency             string    `json:"-"`
+		MinimumAmount        int64     `json:"-"`
+		MaximumAmount        int64     `json:"-"`
+		PaymentRequestExpiry float64   `json:"-"`
+		Refund               bool      `json:"-"`
+		ChannelType          string    `json:"-"`
+		ChannelCategory      string    `json:"-"`
+		CreatedAt            time.Time `json:"-"`
 	}
 
 	PaymentChannelFilter struct {

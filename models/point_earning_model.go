@@ -17,14 +17,14 @@ var MapPointEarningSortings = map[string]struct{}{
 }
 
 type PointEarning struct {
-	RowNo     int64     `json:"-" form:"-"`
-	ID        uuid.UUID `json:"-" form:"-"`
-	UserID    uuid.UUID `json:"-" form:"-"`
-	StartDate time.Time `json:"-" form:"-"`
-	EndDate   time.Time `json:"-" form:"-"`
-	Amount    int       `json:"-" form:"-"`
-	CreatedAt time.Time `json:"-" form:"-"`
-	UpdatedAt time.Time `json:"-" form:"-"`
+	RowNo     int64     `json:"-"`
+	ID        uuid.UUID `json:"-"`
+	UserID    uuid.UUID `json:"-"`
+	StartDate time.Time `json:"-"`
+	EndDate   time.Time `json:"-"`
+	Amount    int       `json:"-"`
+	CreatedAt time.Time `json:"-"`
+	UpdatedAt time.Time `json:"-"`
 }
 
 func (q *PointEarning) Validate() error {

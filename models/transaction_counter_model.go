@@ -6,9 +6,9 @@ import (
 )
 
 type TransactionCounter struct {
-	ID                uuid.UUID `json:"-" form:"-"`
-	TransactionWindow string    `json:"-" form:"-"`
-	Hits              int64     `json:"-" form:"-"`
-	CreatedAt         time.Time `json:"-" form:"-"`
-	UpdatedAt         time.Time `json:"-" form:"-"`
+	ID                uuid.UUID `json:"-"`
+	TransactionWindow string    `json:"-"`
+	Hits              int64     `json:"-"`
+	CreatedAt         time.Time `json:"-"`
+	UpdatedAt         time.Time `json:"-"`
 }

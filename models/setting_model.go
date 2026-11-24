@@ -14,31 +14,31 @@ import (
 var ErrSettingNotFound = errors.New("setting not found")
 
 type Setting struct {
-	ID                                   uint64          `json:"-" form:"id"`
-	VacationMode                         bool            `json:"vacation_mode" form:"vacation_mode"`
-	VacationEndDate                      *time.Time      `json:"vacation_end_date" form:"-"`
-	VoucherEnabled                       bool            `json:"voucher_enabled" form:"voucher_enabled"`
-	ReferralPointsEnabled                bool            `json:"referral_points_enabled" form:"referral_points_enabled"`
-	ReferralPointsMinimumShoppingCost    int64           `json:"referral_points_minimum_shopping_cost" form:"referral_points_minimum_shopping_cost"`
-	ReferralPointsAmount                 int64           `json:"referral_points_amount" form:"referral_points_amount"`
-	ReferralPointsSlots                  []int64         `json:"referral_points_slots" form:"-"`
-	ReferralPointsExpense                int64           `json:"referral_points_expense" form:"referral_points_expense"`
-	RewardPointsAccumulationWindowInDays int16           `json:"reward_points_accumulation_window_in_days" form:"reward_points_accumulation_window_in_days"`
-	DeliveryOriginLongitude              decimal.Decimal `json:"delivery_origin_longitude" form:"delivery_origin_longitude"`
-	DeliveryOriginLatitude               decimal.Decimal `json:"delivery_origin_latitude" form:"delivery_origin_latitude"`
-	DeliveryCostPerKM                    int64           `json:"delivery_cost_per_km" form:"delivery_cost_per_km"`
-	DeliveryMaxDistanceKM                int64           `json:"delivery_max_distance_km" form:"delivery_max_distance_km"`
-	WhatsappPhoneNumber                  string          `json:"whatsapp_phone_number" form:"whatsapp_phone_number"`
-	PaymentTerms                         Duration        `json:"payment_terms" form:""`
-	MaximumDeliveryTime                  Duration        `json:"maximum_delivery_time" form:"-"`
-	TransactionAutoWithdrawalEnabled     bool            `json:"-" form:"transaction_auto_withdrawal_enabled"`
-	TransactionAutoWithdrawalWindowMin   *time.Time      `json:"transaction_auto_withdrawal_window_min" form:"-"`
-	TransactionAutoWithdrawalWindowMax   *time.Time      `json:"transaction_auto_withdrawal_window_max" form:"-"`
-	OtpRequiredForLogin                  bool            `json:"otp_required_for_login" form:"otp_required_for_login"`
-	CreatedBy                            uuid.UUID       `json:"-" form:"-"`
-	CreatedAt                            time.Time       `json:"-" form:"-"`
-	UpdatedBy                            uuid.UUID       `json:"-" form:"-"`
-	UpdatedAt                            time.Time       `json:"-" form:"-"`
+	ID                                   uint64          `json:"-"`
+	VacationMode                         bool            `json:"vacation_mode"`
+	VacationEndDate                      *time.Time      `json:"vacation_end_date"`
+	VoucherEnabled                       bool            `json:"voucher_enabled"`
+	ReferralPointsEnabled                bool            `json:"referral_points_enabled"`
+	ReferralPointsMinimumShoppingCost    int64           `json:"referral_points_minimum_shopping_cost"`
+	ReferralPointsAmount                 int64           `json:"referral_points_amount"`
+	ReferralPointsSlots                  []int64         `json:"referral_points_slots"`
+	ReferralPointsExpense                int64           `json:"referral_points_expense"`
+	RewardPointsAccumulationWindowInDays int16           `json:"reward_points_accumulation_window_in_days"`
+	DeliveryOriginLongitude              decimal.Decimal `json:"delivery_origin_longitude"`
+	DeliveryOriginLatitude               decimal.Decimal `json:"delivery_origin_latitude"`
+	DeliveryCostPerKM                    int64           `json:"delivery_cost_per_km"`
+	DeliveryMaxDistanceKM                int64           `json:"delivery_max_distance_km"`
+	WhatsappPhoneNumber                  string          `json:"whatsapp_phone_number"`
+	PaymentTerms                         Duration        `json:"payment_terms"`
+	MaximumDeliveryTime                  Duration        `json:"maximum_delivery_time"`
+	TransactionAutoWithdrawalEnabled     bool            `json:"-"`
+	TransactionAutoWithdrawalWindowMin   *time.Time      `json:"transaction_auto_withdrawal_window_min"`
+	TransactionAutoWithdrawalWindowMax   *time.Time      `json:"transaction_auto_withdrawal_window_max"`
+	OtpRequiredForLogin                  bool            `json:"otp_required_for_login"`
+	CreatedBy                            uuid.UUID       `json:"-"`
+	CreatedAt                            time.Time       `json:"-"`
+	UpdatedBy                            uuid.UUID       `json:"-"`
+	UpdatedAt                            time.Time       `json:"-"`
 }
 
 func (q *Setting) Validate() error {

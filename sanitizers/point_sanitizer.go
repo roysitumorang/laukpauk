@@ -76,7 +76,6 @@ func ValidatePoint(ctx context.Context, c fiber.Ctx) (*models.Point, int, error)
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, fiberErr.Code, err
 	}
-	keepFormFields(&response)
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, fiber.StatusBadRequest, err

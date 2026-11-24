@@ -40,18 +40,18 @@ func (q TextMessageType) String() string {
 }
 
 type TextMessage struct {
-	RowNo          int64           `json:"-" form:"-"`
-	ID             uuid.UUID       `json:"-" form:"-"`
-	UserID         uuid.UUID       `json:"-" form:"user_id"`
-	MobilePhone    string          `json:"-" form:"-"`
-	MessageType    TextMessageType `json:"-" form:"-"`
-	Body           string          `json:"-" form:"body"`
-	DeliveryStatus *string         `json:"-" form:"-"`
-	MessageID      *int64          `json:"-" form:"-"`
-	CreatedBy      *uuid.UUID      `json:"-" form:"-"`
-	CreatedAt      time.Time       `json:"-" form:"-"`
-	UpdatedAt      time.Time       `json:"-" form:"-"`
-	SentAt         *time.Time      `json:"-" form:"-"`
+	RowNo          int64           `json:"-"`
+	ID             uuid.UUID       `json:"-"`
+	UserID         uuid.UUID       `json:"-"`
+	MobilePhone    string          `json:"-"`
+	MessageType    TextMessageType `json:"-"`
+	Body           string          `json:"-"`
+	DeliveryStatus *string         `json:"-"`
+	MessageID      *int64          `json:"-"`
+	CreatedBy      *uuid.UUID      `json:"-"`
+	CreatedAt      time.Time       `json:"-"`
+	UpdatedAt      time.Time       `json:"-"`
+	SentAt         *time.Time      `json:"-"`
 }
 
 func (q *TextMessage) Validate() error {

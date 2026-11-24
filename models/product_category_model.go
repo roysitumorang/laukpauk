@@ -21,19 +21,19 @@ const SortProductCategoriesByID = "id"
 const SortProductCategoriesByName = "name"
 
 type ProductCategory struct {
-	RowNo          int64        `json:"-" form:"-"`
-	ID             uuid.UUID    `json:"id" form:"id"`
-	RecordStatus   RecordStatus `json:"record_status" form:"-"`
-	Name           string       `json:"name" form:"name"`
-	Description    string       `json:"description" form:"description"`
-	Photo          string       `json:"photo" form:"photo"`
-	CreatedBy      uuid.UUID    `json:"created_by" form:"-"`
-	CreatedAt      time.Time    `json:"created_at" form:"-"`
-	UpdatedBy      uuid.UUID    `json:"updated_by" form:"-"`
-	UpdatedAt      time.Time    `json:"updated_at" form:"-"`
-	DeletedBy      *uuid.UUID   `json:"deleted_by" form:"-"`
-	DeletedAt      *time.Time   `json:"deleted_at" form:"-"`
-	DeletionReason *string      `json:"deletion_reason" form:"-"`
+	RowNo          int64        `json:"-"`
+	ID             uuid.UUID    `json:"id"`
+	RecordStatus   RecordStatus `json:"record_status"`
+	Name           string       `json:"name"`
+	Description    string       `json:"description"`
+	Photo          string       `json:"photo"`
+	CreatedBy      uuid.UUID    `json:"created_by"`
+	CreatedAt      time.Time    `json:"created_at"`
+	UpdatedBy      uuid.UUID    `json:"updated_by"`
+	UpdatedAt      time.Time    `json:"updated_at"`
+	DeletedBy      *uuid.UUID   `json:"deleted_by"`
+	DeletedAt      *time.Time   `json:"deleted_at"`
+	DeletionReason *string      `json:"deletion_reason"`
 }
 
 func (q *ProductCategory) Validate() error {

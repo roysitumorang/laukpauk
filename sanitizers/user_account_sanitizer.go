@@ -93,7 +93,6 @@ func ValidateUserAccount(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")
 		return &response, nil, nil, fiberErr.Code, err
 	}
-	keepFormFields(&response)
 	if err = (&response).Validate(passwordRequired, addressRequired); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
 		return &response, nil, nil, fiber.StatusBadRequest, err
