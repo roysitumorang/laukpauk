@@ -22,9 +22,9 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (5)
 - [CartApi](#cartapi) (7)
-- [CheckoutApi](#checkoutapi) (10)
+- [CheckoutApi](#checkoutapi) (9)
 - [DeliveryApi](#deliveryapi) (5)
-- [HomeApi](#homeapi) (8)
+- [HomeApi](#homeapi) (7)
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
 - [PaymentApi](#paymentapi) (2)
@@ -35,10 +35,10 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [RecipeApi](#recipeapi) (5)
 - [SettingApi](#settingapi) (2)
 - [TransactionApi](#transactionapi) (8)
-- [UserApi](#userapi) (8)
+- [UserApi](#userapi) (7)
 - [VoucherApi](#voucherapi) (2)
 
-95 endpoint definitions in total.
+92 endpoint definitions in total.
 
 ## Index
 
@@ -71,7 +71,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Transaksi/getJenisOngkir` | no | `CheckoutApi.getShippingFeeType` |
 | GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
 | GET | `Pengaturan/getWalletConfiguration` | no | `CheckoutApi.getWalletConfiguration` |
-| GET | `Point/getPoint` | yes | `CheckoutApi.getPoint` |
 | GET | `User/getVoucher` | yes | `CheckoutApi.getVoucher` |
 | GET | `Voucher/getStatusVoucher/{id}` | yes | `CheckoutApi.getStatusVoucher` |
 | GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
@@ -82,7 +81,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
 | GET | `buyer/banners` | no | `HomeApi.getBanner` |
 | GET | `User/getJumlahVoucher` | yes | `HomeApi.getVoucherCount` |
-| GET | `Point/getPoint` | yes | `HomeApi.getPoint` |
 | GET | `Konten/getKonten` | no | `HomeApi.getContent` |
 | GET | `Konten/getKontenItemFromThisKonten/{idKonten}` | no | `HomeApi.getContentItem` |
 | GET | `KategoriProduk/getKategoriProduk` | no | `HomeApi.getProductCategory` |
@@ -131,7 +129,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Gift/getGift/{idGift}` | no | `TransactionApi.getGift` |
 | GET | `buyer/users/me` | yes | `UserApi.me` |
 | GET | `User/getJumlahVoucher` | yes | `UserApi.getVoucherCount` |
-| GET | `Point/getPoint` | yes | `UserApi.getPoint` |
 | GET | `User/getRiwayatDompet` | yes | `UserApi.getWalletRecords` |
 | GET | `User/getRiwayatPoint` | yes | `UserApi.getPointRecords` |
 | POST | `User/updateProfil` | yes | `UserApi.updateProfile` |
@@ -867,27 +864,6 @@ Response (`CheckoutResponses.WalletConfig`):
 }
 ```
 
-### `GET Point/getPoint`
-
-App method: `CheckoutApi.getPoint`.
-
-Request:
-
-```http
-GET Point/getPoint?point=<point>
-Authorization: Bearer <JWT>
-```
-
-Response (`CheckoutResponses.PointResponse`):
-
-```json
-{
-  "response": {
-    "point": 0
-  }
-}
-```
-
 ### `GET User/getVoucher`
 
 App method: `CheckoutApi.getVoucher`.
@@ -1169,27 +1145,6 @@ Response (`HomeResponses.JumlahVoucher`):
 ```json
 {
   "jumlahVoucher": 0
-}
-```
-
-### `GET Point/getPoint`
-
-App method: `HomeApi.getPoint`.
-
-Request:
-
-```http
-GET Point/getPoint?point=<point>
-Authorization: Bearer <JWT>
-```
-
-Response (`HomeResponses.Point`):
-
-```json
-{
-  "response": {
-    "point": 0
-  }
 }
 ```
 
@@ -2525,7 +2480,7 @@ Response (`TransaksiResponses.GiftDetail`):
 
 App method: `UserApi.me`.
 
-The signed-in buyer, used by the Akun dashboard, Profil Saya, Kode Referal, the home wallet card, checkout (name, phone, address and wallet in one request) and the auth screens (phone number). The app reads `name`, `username`, `address`, `mobile_phone`, `mobile_phone_confirmed_at`, `photo` (a full URL, or a legacy file name in the user folder), `referral_code`, `created_at` (shown as "24 November 2026") and `wallet` (the dompet balance, null shown as 0). Replaces `User/getDetailUser` and `User/getTotalDompet`.
+The signed-in buyer, used by the Akun dashboard, Profil Saya, Kode Referal, the home wallet card (wallet and points), checkout (name, phone, address, wallet and points in one request) and the auth screens (phone number). The app reads `name`, `username`, `address`, `mobile_phone`, `mobile_phone_confirmed_at`, `photo` (a full URL, or a legacy file name in the user folder), `referral_code`, `created_at` (shown as "24 November 2026") `wallet` (the dompet balance) and `reward_points` (the buyer's points); null is shown as 0. Replaces `User/getDetailUser`, `User/getTotalDompet` and `Point/getPoint`.
 
 Request:
 
@@ -2588,29 +2543,6 @@ Response (`AccountResponses.JumlahVoucher`):
 ```json
 {
   "jumlahVoucher": 0
-}
-```
-
-### `GET Point/getPoint`
-
-App method: `UserApi.getPoint`.
-
-Legacy getPoint("point=true").
-
-Request:
-
-```http
-GET Point/getPoint?point=<point>
-Authorization: Bearer <JWT>
-```
-
-Response (`AccountResponses.Point`):
-
-```json
-{
-  "response": {
-    "point": 0
-  }
 }
 ```
 
