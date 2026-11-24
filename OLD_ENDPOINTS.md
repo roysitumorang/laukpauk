@@ -2480,7 +2480,7 @@ Response (`TransaksiResponses.GiftDetail`):
 
 App method: `UserApi.me`.
 
-The signed-in buyer, used by the Akun dashboard, Profil Saya, Kode Referal, the home wallet card (wallet and points), checkout (name, phone, address, wallet and points in one request) and the auth screens (phone number). The app reads `name`, `username`, `address`, `mobile_phone`, `mobile_phone_confirmed_at`, `photo` (a full URL, or a legacy file name in the user folder), `referral_code`, `created_at` (shown as "24 November 2026") `wallet` (the dompet balance) and `reward_points` (the buyer's points); null is shown as 0. Replaces `User/getDetailUser`, `User/getTotalDompet` and `Point/getPoint`.
+The signed-in buyer, used by the Akun dashboard, Profil Saya, Kode Referal, the home wallet card (wallet and points), checkout (name, phone, address, wallet and points in one request) and the auth screens (phone number). The app reads `name`, `username`, `address`, `mobile_phone`, `mobile_phone_confirmed_at`, `photo` (a full URL, or a legacy file name in the user folder), `referral_code`, `created_at` (shown as "24 November 2026"), `wallet` (the dompet balance) and `reward_points` (the buyer's points); null is shown as 0. Replaces `User/getDetailUser`, `User/getTotalDompet` and `Point/getPoint`.
 
 Request:
 
