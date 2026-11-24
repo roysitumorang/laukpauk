@@ -47,7 +47,7 @@ func init() {
 					, delivery_destination_longitude character varying NOT NULL
 					, delivery_distance_km bigint NOT NULL
 					, delivery_street_address character varying NOT NULL
-					, delivery_note character varying NOT NULL
+					, delivery_street_address_note character varying NOT NULL
 					, delivery_recipient_name character varying NOT NULL
 					, delivery_recipient_mobile_phone character varying NOT NULL
 					, delivery_instruction character varying NOT NULL

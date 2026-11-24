@@ -131,7 +131,7 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		}
 		deliveryAddress.RecordStatus = models.RecordStatusActive
 		deliveryAddress.StreetAddress = request.StreetAddress
-		deliveryAddress.DeliveryNote = request.DeliveryNote
+		deliveryAddress.StreetAddressNote = request.StreetAddressNote
 		deliveryAddress.Label = request.Label
 		deliveryAddress.RecipientName = request.RecipientName
 		deliveryAddress.RecipientMobilePhone = request.RecipientMobilePhone
@@ -298,7 +298,7 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	deliveryAddress.StreetAddress = request.StreetAddress
-	deliveryAddress.DeliveryNote = request.DeliveryNote
+	deliveryAddress.StreetAddressNote = request.StreetAddressNote
 	deliveryAddress.Label = request.Label
 	deliveryAddress.RecipientName = request.RecipientName
 	deliveryAddress.RecipientMobilePhone = request.RecipientMobilePhone

@@ -99,7 +99,7 @@ type Transaction struct {
 	DeliveryDestinationLongitude    decimal.Decimal    `json:"delivery_destination_longitude"`
 	DeliveryDistanceKM              int64              `json:"delivery_distance_km"`
 	DeliveryStreetAddress           string             `json:"delivery_street_address"`
-	DeliveryNote                    string             `json:"delivery_note"`
+	DeliveryStreetAddressNote       string             `json:"delivery_street_address_note"`
 	DeliveryRecipientName           string             `json:"delivery_recipient_name"`
 	DeliveryRecipientMobilePhone    string             `json:"delivery_recipient_mobile_phone"`
 	DeliveryInstruction             string             `json:"delivery_instruction"`

@@ -27,7 +27,7 @@ func init() {
 					, distance_meters bigint NOT NULL
 					, distance_km bigint NOT NULL
 					, street_address character varying NOT NULL
-					, delivery_note character varying NOT NULL
+					, street_address_note character varying NOT NULL
 					, label character varying NOT NULL
 					, recipient_name character varying NOT NULL
 					, recipient_mobile_phone character varying NOT NULL

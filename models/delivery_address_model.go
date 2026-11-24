@@ -33,7 +33,7 @@ type DeliveryAddress struct {
 	DistanceMeters       int64           `json:"-"`
 	DistanceKM           int64           `json:"distance_km"`
 	StreetAddress        string          `json:"street_address"`
-	DeliveryNote         string          `json:"delivery_note"`
+	StreetAddressNote    string          `json:"street_address_note"`
 	Label                string          `json:"label"`
 	RecipientName        string          `json:"recipient_name"`
 	RecipientMobilePhone string          `json:"recipient_mobile_phone"`
@@ -54,7 +54,7 @@ func (q *DeliveryAddress) Validate() (err error) {
 	if q.StreetAddress = strings.TrimSpace(q.StreetAddress); q.StreetAddress == "" {
 		return errors.New("street_address: is required")
 	}
-	q.DeliveryNote = strings.TrimSpace(q.DeliveryNote)
+	q.StreetAddressNote = strings.TrimSpace(q.StreetAddressNote)
 	if q.Label = strings.TrimSpace(q.Label); q.Label == "" {
 		return errors.New("label: is required")
 	}

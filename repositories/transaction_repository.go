@@ -111,7 +111,7 @@ func (q *transactionRepository) FindTransactions(
 		, delivery_destination_latitude
 		, delivery_distance_km
 		, delivery_street_address
-		, delivery_note
+		, delivery_street_address_note
 		, delivery_recipient_name
 		, delivery_recipient_mobile_phone
 		, delivery_instruction
@@ -257,7 +257,7 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DeliveryDestinationLatitude,
 			&transaction.DeliveryDistanceKM,
 			&transaction.DeliveryStreetAddress,
-			&transaction.DeliveryNote,
+			&transaction.DeliveryStreetAddressNote,
 			&transaction.DeliveryRecipientName,
 			&transaction.DeliveryRecipientMobilePhone,
 			&transaction.DeliveryInstruction,
@@ -401,7 +401,7 @@ func (q *transactionRepository) FindTransaction(
 			, delivery_destination_latitude
 			, delivery_distance_km
 			, delivery_street_address
-			, delivery_note
+			, delivery_street_address_note
 			, delivery_recipient_name
 			, delivery_recipient_mobile_phone
 			, delivery_instruction
@@ -475,7 +475,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.DeliveryDestinationLatitude,
 		&response.DeliveryDistanceKM,
 		&response.DeliveryStreetAddress,
-		&response.DeliveryNote,
+		&response.DeliveryStreetAddressNote,
 		&response.DeliveryRecipientName,
 		&response.DeliveryRecipientMobilePhone,
 		&response.DeliveryInstruction,
@@ -625,7 +625,7 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_destination_latitude
 			, delivery_distance_km
 			, delivery_street_address
-			, delivery_note
+			, delivery_street_address_note
 			, delivery_recipient_name
 			, delivery_recipient_mobile_phone
 			, delivery_instruction
@@ -676,7 +676,7 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_destination_latitude
 			, delivery_distance_km
 			, delivery_street_address
-			, delivery_note
+			, delivery_street_address_note
 			, delivery_recipient_name
 			, delivery_recipient_mobile_phone
 			, delivery_instruction
@@ -743,7 +743,7 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryDestinationLatitude,
 		request.DeliveryDistanceKM,
 		request.DeliveryStreetAddress,
-		request.DeliveryNote,
+		request.DeliveryStreetAddressNote,
 		request.DeliveryRecipientName,
 		request.DeliveryRecipientMobilePhone,
 		request.DeliveryInstruction,
@@ -788,7 +788,7 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DeliveryDestinationLatitude,
 		&response.DeliveryDistanceKM,
 		&response.DeliveryStreetAddress,
-		&response.DeliveryNote,
+		&response.DeliveryStreetAddressNote,
 		&response.DeliveryRecipientName,
 		&response.DeliveryRecipientMobilePhone,
 		&response.DeliveryInstruction,
@@ -1014,7 +1014,7 @@ func (q *transactionRepository) UpdateTransaction(
 			, delivery_destination_latitude
 			, delivery_distance_km
 			, delivery_street_address
-			, delivery_note
+			, delivery_street_address_note
 			, delivery_recipient_name
 			, delivery_recipient_mobile_phone
 			, delivery_instruction
@@ -1087,7 +1087,7 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DeliveryDestinationLatitude,
 		&response.DeliveryDistanceKM,
 		&response.DeliveryStreetAddress,
-		&response.DeliveryNote,
+		&response.DeliveryStreetAddressNote,
 		&response.DeliveryRecipientName,
 		&response.DeliveryRecipientMobilePhone,
 		&response.DeliveryInstruction,
@@ -1400,7 +1400,7 @@ func (q *transactionRepository) UpdateTransaction(
 				, delivery_destination_latitude
 				, delivery_distance_km
 				, delivery_street_address
-				, delivery_note
+				, delivery_street_address_note
 				, delivery_recipient_name
 				, delivery_recipient_mobile_phone
 				, delivery_instruction
@@ -1469,7 +1469,7 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.DeliveryDestinationLatitude,
 			&response.DeliveryDistanceKM,
 			&response.DeliveryStreetAddress,
-			&response.DeliveryNote,
+			&response.DeliveryStreetAddressNote,
 			&response.DeliveryRecipientName,
 			&response.DeliveryRecipientMobilePhone,
 			&response.DeliveryInstruction,

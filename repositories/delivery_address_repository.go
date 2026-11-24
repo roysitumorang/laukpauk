@@ -94,7 +94,7 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 		, distance_meters
 		, distance_km
 		, street_address
-		, delivery_note
+		, street_address_note
 		, label
 		, recipient_name
 		, recipient_mobile_phone
@@ -162,7 +162,7 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 			&deliveryAddress.DistanceMeters,
 			&deliveryAddress.DistanceKM,
 			&deliveryAddress.StreetAddress,
-			&deliveryAddress.DeliveryNote,
+			&deliveryAddress.StreetAddressNote,
 			&deliveryAddress.Label,
 			&deliveryAddress.RecipientName,
 			&deliveryAddress.RecipientMobilePhone,
@@ -208,7 +208,7 @@ func (q *deliveryAddressRepository) FindDeliveryAddress(
 			, distance_meters
 			, distance_km
 			, street_address
-			, delivery_note
+			, street_address_note
 			, label
 			, recipient_name
 			, recipient_mobile_phone
@@ -232,7 +232,7 @@ func (q *deliveryAddressRepository) FindDeliveryAddress(
 		&response.DistanceMeters,
 		&response.DistanceKM,
 		&response.StreetAddress,
-		&response.DeliveryNote,
+		&response.StreetAddressNote,
 		&response.Label,
 		&response.RecipientName,
 		&response.RecipientMobilePhone,
@@ -271,7 +271,7 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 			, distance_meters
 			, distance_km
 			, street_address
-			, delivery_note
+			, street_address_note
 			, label
 			, recipient_name
 			, recipient_mobile_phone
@@ -289,7 +289,7 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 			, distance_meters
 			, distance_km
 			, street_address
-			, delivery_note
+			, street_address_note
 			, label
 			, recipient_name
 			, recipient_mobile_phone
@@ -307,7 +307,7 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 		request.DistanceMeters,
 		request.DistanceKM,
 		request.StreetAddress,
-		request.DeliveryNote,
+		request.StreetAddressNote,
 		request.Label,
 		request.RecipientName,
 		request.RecipientMobilePhone,
@@ -325,7 +325,7 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 		&response.DistanceMeters,
 		&response.DistanceKM,
 		&response.StreetAddress,
-		&response.DeliveryNote,
+		&response.StreetAddressNote,
 		&response.Label,
 		&response.RecipientName,
 		&response.RecipientMobilePhone,
@@ -361,7 +361,7 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 			, distance_meters
 			, distance_km
 			, street_address
-			, delivery_note
+			, street_address_note
 			, label
 			, recipient_name
 			, recipient_mobile_phone
@@ -385,7 +385,7 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		&response.DistanceMeters,
 		&response.DistanceKM,
 		&response.StreetAddress,
-		&response.DeliveryNote,
+		&response.StreetAddressNote,
 		&response.Label,
 		&response.RecipientName,
 		&response.RecipientMobilePhone,
@@ -424,12 +424,12 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		}
 		_, _ = fmt.Fprintf(sb, " street_address = $%d", n)
 	}
-	if response.DeliveryNote != request.DeliveryNote {
-		params = append(params, request.DeliveryNote)
+	if response.StreetAddressNote != request.StreetAddressNote {
+		params = append(params, request.StreetAddressNote)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_note = $%d", n)
+		_, _ = fmt.Fprintf(sb, " street_address_note = $%d", n)
 	}
 	if response.Label != request.Label {
 		params = append(params, request.Label)
@@ -497,7 +497,7 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 			, distance_meters
 			, distance_km
 			, street_address
-			, delivery_note
+			, street_address_note
 			, label
 			, recipient_name
 			, recipient_mobile_phone
@@ -519,7 +519,7 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		&response.DistanceMeters,
 		&response.DistanceKM,
 		&response.StreetAddress,
-		&response.DeliveryNote,
+		&response.StreetAddressNote,
 		&response.Label,
 		&response.RecipientName,
 		&response.RecipientMobilePhone,
