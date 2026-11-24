@@ -187,7 +187,7 @@ func (q *Transaction) Validate() error {
 		return errors.New("delivery_address_id: is required")
 	}
 	if q.DeliveryStreetAddress = strings.TrimSpace(q.DeliveryStreetAddress); q.DeliveryStreetAddress == "" {
-		return errors.New("delivery_address: is required")
+		return errors.New("delivery_street_address: is required")
 	}
 	q.DeliveryInstruction = strings.TrimSpace(q.DeliveryInstruction)
 	if q.DeliveryDatetime.IsZero() {
