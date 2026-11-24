@@ -186,7 +186,7 @@ func (q *transactionService) CreateTransaction(
 		return nil, nil, err
 	}
 	if deliveryAddress == nil {
-		return nil, nil, errors.New("delivery_route_id: not found")
+		return nil, nil, errors.New("delivery_address_id: not found")
 	}
 	request.DeliveryDestinationLongitude = deliveryAddress.DestinationLongitude
 	request.DeliveryDestinationLatitude = deliveryAddress.DestinationLatitude
