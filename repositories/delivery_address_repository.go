@@ -115,7 +115,11 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		if item.Field == models.DeliveryAddressSortingFieldMainFirst {
+			_, _ = fmt.Fprintf(sb, " %s DESC NULLS LAST", item.Field)
+		} else {
+			_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		}
 	}
 	pages := int64(1)
 	var offset int64
