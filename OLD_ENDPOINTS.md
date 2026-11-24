@@ -2531,7 +2531,6 @@ Response (`AccountResponses.Me`):
     "referral_points": 0,
     "reward_points": 10,
     "wallet": 25000,
-    "delivery_route_id": null,
     "created_at": "2026-11-19T10:00:00+07:00"
   },
   "app": "laukpauk"

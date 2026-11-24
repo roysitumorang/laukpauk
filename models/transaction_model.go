@@ -184,7 +184,7 @@ func (q *Transaction) Validate() error {
 		}
 	}
 	if q.DeliveryAddressID.Compare(uuid.Nil()) == 0 {
-		return errors.New("delivery_route_id: is required")
+		return errors.New("delivery_address_id: is required")
 	}
 	if q.DeliveryStreetAddress = strings.TrimSpace(q.DeliveryStreetAddress); q.DeliveryStreetAddress == "" {
 		return errors.New("delivery_address: is required")
