@@ -91,8 +91,8 @@ github.com/gofiber/contrib/v3/swaggo v1.0.18 h1:1LiLyq/5TQS9Sqf7afdFHUFojYkqnSmz
 github.com/gofiber/contrib/v3/swaggo v1.0.18/go.mod h1:JvM5/5+5YR44o47EKio0Sdw4kIPm8+2tNTIMW2aqHXk=
 github.com/gofiber/fiber/v3 v3.7.0 h1:aF+GfB7nP9Dd0wVsv6wmr8675v66OGfjSyoDhPmvKEo=
 github.com/gofiber/fiber/v3 v3.7.0/go.mod h1:7dlbpUZ789TJg4q/VfdS1UWDtB6Fl/Smk6ZYZusMpAQ=
-github.com/gofiber/schema v1.10.0 h1:d/2/NpHOVD0f29aNvM3KSPmaEDLJZvxW5edtN4Ymd8U=
-github.com/gofiber/schema v1.10.0/go.mod h1:scfpXbReJ8y9xKlNnrwlewJ8nIGVZZmzoHZ4i5yGxG0=
+github.com/gofiber/schema v1.10.2 h1:mjqtglIvi/+NK3gJTra6wKOaBLZYx+tdNu7xtaCVPOg=
+github.com/gofiber/schema v1.10.2/go.mod h1:scfpXbReJ8y9xKlNnrwlewJ8nIGVZZmzoHZ4i5yGxG0=
 github.com/gofiber/storage/testhelpers/redis v0.1.0 h1:lDUwtanDf3f5YwlDwhbqnqCtj9Y/xc8ctxRE6HpQcws=
 github.com/gofiber/storage/testhelpers/redis v0.1.0/go.mod h1:Y1UccxbGVL04+TF5RuyCsksX+76hu6nJIWjPukBBgJ4=
 github.com/gofiber/storage/valkey v0.5.0 h1:Y5cNWhl1Jbhdr/xUQie0cVzKt0S8knLg6iPmzwWe9hU=
