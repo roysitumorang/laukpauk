@@ -49,7 +49,6 @@ func init() {
 					, photo character varying NOT NULL
 					, user_level character varying NOT NULL
 					, referral_code character varying UNIQUE
-					, address character varying
 					, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, referral_points bigint
 					, reward_points bigint

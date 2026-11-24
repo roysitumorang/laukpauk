@@ -80,7 +80,6 @@ type User struct {
 	Photo                         string     `json:"photo"`
 	UserLevel                     string     `json:"user_level"`
 	ReferralCode                  *string    `json:"referral_code"`
-	Address                       *string    `json:"address"`
 	ReferrerID                    *uuid.UUID `json:"referrer_id"`
 	ReferralPoints                *int64     `json:"referral_points"`
 	RewardPoints                  *int64     `json:"reward_points"`

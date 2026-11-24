@@ -121,7 +121,6 @@ func (q *userRepository) FindUsers(
 		, photo
 		, user_level
 		, referral_code
-		, address
 		, referrer_id
 		, referral_points
 		, reward_points
@@ -212,7 +211,6 @@ func (q *userRepository) FindUsers(
 			&user.Photo,
 			&user.UserLevel,
 			&user.ReferralCode,
-			&user.Address,
 			&user.ReferrerID,
 			&user.ReferralPoints,
 			&user.RewardPoints,
@@ -281,7 +279,6 @@ func (q *userRepository) FindUser(
 			, photo
 			, user_level
 			, referral_code
-			, address
 			, referrer_id
 			, referral_points
 			, reward_points
@@ -328,7 +325,6 @@ func (q *userRepository) FindUser(
 		&response.Photo,
 		&response.UserLevel,
 		&response.ReferralCode,
-		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
 		&response.RewardPoints,
@@ -518,7 +514,6 @@ func (q *userRepository) CreateUser(
 			, photo
 			, user_level
 			, referral_code
-			, address
 			, referrer_id
 			, referral_points
 			, reward_points
@@ -535,7 +530,6 @@ func (q *userRepository) CreateUser(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41
 		)
 		RETURNING id
 			, role
@@ -567,7 +561,6 @@ func (q *userRepository) CreateUser(
 			, photo
 			, user_level
 			, referral_code
-			, address
 			, referrer_id
 			, referral_points
 			, reward_points
@@ -608,7 +601,6 @@ func (q *userRepository) CreateUser(
 		request.Photo,
 		request.UserLevel,
 		request.ReferralCode,
-		request.Address,
 		request.ReferrerID,
 		request.ReferralPoints,
 		request.RewardPoints,
@@ -651,7 +643,6 @@ func (q *userRepository) CreateUser(
 		&response.Photo,
 		&response.UserLevel,
 		&response.ReferralCode,
-		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
 		&response.RewardPoints,
@@ -723,7 +714,6 @@ func (q *userRepository) UpdateUser(
 			, photo
 			, user_level
 			, referral_code
-			, address
 			, referrer_id
 			, referral_points
 			, reward_points
@@ -770,7 +760,6 @@ func (q *userRepository) UpdateUser(
 		&response.Photo,
 		&response.UserLevel,
 		&response.ReferralCode,
-		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
 		&response.RewardPoints,
@@ -1035,16 +1024,6 @@ func (q *userRepository) UpdateUser(
 		}
 		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
 	}
-	if (response.Address == nil && request.Address != nil) ||
-		(response.Address != nil && request.Address == nil) ||
-		(response.Address != nil && request.Address != nil &&
-			*response.Address != *request.Address) {
-		params = append(params, request.Address)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " address = $%d", n)
-	}
 	if (response.ReferrerID == nil && request.ReferrerID != nil) ||
 		(response.ReferrerID != nil && request.ReferrerID == nil) ||
 		(response.ReferrerID != nil && request.ReferrerID != nil &&
@@ -1139,7 +1118,6 @@ func (q *userRepository) UpdateUser(
 			, photo
 			, user_level
 			, referral_code
-			, address
 			, referrer_id
 			, referral_points
 			, reward_points
@@ -1184,7 +1162,6 @@ func (q *userRepository) UpdateUser(
 		&response.Photo,
 		&response.UserLevel,
 		&response.ReferralCode,
-		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
 		&response.RewardPoints,
@@ -1262,7 +1239,6 @@ func (q *userRepository) AddUserBalances(
 			, photo
 			, user_level
 			, referral_code
-			, address
 			, referrer_id
 			, referral_points
 			, reward_points
@@ -1309,7 +1285,6 @@ func (q *userRepository) AddUserBalances(
 		&response.Photo,
 		&response.UserLevel,
 		&response.ReferralCode,
-		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
 		&response.RewardPoints,
@@ -1401,7 +1376,6 @@ func (q *userRepository) AddUserBalances(
 			, photo
 			, user_level
 			, referral_code
-			, address
 			, referrer_id
 			, referral_points
 			, reward_points
@@ -1446,7 +1420,6 @@ func (q *userRepository) AddUserBalances(
 		&response.Photo,
 		&response.UserLevel,
 		&response.ReferralCode,
-		&response.Address,
 		&response.ReferrerID,
 		&response.ReferralPoints,
 		&response.RewardPoints,
