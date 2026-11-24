@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -105,44 +104,36 @@ var MapVoucherSortings = map[string]struct{}{
 }
 
 type Voucher struct {
-	RowNo                 int64                 `json:"-"`
-	ID                    uuid.UUID             `json:"id"`
-	RecordStatus          RecordStatus          `json:"record_status"`
-	VoucherType           VoucherType           `json:"voucher_type"`
-	VoucherTypeName       string                `json:"voucher_type_name"`
-	TargetAudience        VoucherTargetAudience `json:"target_audience"`
-	TargetAudienceName    string                `json:"target_audience_name"`
-	Code                  *string               `json:"code"`
-	DeletedCode           *string               `json:"deleted_code"`
-	Photo                 string                `json:"photo"`
-	Name                  string                `json:"name"`
-	Discount              int64                 `json:"discount"`
-	MinimumPurchase       int64                 `json:"minimum_purchase"`
-	QuotaPerBuyer         int64                 `json:"quota_per_buyer"`
-	EffectiveStartTime    time.Time             `json:"effective_start_time" input:"json"`
-	RawEffectiveStartTime string                `json:"-"`
-	EffectiveEndTime      time.Time             `json:"effective_end_time" input:"json"`
-	RawEffectiveEndTime   string                `json:"-"`
-	EffectiveStartDate    time.Time             `json:"effective_start_date" input:"json"`
-	RawEffectiveStartDate string                `json:"-"`
-	EffectiveEndDate      time.Time             `json:"effective_end_date" input:"json"`
-	RawEffectiveEndDate   string                `json:"-"`
-	Description           string                `json:"description"`
-	CreatedBy             uuid.UUID             `json:"created_by"`
-	CreatedAt             time.Time             `json:"created_at"`
-	UpdatedBy             uuid.UUID             `json:"updated_by"`
-	UpdatedAt             time.Time             `json:"updated_at"`
-	DeletedBy             *uuid.UUID            `json:"deleted_by"`
-	DeletedAt             *time.Time            `json:"deleted_at"`
-	DeletionReason        *string               `json:"deletion_reason"`
-	UserIDs               []uuid.UUID           `json:"-"`
+	RowNo              int64                 `json:"-"`
+	ID                 uuid.UUID             `json:"id"`
+	RecordStatus       RecordStatus          `json:"record_status"`
+	VoucherType        VoucherType           `json:"voucher_type"`
+	VoucherTypeName    string                `json:"voucher_type_name"`
+	TargetAudience     VoucherTargetAudience `json:"target_audience"`
+	TargetAudienceName string                `json:"target_audience_name"`
+	Code               *string               `json:"code"`
+	DeletedCode        *string               `json:"deleted_code"`
+	Photo              string                `json:"photo"`
+	Name               string                `json:"name"`
+	Discount           int64                 `json:"discount"`
+	MinimumPurchase    int64                 `json:"minimum_purchase"`
+	QuotaPerBuyer      int64                 `json:"quota_per_buyer"`
+	EffectiveStartTime time.Time             `json:"effective_start_time"`
+	EffectiveEndTime   time.Time             `json:"effective_end_time"`
+	EffectiveStartDate time.Time             `json:"effective_start_date"`
+	EffectiveEndDate   time.Time             `json:"effective_end_date"`
+	Description        string                `json:"description"`
+	CreatedBy          uuid.UUID             `json:"created_by"`
+	CreatedAt          time.Time             `json:"created_at"`
+	UpdatedBy          uuid.UUID             `json:"updated_by"`
+	UpdatedAt          time.Time             `json:"updated_at"`
+	DeletedBy          *uuid.UUID            `json:"deleted_by"`
+	DeletedAt          *time.Time            `json:"deleted_at"`
+	DeletionReason     *string               `json:"deletion_reason"`
+	UserIDs            []uuid.UUID           `json:"-"`
 }
 
 func (q *Voucher) Validate() (err error) {
-	rawFromTime(&q.RawEffectiveStartTime, &q.EffectiveStartTime, time.TimeOnly)
-	rawFromTime(&q.RawEffectiveEndTime, &q.EffectiveEndTime, time.TimeOnly)
-	rawFromTime(&q.RawEffectiveStartDate, &q.EffectiveStartDate, time.DateOnly)
-	rawFromTime(&q.RawEffectiveEndDate, &q.EffectiveEndDate, time.DateOnly)
 	if _, ok := MapVoucherTypes[q.VoucherType]; !ok {
 		return errors.New("voucher_type: not found")
 	}
@@ -172,12 +163,6 @@ func (q *Voucher) Validate() (err error) {
 	if q.QuotaPerBuyer < 1 {
 		return errors.New("quota_per_buyer: is required")
 	}
-	if q.RawEffectiveStartTime = strings.TrimSpace(q.RawEffectiveStartTime); q.RawEffectiveStartTime == "" {
-		return errors.New("effective_start_time: is required")
-	}
-	if q.EffectiveStartTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveStartTime, time.Local); err != nil {
-		return fmt.Errorf("effective_start_time: should use format '%s'", time.TimeOnly)
-	}
 	q.EffectiveStartTime = time.Date(
 		1,
 		1,
@@ -188,12 +173,6 @@ func (q *Voucher) Validate() (err error) {
 		0,
 		q.EffectiveStartTime.Location(),
 	)
-	if q.RawEffectiveEndTime = strings.TrimSpace(q.RawEffectiveEndTime); q.RawEffectiveEndTime == "" {
-		return errors.New("effective_end_time: is required")
-	}
-	if q.EffectiveEndTime, err = time.ParseInLocation(time.TimeOnly, q.RawEffectiveEndTime, time.Local); err != nil {
-		return fmt.Errorf("effective_end_time: should use format '%s'", time.TimeOnly)
-	}
 	q.EffectiveEndTime = time.Date(
 		1,
 		1,
@@ -207,39 +186,25 @@ func (q *Voucher) Validate() (err error) {
 	if !q.EffectiveEndTime.After(q.EffectiveStartTime) {
 		return errors.New("effective_end_time: should exceed effective_start_time")
 	}
-	if q.RawEffectiveStartDate = strings.TrimSpace(q.RawEffectiveStartDate); q.RawEffectiveStartDate == "" {
-		return errors.New("effective_start_date: is required")
-	}
-	effectiveStartDate, err := time.ParseInLocation(time.DateOnly, q.RawEffectiveStartDate, time.Local)
-	if err != nil {
-		return fmt.Errorf("effective_start_date: should use format '%s'", time.DateOnly)
-	}
 	q.EffectiveStartDate = time.Date(
-		effectiveStartDate.Year(),
-		effectiveStartDate.Month(),
-		effectiveStartDate.Day(),
+		q.EffectiveStartDate.Year(),
+		q.EffectiveStartDate.Month(),
+		q.EffectiveStartDate.Day(),
 		0,
 		0,
 		0,
 		0,
-		effectiveStartDate.Location(),
+		q.EffectiveStartDate.Location(),
 	)
-	if q.RawEffectiveEndDate = strings.TrimSpace(q.RawEffectiveEndDate); q.RawEffectiveEndDate == "" {
-		return errors.New("effective_end_date: is required")
-	}
-	effectiveEndDate, err := time.ParseInLocation(time.DateOnly, q.RawEffectiveEndDate, time.Local)
-	if err != nil {
-		return fmt.Errorf("effective_end_date: should use format '%s'", time.DateOnly)
-	}
 	q.EffectiveEndDate = time.Date(
-		effectiveEndDate.Year(),
-		effectiveEndDate.Month(),
-		effectiveEndDate.Day(),
+		q.EffectiveEndDate.Year(),
+		q.EffectiveEndDate.Month(),
+		q.EffectiveEndDate.Day(),
 		23,
 		59,
 		59,
 		999_999,
-		effectiveEndDate.Location(),
+		q.EffectiveEndDate.Location(),
 	)
 	if !q.EffectiveEndDate.After(q.EffectiveStartDate) {
 		return errors.New("effective_end_date: should exceed effective_start_date")
@@ -257,13 +222,9 @@ func (q *Voucher) Populate() *Voucher {
 	q.VoucherTypeName = q.VoucherType.String()
 	q.TargetAudienceName = q.TargetAudience.String()
 	q.EffectiveStartTime = q.EffectiveStartTime.In(time.Local)
-	q.RawEffectiveStartTime = q.EffectiveStartTime.Format(time.TimeOnly)
 	q.EffectiveEndTime = q.EffectiveEndTime.In(time.Local)
-	q.RawEffectiveEndTime = q.EffectiveEndTime.Format(time.TimeOnly)
 	q.EffectiveStartDate = q.EffectiveStartDate.In(time.Local)
-	q.RawEffectiveStartDate = q.EffectiveStartDate.Format(time.DateOnly)
 	q.EffectiveEndDate = q.EffectiveEndDate.In(time.Local)
-	q.RawEffectiveEndDate = q.EffectiveEndDate.Format(time.DateOnly)
 	return q
 }
 
