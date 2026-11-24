@@ -93,7 +93,6 @@ func (q *productRepository) FindProducts(
 		, record_status
 		, product_category_id
 		, product_category_name
-		, product_type
 		, name
 		, photo
 		, description
@@ -161,7 +160,6 @@ func (q *productRepository) FindProducts(
 			&product.RecordStatus,
 			&product.ProductCategoryID,
 			&product.ProductCategoryName,
-			&product.ProductType,
 			&product.Name,
 			&product.Photo,
 			&product.Description,
@@ -232,7 +230,6 @@ func (q *productRepository) InfiniteScrollProducts(
 		, record_status
 		, product_category_id
 		, product_category_name
-		, product_type
 		, name
 		, photo
 		, description
@@ -276,7 +273,6 @@ func (q *productRepository) InfiniteScrollProducts(
 			&product.RecordStatus,
 			&product.ProductCategoryID,
 			&product.ProductCategoryName,
-			&product.ProductType,
 			&product.Name,
 			&product.Photo,
 			&product.Description,
@@ -324,7 +320,6 @@ func (q *productRepository) FindProduct(
 			, record_status
 			, product_category_id
 			, product_category_name
-			, product_type
 			, name
 			, photo
 			, description
@@ -348,7 +343,6 @@ func (q *productRepository) FindProduct(
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
-		&response.ProductType,
 		&response.Name,
 		&response.Photo,
 		&response.Description,
@@ -387,7 +381,6 @@ func (q *productRepository) CreateProduct(
 			record_status
 			, product_category_id
 			, product_category_name
-			, product_type
 			, name
 			, photo
 			, description
@@ -399,12 +392,11 @@ func (q *productRepository) CreateProduct(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id
 			, record_status
 			, product_category_id
 			, product_category_name
-			, product_type
 			, name
 			, photo
 			, description
@@ -422,7 +414,6 @@ func (q *productRepository) CreateProduct(
 		request.RecordStatus,
 		request.ProductCategoryID,
 		request.ProductCategoryName,
-		request.ProductType,
 		request.Name,
 		request.Photo,
 		request.Description,
@@ -439,7 +430,6 @@ func (q *productRepository) CreateProduct(
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
-		&response.ProductType,
 		&response.Name,
 		&response.Photo,
 		&response.Description,
@@ -481,7 +471,6 @@ func (q *productRepository) UpdateProduct(
 			, record_status
 			, product_category_id
 			, product_category_name
-			, product_type
 			, name
 			, photo
 			, description
@@ -505,7 +494,6 @@ func (q *productRepository) UpdateProduct(
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
-		&response.ProductType,
 		&response.Name,
 		&response.Photo,
 		&response.Description,
@@ -557,13 +545,6 @@ func (q *productRepository) UpdateProduct(
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " product_category_name = $%d", n)
-	}
-	if response.ProductType != request.ProductType {
-		params = append(params, request.ProductType)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " product_type = $%d", n)
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
@@ -669,7 +650,6 @@ func (q *productRepository) UpdateProduct(
 			, record_status
 			, product_category_id
 			, product_category_name
-			, product_type
 			, name
 			, photo
 			, description
@@ -691,7 +671,6 @@ func (q *productRepository) UpdateProduct(
 		&response.RecordStatus,
 		&response.ProductCategoryID,
 		&response.ProductCategoryName,
-		&response.ProductType,
 		&response.Name,
 		&response.Photo,
 		&response.Description,

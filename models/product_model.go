@@ -12,14 +12,6 @@ import (
 
 var ErrProductNotFound = errors.New("product not found")
 var ErrUniqueProductNameViolation = errors.New("name: already exists")
-var ProductTypes = []ProductType{
-	ProductTypeStandalone,
-	ProductTypeBundled,
-}
-var MapProductTypes = map[ProductType]struct{}{
-	ProductTypeStandalone: {},
-	ProductTypeBundled:    {},
-}
 var MapProductSortings = map[string]struct{}{
 	SortingFieldID:   {},
 	SortingFieldName: {},
@@ -49,8 +41,6 @@ type Product struct {
 	RecordStatus        RecordStatus      `json:"record_status"`
 	ProductCategoryID   uuid.UUID         `json:"category_id"`
 	ProductCategoryName string            `json:"category_name"`
-	ProductType         ProductType       `json:"product_type"`
-	ProductTypeName     string            `json:"product_type_name"`
 	Name                string            `json:"name"`
 	Photo               string            `json:"photo"`
 	Description         string            `json:"description"`
@@ -74,9 +64,6 @@ func (q *Product) Validate() error {
 	}
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
 		return errors.New("name: is required")
-	}
-	if _, ok := MapProductTypes[q.ProductType]; !ok {
-		return errors.New("product_type: invalid")
 	}
 	q.Description = strings.TrimSpace(q.Description)
 	return nil
@@ -103,7 +90,6 @@ func (q *Product) StockStatus() string {
 }
 
 func (q *Product) Populate() *Product {
-	q.ProductTypeName = q.ProductType.String()
 	return q
 }
 

@@ -21,7 +21,6 @@ func init() {
 					, record_status smallint NOT NULL
 					, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, product_category_name character varying NOT NULL COLLATE "natural_sort"
-					, product_type smallint NOT NULL
 					, name character varying NOT NULL COLLATE "natural_sort"
 					, photo character varying NOT NULL
 					, description character varying NOT NULL
@@ -51,13 +50,6 @@ func init() {
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE INDEX ON products (product_category_id);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON products (product_type);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
