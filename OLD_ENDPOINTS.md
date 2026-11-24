@@ -20,11 +20,11 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 
 - [AccountApi](#accountapi) (5)
 - [AddressApi](#addressapi) (4)
-- [AuthApi](#authapi) (6)
+- [AuthApi](#authapi) (5)
 - [CartApi](#cartapi) (7)
-- [CheckoutApi](#checkoutapi) (12)
+- [CheckoutApi](#checkoutapi) (10)
 - [DeliveryApi](#deliveryapi) (5)
-- [HomeApi](#homeapi) (9)
+- [HomeApi](#homeapi) (8)
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
 - [PaymentApi](#paymentapi) (2)
@@ -35,10 +35,10 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [RecipeApi](#recipeapi) (5)
 - [SettingApi](#settingapi) (2)
 - [TransactionApi](#transactionapi) (8)
-- [UserApi](#userapi) (9)
+- [UserApi](#userapi) (8)
 - [VoucherApi](#voucherapi) (2)
 
-100 endpoint definitions in total.
+95 endpoint definitions in total.
 
 ## Index
 
@@ -58,7 +58,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `buyer/users/mobile_phone/confirm` | yes | `AuthApi.confirmMobilePhone` |
 | POST | `Auth/resendOTP` | yes | `AuthApi.resendOTP` |
 | POST | `Auth/lupaPassword` | no | `AuthApi.forgotPassword` |
-| GET | `User/getDetailUser` | yes | `AuthApi.getDetailUser` |
 | GET | `buyer/cart` | yes | `CartApi.buyerCart` |
 | POST | `buyer/cart` | yes | `CartApi.saveBuyerCart` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.clearCart` |
@@ -66,14 +65,12 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Pengaturan/getWalletConfiguration` | no | `CartApi.getWalletConfiguration` |
 | GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
-| GET | `User/getDetailUser` | yes | `CheckoutApi.getDetailUser` |
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
 | GET | `User/getTotalOngkir` | no | `CheckoutApi.getTotalShippingFee` |
 | GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
 | GET | `Transaksi/getJenisOngkir` | no | `CheckoutApi.getShippingFeeType` |
 | GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
 | GET | `Pengaturan/getWalletConfiguration` | no | `CheckoutApi.getWalletConfiguration` |
-| GET | `User/getTotalDompet` | yes | `CheckoutApi.getWalletTotal` |
 | GET | `Point/getPoint` | yes | `CheckoutApi.getPoint` |
 | GET | `User/getVoucher` | yes | `CheckoutApi.getVoucher` |
 | GET | `Voucher/getStatusVoucher/{id}` | yes | `CheckoutApi.getStatusVoucher` |
@@ -85,7 +82,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
 | GET | `buyer/banners` | no | `HomeApi.getBanner` |
 | GET | `User/getJumlahVoucher` | yes | `HomeApi.getVoucherCount` |
-| GET | `User/getTotalDompet` | yes | `HomeApi.getWalletTotal` |
 | GET | `Point/getPoint` | yes | `HomeApi.getPoint` |
 | GET | `Konten/getKonten` | no | `HomeApi.getContent` |
 | GET | `Konten/getKontenItemFromThisKonten/{idKonten}` | no | `HomeApi.getContentItem` |
@@ -133,8 +129,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Transaksi/belanjaUlang/{id}` | no | `TransactionApi.reorder` |
 | GET | `gift/gift-transaksi` | no | `TransactionApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `TransactionApi.getGift` |
-| GET | `User/getDetailUser` | yes | `UserApi.getDetailUser` |
-| GET | `User/getTotalDompet` | yes | `UserApi.getWalletTotal` |
+| GET | `buyer/users/me` | yes | `UserApi.me` |
 | GET | `User/getJumlahVoucher` | yes | `UserApi.getVoucherCount` |
 | GET | `Point/getPoint` | yes | `UserApi.getPoint` |
 | GET | `User/getRiwayatDompet` | yes | `UserApi.getWalletRecords` |
@@ -550,27 +545,6 @@ Response (`AuthResponses.LupaPassword`):
 }
 ```
 
-### `GET User/getDetailUser`
-
-App method: `AuthApi.getDetailUser`.
-
-Request:
-
-```http
-GET User/getDetailUser?getUserEntities=<getUserEntities>
-Authorization: Bearer <JWT>
-```
-
-Response (`AuthResponses.DetailUserResponse`):
-
-```json
-{
-  "detailUser": {
-    "nomorHP": "string"
-  }
-}
-```
-
 ## CartApi
 
 ### `GET buyer/cart`
@@ -773,30 +747,6 @@ Response (`CartResponses.GiftDetail`):
 
 ## CheckoutApi
 
-### `GET User/getDetailUser`
-
-App method: `CheckoutApi.getDetailUser`.
-
-Request:
-
-```http
-GET User/getDetailUser?getUserEntities=<select>
-Authorization: Bearer <JWT>
-```
-
-Response (`CheckoutResponses.DetailUserResponse`):
-
-```json
-{
-  "detailUser": {
-    "nama": "string",
-    "nomorHP": "string",
-    "alamat": "string",
-    "statusOTP": "string"
-  }
-}
-```
-
 ### `POST JadwalDelivery/isJadwalDeliveryOpened`
 
 App method: `CheckoutApi.isDeliveryScheduleOpened`.
@@ -914,25 +864,6 @@ Response (`CheckoutResponses.WalletConfig`):
     "minGrandTotalTransactionForWallet": 0,
     "walletDiscount": 0
   }
-}
-```
-
-### `GET User/getTotalDompet`
-
-App method: `CheckoutApi.getWalletTotal`.
-
-Request:
-
-```http
-GET User/getTotalDompet
-Authorization: Bearer <JWT>
-```
-
-Response (`CheckoutResponses.TotalDompet`):
-
-```json
-{
-  "totalDompet": 0
 }
 ```
 
@@ -1238,25 +1169,6 @@ Response (`HomeResponses.JumlahVoucher`):
 ```json
 {
   "jumlahVoucher": 0
-}
-```
-
-### `GET User/getTotalDompet`
-
-App method: `HomeApi.getWalletTotal`.
-
-Request:
-
-```http
-GET User/getTotalDompet
-Authorization: Bearer <JWT>
-```
-
-Response (`HomeResponses.TotalDompet`):
-
-```json
-{
-  "totalDompet": 0
 }
 ```
 
@@ -2609,52 +2521,54 @@ Response (`TransaksiResponses.GiftDetail`):
 
 ## UserApi
 
-### `GET User/getDetailUser`
+### `GET buyer/users/me`
 
-App method: `UserApi.getDetailUser`.
+App method: `UserApi.me`.
 
-`getUserEntities`: optional comma separated column list (legacy "select").
+The signed-in buyer, used by the Akun dashboard, Profil Saya, Kode Referal, the home wallet card, checkout (name, phone, address and wallet in one request) and the auth screens (phone number). The app reads `name`, `username`, `address`, `mobile_phone`, `mobile_phone_confirmed_at`, `photo` (a full URL, or a legacy file name in the user folder), `referral_code`, `created_at` (shown as "24 November 2026") and `wallet` (the dompet balance, null shown as 0). Replaces `User/getDetailUser` and `User/getTotalDompet`.
 
 Request:
 
 ```http
-GET User/getDetailUser?getUserEntities=<select>
+GET buyer/users/me
 Authorization: Bearer <JWT>
 ```
 
-Response (`AccountResponses.DetailUser`):
+Response (`AccountResponses.Me`):
 
 ```json
 {
-  "detailUser": {
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
     "id": "string",
-    "nama": "string",
-    "username": "string",
-    "alamat": "string",
-    "nomorHP": "string",
-    "foto": "string",
-    "kodeReferal": "string",
-    "createdAt": "string"
-  }
-}
-```
-
-### `GET User/getTotalDompet`
-
-App method: `UserApi.getWalletTotal`.
-
-Request:
-
-```http
-GET User/getTotalDompet
-Authorization: Bearer <JWT>
-```
-
-Response (`AccountResponses.TotalDompet`):
-
-```json
-{
-  "totalDompet": 0
+    "role": "buyer",
+    "name": "Budi",
+    "mobile_phone_confirmed_at": "2026-11-21T16:30:00+07:00",
+    "mobile_phone": "+6281234567890",
+    "username": "budi",
+    "email": null,
+    "password_changed_at": null,
+    "sign_in_count": 3,
+    "current_sign_in_at": "2026-11-24T09:00:00+07:00",
+    "last_sign_in_at": "2026-11-23T20:00:00+07:00",
+    "current_sign_in_ip": "string",
+    "last_sign_in_ip": "string",
+    "failed_attempts": 0,
+    "locked_at": null,
+    "photo": "",
+    "user_level": "string",
+    "referral_code": "BUDI01",
+    "address": "Jl. Merdeka No. 1",
+    "referrer_id": null,
+    "referral_points": 0,
+    "reward_points": 10,
+    "wallet": 25000,
+    "delivery_route_id": null,
+    "created_at": "2026-11-19T10:00:00+07:00"
+  },
+  "app": "laukpauk"
 }
 ```
 
