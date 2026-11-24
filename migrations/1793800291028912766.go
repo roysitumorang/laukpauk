@@ -10,7 +10,7 @@ import (
 
 func init() {
 	Migrations[1793800291028912766] = Migration{
-		Version: 1793800230349935282,
+		Version: 1793800291028912766,
 		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// recipe_items

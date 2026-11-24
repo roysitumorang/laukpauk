@@ -10,7 +10,7 @@ import (
 
 func init() {
 	Migrations[1795086760942079740] = Migration{
-		Version: 1793800358695041192,
+		Version: 1795086760942079740,
 		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// addresses
@@ -73,6 +73,13 @@ func init() {
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE INDEX ON addresses (main);`,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+			if _, err = tx.Exec(
+				ctx,
+				`CREATE UNIQUE INDEX one_main_address_per_user_idx ON addresses (user_id) WHERE main;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}
