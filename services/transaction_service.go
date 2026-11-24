@@ -698,8 +698,9 @@ func (q *transactionService) CompleteTransaction(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
+	now := time.Now()
 	request.Status = models.TransactionStatusCompleted
-	request.CompletedAt = new(time.Now())
+	request.CompletedAt = &now
 	response, err := q.transactionRepository.UpdateTransaction(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
@@ -711,14 +712,14 @@ func (q *transactionService) CompleteTransaction(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
 			return nil, err
 		}
-		if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, 0, max(0, response.RefundAmount)); err != nil {
+		if _, err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, 0, max(0, response.RefundAmount), now); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 			return nil, err
 		}
 	}
 	if response.ReferrerID != nil {
 		if buyer, ok := mapBuyers[*response.ReferrerID]; ok {
-			if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, -response.ReferralPoints, response.RewardPointsDiscount, 0); err != nil {
+			if _, err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, -response.ReferralPoints, response.RewardPointsDiscount, 0, now); err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 				return nil, err
 			}
@@ -811,14 +812,14 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
 				return err
 			}
-			if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, 0, max(0, response.RefundAmount)); err != nil {
+			if _, err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, 0, max(0, response.RefundAmount), now); err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 				return err
 			}
 		}
 		if response.ReferrerID != nil {
 			if buyer, ok := mapBuyers[*response.ReferrerID]; ok {
-				if err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, -response.ReferralPoints, response.RewardPointsDiscount, 0); err != nil {
+				if _, err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, -response.ReferralPoints, response.RewardPointsDiscount, 0, now); err != nil {
 					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 					return err
 				}

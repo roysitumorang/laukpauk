@@ -45,7 +45,8 @@ type UserRepository interface {
 		referralPoints,
 		rewardPoints,
 		wallet int64,
-	) error
+		now time.Time,
+	) (*models.User, error)
 }
 
 type userRepository struct {
@@ -1224,27 +1225,243 @@ func (q *userRepository) AddUserBalances(
 	referralPoints,
 	rewardPoints,
 	wallet int64,
-) error {
+	now time.Time,
+) (*models.User, error) {
 	ctxt := "UserRepository-AddUserBalances"
-	if referralPoints == 0 && rewardPoints == 0 && wallet == 0 {
-		return nil
-	}
-	if _, err := tx.Exec(
+	var response models.User
+	err := tx.QueryRow(
 		ctx,
-		`UPDATE users SET
-			referral_points = COALESCE(referral_points, 0) + $1
-			, reward_points = COALESCE(reward_points, 0) + $2
-			, wallet = COALESCE(wallet, 0) + $3
-			, updated_at = $4
-		WHERE id = $5`,
-		referralPoints,
-		rewardPoints,
-		wallet,
-		time.Now(),
+		`SELECT
+			id
+			, role
+			, status
+			, name
+			, mobile_phone_confirmation_sent_at
+			, mobile_phone_confirmation_token
+			, mobile_phone_confirmed_at
+			, mobile_phone
+			, username
+			, email_confirmation_sent_at
+			, email_confirmation_token
+			, email_confirmed_at
+			, email
+			, encrypted_password
+			, password_reset_sent_at
+			, password_reset_token
+			, password_changed_at
+			, sign_in_count
+			, current_sign_in_at
+			, last_sign_in_at
+			, current_sign_in_ip
+			, last_sign_in_ip
+			, failed_attempts
+			, unlock_token
+			, locked_at
+			, otp_secret
+			, otp_expired_at
+			, photo
+			, user_level
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deactivated_by
+			, deactivated_at
+			, deactivation_reason
+		FROM users
+		WHERE id = $1
+		FOR NO KEY UPDATE`,
 		userID,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
+	).Scan(
+		&response.ID,
+		&response.Role,
+		&response.Status,
+		&response.Name,
+		&response.MobilePhoneConfirmationSentAt,
+		&response.MobilePhoneConfirmationToken,
+		&response.MobilePhoneConfirmedAt,
+		&response.MobilePhone,
+		&response.Username,
+		&response.EmailConfirmationSentAt,
+		&response.EmailConfirmationToken,
+		&response.EmailConfirmedAt,
+		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetSentAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
+		&response.SignInCount,
+		&response.CurrentSignInAt,
+		&response.LastSignInAt,
+		&response.CurrentSignInIP,
+		&response.LastSignInIP,
+		&response.FailedAttempts,
+		&response.UnlockToken,
+		&response.LockedAt,
+		&response.OtpSecret,
+		&response.OtpExpiredAt,
+		&response.Photo,
+		&response.UserLevel,
+		&response.ReferralCode,
+		&response.Address,
+		&response.ReferrerID,
+		&response.ReferralPoints,
+		&response.RewardPoints,
+		&response.Wallet,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeactivatedBy,
+		&response.DeactivatedAt,
+		&response.DeactivationReason,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, models.ErrUserNotFound
 	}
-	return nil
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString("UPDATE users SET")
+	if referralPoints != 0 {
+		params = append(params, referralPoints)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " referral_points = COALESCE(referral_points, 0) + $%d", n)
+	}
+	if rewardPoints != 0 {
+		params = append(params, rewardPoints)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " reward_points = COALESCE(reward_points, 0) + $%d", n)
+	}
+	if wallet != 0 {
+		params = append(params, wallet)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " wallet = COALESCE(wallet, 0) + $%d", n)
+	}
+	if len(params) == 0 {
+		return &response, nil
+	}
+	params = append(params, now)
+	if n = len(params); n > 1 {
+		_, _ = sb.WriteString(",")
+	}
+	_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+	params = append(params, userID)
+	_, _ = fmt.Fprintf(
+		sb,
+		` WHERE id = $%d
+		RETURNING id
+			, role
+			, status
+			, name
+			, mobile_phone_confirmation_sent_at
+			, mobile_phone_confirmation_token
+			, mobile_phone_confirmed_at
+			, mobile_phone
+			, username
+			, email_confirmation_sent_at
+			, email_confirmation_token
+			, email_confirmed_at
+			, email
+			, encrypted_password
+			, password_reset_sent_at
+			, password_reset_token
+			, password_changed_at
+			, sign_in_count
+			, current_sign_in_at
+			, last_sign_in_at
+			, current_sign_in_ip
+			, last_sign_in_ip
+			, failed_attempts
+			, unlock_token
+			, locked_at
+			, otp_secret
+			, otp_expired_at
+			, photo
+			, user_level
+			, referral_code
+			, address
+			, referrer_id
+			, referral_points
+			, reward_points
+			, wallet
+			, created_by
+			, created_at
+			, updated_by
+			, updated_at
+			, deactivated_by
+			, deactivated_at
+			, deactivation_reason`,
+		len(params),
+	)
+	err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.Role,
+		&response.Status,
+		&response.Name,
+		&response.MobilePhoneConfirmationSentAt,
+		&response.MobilePhoneConfirmationToken,
+		&response.MobilePhoneConfirmedAt,
+		&response.MobilePhone,
+		&response.Username,
+		&response.EmailConfirmationSentAt,
+		&response.EmailConfirmationToken,
+		&response.EmailConfirmedAt,
+		&response.Email,
+		&response.EncryptedPassword,
+		&response.PasswordResetSentAt,
+		&response.PasswordResetToken,
+		&response.PasswordChangedAt,
+		&response.SignInCount,
+		&response.CurrentSignInAt,
+		&response.LastSignInAt,
+		&response.CurrentSignInIP,
+		&response.LastSignInIP,
+		&response.FailedAttempts,
+		&response.UnlockToken,
+		&response.LockedAt,
+		&response.OtpSecret,
+		&response.OtpExpiredAt,
+		&response.Photo,
+		&response.UserLevel,
+		&response.ReferralCode,
+		&response.Address,
+		&response.ReferrerID,
+		&response.ReferralPoints,
+		&response.RewardPoints,
+		&response.Wallet,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeactivatedBy,
+		&response.DeactivatedAt,
+		&response.DeactivationReason,
+	)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+		return nil, err
+	}
+	return &response, nil
 }
