@@ -1,6 +1,6 @@
 # Old endpoints used by laukpauk_mobile
 
-Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)), checkout's delivery address comes from `buyer/delivery_addresses` ([laukpauk_mobile#28](https://github.com/roysitumorang/laukpauk_mobile/pull/28), [#38](https://github.com/roysitumorang/laukpauk_mobile/pull/38)) and its delivery schedule options from `GET buyer/delivery_plans/now` ([laukpauk_mobile#29](https://github.com/roysitumorang/laukpauk_mobile/pull/29)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
+Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://github.com/roysitumorang/laukpauk_mobile), branch `dev`) makes, taken from its Retrofit interfaces in `android/app/src/main/java/id/laukpauk/data/remote/`. The list reflects the app after its seller and market code was removed (all products belong to a single seller) and after every call moved to JSON bodies, JWT auth and the `X-Version-Code` / `X-Request-Id` headers ([laukpauk_mobile#12](https://github.com/roysitumorang/laukpauk_mobile/pull/12)). Sign-in is `POST buyer/users/sign_in` and buyer registration is `POST buyer/users` ([laukpauk_mobile#13](https://github.com/roysitumorang/laukpauk_mobile/pull/13), [#14](https://github.com/roysitumorang/laukpauk_mobile/pull/14), [#26](https://github.com/roysitumorang/laukpauk_mobile/pull/26)), the home banners come from `GET buyer/banners` ([laukpauk_mobile#21](https://github.com/roysitumorang/laukpauk_mobile/pull/21)), the product lists and product search use `GET buyer/products` ([laukpauk_mobile#22](https://github.com/roysitumorang/laukpauk_mobile/pull/22)), the product detail screen uses `GET buyer/products/{id}` ([laukpauk_mobile#23](https://github.com/roysitumorang/laukpauk_mobile/pull/23)) and the cart uses `GET` / `POST buyer/cart` ([laukpauk_mobile#25](https://github.com/roysitumorang/laukpauk_mobile/pull/25), [#27](https://github.com/roysitumorang/laukpauk_mobile/pull/27)), checkout's delivery address comes from `buyer/delivery_addresses` ([laukpauk_mobile#28](https://github.com/roysitumorang/laukpauk_mobile/pull/28), [#38](https://github.com/roysitumorang/laukpauk_mobile/pull/38)) and its delivery schedule options from `GET buyer/delivery_plans/now` ([laukpauk_mobile#29](https://github.com/roysitumorang/laukpauk_mobile/pull/29)), and its delivery cost is the address's `distance_km` times `delivery_cost_per_km` of `GET buyer/setting` ([laukpauk_mobile#39](https://github.com/roysitumorang/laukpauk_mobile/pull/39)). These are the endpoints the app calls, not the endpoints this repository serves; use this list to map the app onto the current API.
 
 ## Conventions
 
@@ -22,7 +22,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (5)
 - [CartApi](#cartapi) (7)
-- [CheckoutApi](#checkoutapi) (9)
+- [CheckoutApi](#checkoutapi) (7)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (7)
 - [NotificationApi](#notificationapi) (7)
@@ -33,12 +33,12 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
 - [RecipeApi](#recipeapi) (5)
-- [SettingApi](#settingapi) (2)
+- [SettingApi](#settingapi) (3)
 - [TransactionApi](#transactionapi) (8)
 - [UserApi](#userapi) (7)
 - [VoucherApi](#voucherapi) (2)
 
-92 endpoint definitions in total.
+91 endpoint definitions in total.
 
 ## Index
 
@@ -66,9 +66,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
-| GET | `User/getTotalOngkir` | no | `CheckoutApi.getTotalShippingFee` |
 | GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
-| GET | `Transaksi/getJenisOngkir` | no | `CheckoutApi.getShippingFeeType` |
 | GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
 | GET | `Pengaturan/getWalletConfiguration` | no | `CheckoutApi.getWalletConfiguration` |
 | GET | `User/getVoucher` | yes | `CheckoutApi.getVoucher` |
@@ -117,6 +115,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Resep/getResepItemFromThisResep/{idResep}` | no | `RecipeApi.getRecipeItem` |
 | GET | `Produk/getHargaProduk` | no | `RecipeApi.getProductPrice` |
 | POST | `Keranjang/belanjaResep` | no | `RecipeApi.shopRecipe` |
+| GET | `buyer/setting` | no | `SettingApi.buyerSetting` |
 | GET | `Pengaturan/getSettingValue/{key}` | no | `SettingApi.getSettingValue` |
 | GET | `Pengaturan/getContactUsWhatsappConfiguration` | no | `SettingApi.getContactUsWhatsappConfiguration` |
 | GET | `User/getRiwayatTransaksi` | yes | `TransactionApi.getTransactionRecords` |
@@ -775,24 +774,6 @@ Response (`CheckoutResponses.JadwalOpened`):
 }
 ```
 
-### `GET User/getTotalOngkir`
-
-App method: `CheckoutApi.getTotalShippingFee`.
-
-Request:
-
-```http
-GET User/getTotalOngkir?cartCode=<cartCode>&latDelivery=<lat>&longDelivery=<lng>
-```
-
-Response (`CheckoutResponses.TotalOngkir`):
-
-```json
-{
-  "totalOngkir": 0
-}
-```
-
 ### `GET User/getJumlahCart`
 
 App method: `CheckoutApi.getCartQuantity`.
@@ -808,25 +789,6 @@ Response (`CheckoutResponses.JumlahCart`):
 ```json
 {
   "jumlahKeranjang": 0
-}
-```
-
-### `GET Transaksi/getJenisOngkir`
-
-App method: `CheckoutApi.getShippingFeeType`.
-
-Request:
-
-```http
-GET Transaksi/getJenisOngkir?cartCode=<cartCode>&latDelivery=<lat>&longDelivery=<lng>
-```
-
-Response (`CheckoutResponses.JenisOngkir`):
-
-```json
-{
-  "jenisOngkir": "string",
-  "jarak": 0.0
 }
 ```
 
@@ -2200,6 +2162,49 @@ Response (`RecipeResponses.Belanja`):
 ```
 
 ## SettingApi
+
+### `GET buyer/setting`
+
+App method: `SettingApi.buyerSetting`.
+
+The store settings (no sign-in needed). Checkout's delivery cost is `distance_km` of the delivery address (`GET buyer/delivery_addresses`, the address at the saved delivery point) times `delivery_cost_per_km`; the product unit sheet shows `delivery_cost_per_km` as the per-km rate. The app reads `delivery_cost_per_km` and `delivery_max_distance_km`.
+
+Request:
+
+```http
+GET buyer/setting
+```
+
+Response (`SettingResponses.Buyer`):
+
+```json
+{
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "vacation_mode": false,
+    "vacation_end_date": null,
+    "voucher_enabled": true,
+    "referral_points_enabled": false,
+    "referral_points_minimum_shopping_cost": 0,
+    "referral_points_amount": 0,
+    "referral_points_slots": [],
+    "referral_points_expense": 0,
+    "reward_points_accumulation_window_in_days": 0,
+    "delivery_origin_longitude": "98.6600",
+    "delivery_origin_latitude": "3.5800",
+    "delivery_cost_per_km": 5000,
+    "delivery_max_distance_km": 20,
+    "whatsapp_phone_number": "+6281234567890",
+    "payment_terms": "1h0m0s",
+    "maximum_delivery_time": "3h0m0s",
+    "transaction_auto_withdrawal_window_min": null,
+    "transaction_auto_withdrawal_window_max": null,
+    "otp_required_for_login": false
+  }
+}
+```
 
 ### `GET Pengaturan/getSettingValue/{key}`
 
