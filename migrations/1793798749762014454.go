@@ -63,40 +63,11 @@ func init() {
 				`CREATE INDEX ON delivery_routes (destination_latitude);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`ALTER TABLE users ADD FOREIGN KEY (delivery_route_id) REFERENCES delivery_routes (id) ON UPDATE CASCADE ON DELETE SET NULL;`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON users (delivery_route_id);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}
 			return
 		},
 		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
-				ctx,
-				`DROP INDEX users_delivery_route_id_idx`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`ALTER TABLE users
-					DROP CONSTRAINT users_delivery_route_id_fkey`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
 			if _, err = tx.Exec(
 				ctx,
 				"DROP TABLE delivery_routes",

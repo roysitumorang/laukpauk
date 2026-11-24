@@ -49,50 +49,49 @@ var MapUserLevels = map[string]struct{}{
 }
 
 type User struct {
-	RowNo                         int64      `json:"-" form:"-"`
-	ID                            uuid.UUID  `json:"id" form:"-"`
-	Role                          string     `json:"role" form:"-"`
-	Status                        string     `json:"-" form:"-"`
-	Name                          string     `json:"name" form:"name"`
-	MobilePhoneConfirmationSentAt *time.Time `json:"-" form:"-"`
-	MobilePhoneConfirmationToken  *string    `json:"-" form:"-"`
-	MobilePhoneConfirmedAt        *time.Time `json:"mobile_phone_confirmed_at" form:"-"`
-	MobilePhone                   string     `json:"mobile_phone" form:"mobile_phone"`
-	Username                      *string    `json:"username" form:"username"`
-	EmailConfirmationSentAt       *time.Time `json:"-" form:"-"`
-	EmailConfirmationToken        *string    `json:"-" form:"-"`
-	EmailConfirmedAt              *time.Time `json:"-" form:"-"`
-	Email                         *string    `json:"email" form:"email"`
-	EncryptedPassword             *string    `json:"-" form:"-"`
-	PasswordResetSentAt           *time.Time `json:"-" form:"-"`
-	PasswordResetToken            *string    `json:"-" form:"-"`
-	PasswordChangedAt             *time.Time `json:"password_changed_at" form:"-"`
-	SignInCount                   int        `json:"sign_in_count" form:"-"`
-	CurrentSignInAt               *time.Time `json:"current_sign_in_at" form:"-"`
-	LastSignInAt                  *time.Time `json:"last_sign_in_at" form:"-"`
-	CurrentSignInIP               *string    `json:"current_sign_in_ip" form:"-"`
-	LastSignInIP                  *string    `json:"last_sign_in_ip" form:"-"`
-	FailedAttempts                int        `json:"failed_attempts" form:"-"`
-	UnlockToken                   *string    `json:"-" form:"-"`
-	LockedAt                      *time.Time `json:"locked_at" form:"-"`
-	OtpSecret                     *string    `json:"-" form:"-"`
-	OtpExpiredAt                  *time.Time `json:"-" form:"-"`
-	Photo                         string     `json:"photo" form:"photo"`
-	UserLevel                     string     `json:"user_level" form:"user_level"`
-	ReferralCode                  *string    `json:"referral_code" form:"referral_code"`
-	Address                       *string    `json:"address" form:"address"`
-	ReferrerID                    *uuid.UUID `json:"referrer_id" form:"referrer_id"`
-	ReferralPoints                *int64     `json:"referral_points" form:"-"`
-	RewardPoints                  *int64     `json:"reward_points" form:"-"`
-	Wallet                        *int64     `json:"wallet" form:"-"`
-	DeliveryRouteID               *uuid.UUID `json:"delivery_route_id" form:"-"`
-	CreatedBy                     *uuid.UUID `json:"-" form:"-"`
-	CreatedAt                     time.Time  `json:"created_at" form:"-"`
-	UpdatedBy                     *uuid.UUID `json:"-" form:"-"`
-	UpdatedAt                     time.Time  `json:"-" form:"-"`
-	DeactivatedBy                 *uuid.UUID `json:"-" form:"-"`
-	DeactivatedAt                 *time.Time `json:"-" form:"-"`
-	DeactivationReason            *string    `json:"-" form:"-"`
+	RowNo                         int64      `json:"-"`
+	ID                            uuid.UUID  `json:"id"`
+	Role                          string     `json:"role"`
+	Status                        string     `json:"status"`
+	Name                          string     `json:"name"`
+	MobilePhoneConfirmationSentAt *time.Time `json:"-"`
+	MobilePhoneConfirmationToken  *string    `json:"-"`
+	MobilePhoneConfirmedAt        *time.Time `json:"mobile_phone_confirmed_at"`
+	MobilePhone                   string     `json:"mobile_phone"`
+	Username                      *string    `json:"username"`
+	EmailConfirmationSentAt       *time.Time `json:"-"`
+	EmailConfirmationToken        *string    `json:"-"`
+	EmailConfirmedAt              *time.Time `json:"email_confirmed_at"`
+	Email                         *string    `json:"email"`
+	EncryptedPassword             *string    `json:"-"`
+	PasswordResetSentAt           *time.Time `json:"-"`
+	PasswordResetToken            *string    `json:"-"`
+	PasswordChangedAt             *time.Time `json:"password_changed_at"`
+	SignInCount                   int        `json:"sign_in_count"`
+	CurrentSignInAt               *time.Time `json:"current_sign_in_at"`
+	LastSignInAt                  *time.Time `json:"last_sign_in_at"`
+	CurrentSignInIP               *string    `json:"current_sign_in_ip"`
+	LastSignInIP                  *string    `json:"last_sign_in_ip"`
+	FailedAttempts                int        `json:"failed_attempts"`
+	UnlockToken                   *string    `json:"-"`
+	LockedAt                      *time.Time `json:"locked_at"`
+	OtpSecret                     *string    `json:"-"`
+	OtpExpiredAt                  *time.Time `json:"-"`
+	Photo                         string     `json:"photo"`
+	UserLevel                     string     `json:"user_level"`
+	ReferralCode                  *string    `json:"referral_code"`
+	Address                       *string    `json:"address"`
+	ReferrerID                    *uuid.UUID `json:"referrer_id"`
+	ReferralPoints                *int64     `json:"referral_points"`
+	RewardPoints                  *int64     `json:"reward_points"`
+	Wallet                        *int64     `json:"wallet"`
+	CreatedBy                     *uuid.UUID `json:"-"`
+	CreatedAt                     time.Time  `json:"created_at"`
+	UpdatedBy                     *uuid.UUID `json:"-"`
+	UpdatedAt                     time.Time  `json:"-"`
+	DeactivatedBy                 *uuid.UUID `json:"-"`
+	DeactivatedAt                 *time.Time `json:"-"`
+	DeactivationReason            *string    `json:"-"`
 }
 
 func (q *User) Validate() error {
@@ -270,12 +269,12 @@ func (q *UserFilter) WithUrlValues(urlValues url.Values) *UserFilter {
 }
 
 type SignUp struct {
-	Name           string `json:"name" form:"-"`
-	Username       string `json:"username" form:"-"`
-	MobilePhone    string `json:"mobile_phone" form:"-"`
-	Base64Password string `json:"password" form:"-"`
-	Password       string `json:"-" form:"-"`
-	ReferralCode   string `json:"referral_code" form:"-"`
+	Name           string `json:"name"`
+	Username       string `json:"username"`
+	MobilePhone    string `json:"mobile_phone"`
+	Base64Password string `json:"password"`
+	Password       string `json:"-"`
+	ReferralCode   string `json:"referral_code"`
 }
 
 func (q *SignUp) Validate() error {
@@ -306,9 +305,9 @@ func (q *SignUp) Validate() error {
 }
 
 type SignInRequest struct {
-	Login          string `json:"login" form:"login"`
-	Base64Password string `json:"password" form:"password"`
-	Password       string `json:"-" form:"-"`
+	Login          string `json:"login"`
+	Base64Password string `json:"password"`
+	Password       string `json:"-"`
 }
 
 func (q *SignInRequest) Validate() error {
@@ -341,15 +340,15 @@ var MapUserAccountSortings = map[string]struct{}{
 // account: a staff seller (owner only) or a buyer. Address and referrer only
 // apply to buyers.
 type UserAccount struct {
-	Name           string     `json:"name" form:"name"`
-	Username       string     `json:"username" form:"username"`
-	MobilePhone    string     `json:"mobile_phone" form:"mobile_phone"`
-	Email          *string    `json:"email" form:"email"`
-	Address        *string    `json:"address" form:"address"`
-	ReferrerID     *uuid.UUID `json:"referrer_id" form:"referrer_id"`
-	Base64Password string     `json:"password" form:"password"`
-	Password       string     `json:"-" form:"-"`
-	Photo          string     `json:"-" form:"-"`
+	Name           string     `json:"name"`
+	Username       string     `json:"username"`
+	MobilePhone    string     `json:"mobile_phone"`
+	Email          *string    `json:"email"`
+	Address        *string    `json:"address"`
+	ReferrerID     *uuid.UUID `json:"referrer_id"`
+	Base64Password string     `json:"password"`
+	Password       string     `json:"-"`
+	Photo          string     `json:"-"`
 }
 
 func (q *UserAccount) Validate(passwordRequired, addressRequired bool) error {

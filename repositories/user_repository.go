@@ -125,7 +125,6 @@ func (q *userRepository) FindUsers(
 		, referral_points
 		, reward_points
 		, wallet
-		, delivery_route_id
 		, created_by
 		, created_at
 		, updated_by
@@ -217,7 +216,6 @@ func (q *userRepository) FindUsers(
 			&user.ReferralPoints,
 			&user.RewardPoints,
 			&user.Wallet,
-			&user.DeliveryRouteID,
 			&user.CreatedBy,
 			&user.CreatedAt,
 			&user.UpdatedBy,
@@ -287,7 +285,6 @@ func (q *userRepository) FindUser(
 			, referral_points
 			, reward_points
 			, wallet
-			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -335,7 +332,6 @@ func (q *userRepository) FindUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
-		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -526,7 +522,6 @@ func (q *userRepository) CreateUser(
 			, referral_points
 			, reward_points
 			, wallet
-			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -539,7 +534,7 @@ func (q *userRepository) CreateUser(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41, $42
+			, $41
 		)
 		RETURNING id
 			, role
@@ -576,7 +571,6 @@ func (q *userRepository) CreateUser(
 			, referral_points
 			, reward_points
 			, wallet
-			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -618,7 +612,6 @@ func (q *userRepository) CreateUser(
 		request.ReferralPoints,
 		request.RewardPoints,
 		request.Wallet,
-		request.DeliveryRouteID,
 		request.CreatedBy,
 		request.CreatedAt,
 		request.UpdatedBy,
@@ -662,7 +655,6 @@ func (q *userRepository) CreateUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
-		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -735,7 +727,6 @@ func (q *userRepository) UpdateUser(
 			, referral_points
 			, reward_points
 			, wallet
-			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -783,7 +774,6 @@ func (q *userRepository) UpdateUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
-		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,
@@ -1044,16 +1034,6 @@ func (q *userRepository) UpdateUser(
 		}
 		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
 	}
-	if (response.DeliveryRouteID == nil && request.DeliveryRouteID != nil) ||
-		(response.DeliveryRouteID != nil && request.DeliveryRouteID == nil) ||
-		(response.DeliveryRouteID != nil && request.DeliveryRouteID != nil &&
-			response.DeliveryRouteID.Compare(*request.DeliveryRouteID) != 0) {
-		params = append(params, request.DeliveryRouteID)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " delivery_route_id = $%d", n)
-	}
 	if (response.Address == nil && request.Address != nil) ||
 		(response.Address != nil && request.Address == nil) ||
 		(response.Address != nil && request.Address != nil &&
@@ -1163,7 +1143,6 @@ func (q *userRepository) UpdateUser(
 			, referral_points
 			, reward_points
 			, wallet
-			, delivery_route_id
 			, created_by
 			, created_at
 			, updated_by
@@ -1209,7 +1188,6 @@ func (q *userRepository) UpdateUser(
 		&response.ReferralPoints,
 		&response.RewardPoints,
 		&response.Wallet,
-		&response.DeliveryRouteID,
 		&response.CreatedBy,
 		&response.CreatedAt,
 		&response.UpdatedBy,

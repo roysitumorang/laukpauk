@@ -53,7 +53,6 @@ func (q *deliveryRouteController) Mount(r fiber.Router) {
 func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryRouteController-V1BuyerSave"
-	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	setting, err := q.settingService.FindSetting(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
@@ -139,15 +138,6 @@ func (q *deliveryRouteController) V1BuyerSave(c fiber.Ctx) (err error) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
-	}
-	if request.DistanceKM <= setting.DeliveryMaxDistanceKM {
-		currentUser.DeliveryRouteID = &response.ID
-		if _, err = q.userService.UpdateUser(ctx, tx, currentUser); err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
-			return helper.NewResponse(fiber.StatusUnprocessableEntity).
-				SetMessage(err.Error()).
-				WriteResponse(c)
-		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
