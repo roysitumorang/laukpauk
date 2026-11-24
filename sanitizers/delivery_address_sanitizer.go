@@ -14,9 +14,9 @@ import (
 	"github.com/roysitumorang/laukpauk/models"
 )
 
-func FindAddresses(ctx context.Context, c fiber.Ctx) (*models.AddressFilter, error) {
-	ctxt := "AddressSanitizer-FindAddresses"
-	response := models.NewAddressFilter()
+func FindDeliveryAddresses(ctx context.Context, c fiber.Ctx) (*models.DeliveryAddressFilter, error) {
+	ctxt := "DeliveryAddressSanitizer-FindDeliveryAddresses"
+	response := models.NewDeliveryAddressFilter()
 	originalURL, err := url.ParseRequestURI(c.OriginalURL())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParseRequestURI")
@@ -33,7 +33,7 @@ func FindAddresses(ctx context.Context, c fiber.Ctx) (*models.AddressFilter, err
 		var sortings []models.Sorting
 		for _, sorting := range sortBy {
 			if !strings.Contains(sorting, ":") {
-				if _, ok := models.MapAddressSortings[sorting]; ok {
+				if _, ok := models.MapDeliveryAddressSortings[sorting]; ok {
 					sortings = append(sortings, models.Sorting{
 						Field:     sorting,
 						Direction: models.SortingDirectionAsc,
@@ -41,7 +41,7 @@ func FindAddresses(ctx context.Context, c fiber.Ctx) (*models.AddressFilter, err
 				}
 			} else if items := strings.Split(sorting, ":"); len(items) == 2 {
 				field, order := items[0], items[1]
-				if _, ok := models.MapAddressSortings[field]; ok &&
+				if _, ok := models.MapDeliveryAddressSortings[field]; ok &&
 					(models.SortingDirectionAsc.Equal(order) ||
 						models.SortingDirectionDesc.Equal(order)) {
 					sortings = append(sortings, models.Sorting{
@@ -68,9 +68,9 @@ func FindAddresses(ctx context.Context, c fiber.Ctx) (*models.AddressFilter, err
 	return response, nil
 }
 
-func ValidateAddress(ctx context.Context, c fiber.Ctx) (*models.Address, int, error) {
-	ctxt := "AddressSanitizer-ValidateAddress"
-	var response models.Address
+func ValidateDeliveryAddress(ctx context.Context, c fiber.Ctx) (*models.DeliveryAddress, int, error) {
+	ctxt := "DeliveryAddressSanitizer-ValidateDeliveryAddress"
+	var response models.DeliveryAddress
 	err := c.Bind().Body(&response)
 	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBody")

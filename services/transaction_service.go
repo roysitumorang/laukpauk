@@ -58,7 +58,7 @@ type transactionService struct {
 	transactionCounterRepository repositories.TransactionCounterRepository
 	cartRepository               repositories.CartRepository
 	deliveryPlanRepository       repositories.DeliveryPlanRepository
-	deliveryRouteRepository      repositories.DeliveryRouteRepository
+	deliveryAddressRepository    repositories.DeliveryAddressRepository
 	settingRepository            repositories.SettingRepository
 	voucherRepository            repositories.VoucherRepository
 	pointSpendingCapRepository   repositories.PointSpendingCapRepository
@@ -75,7 +75,7 @@ func NewTransactionService(
 	transactionCounterRepository repositories.TransactionCounterRepository,
 	cartRepository repositories.CartRepository,
 	deliveryPlanRepository repositories.DeliveryPlanRepository,
-	deliveryRouteRepository repositories.DeliveryRouteRepository,
+	deliveryAddressRepository repositories.DeliveryAddressRepository,
 	settingRepository repositories.SettingRepository,
 	voucherRepository repositories.VoucherRepository,
 	pointSpendingCapRepository repositories.PointSpendingCapRepository,
@@ -91,7 +91,7 @@ func NewTransactionService(
 		transactionCounterRepository: transactionCounterRepository,
 		cartRepository:               cartRepository,
 		deliveryPlanRepository:       deliveryPlanRepository,
-		deliveryRouteRepository:      deliveryRouteRepository,
+		deliveryAddressRepository:    deliveryAddressRepository,
 		settingRepository:            settingRepository,
 		voucherRepository:            voucherRepository,
 		pointSpendingCapRepository:   pointSpendingCapRepository,
@@ -173,21 +173,28 @@ func (q *transactionService) CreateTransaction(
 	for _, cartItem := range cart.Items {
 		mapCartItems[cartItem.ID] = cartItem
 	}
-	deliveryRoute, err := q.deliveryRouteRepository.FindDeliveryRoute(
+	deliveryAddress, err := q.deliveryAddressRepository.FindDeliveryAddress(
 		ctx,
-		models.NewDeliveryRouteFilter().
-			WithDeliveryRouteIDs(request.DeliveryRouteID),
+		models.NewDeliveryAddressFilter().
+			WithDeliveryAddressIDs(request.DeliveryAddressID),
 	)
-	if err != nil && !errors.Is(err, models.ErrDeliveryRouteNotFound) {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryRoute")
+	if errors.Is(err, models.ErrDeliveryAddressNotFound) {
+		err = nil
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return nil, nil, err
 	}
-	if deliveryRoute == nil {
+	if deliveryAddress == nil {
 		return nil, nil, errors.New("delivery_route_id: not found")
 	}
-	request.DeliveryLongitude = deliveryRoute.DestinationLongitude
-	request.DeliveryLatitude = deliveryRoute.DestinationLatitude
-	request.DeliveryDistanceKM = deliveryRoute.DistanceKM
+	request.DeliveryDestinationLongitude = deliveryAddress.DestinationLongitude
+	request.DeliveryDestinationLatitude = deliveryAddress.DestinationLatitude
+	request.DeliveryDistanceKM = deliveryAddress.DistanceKM
+	request.DeliveryStreetAddress = deliveryAddress.StreetAddress
+	request.DeliveryNote = deliveryAddress.DeliveryNote
+	request.DeliveryRecipientName = deliveryAddress.RecipientName
+	request.DeliveryRecipientMobilePhone = deliveryAddress.RecipientMobilePhone
 	now := time.Now().In(time.Local)
 	deliveryPlan, err := q.deliveryPlanRepository.FindDeliveryPlan(
 		ctx,

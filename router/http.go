@@ -154,7 +154,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/banners", To: "/banners/v1/buyer"},
 				{From: "/v1/buyer/banners/*", To: "/banners/v1/buyer/$1"},
 				{From: "/v1/buyer/banners/*/*", To: "/banners/v1/buyer/$1/$2"},
-				{From: "/v1/buyer/delivery_routes", To: "/delivery_routes/v1/buyer"},
+				{From: "/v1/buyer/delivery_addresses", To: "/delivery_addresses/v1/buyer"},
+				{From: "/v1/buyer/delivery_addresses/*", To: "/delivery_addresses/v1/buyer/$1"},
 				{From: "/v1/buyer/point_earning_caps", To: "/point_earning_caps/v1/buyer"},
 				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
@@ -284,13 +285,13 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.CartService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/cart"))
-	controllers.NewDeliveryRouteController(
+	controllers.NewDeliveryAddressController(
 		q.UserService,
-		q.DeliveryRouteService,
+		q.DeliveryAddressService,
 		q.SettingService,
 		q.JsonWebTokenService,
 		q.RoutesApiClient,
-	).Mount(app.Group("/delivery_routes"))
+	).Mount(app.Group("/delivery_addresses"))
 	controllers.NewSettingController(
 		q.UserService,
 		q.SettingService,
@@ -342,11 +343,6 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/recipe_items"))
-	controllers.NewAddressController(
-		q.AddressService,
-		q.UserService,
-		q.JsonWebTokenService,
-	).Mount(app.Group("/addresses"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(utils.StatusMessage(fiber.StatusNotFound)).

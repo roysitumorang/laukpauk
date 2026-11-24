@@ -9,7 +9,6 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/nyaruka/phonenumbers"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -69,101 +68,101 @@ func (q TransactionStatus) Equal(v TransactionStatus) bool {
 }
 
 type Transaction struct {
-	RowNo                           int64              `json:"-" form:"-"`
-	ID                              uuid.UUID          `json:"id" form:"id"`
-	ParentID                        *uuid.UUID         `json:"parent_id" form:"parent_id"`
-	Reordered                       bool               `json:"reordered" form:"reordered"`
-	UserID                          uuid.UUID          `json:"user_id" form:"user_id"`
-	CartID                          *uuid.UUID         `json:"cart_id" form:"cart_id"`
-	ReferenceNumber                 string             `json:"reference_number" form:"-"`
-	Status                          TransactionStatus  `json:"status" form:"-"`
-	RecipientName                   string             `json:"recipient_name" form:"recipient_name"`
-	RecipientMobilePhone            string             `json:"-" form:"-"`
-	RawRecipientMobilePhone         string             `json:"recipient_mobile_phone" form:"recipient_mobile_phone"`
-	BuyerNote                       string             `json:"buyer_note" form:"buyer_note"`
-	UniqueCode                      int64              `json:"unique_code" form:"-"`
-	ShoppingCost                    int64              `json:"shopping_cost" form:"-"`
-	ReferrerID                      *uuid.UUID         `json:"referrer_id" form:"-"`
-	ReferralCode                    *string            `json:"referral_code" form:"referral_code"`
-	ReferralPoints                  int64              `json:"referral_points" form:"-"`
-	VoucherID                       *uuid.UUID         `json:"voucher_id" form:"-"`
-	VoucherType                     *VoucherType       `json:"voucher_type" form:"-"`
-	VoucherCode                     *string            `json:"voucher_code" form:"voucher_code"`
-	VoucherDiscount                 int64              `json:"voucher_discount" form:"-"`
-	RewardPointsDiscounted          bool               `json:"reward_points_discounted" form:"reward_points_discounted"`
-	RewardPointsDiscount            int64              `json:"reward_points_discount" form:"-"`
-	WalletDiscounted                bool               `json:"wallet_discounted" form:"wallet_discounted"`
-	WalletAmount                    int64              `json:"wallet_amount" form:"-"`
-	WalletDiscount                  int64              `json:"wallet_discount" form:"-"`
-	DiscountedShoppingCost          int64              `json:"discounted_shopping_cost" form:"-"`
-	DeliveryEstimatedCost           int64              `json:"delivery_estimated_cost" form:"-"`
-	DiscountedDeliveryEstimatedCost int64              `json:"discounted_delivery_estimated_cost" form:"-"`
-	DeliveryRouteID                 uuid.UUID          `json:"delivery_route_id" form:"-"`
-	DeliveryLatitude                decimal.Decimal    `json:"delivery_latitude" form:"delivery_latitude"`
-	DeliveryLongitude               decimal.Decimal    `json:"delivery_longitude" form:"delivery_longitude"`
-	DeliveryDistanceKM              int64              `json:"delivery_distance_km" form:"-"`
-	DeliveryAddress                 string             `json:"delivery_address" form:"delivery_address"`
-	DeliveryInstruction             string             `json:"delivery_instruction" form:"delivery_instruction"`
-	DeliveryDatetime                time.Time          `json:"delivery_datetime" form:"delivery_datetime"`
-	PaymentAmount                   int64              `json:"payment_amount" form:"-"`
-	PaymentDueDate                  *time.Time         `json:"payment_due_date" form:"-"`
-	PaymentChannelID                *uuid.UUID         `json:"payment_channel_id" form:"-"`
-	PaymentRequestID                *string            `json:"payment_request_id" form:"-"`
-	PaymentTokenID                  *string            `json:"payment_token_id" form:"-"`
-	PaymentChannelName              *string            `json:"payment_channel_name" form:"-"`
-	PaymentVirtualAccountNumber     *string            `json:"payment_virtual_account_number" form:"-"`
-	PaymentVirtualAccountExpiredAt  *time.Time         `json:"payment_virtual_account_expired_at" form:"-"`
-	CreatedAt                       time.Time          `json:"created_at" form:"-"`
-	UpdatedAt                       time.Time          `json:"updated_at" form:"-"`
-	CancelledAt                     *time.Time         `json:"cancelled_at" form:"-"`
-	PaymentStatus                   *string            `json:"payment_status" form:"-"`
-	PaymentFailureCode              *string            `json:"payment_failure_code" form:"-"`
-	PaymentCapturedAt               *time.Time         `json:"payment_captured_at" form:"-"`
-	PaymentID                       *string            `json:"payment_id" form:"-"`
-	PaidAt                          *time.Time         `json:"paid_at" form:"-"`
+	RowNo                           int64              `json:"-"`
+	ID                              uuid.UUID          `json:"id"`
+	ParentID                        *uuid.UUID         `json:"parent_id"`
+	Reordered                       bool               `json:"reordered"`
+	UserID                          uuid.UUID          `json:"user_id"`
+	CartID                          *uuid.UUID         `json:"cart_id"`
+	ReferenceNumber                 string             `json:"reference_number"`
+	Status                          TransactionStatus  `json:"status"`
+	BuyerNote                       string             `json:"buyer_note"`
+	UniqueCode                      int64              `json:"unique_code"`
+	ShoppingCost                    int64              `json:"shopping_cost"`
+	ReferrerID                      *uuid.UUID         `json:"referrer_id"`
+	ReferralCode                    *string            `json:"referral_code"`
+	ReferralPoints                  int64              `json:"referral_points"`
+	VoucherID                       *uuid.UUID         `json:"voucher_id"`
+	VoucherType                     *VoucherType       `json:"voucher_type"`
+	VoucherCode                     *string            `json:"voucher_code"`
+	VoucherDiscount                 int64              `json:"voucher_discount"`
+	RewardPointsDiscounted          bool               `json:"reward_points_discounted"`
+	RewardPointsDiscount            int64              `json:"reward_points_discount"`
+	WalletDiscounted                bool               `json:"wallet_discounted"`
+	WalletAmount                    int64              `json:"wallet_amount"`
+	WalletDiscount                  int64              `json:"wallet_discount"`
+	DiscountedShoppingCost          int64              `json:"discounted_shopping_cost"`
+	DeliveryEstimatedCost           int64              `json:"delivery_estimated_cost"`
+	DiscountedDeliveryEstimatedCost int64              `json:"discounted_delivery_estimated_cost"`
+	DeliveryAddressID               uuid.UUID          `json:"delivery_address_id"`
+	DeliveryDestinationLatitude     decimal.Decimal    `json:"delivery_destination_latitude"`
+	DeliveryDestinationLongitude    decimal.Decimal    `json:"delivery_destination_longitude"`
+	DeliveryDistanceKM              int64              `json:"delivery_distance_km"`
+	DeliveryStreetAddress           string             `json:"delivery_street_address"`
+	DeliveryNote                    string             `json:"delivery_note"`
+	DeliveryRecipientName           string             `json:"delivery_recipient_name"`
+	DeliveryRecipientMobilePhone    string             `json:"delivery_recipient_mobile_phone"`
+	DeliveryInstruction             string             `json:"delivery_instruction"`
+	DeliveryDatetime                time.Time          `json:"delivery_datetime"`
+	PaymentAmount                   int64              `json:"payment_amount"`
+	PaymentDueDate                  *time.Time         `json:"payment_due_date"`
+	PaymentChannelID                *uuid.UUID         `json:"payment_channel_id"`
+	PaymentRequestID                *string            `json:"payment_request_id"`
+	PaymentTokenID                  *string            `json:"payment_token_id"`
+	PaymentChannelName              *string            `json:"payment_channel_name"`
+	PaymentVirtualAccountNumber     *string            `json:"payment_virtual_account_number"`
+	PaymentVirtualAccountExpiredAt  *time.Time         `json:"payment_virtual_account_expired_at"`
+	CreatedAt                       time.Time          `json:"created_at"`
+	UpdatedAt                       time.Time          `json:"updated_at"`
+	CancelledAt                     *time.Time         `json:"cancelled_at"`
+	PaymentStatus                   *string            `json:"payment_status"`
+	PaymentFailureCode              *string            `json:"payment_failure_code"`
+	PaymentCapturedAt               *time.Time         `json:"payment_captured_at"`
+	PaymentID                       *string            `json:"payment_id"`
+	PaidAt                          *time.Time         `json:"paid_at"`
 	WithdrawalRequestedAt           *time.Time         `json:"withdrawal_requested_at"`
-	WithdrawalReason                *string            `json:"withdrawal_reason" form:"-"`
-	WithdrawnBy                     *uuid.UUID         `json:"withdrawn_by" form:"-"`
-	WithdrawnAt                     *time.Time         `json:"withdrawn_at" form:"-"`
-	ProcessedBy                     *uuid.UUID         `json:"processed_by" form:"-"`
-	ProcessedAt                     *time.Time         `json:"processed_at" form:"-"`
-	RevisedShoppingCost             int64              `json:"revised_shopping_cost" form:"-"`
-	RevisedDiscountedShoppingCost   int64              `json:"revised_discounted_shopping_cost" form:"-"`
-	RevisedPaymentAmount            int64              `json:"revised_payment_amount" form:"-"`
-	RefundAmount                    int64              `json:"refund_amount" form:"-"`
-	RefundedAt                      *time.Time         `json:"refunded_at" form:"-"`
-	RefundID                        *string            `json:"refund_id" form:"-"`
-	ShippedBy                       *uuid.UUID         `json:"shipped_by" form:"-"`
-	ShippedAt                       *time.Time         `json:"shipped_at" form:"-"`
-	DeliveryActualCost              int64              `json:"delivery_actual_cost" form:"delivery_actual_cost"`
-	CompletedBy                     *uuid.UUID         `json:"completed_by" form:"-"`
-	CompletedAt                     *time.Time         `json:"completed_at" form:"-"`
-	Items                           []*TransactionItem `json:"items" form:"items"`
+	WithdrawalReason                *string            `json:"withdrawal_reason"`
+	WithdrawnBy                     *uuid.UUID         `json:"withdrawn_by"`
+	WithdrawnAt                     *time.Time         `json:"withdrawn_at"`
+	ProcessedBy                     *uuid.UUID         `json:"processed_by"`
+	ProcessedAt                     *time.Time         `json:"processed_at"`
+	RevisedShoppingCost             int64              `json:"revised_shopping_cost"`
+	RevisedDiscountedShoppingCost   int64              `json:"revised_discounted_shopping_cost"`
+	RevisedPaymentAmount            int64              `json:"revised_payment_amount"`
+	RefundAmount                    int64              `json:"refund_amount"`
+	RefundedAt                      *time.Time         `json:"refunded_at"`
+	RefundID                        *string            `json:"refund_id"`
+	ShippedBy                       *uuid.UUID         `json:"shipped_by"`
+	ShippedAt                       *time.Time         `json:"shipped_at"`
+	DeliveryActualCost              int64              `json:"delivery_actual_cost"`
+	CompletedBy                     *uuid.UUID         `json:"completed_by"`
+	CompletedAt                     *time.Time         `json:"completed_at"`
+	Items                           []*TransactionItem `json:"items"`
 }
 
 type TransactionItem struct {
-	RowNo         int64     `json:"-" form:"-"`
-	ID            uuid.UUID `json:"id" form:"-"`
-	TransactionID uuid.UUID `json:"transaction_id" form:"-"`
+	RowNo         int64     `json:"-"`
+	ID            uuid.UUID `json:"id"`
+	TransactionID uuid.UUID `json:"transaction_id"`
 	// CartItemID is input only: it picks the cart item a new transaction item
 	// comes from. It is not stored, so it is empty when read back.
-	CartItemID              *uuid.UUID `json:"cart_item_id,omitempty" form:"cart_item_id"`
-	ProductVariantID        uuid.UUID  `json:"product_variant_id" form:"-"`
-	ProductID               uuid.UUID  `json:"product_id" form:"-"`
-	ProductName             string     `json:"product_name" form:"-"`
-	ProductPhoto            string     `json:"product_photo" form:"-"`
-	StockUnit               string     `json:"stock_unit" form:"-"`
-	BasePrice               int64      `json:"-" form:"-"`
-	SellingPrice            int64      `json:"selling_price" form:"-"`
-	DiscountMinimumQuantity int64      `json:"discount_minimum_quantity" form:"-"`
-	DiscountAmount          int64      `json:"discount_amount" form:"-"`
-	Quantity                int64      `json:"quantity" form:"quantity"`
-	Subtotal                int64      `json:"subtotal" form:"-"`
-	BuyerNote               string     `json:"buyer_note" form:"buyer_note"`
-	RevisedQuantity         int64      `json:"revised_quantity" form:"revised_quantity"`
-	RevisedSubtotal         int64      `json:"revised_subtotal" form:"-"`
-	RevisionNote            string     `json:"revision_note" form:"revision_note"`
-	OutOfStock              bool       `json:"out_of_stock" form:"out_of_stock"`
+	CartItemID              *uuid.UUID `json:"cart_item_id,omitempty"`
+	ProductVariantID        uuid.UUID  `json:"product_variant_id"`
+	ProductID               uuid.UUID  `json:"product_id"`
+	ProductName             string     `json:"product_name"`
+	ProductPhoto            string     `json:"product_photo"`
+	StockUnit               string     `json:"stock_unit"`
+	BasePrice               int64      `json:"-"`
+	SellingPrice            int64      `json:"selling_price"`
+	DiscountMinimumQuantity int64      `json:"discount_minimum_quantity"`
+	DiscountAmount          int64      `json:"discount_amount"`
+	Quantity                int64      `json:"quantity"`
+	Subtotal                int64      `json:"subtotal"`
+	BuyerNote               string     `json:"buyer_note"`
+	RevisedQuantity         int64      `json:"revised_quantity"`
+	RevisedSubtotal         int64      `json:"revised_subtotal"`
+	RevisionNote            string     `json:"revision_note"`
+	OutOfStock              bool       `json:"out_of_stock"`
 }
 
 func (q *Transaction) Validate() error {
@@ -172,17 +171,6 @@ func (q *Transaction) Validate() error {
 			q.CartID.Compare(uuid.Nil()) == 0) {
 		return errors.New("cart_id: is required")
 	}
-	if q.RecipientName = strings.TrimSpace(q.RecipientName); q.RecipientName == "" {
-		return errors.New("recipient_name: is required")
-	}
-	if q.RawRecipientMobilePhone = strings.TrimSpace(q.RawRecipientMobilePhone); q.RawRecipientMobilePhone == "" {
-		return errors.New("recipient_mobile_phone: is required")
-	}
-	mobilePhone, err := phonenumbers.Parse(q.RawRecipientMobilePhone, "ID")
-	if err != nil {
-		return errors.New("recipient_mobile_phone: is invalid")
-	}
-	q.RecipientMobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
 	q.BuyerNote = strings.TrimSpace(q.BuyerNote)
 	if q.ReferralCode != nil {
 		if *q.ReferralCode = strings.TrimSpace(*q.ReferralCode); *q.ReferralCode == "" {
@@ -195,10 +183,10 @@ func (q *Transaction) Validate() error {
 			q.VoucherCode = nil
 		}
 	}
-	if q.DeliveryRouteID.Compare(uuid.Nil()) == 0 {
+	if q.DeliveryAddressID.Compare(uuid.Nil()) == 0 {
 		return errors.New("delivery_route_id: is required")
 	}
-	if q.DeliveryAddress = strings.TrimSpace(q.DeliveryAddress); q.DeliveryAddress == "" {
+	if q.DeliveryStreetAddress = strings.TrimSpace(q.DeliveryStreetAddress); q.DeliveryStreetAddress == "" {
 		return errors.New("delivery_address: is required")
 	}
 	q.DeliveryInstruction = strings.TrimSpace(q.DeliveryInstruction)
@@ -524,7 +512,7 @@ func (q *TransactionWithdrawal) Validate() error {
 }
 
 type TransactionShipment struct {
-	DeliveryActualCost int64 `json:"delivery_actual_cost" form:"delivery_actual_cost"`
+	DeliveryActualCost int64 `json:"delivery_actual_cost"`
 }
 
 func (q *TransactionShipment) Validate() error {

@@ -24,8 +24,6 @@ func init() {
 					, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 					, reference_number character varying NOT NULL
 					, status smallint NOT NULL
-					, recipient_name character varying NOT NULL
-					, recipient_mobile_phone character varying NOT NULL
 					, buyer_note character varying NOT NULL
 					, unique_code bigint NOT NULL
 					, shopping_cost bigint NOT NULL
@@ -44,11 +42,14 @@ func init() {
 					, discounted_shopping_cost bigint NOT NULL
 					, delivery_estimated_cost bigint NOT NULL
 					, discounted_delivery_estimated_cost bigint NOT NULL
-					, delivery_route_id UUID NOT NULL REFERENCES delivery_routes (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, delivery_latitude character varying NOT NULL
-					, delivery_longitude character varying NOT NULL
+					, delivery_address_id UUID NOT NULL REFERENCES delivery_addresses (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, delivery_destination_latitude character varying NOT NULL
+					, delivery_destination_longitude character varying NOT NULL
 					, delivery_distance_km bigint NOT NULL
-					, delivery_address character varying NOT NULL
+					, delivery_street_address character varying NOT NULL
+					, delivery_note character varying NOT NULL
+					, delivery_recipient_name character varying NOT NULL
+					, delivery_recipient_mobile_phone character varying NOT NULL
 					, delivery_instruction character varying NOT NULL
 					, delivery_datetime timestamp with time zone NOT NULL
 					, payment_amount bigint NOT NULL
@@ -142,7 +143,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (delivery_route_id);`,
+				`CREATE INDEX ON transactions (delivery_address_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

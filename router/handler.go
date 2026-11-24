@@ -49,7 +49,7 @@ type Service struct {
 	NotificationTargetService services.NotificationTargetService
 	CartService               services.CartService
 	TransactionCounterService services.TransactionCounterService
-	DeliveryRouteService      services.DeliveryRouteService
+	DeliveryAddressService    services.DeliveryAddressService
 	PaymentChannelService     services.PaymentChannelService
 	BannerService             services.BannerService
 	NotificationService       services.NotificationService
@@ -57,7 +57,6 @@ type Service struct {
 	RecipeGuideService        services.RecipeGuideService
 	RecipeItemService         services.RecipeItemService
 	PointEarningService       services.PointEarningService
-	AddressService            services.AddressService
 }
 
 func MakeHandler(ctx context.Context) (*Service, error) {
@@ -150,7 +149,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	notificationTargetRepository := repositories.NewNotificationTargetRepository(dbRead, dbWrite)
 	cartRepository := repositories.NewCartRepository(dbRead, dbWrite)
 	transactionCounterRepository := repositories.NewTransactionCounterRepository(dbRead, dbWrite)
-	deliveryRouteRepository := repositories.NewDeliveryRouteRepository(dbRead, dbWrite)
+	deliveryAddressRepository := repositories.NewDeliveryAddressRepository(dbRead, dbWrite)
 	paymentChannelRepository := repositories.NewPaymentChannelRepository(dbRead, dbWrite)
 	bannerRepository := repositories.NewBannerRepository(dbRead, dbWrite)
 	notificationRepository := repositories.NewNotificationRepository(dbRead, dbWrite)
@@ -158,7 +157,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeGuideRepository := repositories.NewRecipeGuideRepository(dbRead, dbWrite)
 	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
-	addressRepository := repositories.NewAddressRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	messageService := services.NewMessageService(messageRepository)
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
@@ -180,7 +178,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		transactionCounterRepository,
 		cartRepository,
 		deliveryPlanRepository,
-		deliveryRouteRepository,
+		deliveryAddressRepository,
 		settingRepository,
 		voucherRepository,
 		pointSpendingCapRepository,
@@ -195,7 +193,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	notificationTargetService := services.NewNotificationTargetService(notificationTargetRepository)
 	cartService := services.NewCartService(cartRepository)
 	transactionCounterService := services.NewTransactionCounterService(transactionCounterRepository)
-	deliveryRouteService := services.NewDeliveryRouteService(deliveryRouteRepository)
+	deliveryAddressService := services.NewDeliveryAddressService(deliveryAddressRepository)
 	paymentChannelService := services.NewPaymentChannelService(paymentChannelRepository)
 	bannerService := services.NewBannerService(bannerRepository)
 	notificationService := services.NewNotificationService(
@@ -208,7 +206,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeGuideService := services.NewRecipeGuideService(recipeGuideRepository)
 	recipeItemService := services.NewRecipeItemService(recipeItemRepository)
 	pointEarningService := services.NewPointEarningService(pointEarningRepository)
-	addressService := services.NewAddressService(addressRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migrator:                  migrator,
@@ -235,7 +232,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		NotificationTargetService: notificationTargetService,
 		CartService:               cartService,
 		TransactionCounterService: transactionCounterService,
-		DeliveryRouteService:      deliveryRouteService,
+		DeliveryAddressService:    deliveryAddressService,
 		PaymentChannelService:     paymentChannelService,
 		BannerService:             bannerService,
 		NotificationService:       notificationService,
@@ -243,7 +240,6 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		RecipeGuideService:        recipeGuideService,
 		RecipeItemService:         recipeItemService,
 		PointEarningService:       pointEarningService,
-		AddressService:            addressService,
 	}, nil
 }
 

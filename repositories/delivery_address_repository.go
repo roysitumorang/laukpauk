@@ -16,25 +16,25 @@ import (
 	"github.com/roysitumorang/laukpauk/pools"
 )
 
-type AddressRepository interface {
-	FindAddresses(
+type DeliveryAddressRepository interface {
+	FindDeliveryAddresses(
 		ctx context.Context,
-		request *models.AddressFilter,
-	) ([]*models.Address, int64, int64, error)
-	FindAddress(
+		request *models.DeliveryAddressFilter,
+	) ([]*models.DeliveryAddress, int64, int64, error)
+	FindDeliveryAddress(
 		ctx context.Context,
-		request *models.AddressFilter,
-	) (*models.Address, error)
-	CreateAddress(
-		ctx context.Context,
-		tx pgx.Tx,
-		request *models.Address,
-	) (*models.Address, error)
-	UpdateAddress(
+		request *models.DeliveryAddressFilter,
+	) (*models.DeliveryAddress, error)
+	CreateDeliveryAddress(
 		ctx context.Context,
 		tx pgx.Tx,
-		request *models.Address,
-	) (*models.Address, error)
+		request *models.DeliveryAddress,
+	) (*models.DeliveryAddress, error)
+	UpdateDeliveryAddress(
+		ctx context.Context,
+		tx pgx.Tx,
+		request *models.DeliveryAddress,
+	) (*models.DeliveryAddress, error)
 	UnsetMain(
 		ctx context.Context,
 		tx pgx.Tx,
@@ -42,34 +42,35 @@ type AddressRepository interface {
 	) error
 }
 
-type addressRepository struct {
+type deliveryAddressRepository struct {
 	dbRead,
 	dbWrite *pgxpool.Pool
 }
 
-func NewAddressRepository(
+func NewDeliveryAddressRepository(
 	dbRead,
 	dbWrite *pgxpool.Pool,
-) AddressRepository {
-	return &addressRepository{
+) DeliveryAddressRepository {
+	return &deliveryAddressRepository{
 		dbRead:  dbRead,
 		dbWrite: dbWrite,
 	}
 }
 
-func (q *addressRepository) FindAddresses(
+func (q *deliveryAddressRepository) FindDeliveryAddresses(
 	ctx context.Context,
-	request *models.AddressFilter,
-) ([]*models.Address, int64, int64, error) {
-	ctxt := "AddressRepository-FindAddresses"
+	request *models.DeliveryAddressFilter,
+) ([]*models.DeliveryAddress, int64, int64, error) {
+	ctxt := "DeliveryAddressRepository-FindDeliveryAddresses"
 	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
 	}()
+	sb.Reset()
 	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM addresses %s", condition)
+	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM delivery_addresses %s", condition)
 	query := sb.String()
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
@@ -86,8 +87,12 @@ func (q *addressRepository) FindAddresses(
 		`id
 		, record_status
 		, user_id
-		, longitude
-		, latitude
+		, origin_longitude
+		, origin_latitude
+		, destination_longitude
+		, destination_latitude
+		, distance_meters
+		, distance_km
 		, street_address
 		, delivery_note
 		, label
@@ -143,46 +148,51 @@ func (q *addressRepository) FindAddresses(
 		return nil, 0, 0, err
 	}
 	defer rows.Close()
-	var response []*models.Address
+	var response []*models.DeliveryAddress
 	for rows.Next() {
-		var address models.Address
+		var deliveryAddress models.DeliveryAddress
 		if err = rows.Scan(
-			&address.ID,
-			&address.RecordStatus,
-			&address.UserID,
-			&address.Longitude,
-			&address.Latitude,
-			&address.StreetAddress,
-			&address.DeliveryNote,
-			&address.Label,
-			&address.RecipientName,
-			&address.RecipientMobilePhone,
-			&address.Main,
-			&address.CreatedAt,
-			&address.UpdatedAt,
-			&address.DeletedAt,
-			&address.DeletionReason,
+			&deliveryAddress.ID,
+			&deliveryAddress.RecordStatus,
+			&deliveryAddress.UserID,
+			&deliveryAddress.OriginLongitude,
+			&deliveryAddress.OriginLatitude,
+			&deliveryAddress.DestinationLongitude,
+			&deliveryAddress.DestinationLatitude,
+			&deliveryAddress.DistanceMeters,
+			&deliveryAddress.DistanceKM,
+			&deliveryAddress.StreetAddress,
+			&deliveryAddress.DeliveryNote,
+			&deliveryAddress.Label,
+			&deliveryAddress.RecipientName,
+			&deliveryAddress.RecipientMobilePhone,
+			&deliveryAddress.Main,
+			&deliveryAddress.CreatedAt,
+			&deliveryAddress.UpdatedAt,
+			&deliveryAddress.DeletedAt,
+			&deliveryAddress.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
 		}
 		offset++
-		address.RowNo = offset
-		response = append(response, &address)
+		deliveryAddress.RowNo = offset
+		response = append(response, &deliveryAddress)
 	}
 	return response, total, pages, nil
 }
 
-func (q *addressRepository) FindAddress(
+func (q *deliveryAddressRepository) FindDeliveryAddress(
 	ctx context.Context,
-	request *models.AddressFilter,
-) (*models.Address, error) {
-	ctxt := "AddressRepository-FindAddress"
+	request *models.DeliveryAddressFilter,
+) (*models.DeliveryAddress, error) {
+	ctxt := "DeliveryAddressRepository-FindDeliveryAddress"
 	sb := pools.BuilderPool.Get()
 	defer func() {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
 	}()
+	sb.Reset()
 	condition, params := q.buildCondition(request, sb)
 	sb.Reset()
 	_, _ = fmt.Fprintf(
@@ -191,8 +201,12 @@ func (q *addressRepository) FindAddress(
 			id
 			, record_status
 			, user_id
-			, longitude
-			, latitude
+			, origin_longitude
+			, origin_latitude
+			, destination_longitude
+			, destination_latitude
+			, distance_meters
+			, distance_km
 			, street_address
 			, delivery_note
 			, label
@@ -203,17 +217,20 @@ func (q *addressRepository) FindAddress(
 			, updated_at
 			, deleted_at
 			, deletion_reason
-		FROM addresses %s`,
+		FROM delivery_addresses %s`,
 		condition,
 	)
-	query := sb.String()
-	var response models.Address
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	var response models.DeliveryAddress
+	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.UserID,
-		&response.Longitude,
-		&response.Latitude,
+		&response.OriginLongitude,
+		&response.OriginLatitude,
+		&response.DestinationLongitude,
+		&response.DestinationLatitude,
+		&response.DistanceMeters,
+		&response.DistanceKM,
 		&response.StreetAddress,
 		&response.DeliveryNote,
 		&response.Label,
@@ -226,7 +243,7 @@ func (q *addressRepository) FindAddress(
 		&response.DeletionReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrAddressNotFound
+		return nil, models.ErrDeliveryAddressNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -235,20 +252,24 @@ func (q *addressRepository) FindAddress(
 	return &response, nil
 }
 
-func (q *addressRepository) CreateAddress(
+func (q *deliveryAddressRepository) CreateDeliveryAddress(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.Address,
-) (*models.Address, error) {
-	ctxt := "AddressRepository-CreateAddress"
-	var response models.Address
+	request *models.DeliveryAddress,
+) (*models.DeliveryAddress, error) {
+	ctxt := "DeliveryAddressRepository-CreateDeliveryAddress"
+	var response models.DeliveryAddress
 	if err := tx.QueryRow(
 		ctx,
-		`INSERT INTO addresses (
+		`INSERT INTO delivery_addresses (
 			record_status
 			, user_id
-			, longitude
-			, latitude
+			, origin_longitude
+			, origin_latitude
+			, destination_longitude
+			, destination_latitude
+			, distance_meters
+			, distance_km
 			, street_address
 			, delivery_note
 			, label
@@ -257,12 +278,16 @@ func (q *addressRepository) CreateAddress(
 			, main
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id
-			, record_status
+			record_status
 			, user_id
-			, longitude
-			, latitude
+			, origin_longitude
+			, origin_latitude
+			, destination_longitude
+			, destination_latitude
+			, distance_meters
+			, distance_km
 			, street_address
 			, delivery_note
 			, label
@@ -275,8 +300,12 @@ func (q *addressRepository) CreateAddress(
 			, deletion_reason`,
 		request.RecordStatus,
 		request.UserID,
-		request.Longitude,
-		request.Latitude,
+		request.OriginLongitude,
+		request.OriginLatitude,
+		request.DestinationLongitude,
+		request.DestinationLatitude,
+		request.DistanceMeters,
+		request.DistanceKM,
 		request.StreetAddress,
 		request.DeliveryNote,
 		request.Label,
@@ -289,8 +318,12 @@ func (q *addressRepository) CreateAddress(
 		&response.ID,
 		&response.RecordStatus,
 		&response.UserID,
-		&response.Longitude,
-		&response.Latitude,
+		&response.OriginLongitude,
+		&response.OriginLatitude,
+		&response.DestinationLongitude,
+		&response.DestinationLatitude,
+		&response.DistanceMeters,
+		&response.DistanceKM,
 		&response.StreetAddress,
 		&response.DeliveryNote,
 		&response.Label,
@@ -308,21 +341,25 @@ func (q *addressRepository) CreateAddress(
 	return &response, nil
 }
 
-func (q *addressRepository) UpdateAddress(
+func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 	ctx context.Context,
 	tx pgx.Tx,
-	request *models.Address,
-) (*models.Address, error) {
-	ctxt := "AddressRepository-UpdateAddress"
-	var response models.Address
+	request *models.DeliveryAddress,
+) (*models.DeliveryAddress, error) {
+	ctxt := "DeliveryAddressRepository-UpdateDeliveryAddress"
+	var response models.DeliveryAddress
 	err := tx.QueryRow(
 		ctx,
 		`SELECT
 			id
 			, record_status
 			, user_id
-			, longitude
-			, latitude
+			, origin_longitude
+			, origin_latitude
+			, destination_longitude
+			, destination_latitude
+			, distance_meters
+			, distance_km
 			, street_address
 			, delivery_note
 			, label
@@ -333,7 +370,7 @@ func (q *addressRepository) UpdateAddress(
 			, updated_at
 			, deleted_at
 			, deletion_reason
-		FROM addresses
+		FROM delivery_addresses
 		WHERE id = $1
 		FOR UPDATE`,
 		request.ID,
@@ -341,8 +378,12 @@ func (q *addressRepository) UpdateAddress(
 		&response.ID,
 		&response.RecordStatus,
 		&response.UserID,
-		&response.Longitude,
-		&response.Latitude,
+		&response.OriginLongitude,
+		&response.OriginLatitude,
+		&response.DestinationLongitude,
+		&response.DestinationLatitude,
+		&response.DistanceMeters,
+		&response.DistanceKM,
 		&response.StreetAddress,
 		&response.DeliveryNote,
 		&response.Label,
@@ -355,7 +396,7 @@ func (q *addressRepository) UpdateAddress(
 		&response.DeletionReason,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, models.ErrAddressNotFound
+		return nil, models.ErrDeliveryAddressNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -368,27 +409,13 @@ func (q *addressRepository) UpdateAddress(
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
 	}()
-	_, _ = sb.WriteString("UPDATE addresses SET")
+	_, _ = sb.WriteString("UPDATE delivery_addresses SET")
 	if response.RecordStatus != request.RecordStatus {
 		params = append(params, request.RecordStatus)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
-	}
-	if response.Longitude != request.Longitude {
-		params = append(params, request.Longitude)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " longitude = $%d", n)
-	}
-	if response.Latitude != request.Latitude {
-		params = append(params, request.Latitude)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " latitude = $%d", n)
 	}
 	if response.StreetAddress != request.StreetAddress {
 		params = append(params, request.StreetAddress)
@@ -463,8 +490,12 @@ func (q *addressRepository) UpdateAddress(
 		RETURNING id
 			, record_status
 			, user_id
-			, longitude
-			, latitude
+			, origin_longitude
+			, origin_latitude
+			, destination_longitude
+			, destination_latitude
+			, distance_meters
+			, distance_km
 			, street_address
 			, delivery_note
 			, label
@@ -481,8 +512,12 @@ func (q *addressRepository) UpdateAddress(
 		&response.ID,
 		&response.RecordStatus,
 		&response.UserID,
-		&response.Longitude,
-		&response.Latitude,
+		&response.OriginLongitude,
+		&response.OriginLatitude,
+		&response.DestinationLongitude,
+		&response.DestinationLatitude,
+		&response.DistanceMeters,
+		&response.DistanceKM,
 		&response.StreetAddress,
 		&response.DeliveryNote,
 		&response.Label,
@@ -500,15 +535,15 @@ func (q *addressRepository) UpdateAddress(
 	return &response, nil
 }
 
-func (q *addressRepository) UnsetMain(
+func (q *deliveryAddressRepository) UnsetMain(
 	ctx context.Context,
 	tx pgx.Tx,
 	userID uuid.UUID,
 ) error {
-	ctxt := "AddressRepository-UnsetMain"
+	ctxt := "DeliveryAddressRepository-UnsetMain"
 	_, err := tx.Exec(
 		ctx,
-		`UPDATE addresses SET
+		`UPDATE delivery_addresses SET
 			main = NOT main
 		WHERE user_id = $1
 			AND main`,
@@ -520,13 +555,26 @@ func (q *addressRepository) UnsetMain(
 	return nil
 }
 
-func (q *addressRepository) buildCondition(request *models.AddressFilter, sb *strings.Builder) (condition string, params []any) {
+func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddressFilter, sb *strings.Builder) (condition string, params []any) {
 	var conds []string
-	if len(request.AddressIDs) > 0 {
+	if len(request.DeliveryAddressIDs) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("id IN (")
-		for i, addressID := range request.AddressIDs {
-			params = append(params, addressID)
+		for i, deliveryAddressID := range request.DeliveryAddressIDs {
+			params = append(params, deliveryAddressID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.ExcludedDeliveryAddressIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("id NOT IN (")
+		for i, excludedDeliveryAddressID := range request.ExcludedDeliveryAddressIDs {
+			params = append(params, excludedDeliveryAddressID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -561,16 +609,56 @@ func (q *addressRepository) buildCondition(request *models.AddressFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if request.Longitude != "" {
-		params = append(params, request.Longitude)
+	if len(request.OriginLongitudes) > 0 {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "longitude = $%d", len(params))
+		_, _ = sb.WriteString("origin_longitude IN (")
+		for i, originLongitude := range request.OriginLongitudes {
+			params = append(params, originLongitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if request.Latitude != "" {
-		params = append(params, request.Latitude)
+	if len(request.OriginLatitudes) > 0 {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "latitude = $%d", len(params))
+		_, _ = sb.WriteString("origin_latitude IN (")
+		for i, originLatitude := range request.OriginLatitudes {
+			params = append(params, originLatitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.DestinationLongitudes) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("destination_longitude IN (")
+		for i, destinationLongitude := range request.DestinationLongitudes {
+			params = append(params, destinationLongitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+		conds = append(conds, sb.String())
+	}
+	if len(request.DestinationLatitudes) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString("destination_latitude IN (")
+		for i, destinationLatitude := range request.DestinationLatitudes {
+			params = append(params, destinationLatitude)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.Label != "" {
