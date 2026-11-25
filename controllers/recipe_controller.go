@@ -56,6 +56,9 @@ func (q *recipeController) Mount(r fiber.Router) {
 		Get("/:id", q.V1SellerShow).
 		Put("/:id", q.V1SellerUpdate).
 		Delete("/:id", q.V1SellerDelete)
+	r.Group("/v1/buyer").
+		Get("", q.V1BuyerIndex).
+		Get("/:id", q.V1BuyerShow)
 }
 
 func (q *recipeController) V1SellerIndex(c fiber.Ctx) (err error) {
@@ -433,5 +436,90 @@ func (q *recipeController) V1SellerDelete(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
+		WriteResponse(c)
+}
+
+func (q *recipeController) V1BuyerIndex(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1BuyerIndex"
+	ctx := c.Context()
+	request, err := sanitizers.FindRecipes(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipes")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	rows, pagination, err := q.recipeService.FindRecipes(
+		ctx,
+		request.WithRecordStatuses(models.RecordStatusActive),
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipes")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	pagination.Rows = make([]any, len(rows))
+	for i := range rows {
+		pagination.Rows[i] = rows[i]
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(pagination).
+		WriteResponse(c)
+}
+
+func (q *recipeController) V1BuyerShow(c fiber.Ctx) (err error) {
+	ctxt := "RecipeController-V1BuyerShow"
+	ctx := c.Context()
+	recipeID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrRecipeNotFound.Error()).
+			WriteResponse(c)
+	}
+	response, err := q.recipeService.FindRecipe(
+		ctx,
+		models.NewRecipeFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithRecipeIDs(recipeID),
+	)
+	if errors.Is(err, models.ErrRecipeNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrRecipeNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipe")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if response.Guides, _, err = q.recipeGuideService.FindRecipeGuides(
+		ctx,
+		models.NewRecipeGuideFilter().
+			WithRecipeIDs(response.ID).
+			WithRecordStatuses(models.RecordStatusActive).
+			WithSortings(models.DefaultAscendingSortBy),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeGuides")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if response.Items, _, err = q.recipeItemService.FindRecipeItems(
+		ctx,
+		models.NewRecipeItemFilter().
+			WithRecipeIDs(response.ID).
+			WithRecordStatuses(models.RecordStatusActive).
+			WithSortings(models.DefaultAscendingSortBy),
+	); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
 		WriteResponse(c)
 }

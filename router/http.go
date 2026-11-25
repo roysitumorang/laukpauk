@@ -159,6 +159,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/point_earning_caps", To: "/point_earning_caps/v1/buyer"},
 				{From: "/v1/buyer/point_spending_caps", To: "/point_spending_caps/v1/buyer"},
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
+				{From: "/v1/buyer/recipes", To: "/recipes/v1/buyer"},
+				{From: "/v1/buyer/recipes/*", To: "/recipes/v1/buyer/$1"},
 			},
 		}),
 		cors.New(),
