@@ -45,7 +45,7 @@ type DeliveryPlan struct {
 	Weekday              DeliveryWeekday    `json:"weekday"`
 	TransactionWindowMin time.Time          `json:"transaction_window_min"`
 	TransactionWindowMax time.Time          `json:"transaction_window_max"`
-	DeliveryTimeInterval time.Duration      `json:"delivery_time_interval"`
+	DeliveryTimeInterval Duration           `json:"delivery_time_interval"`
 	SameDay              bool               `json:"same_day"`
 	SameDayWindowMin     *time.Time         `json:"same_day_window_min"`
 	SameDayWindowMax     *time.Time         `json:"same_day_window_max"`
@@ -314,12 +314,13 @@ func (q *DeliveryPlan) New() bool {
 }
 
 func (q *DeliveryPlan) Populate() *DeliveryPlan {
+	deliveryTimeInterval := time.Duration(q.DeliveryTimeInterval)
 	if q.SameDay && q.SameDayWindowMin != nil && q.SameDayWindowMax != nil {
 		sameDayWindowMin := *q.SameDayWindowMin
 		sameDayWindowMax := *q.SameDayWindowMax
 		for !sameDayWindowMin.After(sameDayWindowMax) {
 			q.DeliveryTimes = append(q.DeliveryTimes, sameDayWindowMin)
-			sameDayWindowMin = sameDayWindowMin.Add(q.DeliveryTimeInterval)
+			sameDayWindowMin = sameDayWindowMin.Add(deliveryTimeInterval)
 		}
 	}
 	if q.NextDay && q.NextDayWindowMin != nil && q.NextDayWindowMax != nil {
@@ -327,7 +328,7 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 		nextDayWindowMax := *q.NextDayWindowMax
 		for !nextDayWindowMin.After(nextDayWindowMax) {
 			q.DeliveryTimes = append(q.DeliveryTimes, nextDayWindowMin)
-			nextDayWindowMin = nextDayWindowMin.Add(q.DeliveryTimeInterval)
+			nextDayWindowMin = nextDayWindowMin.Add(deliveryTimeInterval)
 		}
 	}
 	if q.NextTwoDay && q.NextTwoDayWindowMin != nil && q.NextTwoDayWindowMax != nil {
@@ -335,7 +336,7 @@ func (q *DeliveryPlan) Populate() *DeliveryPlan {
 		nextTwoDayWindowMax := *q.NextTwoDayWindowMax
 		for !nextTwoDayWindowMin.After(nextTwoDayWindowMax) {
 			q.DeliveryTimes = append(q.DeliveryTimes, nextTwoDayWindowMin)
-			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(q.DeliveryTimeInterval)
+			nextTwoDayWindowMin = nextTwoDayWindowMin.Add(deliveryTimeInterval)
 		}
 	}
 	q.MapDeliveryTimes = make(map[int64]struct{}, len(q.DeliveryTimes))

@@ -2,13 +2,13 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 	"uuid"
 
 	"github.com/coregx/coregex"
-	"github.com/goccy/go-json/v2"
+	"github.com/goccy/go-json/jsontext"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -159,28 +159,32 @@ var PhoneNumberRegex = coregex.MustCompile(`^\+[1-9]\d{1,14}$`)
 var UsernameRegex = coregex.MustCompile("[^a-z0-9]+")
 var SlugRegex = coregex.MustCompile("^[a-z0-9-]+$")
 
-type Duration struct {
-	time.Duration
+type Duration time.Duration
+
+func (d *Duration) ScanInterval(v pgtype.Interval) error {
+	if !v.Valid {
+		*d = 0
+		return nil
+	}
+	*d = Duration(v.Microseconds)*Duration(time.Microsecond) +
+		Duration(v.Days)*24*Duration(time.Hour) +
+		Duration(v.Months)*30*24*Duration(time.Hour)
+	return nil
 }
 
-func (q Duration) MarshalJSON() ([]byte, error) {
-	return json.Marshal(q.String())
+func (d Duration) MarshalJSONTo(encoder *jsontext.Encoder) error {
+	return encoder.WriteToken(jsontext.String(time.Duration(d).String()))
 }
 
-func (q *Duration) UnmarshalJSON(b []byte) error {
-	var v any
-	err := json.Unmarshal(b, &v)
+func (d *Duration) UnmarshalJSONFrom(decoder *jsontext.Decoder) error {
+	token, err := decoder.ReadToken()
 	if err != nil {
 		return err
 	}
-	switch value := v.(type) {
-	case string:
-		q.Duration, err = time.ParseDuration(value)
+	parsed, err := time.ParseDuration(token.String())
+	if err != nil {
 		return err
-	case float64:
-		q.Duration = time.Duration(value)
-		return nil
-	default:
-		return fmt.Errorf("invalid duration type: %T", v)
 	}
+	*d = Duration(parsed)
+	return nil
 }

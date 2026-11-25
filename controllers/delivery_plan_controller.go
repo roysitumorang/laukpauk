@@ -17,13 +17,11 @@ import (
 	"github.com/roysitumorang/laukpauk/services"
 )
 
-type (
-	deliveryPlanController struct {
-		deliveryPlanService services.DeliveryPlanService
-		jsonWebTokenService services.JsonWebTokenService
-		userService         services.UserService
-	}
-)
+type deliveryPlanController struct {
+	deliveryPlanService services.DeliveryPlanService
+	jsonWebTokenService services.JsonWebTokenService
+	userService         services.UserService
+}
 
 func NewDeliveryPlanController(
 	deliveryPlanService services.DeliveryPlanService,
@@ -359,15 +357,15 @@ func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 			WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now),
 	)
-	if err != nil && !errors.Is(err, models.ErrDeliveryPlanNotFound) {
+	if errors.Is(err, models.ErrDeliveryPlanNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	if response == nil {
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).

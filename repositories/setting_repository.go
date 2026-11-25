@@ -91,8 +91,8 @@ func (q *settingRepository) FindSetting(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms.Duration,
-		&response.MaximumDeliveryTime.Duration,
+		&response.PaymentTerms,
+		&response.MaximumDeliveryTime,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
@@ -166,8 +166,8 @@ func (q *settingRepository) UpdateSetting(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms.Duration,
-		&response.MaximumDeliveryTime.Duration,
+		&response.PaymentTerms,
+		&response.MaximumDeliveryTime,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,
@@ -291,14 +291,14 @@ func (q *settingRepository) UpdateSetting(
 		_, _ = fmt.Fprintf(sb, " whatsapp_phone_number = $%d", n)
 	}
 	if response.PaymentTerms != request.PaymentTerms {
-		params = append(params, request.PaymentTerms.Duration)
+		params = append(params, request.PaymentTerms)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
 		_, _ = fmt.Fprintf(sb, " payment_terms = $%d", n)
 	}
 	if response.MaximumDeliveryTime != request.MaximumDeliveryTime {
-		params = append(params, request.MaximumDeliveryTime.Duration)
+		params = append(params, request.MaximumDeliveryTime)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
@@ -399,8 +399,8 @@ func (q *settingRepository) UpdateSetting(
 		&response.DeliveryCostPerKM,
 		&response.DeliveryMaxDistanceKM,
 		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms.Duration,
-		&response.MaximumDeliveryTime.Duration,
+		&response.PaymentTerms,
+		&response.MaximumDeliveryTime,
 		&response.TransactionAutoWithdrawalEnabled,
 		&response.TransactionAutoWithdrawalWindowMin,
 		&response.TransactionAutoWithdrawalWindowMax,

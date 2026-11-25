@@ -31,7 +31,7 @@ type Setting struct {
 	WhatsappPhoneNumber                  string          `json:"whatsapp_phone_number"`
 	PaymentTerms                         Duration        `json:"payment_terms"`
 	MaximumDeliveryTime                  Duration        `json:"maximum_delivery_time"`
-	TransactionAutoWithdrawalEnabled     bool            `json:"-"`
+	TransactionAutoWithdrawalEnabled     bool            `json:"transaction_auto_withdrawal_enabled"`
 	TransactionAutoWithdrawalWindowMin   *time.Time      `json:"transaction_auto_withdrawal_window_min"`
 	TransactionAutoWithdrawalWindowMax   *time.Time      `json:"transaction_auto_withdrawal_window_max"`
 	OtpRequiredForLogin                  bool            `json:"otp_required_for_login"`
@@ -76,10 +76,10 @@ func (q *Setting) Validate() error {
 			return errors.New("referral_points_slots: should match referral_points_amount")
 		}
 	}
-	if q.PaymentTerms.Duration < 1 {
+	if q.PaymentTerms < 1 {
 		return errors.New("payment_terms: should exceed 0")
 	}
-	if q.MaximumDeliveryTime.Duration < 1 {
+	if q.MaximumDeliveryTime < 1 {
 		return errors.New("maximum_delivery_time: should exceed 0")
 	}
 	if q.TransactionAutoWithdrawalEnabled {
