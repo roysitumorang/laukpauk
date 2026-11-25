@@ -431,6 +431,7 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	response.Photo = response.PhotoPath(c.BaseURL())
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)
