@@ -88,6 +88,8 @@ func (q *transactionRepository) FindTransactions(
 		, cart_id
 		, reference_number
 		, status
+		, recipient_name
+		, recipient_mobile_phone
 		, buyer_note
 		, unique_code
 		, shopping_cost
@@ -112,8 +114,6 @@ func (q *transactionRepository) FindTransactions(
 		, delivery_distance_km
 		, delivery_street_address
 		, delivery_street_address_note
-		, delivery_recipient_name
-		, delivery_recipient_mobile_phone
 		, delivery_instruction
 		, delivery_datetime
 		, payment_amount
@@ -234,6 +234,8 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.CartID,
 			&transaction.ReferenceNumber,
 			&transaction.Status,
+			&transaction.RecipientName,
+			&transaction.RecipientMobilePhone,
 			&transaction.BuyerNote,
 			&transaction.UniqueCode,
 			&transaction.ShoppingCost,
@@ -258,8 +260,6 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.DeliveryDistanceKM,
 			&transaction.DeliveryStreetAddress,
 			&transaction.DeliveryStreetAddressNote,
-			&transaction.DeliveryRecipientName,
-			&transaction.DeliveryRecipientMobilePhone,
 			&transaction.DeliveryInstruction,
 			&transaction.DeliveryDatetime,
 			&transaction.PaymentAmount,
@@ -378,6 +378,8 @@ func (q *transactionRepository) FindTransaction(
 			, cart_id
 			, reference_number
 			, status
+			, recipient_name
+			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
 			, shopping_cost
@@ -402,8 +404,6 @@ func (q *transactionRepository) FindTransaction(
 			, delivery_distance_km
 			, delivery_street_address
 			, delivery_street_address_note
-			, delivery_recipient_name
-			, delivery_recipient_mobile_phone
 			, delivery_instruction
 			, delivery_datetime
 			, payment_amount
@@ -452,6 +452,8 @@ func (q *transactionRepository) FindTransaction(
 		&response.CartID,
 		&response.ReferenceNumber,
 		&response.Status,
+		&response.RecipientName,
+		&response.RecipientMobilePhone,
 		&response.BuyerNote,
 		&response.UniqueCode,
 		&response.ShoppingCost,
@@ -476,8 +478,6 @@ func (q *transactionRepository) FindTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryStreetAddress,
 		&response.DeliveryStreetAddressNote,
-		&response.DeliveryRecipientName,
-		&response.DeliveryRecipientMobilePhone,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
 		&response.PaymentAmount,
@@ -602,6 +602,8 @@ func (q *transactionRepository) CreateTransaction(
 			, cart_id
 			, reference_number
 			, status
+			, recipient_name
+			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
 			, shopping_cost
@@ -626,8 +628,6 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_distance_km
 			, delivery_street_address
 			, delivery_street_address_note
-			, delivery_recipient_name
-			, delivery_recipient_mobile_phone
 			, delivery_instruction
 			, delivery_datetime
 			, payment_amount
@@ -653,6 +653,8 @@ func (q *transactionRepository) CreateTransaction(
 			, cart_id
 			, reference_number
 			, status
+			, recipient_name
+			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
 			, shopping_cost
@@ -677,8 +679,6 @@ func (q *transactionRepository) CreateTransaction(
 			, delivery_distance_km
 			, delivery_street_address
 			, delivery_street_address_note
-			, delivery_recipient_name
-			, delivery_recipient_mobile_phone
 			, delivery_instruction
 			, delivery_datetime
 			, payment_amount
@@ -720,6 +720,8 @@ func (q *transactionRepository) CreateTransaction(
 		request.CartID,
 		request.ReferenceNumber,
 		request.Status,
+		request.RecipientName,
+		request.RecipientMobilePhone,
 		request.BuyerNote,
 		request.UniqueCode,
 		request.ShoppingCost,
@@ -744,8 +746,6 @@ func (q *transactionRepository) CreateTransaction(
 		request.DeliveryDistanceKM,
 		request.DeliveryStreetAddress,
 		request.DeliveryStreetAddressNote,
-		request.DeliveryRecipientName,
-		request.DeliveryRecipientMobilePhone,
 		request.DeliveryInstruction,
 		request.DeliveryDatetime,
 		request.PaymentAmount,
@@ -765,6 +765,8 @@ func (q *transactionRepository) CreateTransaction(
 		&response.CartID,
 		&response.ReferenceNumber,
 		&response.Status,
+		&response.RecipientName,
+		&response.RecipientMobilePhone,
 		&response.BuyerNote,
 		&response.UniqueCode,
 		&response.ShoppingCost,
@@ -789,8 +791,6 @@ func (q *transactionRepository) CreateTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryStreetAddress,
 		&response.DeliveryStreetAddressNote,
-		&response.DeliveryRecipientName,
-		&response.DeliveryRecipientMobilePhone,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
 		&response.PaymentAmount,
@@ -991,6 +991,8 @@ func (q *transactionRepository) UpdateTransaction(
 			, cart_id
 			, reference_number
 			, status
+			, recipient_name
+			, recipient_mobile_phone
 			, buyer_note
 			, unique_code
 			, shopping_cost
@@ -1015,8 +1017,6 @@ func (q *transactionRepository) UpdateTransaction(
 			, delivery_distance_km
 			, delivery_street_address
 			, delivery_street_address_note
-			, delivery_recipient_name
-			, delivery_recipient_mobile_phone
 			, delivery_instruction
 			, delivery_datetime
 			, payment_amount
@@ -1064,6 +1064,8 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.CartID,
 		&response.ReferenceNumber,
 		&response.Status,
+		&response.RecipientName,
+		&response.RecipientMobilePhone,
 		&response.BuyerNote,
 		&response.UniqueCode,
 		&response.ShoppingCost,
@@ -1088,8 +1090,6 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.DeliveryDistanceKM,
 		&response.DeliveryStreetAddress,
 		&response.DeliveryStreetAddressNote,
-		&response.DeliveryRecipientName,
-		&response.DeliveryRecipientMobilePhone,
 		&response.DeliveryInstruction,
 		&response.DeliveryDatetime,
 		&response.PaymentAmount,
@@ -1377,6 +1377,8 @@ func (q *transactionRepository) UpdateTransaction(
 				, cart_id
 				, reference_number
 				, status
+				, recipient_name
+				, recipient_mobile_phone
 				, buyer_note
 				, unique_code
 				, shopping_cost
@@ -1401,8 +1403,6 @@ func (q *transactionRepository) UpdateTransaction(
 				, delivery_distance_km
 				, delivery_street_address
 				, delivery_street_address_note
-				, delivery_recipient_name
-				, delivery_recipient_mobile_phone
 				, delivery_instruction
 				, delivery_datetime
 				, payment_amount
@@ -1446,6 +1446,8 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.CartID,
 			&response.ReferenceNumber,
 			&response.Status,
+			&response.RecipientName,
+			&response.RecipientMobilePhone,
 			&response.BuyerNote,
 			&response.UniqueCode,
 			&response.ShoppingCost,
@@ -1470,8 +1472,6 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.DeliveryDistanceKM,
 			&response.DeliveryStreetAddress,
 			&response.DeliveryStreetAddressNote,
-			&response.DeliveryRecipientName,
-			&response.DeliveryRecipientMobilePhone,
 			&response.DeliveryInstruction,
 			&response.DeliveryDatetime,
 			&response.PaymentAmount,

@@ -76,6 +76,8 @@ type Transaction struct {
 	CartID                          *uuid.UUID         `json:"cart_id"`
 	ReferenceNumber                 string             `json:"reference_number"`
 	Status                          TransactionStatus  `json:"status"`
+	RecipientName                   string             `json:"recipient_name"`
+	RecipientMobilePhone            string             `json:"recipient_mobile_phone"`
 	BuyerNote                       string             `json:"buyer_note"`
 	UniqueCode                      int64              `json:"unique_code"`
 	ShoppingCost                    int64              `json:"shopping_cost"`
@@ -100,8 +102,6 @@ type Transaction struct {
 	DeliveryDistanceKM              int64              `json:"delivery_distance_km"`
 	DeliveryStreetAddress           string             `json:"delivery_street_address"`
 	DeliveryStreetAddressNote       string             `json:"delivery_street_address_note"`
-	DeliveryRecipientName           string             `json:"delivery_recipient_name"`
-	DeliveryRecipientMobilePhone    string             `json:"delivery_recipient_mobile_phone"`
 	DeliveryInstruction             string             `json:"delivery_instruction"`
 	DeliveryDatetime                time.Time          `json:"delivery_datetime"`
 	PaymentAmount                   int64              `json:"payment_amount"`

@@ -24,6 +24,8 @@ func init() {
 					, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
 					, reference_number character varying NOT NULL
 					, status smallint NOT NULL
+					, recipient_name character varying NOT NULL
+					, recipient_mobile_phone character varying NOT NULL
 					, buyer_note character varying NOT NULL
 					, unique_code bigint NOT NULL
 					, shopping_cost bigint NOT NULL
@@ -48,8 +50,6 @@ func init() {
 					, delivery_distance_km bigint NOT NULL
 					, delivery_street_address character varying NOT NULL
 					, delivery_street_address_note character varying NOT NULL
-					, delivery_recipient_name character varying NOT NULL
-					, delivery_recipient_mobile_phone character varying NOT NULL
 					, delivery_instruction character varying NOT NULL
 					, delivery_datetime timestamp with time zone NOT NULL
 					, payment_amount bigint NOT NULL
