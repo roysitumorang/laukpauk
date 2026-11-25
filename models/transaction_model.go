@@ -264,7 +264,7 @@ func (q *Transaction) CalculateDiscount() {
 			q.WalletDiscount += walletDiscount
 		}
 		if q.DiscountedDeliveryEstimatedCost > 0 && walletAmount > 0 {
-			walletDiscount := min(q.DiscountedDeliveryEstimatedCost, q.WalletAmount)
+			walletDiscount := min(q.DiscountedDeliveryEstimatedCost, walletAmount)
 			q.DiscountedDeliveryEstimatedCost -= walletDiscount
 			q.WalletDiscount += walletDiscount
 		}
@@ -320,7 +320,7 @@ func (q *Transaction) Revise() {
 			q.WalletDiscount += walletDiscount
 		}
 		if q.DiscountedDeliveryEstimatedCost > 0 && walletAmount > 0 {
-			walletDiscount := min(q.DiscountedDeliveryEstimatedCost, q.WalletAmount)
+			walletDiscount := min(q.DiscountedDeliveryEstimatedCost, walletAmount)
 			q.DiscountedDeliveryEstimatedCost -= walletDiscount
 			q.WalletDiscount += walletDiscount
 		}
