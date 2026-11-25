@@ -23,7 +23,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AuthApi](#authapi) (5)
 - [CartApi](#cartapi) (4)
 - [CheckoutApi](#checkoutapi) (6)
-- [DeliveryApi](#deliveryapi) (5)
+- [DeliveryApi](#deliveryapi) (4)
 - [HomeApi](#homeapi) (7)
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (7)
 - [VoucherApi](#voucherapi) (2)
 
-85 endpoint definitions in total.
+84 endpoint definitions in total.
 
 ## Index
 
@@ -69,7 +69,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Voucher/getStatusVoucher/{id}` | yes | `CheckoutApi.getStatusVoucher` |
 | GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
 | GET | `buyer/delivery_plans/now` | yes | `DeliveryApi.deliveryPlanNow` |
-| GET | `Gift/getGift` | no | `DeliveryApi.getGifts` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
@@ -854,30 +853,6 @@ Response (`DeliveryResponses.PlanNow`):
     ]
   },
   "app": "laukpauk"
-}
-```
-
-### `GET Gift/getGift`
-
-App method: `DeliveryApi.getGifts`.
-
-Request:
-
-```http
-GET Gift/getGift
-```
-
-Response (`DeliveryResponses.Gifts`):
-
-```json
-{
-  "gift": [
-    {
-      "id": 0,
-      "foto": "string",
-      "nama": "string"
-    }
-  ]
 }
 ```
 
