@@ -21,7 +21,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AccountApi](#accountapi) (5)
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (5)
-- [CartApi](#cartapi) (6)
+- [CartApi](#cartapi) (4)
 - [CheckoutApi](#checkoutapi) (6)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (7)
@@ -34,11 +34,11 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [RepeatOrderApi](#repeatorderapi) (2)
 - [RecipeApi](#recipeapi) (5)
 - [SettingApi](#settingapi) (3)
-- [TransactionApi](#transactionapi) (8)
+- [TransactionApi](#transactionapi) (6)
 - [UserApi](#userapi) (7)
 - [VoucherApi](#voucherapi) (2)
 
-89 endpoint definitions in total.
+85 endpoint definitions in total.
 
 ## Index
 
@@ -62,8 +62,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `buyer/cart` | yes | `CartApi.saveBuyerCart` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.clearCart` |
 | POST | `Keranjang/saveCart` | no | `CartApi.saveCart` |
-| GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
-| GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
 | GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
 | GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
@@ -122,8 +120,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Transaksi/getJumlahItemDiantar/{id}` | yes | `TransactionApi.getDeliveredItemCount` |
 | POST | `Transaksi/pesananDiterima/{id}` | yes | `TransactionApi.orderReceived` |
 | POST | `Transaksi/belanjaUlang/{id}` | no | `TransactionApi.reorder` |
-| GET | `gift/gift-transaksi` | no | `TransactionApi.getTransactionGift` |
-| GET | `Gift/getGift/{idGift}` | no | `TransactionApi.getGift` |
 | GET | `buyer/users/me` | yes | `UserApi.me` |
 | GET | `User/getJumlahVoucher` | yes | `UserApi.getVoucherCount` |
 | GET | `User/getRiwayatDompet` | yes | `UserApi.getWalletRecords` |
@@ -672,52 +668,6 @@ Response (`AddToCartResult`):
 {
   "statusAddCart": true,
   "message": "string"
-}
-```
-
-### `GET gift/gift-transaksi`
-
-App method: `CartApi.getTransactionGift`.
-
-Request:
-
-```http
-GET gift/gift-transaksi?cartCode=<cartCode>
-```
-
-Response (`CartResponses.GiftTransaksiList`):
-
-```json
-{
-  "giftTransaksi": [
-    {
-      "id": "string",
-      "idGift": "string"
-    }
-  ]
-}
-```
-
-### `GET Gift/getGift/{idGift}`
-
-App method: `CartApi.getGift`.
-
-Request:
-
-```http
-GET Gift/getGift/{idGift}
-```
-
-Response (`CartResponses.GiftDetail`):
-
-```json
-{
-  "gift": {
-    "id": "string",
-    "nama": "string",
-    "deskripsi": "string",
-    "foto": "string"
-  }
 }
 ```
 
@@ -2387,53 +2337,6 @@ Response (`TransaksiResponses.BelanjaUlang`):
 {
   "statusBelanjaUlang": true,
   "message": "string"
-}
-```
-
-### `GET gift/gift-transaksi`
-
-App method: `TransactionApi.getTransactionGift`.
-
-Request:
-
-```http
-GET gift/gift-transaksi?cartCode=<cartCode>
-```
-
-Response (`TransaksiResponses.GiftList`):
-
-```json
-{
-  "giftTransaksi": [
-    {
-      "id": "string",
-      "idGift": "string",
-      "cartCode": "string",
-      "createdAt": "string"
-    }
-  ]
-}
-```
-
-### `GET Gift/getGift/{idGift}`
-
-App method: `TransactionApi.getGift`.
-
-Request:
-
-```http
-GET Gift/getGift/{idGift}
-```
-
-Response (`TransaksiResponses.GiftDetail`):
-
-```json
-{
-  "gift": {
-    "id": "string",
-    "nama": "string",
-    "deskripsi": "string"
-  }
 }
 ```
 
