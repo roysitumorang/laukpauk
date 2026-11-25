@@ -172,6 +172,13 @@ func (d *Duration) ScanInterval(v pgtype.Interval) error {
 	return nil
 }
 
+func (d Duration) IntervalValue() (pgtype.Interval, error) {
+	return pgtype.Interval{
+		Microseconds: time.Duration(d).Microseconds(),
+		Valid:        true,
+	}, nil
+}
+
 func (d Duration) MarshalJSONTo(encoder *jsontext.Encoder) error {
 	return encoder.WriteToken(jsontext.String(time.Duration(d).String()))
 }
