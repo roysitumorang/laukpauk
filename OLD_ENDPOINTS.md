@@ -1306,7 +1306,7 @@ Response (`AddToCartResult`):
 
 App method: `PaymentApi.buyerPaymentChannels`.
 
-The "Metode Pembayaran" sheet at checkout. `amount` is the total to pay (the checkout grand total); the backend lists only the channels whose minimum and maximum amount allow it, so the app shows every channel it gets. The channels are in `data` (`null` when none). Each row shows the logo `assets/img/payment/<channel_code>.png` and `name`; the list is loaded again when the total changes.
+The "Metode Pembayaran" sheet at checkout. `amount` is the total to pay (the checkout grand total); the backend lists only the channels whose minimum and maximum amount allow it, so the app shows every channel it gets. The channels are in `data` (`null` when none). Each row shows `name` (no logo for now); the list is loaded again when the total changes.
 
 Request:
 
