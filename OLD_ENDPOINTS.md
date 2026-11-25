@@ -34,11 +34,11 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [RepeatOrderApi](#repeatorderapi) (2)
 - [RecipeApi](#recipeapi) (5)
 - [SettingApi](#settingapi) (3)
-- [TransactionApi](#transactionapi) (6)
+- [TransactionApi](#transactionapi) (7)
 - [UserApi](#userapi) (6)
 - [VoucherApi](#voucherapi) (2)
 
-80 endpoint definitions in total.
+81 endpoint definitions in total.
 
 ## Index
 
@@ -110,9 +110,10 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `buyer/setting` | no | `SettingApi.buyerSetting` |
 | GET | `Pengaturan/getSettingValue/{key}` | no | `SettingApi.getSettingValue` |
 | GET | `Pengaturan/getContactUsWhatsappConfiguration` | no | `SettingApi.getContactUsWhatsappConfiguration` |
-| GET | `User/getRiwayatTransaksi` | yes | `TransactionApi.getTransactionRecords` |
+| GET | `buyer/transactions` | yes | `TransactionApi.buyerTransactions` |
+| GET | `data.links.next` of `buyer/transactions` | yes | `TransactionApi.buyerTransactionsPage` |
+| GET | `buyer/transactions/{id}` | yes | `TransactionApi.buyerTransaction` |
 | GET | `Transaksi/getTransaksi/{id}` | yes | `TransactionApi.getTransaction` |
-| GET | `Transaksi/getItemTransaksiFromTransaksi/{id}` | yes | `TransactionApi.getTransactionItem` |
 | GET | `Transaksi/getJumlahItemDiantar/{id}` | yes | `TransactionApi.getDeliveredItemCount` |
 | POST | `Transaksi/pesananDiterima/{id}` | yes | `TransactionApi.orderReceived` |
 | POST | `Transaksi/belanjaUlang/{id}` | no | `TransactionApi.reorder` |
@@ -2063,56 +2064,111 @@ Response (`Map<String, Object>`):
 
 ## TransactionApi
 
-### `GET User/getRiwayatTransaksi`
+### `GET buyer/transactions`
 
-App method: `TransactionApi.getTransactionRecords`.
+App method: `TransactionApi.buyerTransactions`.
+
+"Pesanan Saya": the buyer's transactions, newest first, 25 per page. Query: `limit=25`; `status` from the tab (Semua: none, Belum Bayar 0, Dibayar 2, Diproses 5, Dikirim 6, Selesai 8, Dibatalkan 1); `created_at_start` / `created_at_end` from the date range, 00:00:00 of the start day and 23:59:59 of the end day in the phone's time zone, sent as RFC 3339 UTC (`…Z`); either may be left out. Page-based: `data.links.next` (empty on the last page) is loaded when the list is scrolled to the end; the transactions are `data.rows`. Each card shows `reference_number`, `payment_channel_name`, the delivery day and time of `delivery_datetime`, `created_at`, the status and `revised_payment_amount`.
 
 Request:
 
 ```http
-GET User/getRiwayatTransaksi?statusTransaksi=<statusTransaksi>&statusTransaksiHariIni=<statusTransaksiHariIni>&rentangAwal=<rentangAwal>&rentangAkhir=<rentangAkhir>
+GET buyer/transactions?limit=25&status=<status>&created_at_start=<RFC3339>&created_at_end=<RFC3339>
 Authorization: Bearer <JWT>
 ```
 
-Response (`TransaksiResponses.RiwayatList`):
+Response (`BuyerTransactionResponses.Page`):
 
 ```json
 {
-  "riwayatTransaksi": [
-    {
-      "id": "string",
-      "cartCode": "string",
-      "nomorTransaksi": "string",
-      "status": "string",
-      "statusReason": "string",
-      "catatan": "string",
-      "dayDelivery": "string",
-      "jadwalDelivery": "string",
-      "formattedTanggalDelivery": "string",
-      "waktuCheckout": "string",
-      "alamatDelivery": "string",
-      "alamatDetailLengkap": "string",
-      "metodePembayaran": "string",
-      "namaMetodePembayaran": "string",
-      "jenisVoucher": "string",
-      "totalBelanja": 0,
-      "ongkir": 0,
-      "potonganWallet": 0,
-      "nilaiVoucher": 0,
-      "pointOut": 0,
-      "diskonKategori": 0,
-      "diskonPromo": 0,
-      "moreDataMetodePembayaran": 0,
-      "refundedOngkir": 0,
-      "refundedUangBelanja": 0
-    }
-  ]
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "links": {
+      "first": "https://sadia.id/v1/buyer/transactions?limit=25&page=1",
+      "previous": "",
+      "current": "https://sadia.id/v1/buyer/transactions?limit=25&page=1",
+      "next": "https://sadia.id/v1/buyer/transactions?limit=25&page=2",
+      "last": "https://sadia.id/v1/buyer/transactions?limit=25&page=2"
+    },
+    "info": {
+      "limit": 25,
+      "page": 1,
+      "pages": 2,
+      "total": 30
+    },
+    "rows": [
+      {
+        "id": "string",
+        "reference_number": "LP26330001ABCD",
+        "status": 6,
+        "buyer_note": "Titip satpam",
+        "unique_code": 123,
+        "shopping_cost": 50123,
+        "voucher_type": 0,
+        "voucher_discount": 5000,
+        "reward_points_discount": 0,
+        "wallet_discount": 10000,
+        "delivery_estimated_cost": 15000,
+        "delivery_street_address": "Jl. Merdeka No. 1, Medan",
+        "delivery_street_address_note": "Pagar hijau",
+        "delivery_datetime": "2026-11-26T07:00:00+07:00",
+        "payment_amount": 50123,
+        "payment_due_date": null,
+        "payment_channel_name": "BCA Virtual Account",
+        "payment_virtual_account_number": null,
+        "created_at": "2026-11-25T21:00:00+07:00",
+        "withdrawal_reason": null,
+        "revised_payment_amount": 45123,
+        "refund_amount": 5000,
+        "items": [
+          {
+            "id": "string",
+            "product_name": "Bayam",
+            "stock_unit": "ikat",
+            "selling_price": 5000,
+            "quantity": 2,
+            "subtotal": 10000,
+            "buyer_note": "Segar",
+            "revised_quantity": 1,
+            "revised_subtotal": 5000,
+            "revision_note": "Stok tinggal 1",
+            "out_of_stock": false
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
+
+### `GET` `data.links.next` of `buyer/transactions`
+
+App method: `TransactionApi.buyerTransactionsPage`.
+
+The next page, requested as is when the list is scrolled to the end. Same response as `GET buyer/transactions`.
+
+### `GET buyer/transactions/{id}`
+
+App method: `TransactionApi.buyerTransaction`.
+
+"Detail Transaksi" and its "Daftar Belanjaan" (also opened from the order success screen). It shows the status, `reference_number`, `payment_channel_name`, `buyer_note`, `delivery_street_address` (+ `delivery_street_address_note`), the delivery day and time, and the breakdown: items total (`shopping_cost` − `unique_code`), the voucher on the shopping or delivery cost (`voucher_type`), points, wallet, delivery cost, unique code, `payment_amount`, and when different the revised total and `refund_amount`; while unpaid also `payment_virtual_account_number` and `payment_due_date`. Cancelled or withdrawn orders show `withdrawal_reason`. Each item shows its name, quantity and unit, `revised_subtotal` (struck through when `out_of_stock`), the revised quantity when it changed, and the buyer's and seller's notes. `404` shows "not found".
+
+Request:
+
+```http
+GET buyer/transactions/{id}
+Authorization: Bearer <JWT>
+```
+
+Response (`BuyerTransactionResponses.One`): one transaction, the same attributes as a row of `GET buyer/transactions`, in `data`.
 
 ### `GET Transaksi/getTransaksi/{id}`
 
 App method: `TransactionApi.getTransaction`.
+
+Still used by "Belanja Lagi" (repeat order) for the transaction number and delivery date.
 
 Request:
 
@@ -2152,38 +2208,6 @@ Response (`TransaksiResponses.Detail`):
     "refundedOngkir": 0,
     "refundedUangBelanja": 0
   }
-}
-```
-
-### `GET Transaksi/getItemTransaksiFromTransaksi/{id}`
-
-App method: `TransactionApi.getTransactionItem`.
-
-Request:
-
-```http
-GET Transaksi/getItemTransaksiFromTransaksi/{id}?entitasItemTransaksi=<entitasItemTransaksi>
-Authorization: Bearer <JWT>
-```
-
-Response (`TransaksiResponses.Items`):
-
-```json
-{
-  "itemTransaksi": [
-    {
-      "id": "string",
-      "namaProduk": "string",
-      "namaSatuan": "string",
-      "jenisProduk": "string",
-      "catatan": "string",
-      "status": "string",
-      "quantity": 0,
-      "harga": 0,
-      "diskon": 0,
-      "diskonPromo": 0
-    }
-  ]
 }
 ```
 
