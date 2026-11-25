@@ -41,7 +41,7 @@ type TransactionRepository interface {
 		ctx context.Context,
 		userID uuid.UUID,
 		voucherIDs ...uuid.UUID,
-	) (map[uuid.UUID]int, error)
+	) (map[uuid.UUID]int64, error)
 }
 
 type transactionRepository struct {
@@ -1646,9 +1646,9 @@ func (q *transactionRepository) FindVouchersUsages(
 	ctx context.Context,
 	userID uuid.UUID,
 	voucherIDs ...uuid.UUID,
-) (map[uuid.UUID]int, error) {
+) (map[uuid.UUID]int64, error) {
 	ctxt := "TransactionRepository-FindVouchersUsages"
-	response := map[uuid.UUID]int{}
+	response := map[uuid.UUID]int64{}
 	var params []any
 	var n int
 	sb := pools.BuilderPool.Get()
@@ -1661,8 +1661,6 @@ func (q *transactionRepository) FindVouchersUsages(
 		params,
 		userID,
 		models.TransactionStatusCancelled,
-		models.TransactionStatusWithdrawn,
-		models.TransactionStatusCompleted,
 	)
 	n = len(params)
 	_, _ = fmt.Fprintf(
@@ -1672,8 +1670,8 @@ func (q *transactionRepository) FindVouchersUsages(
 			, COUNT(1)
 		FROM transactions
 		WHERE user_id = $%d
-			AND status NOT IN ($%d, $%d, $%d)`,
-		n-3, n-2, n-1, n,
+			AND status != $%d`,
+		n-1, n,
 	)
 	if len(voucherIDs) > 0 {
 		sb.Reset()
@@ -1699,7 +1697,7 @@ func (q *transactionRepository) FindVouchersUsages(
 	defer rows.Close()
 	for rows.Next() {
 		var voucherID uuid.UUID
-		var usages int
+		var usages int64
 		if err = rows.Scan(
 			&voucherID,
 			&usages,

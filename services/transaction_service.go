@@ -55,7 +55,7 @@ type TransactionService interface {
 		ctx context.Context,
 		userID uuid.UUID,
 		voucherIDs ...uuid.UUID,
-	) (map[uuid.UUID]int, error)
+	) (map[uuid.UUID]int64, error)
 }
 
 type transactionService struct {
@@ -346,23 +346,20 @@ func (q *transactionService) CreateTransaction(
 			}
 			// the items' subtotal, without the unique code added to ShoppingCost
 			if request.ShoppingCost-request.UniqueCode < voucher.MinimumPurchase {
-				return nil, nil, errors.New("voucher_code: minimum purchase not reached")
+				return nil, nil, errors.New("voucher_id: minimum purchase not reached")
 			}
 			if voucher.QuotaPerBuyer > 0 {
-				_, total, _, err := q.transactionRepository.FindTransactions(
+				mapVouchersUsages, err := q.transactionRepository.FindVouchersUsages(
 					ctx,
-					models.NewTransactionFilter().
-						WithUserIDs(buyer.ID).
-						WithExcludedTransactionStatuses(models.TransactionStatusCancelled).
-						WithVoucherIDs(voucher.ID).
-						WithReturnCountOnly(true),
+					buyer.ID,
+					voucher.ID,
 				)
 				if err != nil {
-					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
+					helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchersUsages")
 					return nil, nil, err
 				}
-				if total >= voucher.QuotaPerBuyer {
-					return nil, nil, errors.New("voucher_code: quota exceeded")
+				if mapVouchersUsages[voucher.ID] >= voucher.QuotaPerBuyer {
+					return nil, nil, errors.New("voucher_id: quota exceeded")
 				}
 			}
 			request.VoucherID = &voucher.ID
@@ -851,7 +848,7 @@ func (q *transactionService) FindVouchersUsages(
 	ctx context.Context,
 	userID uuid.UUID,
 	voucherIDs ...uuid.UUID,
-) (map[uuid.UUID]int, error) {
+) (map[uuid.UUID]int64, error) {
 	ctxt := "TransactionService-FindVouchersUsages"
 	response, err := q.transactionRepository.FindVouchersUsages(
 		ctx,
