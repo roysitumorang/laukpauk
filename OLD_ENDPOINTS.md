@@ -86,8 +86,8 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Produk/detailPaket` | no | `PackApi.packDetail` |
 | GET | `Produk/getPaketLainnya` | no | `PackApi.getOtherPacks` |
 | POST | `Keranjang/saveCart` | no | `PackApi.saveCart` |
-| GET | `Xendit/getPaymentChannels` | yes | `PaymentApi.getPaymentChannels` |
-| POST | `Transaksi/checkout` | yes | `PaymentApi.checkout` |
+| GET | `buyer/payment_channels` | yes | `PaymentApi.buyerPaymentChannels` |
+| POST | `buyer/transactions` | yes | `PaymentApi.createTransaction` |
 | GET | `buyer/products` | no | `ProductApi.buyerProducts` |
 | GET | `data.next` of `buyer/products` | no | `ProductApi.buyerProductsPage` |
 | GET | `buyer/products/{id}` | no | `ProductApi.buyerProduct` |
@@ -242,7 +242,7 @@ Response (`AccountResponses.ReferralConfiguration`):
 
 App method: `AddressApi.list`.
 
-The signed-in buyer's delivery addresses, listed when the buyer taps Checkout. The app asks `limit=100`; the backend always lists the main address first. Page-based: `data.info` and `data.links` (`next` is empty on the last page); the addresses are `data.rows`. The app shows `label` (+ "UTAMA" when `main`), `recipient_name`, `recipient_mobile_phone`, `street_address` and `street_address_note`; choosing one sets the delivery latitude and longitude (`destination_latitude`, `destination_longitude`) and `street_address`. `distance_km` is read but not shown. An empty list goes straight to adding an address.
+The signed-in buyer's delivery addresses, listed when the buyer taps Checkout. The app asks `limit=100`; the backend always lists the main address first. Page-based: `data.info` and `data.links` (`next` is empty on the last page); the addresses are `data.rows`. The app shows `label` (+ "UTAMA" when `main`), `street_address` and `street_address_note`; choosing one sets the delivery latitude and longitude (`destination_latitude`, `destination_longitude`) and `street_address`. `distance_km` is read but not shown. An empty list goes straight to adding an address.
 
 Request:
 
@@ -285,8 +285,6 @@ Response (`AddressResponses.AddressList`):
         "street_address": "Jl. Merdeka No. 1, Medan",
         "street_address_note": "Pagar hijau",
         "label": "Rumah",
-        "recipient_name": "Budi",
-        "recipient_mobile_phone": "+6281234567890",
         "main": true
       }
     ]
@@ -304,7 +302,7 @@ The next page, requested as is when a page came back full. Same response as `GET
 
 App method: `AddressApi.create`.
 
-"Tambah Alamat Baru" (or the first address) at checkout, after the location was detected (activation popup, permission, turn location on, GPS) and the reverse-geocoded address was confirmed or picked on the map. `destination_longitude` / `destination_latitude` come from that location, the other fields from the form; required: `destination_longitude`, `destination_latitude`, `street_address`, `label`, `recipient_name`, `recipient_mobile_phone` (stored in E.164). `main: true` makes it the main address. The backend sets the origin from the setting and computes `distance_km`. Answers `201` with the saved address in `data`; a validation error answers `400`, and a point out of the coverage area or already saved answers `422`, with the reason in `message`, shown on the form.
+"Tambah Alamat Baru" (or the first address) at checkout, after the location was detected (activation popup, permission, turn location on, GPS) and the reverse-geocoded address was confirmed or picked on the map. `destination_longitude` / `destination_latitude` come from that location, the other fields from the form; required: `destination_longitude`, `destination_latitude`, `street_address`, `label`. `main: true` makes it the main address. The backend sets the origin from the setting and computes `distance_km`. Answers `201` with the saved address in `data`; a validation error answers `400`, and a point out of the coverage area or already saved answers `422`, with the reason in `message`, shown on the form.
 
 Request:
 
@@ -319,8 +317,6 @@ Authorization: Bearer <JWT>
   "street_address": "Jl. Merdeka No. 1, Medan",
   "street_address_note": "Pagar hijau",
   "label": "Rumah",
-  "recipient_name": "Budi",
-  "recipient_mobile_phone": "081234567890",
   "main": true
 }
 ```
@@ -344,8 +340,6 @@ Response (`AddressResponses.Saved`):
     "street_address": "Jl. Merdeka No. 1, Medan",
     "street_address_note": "Pagar hijau",
     "label": "Rumah",
-    "recipient_name": "Budi",
-    "recipient_mobile_phone": "+6281234567890",
     "main": true
   }
 }
@@ -355,7 +349,7 @@ Response (`AddressResponses.Saved`):
 
 App method: `AddressApi.update`.
 
-"Ubah" of an address at checkout: the location is detected again and the form starts from the address's label, recipient, note and main flag. Same body and response as `POST buyer/delivery_addresses` (`200`, "delivery address updated successfully"); the backend keeps the saved coordinates and changes only the text fields and `main`. `404` when the address is not the buyer's.
+"Ubah" of an address at checkout: the location is detected again and the form starts from the address's label, note and main flag. Same body and response as `POST buyer/delivery_addresses` (`200`, "delivery address updated successfully"); the backend keeps the saved coordinates and changes only the text fields and `main`. `404` when the address is not the buyer's.
 
 ## AuthApi
 
@@ -1308,14 +1302,16 @@ Response (`AddToCartResult`):
 
 ## PaymentApi
 
-### `GET Xendit/getPaymentChannels`
+### `GET buyer/payment_channels`
 
-App method: `PaymentApi.getPaymentChannels`.
+App method: `PaymentApi.buyerPaymentChannels`.
+
+The "Metode Pembayaran" sheet at checkout. `amount` is the total to pay (the checkout grand total); the backend lists only the channels whose minimum and maximum amount allow it, so the app shows every channel it gets. The channels are in `data` (`null` when none). Each row shows `name` (no logo for now); the list is loaded again when the total changes.
 
 Request:
 
 ```http
-GET Xendit/getPaymentChannels
+GET buyer/payment_channels?amount=<totalToPay>
 Authorization: Bearer <JWT>
 ```
 
@@ -1323,57 +1319,71 @@ Response (`PaymentChannelsResponse`):
 
 ```json
 {
-  "paymentChannels": [
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": [
     {
-      "channel_code": "string",
-      "name": "string",
-      "minimalPembayaran": 0
+      "id": "string",
+      "name": "BCA Virtual Account",
+      "channel_code": "BCA_VIRTUAL_ACCOUNT"
     }
   ]
 }
 ```
 
-### `POST Transaksi/checkout`
+### `POST buyer/transactions`
 
-App method: `PaymentApi.checkout`.
+App method: `PaymentApi.createTransaction`.
+
+"Buat Pesanan" in the "Metode Pembayaran" sheet, after a channel is picked. The body (`PaymentRepository.transactionBody`): `cart_id` and `items[]` (`cart_item_id`, `buyer_note`) of `GET buyer/cart`; `recipient_name`, `recipient_mobile_phone` and `buyer_note` from the checkout form; `delivery_address_id` of the chosen delivery address; `delivery_datetime`, the chosen slot's `delivery_time` exactly as `GET buyer/delivery_plans/now` sent it; `reward_points_discounted`, or `voucher_id` when a voucher is chosen; `wallet_discounted` and `wallet_amount` (`wallet` of `GET buyer/users/me`); `payment_channel_id`, the `id` of the picked channel. On `201` the order success screen shows `reference_number`, `payment_amount`, `payment_channel_name`, `payment_virtual_account_number` and `payment_due_date` ("Pesanan sudah lunas." when `payment_amount` is 0); an error shows `message` in a dialog.
 
 Request:
 
 ```http
-POST Transaksi/checkout
-Authorization: Bearer <JWT>
+POST buyer/transactions
 Content-Type: application/json
+Authorization: Bearer <JWT>
 
 {
-  "namaPenerima": "<namaPenerima>",
-  "nomorHPPenerima": "<nomorHPPenerima>",
-  "alamatDetailLengkap": "<alamatDetailLengkap>",
-  "catatanTambahan": "<catatanTambahan>",
-  "jadwalPengiriman": "<jadwalPengiriman>",
-  "cartCode": "<cartCode>",
-  "voucher": "0",
-  "latDelivery": "<latDelivery>",
-  "longDelivery": "<longDelivery>",
-  "jadwalDeliveryCode": "<jadwalDeliveryCode>",
-  "isPointUsed": "false",
-  "diskonKategori": "<diskonKategori>",
-  "kodePromo": "<kodePromo>",
-  "metodePembayaran": "<metodePembayaran>",
-  "namaMetodePembayaran": "<namaMetodePembayaran>",
-  "moreDataMetodePembayaran": "<moreDataMetodePembayaran>",
-  "alamatDelivery": "<alamatDelivery>"
+  "cart_id": "string",
+  "items": [
+    {
+      "cart_item_id": "string",
+      "buyer_note": "Potong kecil"
+    }
+  ],
+  "recipient_name": "Budi",
+  "recipient_mobile_phone": "081234567890",
+  "buyer_note": "Titip satpam",
+  "delivery_address_id": "string",
+  "delivery_datetime": "2026-11-26T07:00:00+07:00",
+  "reward_points_discounted": false,
+  "voucher_id": "string",
+  "wallet_discounted": true,
+  "wallet_amount": 10000,
+  "payment_channel_id": "string"
 }
 ```
 
-Response (`CheckoutResponse`):
+Response (`TransactionResponses.Created`), the fields the app reads:
 
 ```json
 {
-  "statusCheckout": true,
-  "message": "string",
-  "idTransaksi": "string",
-  "metodePembayaran": "string",
-  "paymentResponse": "<any JSON>"
+  "status_code": 201,
+  "status": "Created",
+  "message": "transaction created successfully",
+  "data": {
+    "id": "string",
+    "reference_number": "26330-1-ABCD",
+    "status": 0,
+    "payment_amount": 54321,
+    "payment_due_date": "2026-11-26T00:34:00+07:00",
+    "payment_channel_id": "string",
+    "payment_channel_name": "BCA Virtual Account",
+    "payment_virtual_account_number": "1234567890",
+    "payment_virtual_account_expired_at": null
+  }
 }
 ```
 
