@@ -1841,7 +1841,7 @@ Response (`RepeatOrderResponses.AddToCart`):
 
 App method: `RecipeApi.buyerRecipes`.
 
-The Resep page: the active recipes, newest first, 25 per page (`limit=25`). The search box sends the name as `q` (case-insensitive match). Page-based: `data.links.next` (empty on the last page) is loaded when the list is scrolled to the end; the recipes are `data.rows`. Each card shows `name`, `photo` (a full URL as is; a bare file name falls back to the legacy recipe folder), `description` (cut at 30 characters) and the `instagram_link` / `facebook_link` buttons.
+The Resep page: the active recipes, newest first, 25 per page (`limit=25`). The search box sends the name as `q` (case-insensitive match). Page-based: `data.links.next` (empty on the last page) is loaded when the list is scrolled to the end; the recipes are `data.rows`. Each card shows `name`, `photo` (a full URL, used as is), `description` (cut at 30 characters) and the `instagram_link` / `facebook_link` buttons.
 
 Request:
 
@@ -1874,7 +1874,7 @@ Response (`BuyerRecipeResponses.Page`):
       {
         "id": "string",
         "record_status": 1,
-        "photo": "string",
+        "photo": "https://sadia.id/photos/r1.jpg",
         "name": "Sayur Asem",
         "deleted_name": null,
         "description": "string",
@@ -1905,7 +1905,7 @@ App method: `RecipeApi.buyerRecipe`.
 
 The recipe detail: one active recipe with its active `guides` and `items`, both in ascending order. 404 when the recipe isn't there, which shows the "not found" view. The screen shows:
 
-- `photo` (a full URL as is; a bare file name falls back to the legacy recipe folder), `name` and `description`, plus the `instagram_link` / `facebook_link` buttons.
+- `photo` (a full URL, used as is), `name` and `description`, plus the `instagram_link` / `facebook_link` buttons.
 - The `guides` as numbered "Cara Memasak" steps.
 - Each item as an ingredient row: `product_name`, then "Diperlukan `quantity` `product_variant_stock_unit`" with `note` in brackets. When `product_ready_stock` is false the row shows "Stok habis".
 - A variant picker for each in-stock item, loaded from `GET buyer/products/{id}` (`ProductApi.buyerProduct`, `data.variants`). It starts on `product_variant_id` and `quantity`.
@@ -1928,7 +1928,7 @@ Response (`BuyerRecipeResponses.One`):
   "data": {
     "id": "string",
     "record_status": 1,
-    "photo": "string",
+    "photo": "https://sadia.id/photos/r1.jpg",
     "name": "Sayur Asem",
     "description": "string",
     "instagram_link": "https://instagram.com/p/...",
@@ -1948,7 +1948,7 @@ Response (`BuyerRecipeResponses.One`):
         "recipe_id": "string",
         "product_id": "string",
         "product_name": "Asam Jawa",
-        "product_photo": "string",
+        "product_photo": "https://sadia.id/photos/p1.jpg",
         "product_ready_stock": true,
         "product_variant_id": "string",
         "product_variant_stock_unit": "gram",
