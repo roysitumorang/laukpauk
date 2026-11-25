@@ -210,9 +210,11 @@ func (q *Transaction) New() bool {
 	return q.ID.Compare(uuid.Nil()) == 0
 }
 
+// CalculateShoppingCost sums the items. The unique code is added later by ApplyUniqueCode, once the payment amount
+// and the payment channel's limits are known.
 func (q *Transaction) CalculateShoppingCost() {
-	q.UniqueCode = helper.RandomInteger(1000)
-	q.ShoppingCost = q.UniqueCode
+	q.UniqueCode = 0
+	q.ShoppingCost = 0
 	for i, item := range q.Items {
 		if item.OutOfStock {
 			item.Subtotal = 0
@@ -244,7 +246,10 @@ func (q *Transaction) CalculateDiscount() {
 		if q.DiscountedDeliveryEstimatedCost > 0 && rewardPointsAmount > 0 {
 			rewardPointsDiscount := min(q.DiscountedDeliveryEstimatedCost, rewardPointsAmount)
 			q.DiscountedDeliveryEstimatedCost -= rewardPointsDiscount
+			rewardPointsAmount -= rewardPointsDiscount
 		}
+		// only the points actually used: they are debited from the buyer and refunded on cancellation
+		q.RewardPointsDiscount -= rewardPointsAmount
 	} else if q.VoucherID != nil && q.VoucherType != nil {
 		if *q.VoucherType == VoucherTypeShoppingCost {
 			q.DiscountedShoppingCost = max(0, q.DiscountedShoppingCost-q.VoucherDiscount)
@@ -269,6 +274,28 @@ func (q *Transaction) CalculateDiscount() {
 	}
 	q.DeliveryActualCost = q.DiscountedDeliveryEstimatedCost
 	q.PaymentAmount = q.DiscountedShoppingCost + q.DiscountedDeliveryEstimatedCost
+	q.RevisedDiscountedShoppingCost = q.DiscountedShoppingCost
+	q.RevisedPaymentAmount = q.PaymentAmount
+}
+
+// UniqueCodeRange returns the unique codes (at most 999) that keep amount+code within the payment channel's
+// minimum and maximum amount (a maximum of 0 means no maximum); ok is false when no code fits.
+func UniqueCodeRange(amount, minimumAmount, maximumAmount int64) (from, to int64, ok bool) {
+	from = max(0, minimumAmount-amount)
+	to = int64(999)
+	if maximumAmount > 0 {
+		to = min(to, maximumAmount-amount)
+	}
+	return from, to, from <= to
+}
+
+// ApplyUniqueCode adds the unique code after the discounts, so the buyer always pays it.
+func (q *Transaction) ApplyUniqueCode(code int64) {
+	q.UniqueCode = code
+	q.ShoppingCost += code
+	q.DiscountedShoppingCost += code
+	q.PaymentAmount += code
+	q.RevisedShoppingCost = q.ShoppingCost
 	q.RevisedDiscountedShoppingCost = q.DiscountedShoppingCost
 	q.RevisedPaymentAmount = q.PaymentAmount
 }

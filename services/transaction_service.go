@@ -371,7 +371,6 @@ func (q *transactionService) CreateTransaction(
 			request.VoucherType = nil
 		}
 	}
-	request.CalculateDiscount()
 	sellers, _, _, err := q.userRepository.FindUsers(
 		ctx,
 		models.NewUserFilter().
@@ -381,6 +380,62 @@ func (q *transactionService) CreateTransaction(
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUsers")
 		return nil, nil, err
+	}
+	tx, err := repositories.BeginTx(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
+		return nil, nil, err
+	}
+	defer func(ctx context.Context) {
+		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			err = nil
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
+		}
+	}(ctx)
+	// the buyer's balances, read from the database and locked until this transaction ends, so two orders can't
+	// spend them twice; the request's wallet_amount is ignored
+	balances, err := q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, 0, 0, now)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
+		return nil, nil, err
+	}
+	request.WalletAmount = 0
+	if balances.Wallet != nil {
+		request.WalletAmount = max(0, *balances.Wallet)
+	}
+	if request.RewardPointsDiscounted {
+		var rewardPoints int64
+		if balances.RewardPoints != nil {
+			rewardPoints = max(0, *balances.RewardPoints)
+		}
+		request.RewardPointsDiscount = min(request.RewardPointsDiscount, rewardPoints)
+	}
+	request.CalculateDiscount()
+	var paymentChannel *models.PaymentChannel
+	if request.PaymentAmount > 0 {
+		if request.PaymentChannelID == nil || request.PaymentChannelID.Compare(uuid.Nil()) == 0 {
+			return nil, nil, errors.New("payment_channel_id: is required")
+		}
+		paymentChannel, err = q.paymentChannelRepository.FindPaymentChannel(
+			ctx,
+			models.NewPaymentChannelFilter().
+				WithPaymentChannelIDs(*request.PaymentChannelID),
+		)
+		if err != nil && !errors.Is(err, models.ErrPaymentChannelNotFound) {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannel")
+			return nil, nil, err
+		}
+		if paymentChannel == nil {
+			return nil, nil, errors.New("payment_channel_id: not found")
+		}
+		// the unique code is picked so the payment amount stays within the channel's limits
+		from, to, ok := models.UniqueCodeRange(request.PaymentAmount, paymentChannel.MinimumAmount, paymentChannel.MaximumAmount)
+		if !ok {
+			return nil, nil, errors.New("payment_channel_id: payment amount out of the channel's range")
+		}
+		request.ApplyUniqueCode(from + helper.RandomInteger(to-from+1))
 	}
 	sb := pools.BuilderPool.Get()
 	defer func() {
@@ -418,41 +473,12 @@ func (q *transactionService) CreateTransaction(
 	request.ReferenceNumber = sb.String()
 	request.CreatedAt = now
 	request.UpdatedAt = now
-	tx, err := repositories.BeginTx(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
-		return nil, nil, err
-	}
-	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
-			err = nil
-		}
-		if err != nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
-		}
-	}(ctx)
 	response, err := q.transactionRepository.CreateTransaction(ctx, tx, request)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
 		return nil, nil, err
 	}
 	if request.PaymentAmount > 0 {
-		if request.PaymentChannelID == nil || request.PaymentChannelID.Compare(uuid.Nil()) == 0 {
-			return nil, nil, errors.New("payment_channel_id: is required")
-		}
-		paymentChannel, err := q.paymentChannelRepository.FindPaymentChannel(
-			ctx,
-			models.NewPaymentChannelFilter().
-				WithPaymentChannelIDs(*request.PaymentChannelID).
-				WithAmount(request.PaymentAmount),
-		)
-		if err != nil && !errors.Is(err, models.ErrPaymentChannelNotFound) {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannel")
-			return nil, nil, err
-		}
-		if paymentChannel == nil {
-			return nil, nil, errors.New("payment_channel_id: not found")
-		}
 		paymentRequestID, paymentTokenID, virtualAccountNumber, virtualAccountExpiredAt, err := q.xenditClient.CreatePaymentRequest(
 			ctx,
 			response.UserID.String(),
@@ -482,6 +508,13 @@ func (q *transactionService) CreateTransaction(
 		response.PaymentVirtualAccountExpiredAt = virtualAccountExpiredAt
 		if response, err = q.transactionRepository.UpdateTransaction(ctx, tx, response); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
+			return nil, nil, err
+		}
+	}
+	// the points and wallet this order uses (refunded when it is cancelled or withdrawn)
+	if request.RewardPointsDiscount > 0 || request.WalletDiscount > 0 {
+		if _, err = q.userRepository.AddUserBalances(ctx, tx, buyer.ID, 0, -request.RewardPointsDiscount, -request.WalletDiscount, now); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrAddUserBalances")
 			return nil, nil, err
 		}
 	}
@@ -573,6 +606,10 @@ func (q *transactionService) AutoCancelOverdueTransactions(ctx context.Context) 
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 			return err
 		}
+		if err = q.refundBalances(ctx, tx, transaction, now); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRefundBalances")
+			return err
+		}
 		if transaction.PaymentRequestID != nil &&
 			transaction.PaymentDueDate != nil &&
 			transaction.PaymentDueDate.After(now) {
@@ -631,6 +668,12 @@ func (q *transactionService) RequestWithdrawal(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return nil, err
 	}
+	if response.Status == models.TransactionStatusWithdrawn {
+		if err = q.refundBalances(ctx, tx, response, time.Now()); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRefundBalances")
+			return nil, err
+		}
+	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return nil, err
@@ -667,11 +710,35 @@ func (q *transactionService) WithdrawTransaction(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return nil, err
 	}
+	if response.Status == models.TransactionStatusWithdrawn {
+		if err = q.refundBalances(ctx, tx, response, time.Now()); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRefundBalances")
+			return nil, err
+		}
+	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return nil, err
 	}
 	return response, nil
+}
+
+// refundBalances gives the buyer back the reward points and wallet a cancelled or withdrawn transaction used
+// (CreateTransaction debited them).
+func (q *transactionService) refundBalances(ctx context.Context, tx pgx.Tx, transaction *models.Transaction, now time.Time) error {
+	if transaction.RewardPointsDiscount <= 0 && transaction.WalletDiscount <= 0 {
+		return nil
+	}
+	_, err := q.userRepository.AddUserBalances(
+		ctx,
+		tx,
+		transaction.UserID,
+		0,
+		max(0, transaction.RewardPointsDiscount),
+		max(0, transaction.WalletDiscount),
+		now,
+	)
+	return err
 }
 
 func (q *transactionService) CompleteTransaction(
