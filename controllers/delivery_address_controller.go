@@ -133,8 +133,6 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		deliveryAddress.StreetAddress = request.StreetAddress
 		deliveryAddress.StreetAddressNote = request.StreetAddressNote
 		deliveryAddress.Label = request.Label
-		deliveryAddress.RecipientName = request.RecipientName
-		deliveryAddress.RecipientMobilePhone = request.RecipientMobilePhone
 		deliveryAddress.Main = request.Main
 		deliveryAddress.UpdatedAt = now
 		deliveryAddress.DeletedAt = nil
@@ -300,8 +298,6 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 	deliveryAddress.StreetAddress = request.StreetAddress
 	deliveryAddress.StreetAddressNote = request.StreetAddressNote
 	deliveryAddress.Label = request.Label
-	deliveryAddress.RecipientName = request.RecipientName
-	deliveryAddress.RecipientMobilePhone = request.RecipientMobilePhone
 	deliveryAddress.UpdatedAt = time.Now()
 	deliveryAddress.DeletedAt = nil
 	deliveryAddress.DeletionReason = nil

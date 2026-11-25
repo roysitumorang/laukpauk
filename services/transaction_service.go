@@ -193,8 +193,6 @@ func (q *transactionService) CreateTransaction(
 	request.DeliveryDistanceKM = deliveryAddress.DistanceKM
 	request.DeliveryStreetAddress = deliveryAddress.StreetAddress
 	request.DeliveryStreetAddressNote = deliveryAddress.StreetAddressNote
-	request.DeliveryRecipientName = deliveryAddress.RecipientName
-	request.DeliveryRecipientMobilePhone = deliveryAddress.RecipientMobilePhone
 	now := time.Now().In(time.Local)
 	deliveryPlan, err := q.deliveryPlanRepository.FindDeliveryPlan(
 		ctx,

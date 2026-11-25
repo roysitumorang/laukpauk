@@ -29,8 +29,6 @@ func init() {
 					, street_address character varying NOT NULL
 					, street_address_note character varying NOT NULL
 					, label character varying NOT NULL
-					, recipient_name character varying NOT NULL
-					, recipient_mobile_phone character varying NOT NULL
 					, main boolean NOT NULL
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL

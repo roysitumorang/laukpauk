@@ -2,14 +2,12 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"strings"
 	"time"
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/nyaruka/phonenumbers"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -35,8 +33,6 @@ type DeliveryAddress struct {
 	StreetAddress        string          `json:"street_address"`
 	StreetAddressNote    string          `json:"street_address_note"`
 	Label                string          `json:"label"`
-	RecipientName        string          `json:"recipient_name"`
-	RecipientMobilePhone string          `json:"recipient_mobile_phone"`
 	Main                 bool            `json:"main"`
 	CreatedAt            time.Time       `json:"-"`
 	UpdatedAt            time.Time       `json:"-"`
@@ -58,17 +54,6 @@ func (q *DeliveryAddress) Validate() (err error) {
 	if q.Label = strings.TrimSpace(q.Label); q.Label == "" {
 		return errors.New("label: is required")
 	}
-	if q.RecipientName = strings.TrimSpace(q.RecipientName); q.RecipientName == "" {
-		return errors.New("recipient_name: is required")
-	}
-	if q.RecipientMobilePhone = strings.TrimSpace(q.RecipientMobilePhone); q.RecipientMobilePhone == "" {
-		return errors.New("recipient_mobile_phone: is required")
-	}
-	mobilePhone, err := phonenumbers.Parse(q.RecipientMobilePhone, "ID")
-	if err != nil {
-		return fmt.Errorf("recipient_mobile_phone: %w", err)
-	}
-	q.RecipientMobilePhone = phonenumbers.Format(mobilePhone, phonenumbers.E164)
 	return nil
 }
 

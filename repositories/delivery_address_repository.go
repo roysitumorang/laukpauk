@@ -96,8 +96,6 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 		, street_address
 		, street_address_note
 		, label
-		, recipient_name
-		, recipient_mobile_phone
 		, main
 		, created_at
 		, updated_at
@@ -168,8 +166,6 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 			&deliveryAddress.StreetAddress,
 			&deliveryAddress.StreetAddressNote,
 			&deliveryAddress.Label,
-			&deliveryAddress.RecipientName,
-			&deliveryAddress.RecipientMobilePhone,
 			&deliveryAddress.Main,
 			&deliveryAddress.CreatedAt,
 			&deliveryAddress.UpdatedAt,
@@ -214,8 +210,6 @@ func (q *deliveryAddressRepository) FindDeliveryAddress(
 			, street_address
 			, street_address_note
 			, label
-			, recipient_name
-			, recipient_mobile_phone
 			, main
 			, created_at
 			, updated_at
@@ -238,8 +232,6 @@ func (q *deliveryAddressRepository) FindDeliveryAddress(
 		&response.StreetAddress,
 		&response.StreetAddressNote,
 		&response.Label,
-		&response.RecipientName,
-		&response.RecipientMobilePhone,
 		&response.Main,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -277,12 +269,10 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 			, street_address
 			, street_address_note
 			, label
-			, recipient_name
-			, recipient_mobile_phone
 			, main
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id
 			record_status
 			, user_id
@@ -313,8 +303,6 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 		request.StreetAddress,
 		request.StreetAddressNote,
 		request.Label,
-		request.RecipientName,
-		request.RecipientMobilePhone,
 		request.Main,
 		request.CreatedAt,
 		request.UpdatedAt,
@@ -331,8 +319,6 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 		&response.StreetAddress,
 		&response.StreetAddressNote,
 		&response.Label,
-		&response.RecipientName,
-		&response.RecipientMobilePhone,
 		&response.Main,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -367,8 +353,6 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 			, street_address
 			, street_address_note
 			, label
-			, recipient_name
-			, recipient_mobile_phone
 			, main
 			, created_at
 			, updated_at
@@ -391,8 +375,6 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		&response.StreetAddress,
 		&response.StreetAddressNote,
 		&response.Label,
-		&response.RecipientName,
-		&response.RecipientMobilePhone,
 		&response.Main,
 		&response.CreatedAt,
 		&response.UpdatedAt,
@@ -442,20 +424,6 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		}
 		_, _ = fmt.Fprintf(sb, " label = $%d", n)
 	}
-	if response.RecipientName != request.RecipientName {
-		params = append(params, request.RecipientName)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " recipient_name = $%d", n)
-	}
-	if response.RecipientMobilePhone != request.RecipientMobilePhone {
-		params = append(params, request.RecipientMobilePhone)
-		if n = len(params); n > 1 {
-			_, _ = sb.WriteString(",")
-		}
-		_, _ = fmt.Fprintf(sb, " recipient_mobile_phone = $%d", n)
-	}
 	if response.Main != request.Main {
 		params = append(params, request.Main)
 		if n = len(params); n > 1 {
@@ -503,8 +471,6 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 			, street_address
 			, street_address_note
 			, label
-			, recipient_name
-			, recipient_mobile_phone
 			, main
 			, created_at
 			, updated_at
@@ -525,8 +491,6 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		&response.StreetAddress,
 		&response.StreetAddressNote,
 		&response.Label,
-		&response.RecipientName,
-		&response.RecipientMobilePhone,
 		&response.Main,
 		&response.CreatedAt,
 		&response.UpdatedAt,
