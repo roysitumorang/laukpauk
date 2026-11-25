@@ -22,9 +22,9 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (5)
 - [CartApi](#cartapi) (4)
-- [CheckoutApi](#checkoutapi) (5)
+- [CheckoutApi](#checkoutapi) (4)
 - [DeliveryApi](#deliveryapi) (4)
-- [HomeApi](#homeapi) (7)
+- [HomeApi](#homeapi) (6)
 - [NotificationApi](#notificationapi) (7)
 - [PackApi](#packapi) (3)
 - [PaymentApi](#paymentapi) (2)
@@ -35,10 +35,10 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [RecipeApi](#recipeapi) (5)
 - [SettingApi](#settingapi) (3)
 - [TransactionApi](#transactionapi) (6)
-- [UserApi](#userapi) (7)
-- [VoucherApi](#voucherapi) (2)
+- [UserApi](#userapi) (6)
+- [VoucherApi](#voucherapi) (1)
 
-83 endpoint definitions in total.
+79 endpoint definitions in total.
 
 ## Index
 
@@ -65,14 +65,12 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
 | GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
 | GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
-| GET | `buyer/vouchers` | yes | `CheckoutApi.buyerVouchers` |
 | GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
 | GET | `buyer/delivery_plans/now` | yes | `DeliveryApi.deliveryPlanNow` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
 | GET | `https://maps.googleapis.com/maps/api/place/textsearch/json` | no | `DeliveryApi.searchPlaces` |
 | GET | `buyer/banners` | no | `HomeApi.getBanner` |
-| GET | `User/getJumlahVoucher` | yes | `HomeApi.getVoucherCount` |
 | GET | `Konten/getKonten` | no | `HomeApi.getContent` |
 | GET | `Konten/getKontenItemFromThisKonten/{idKonten}` | no | `HomeApi.getContentItem` |
 | GET | `KategoriProduk/getKategoriProduk` | no | `HomeApi.getProductCategory` |
@@ -119,14 +117,12 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `Transaksi/pesananDiterima/{id}` | yes | `TransactionApi.orderReceived` |
 | POST | `Transaksi/belanjaUlang/{id}` | no | `TransactionApi.reorder` |
 | GET | `buyer/users/me` | yes | `UserApi.me` |
-| GET | `User/getJumlahVoucher` | yes | `UserApi.getVoucherCount` |
 | GET | `User/getRiwayatDompet` | yes | `UserApi.getWalletRecords` |
 | GET | `User/getRiwayatPoint` | yes | `UserApi.getPointRecords` |
 | POST | `User/updateProfil` | yes | `UserApi.updateProfile` |
 | POST | `User/updateFotoProfil` | yes | `UserApi.updateProfilePhoto` |
 | POST | `User/gantiPassword` | yes | `UserApi.changePassword` |
-| GET | `User/getVoucher` | yes | `VoucherApi.getVoucher` |
-| GET | `Voucher/getVoucher/{idVoucher}` | yes | `VoucherApi.getVoucherDetail` |
+| GET | `buyer/vouchers` | yes | `VoucherApi.buyerVouchers` |
 
 ## AccountApi
 
@@ -732,58 +728,6 @@ Response (`CheckoutResponses.DiskonKategori`):
 }
 ```
 
-### `GET buyer/vouchers`
-
-App method: `CheckoutApi.buyerVouchers`.
-
-The "Voucher Kamu" sheet at checkout. `purchase` is the cart grand total (the shopping total of `GET buyer/cart`); the backend lists the buyer's active vouchers whose `minimum_purchase` is at most `purchase`. The vouchers are in `data` (`404` shows the empty state). Each row shows `name`, `photo`, the type ("ongkir" for `voucher_type` 0, "belanja" for 1), `discount` and `minimum_purchase`. A chosen voucher is "aktif" when today is within `effective_start_date` and `effective_end_date` (inclusive), otherwise "kadaluarsa"; only an "aktif" voucher reduces the total.
-
-Request:
-
-```http
-GET buyer/vouchers?purchase=<cartGrandTotal>
-Authorization: Bearer <JWT>
-```
-
-Response (`CheckoutResponses.VoucherList`):
-
-```json
-{
-  "status_code": 200,
-  "status": "OK",
-  "message": "",
-  "data": [
-    {
-      "id": "string",
-      "record_status": 1,
-      "voucher_type": 0,
-      "voucher_type_name": "delivery cost",
-      "target_audience": 0,
-      "target_audience_name": "all buyers",
-      "code": "ONGKIRHEMAT",
-      "deleted_code": null,
-      "photo": "https://sadia.id/...",
-      "name": "Gratis Ongkir",
-      "discount": 10000,
-      "minimum_purchase": 50000,
-      "quota_per_buyer": 1,
-      "effective_start_time": "0001-01-01T00:00:00Z",
-      "effective_end_time": "0001-01-01T23:59:59Z",
-      "effective_start_date": "2026-11-01T00:00:00Z",
-      "effective_end_date": "2026-11-30T00:00:00Z",
-      "description": "string",
-      "created_by": "string",
-      "created_at": "2026-11-01T00:00:00Z",
-      "updated_by": "string",
-      "updated_at": "2026-11-01T00:00:00Z",
-      "deleted_by": null,
-      "deleted_at": null,
-      "deletion_reason": null
-    }
-  ]
-}
-```
-
 ### `GET Promo/cekKodePromo/{kode}`
 
 App method: `CheckoutApi.checkPromoCode`.
@@ -973,25 +917,6 @@ Response (`HomeResponses.Banners`):
     }
   ],
   "app": "laukpauk"
-}
-```
-
-### `GET User/getJumlahVoucher`
-
-App method: `HomeApi.getVoucherCount`.
-
-Request:
-
-```http
-GET User/getJumlahVoucher
-Authorization: Bearer <JWT>
-```
-
-Response (`HomeResponses.JumlahVoucher`):
-
-```json
-{
-  "jumlahVoucher": 0
 }
 ```
 
@@ -2369,25 +2294,6 @@ Response (`AccountResponses.Me`):
 }
 ```
 
-### `GET User/getJumlahVoucher`
-
-App method: `UserApi.getVoucherCount`.
-
-Request:
-
-```http
-GET User/getJumlahVoucher
-Authorization: Bearer <JWT>
-```
-
-Response (`AccountResponses.JumlahVoucher`):
-
-```json
-{
-  "jumlahVoucher": 0
-}
-```
-
 ### `GET User/getRiwayatDompet`
 
 App method: `UserApi.getWalletRecords`.
@@ -2519,68 +2425,61 @@ Response (`AccountResponses.GantiPassword`):
 
 ## VoucherApi
 
-### `GET User/getVoucher`
+### `GET buyer/vouchers`
 
-App method: `VoucherApi.getVoucher`.
+App method: `VoucherApi.buyerVouchers`.
+
+Used in four places:
+
+- "Voucher Saya" (from the home page): without `purchase`, all the buyer's active vouchers.
+- "Detail Voucher": the voucher with the opened `id` in that list ("Detail Voucher Tidak Ditemukan" when it isn't there); it shows `quota_per_buyer` as the maximum use and the effective dates.
+- The voucher count on the home page wallet card and the account dashboard: the length of `data` with `purchase` = the cart grand total (the total of `GET buyer/cart`); `404` counts as 0.
+- The "Voucher Kamu" sheet at checkout, described below.
+
+At checkout, `purchase` is the cart grand total (the shopping total of `GET buyer/cart`); the backend lists the buyer's active vouchers whose `minimum_purchase` is at most `purchase`. The vouchers are in `data` (`404` shows the empty state). Each row shows `name`, `photo`, the type ("ongkir" for `voucher_type` 0, "belanja" for 1), `discount` and `minimum_purchase`. A chosen voucher is "aktif" when today is within `effective_start_date` and `effective_end_date` (inclusive), otherwise "kadaluarsa"; only an "aktif" voucher reduces the total.
 
 Request:
 
 ```http
-GET User/getVoucher?entitasVoucher=<entitasVoucher>
+GET buyer/vouchers?purchase=<cartGrandTotal>
 Authorization: Bearer <JWT>
 ```
 
-Response (`VoucherResponses.VoucherList`):
+Response (`CheckoutResponses.VoucherList`):
 
 ```json
 {
-  "listVoucher": [
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": [
     {
       "id": "string",
-      "foto": "string",
-      "nama": "string",
-      "jenis": "string",
-      "nilai": "string",
-      "kode": "string",
-      "minimumBelanja": "string",
-      "maximumUsage": "string",
-      "usageCount": "string",
-      "berlakuMulai": "string",
-      "berlakuSampai": "string",
-      "deskripsi": "string"
+      "record_status": 1,
+      "voucher_type": 0,
+      "voucher_type_name": "delivery cost",
+      "target_audience": 0,
+      "target_audience_name": "all buyers",
+      "code": "ONGKIRHEMAT",
+      "deleted_code": null,
+      "photo": "https://sadia.id/...",
+      "name": "Gratis Ongkir",
+      "discount": 10000,
+      "minimum_purchase": 50000,
+      "quota_per_buyer": 1,
+      "effective_start_time": "0001-01-01T00:00:00Z",
+      "effective_end_time": "0001-01-01T23:59:59Z",
+      "effective_start_date": "2026-11-01T00:00:00Z",
+      "effective_end_date": "2026-11-30T00:00:00Z",
+      "description": "string",
+      "created_by": "string",
+      "created_at": "2026-11-01T00:00:00Z",
+      "updated_by": "string",
+      "updated_at": "2026-11-01T00:00:00Z",
+      "deleted_by": null,
+      "deleted_at": null,
+      "deletion_reason": null
     }
   ]
-}
-```
-
-### `GET Voucher/getVoucher/{idVoucher}`
-
-App method: `VoucherApi.getVoucherDetail`.
-
-Request:
-
-```http
-GET Voucher/getVoucher/{idVoucher}
-Authorization: Bearer <JWT>
-```
-
-Response (`VoucherResponses.Detail`):
-
-```json
-{
-  "dataVoucher": {
-    "id": "string",
-    "foto": "string",
-    "nama": "string",
-    "jenis": "string",
-    "nilai": "string",
-    "kode": "string",
-    "minimumBelanja": "string",
-    "maximumUsage": "string",
-    "usageCount": "string",
-    "berlakuMulai": "string",
-    "berlakuSampai": "string",
-    "deskripsi": "string"
-  }
 }
 ```
