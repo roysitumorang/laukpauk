@@ -2068,7 +2068,7 @@ Response (`Map<String, Object>`):
 
 App method: `TransactionApi.buyerTransactions`.
 
-"Pesanan Saya": the buyer's transactions, newest first, 25 per page. Query: `limit=25`; `status` from the tab (Semua: none, Belum Bayar 0, Dibayar 2, Diproses 5, Dikirim 6, Selesai 8, Dibatalkan 1); `created_at_start` / `created_at_end` from the date range, 00:00:00 of the start day and 23:59:59 of the end day in the phone's time zone, sent as RFC 3339 UTC (`…Z`); either may be left out. Page-based: `data.links.next` (empty on the last page) is loaded when the list is scrolled to the end; the transactions are `data.rows`. Each card shows `reference_number`, `payment_channel_name`, the delivery day and time of `delivery_datetime`, `created_at`, the status and `revised_payment_amount`.
+"Pesanan Saya": the buyer's transactions, newest first, 25 per page. Query: `limit=25`; on "Hari Ini" (the first tab), `created_at_start` / `created_at_end` cover today and `status` comes from its dropdown (none for "Semua Status", else 0..8); on the other tabs `status` comes from the tab (Semua: none, Belum Bayar 0, Dibayar 2, Diproses 5, Dikirim 6, Selesai 8, Dibatalkan 1) and `created_at_start` / `created_at_end` from the date range, 00:00:00 of the start day and 23:59:59 of the end day in the phone's time zone, sent as RFC 3339 UTC (`…Z`); either may be left out. Page-based: `data.links.next` (empty on the last page) is loaded when the list is scrolled to the end; the transactions are `data.rows`. Each card shows `reference_number`, `payment_channel_name`, the delivery day and time of `delivery_datetime`, `created_at`, the status and `revised_payment_amount`.
 
 Request:
 
