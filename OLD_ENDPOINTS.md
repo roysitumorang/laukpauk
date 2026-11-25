@@ -21,8 +21,8 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AccountApi](#accountapi) (5)
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (5)
-- [CartApi](#cartapi) (7)
-- [CheckoutApi](#checkoutapi) (7)
+- [CartApi](#cartapi) (6)
+- [CheckoutApi](#checkoutapi) (6)
 - [DeliveryApi](#deliveryapi) (5)
 - [HomeApi](#homeapi) (7)
 - [NotificationApi](#notificationapi) (7)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (7)
 - [VoucherApi](#voucherapi) (2)
 
-91 endpoint definitions in total.
+89 endpoint definitions in total.
 
 ## Index
 
@@ -62,13 +62,11 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `buyer/cart` | yes | `CartApi.saveBuyerCart` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.clearCart` |
 | POST | `Keranjang/saveCart` | no | `CartApi.saveCart` |
-| GET | `Pengaturan/getWalletConfiguration` | no | `CartApi.getWalletConfiguration` |
 | GET | `gift/gift-transaksi` | no | `CartApi.getTransactionGift` |
 | GET | `Gift/getGift/{idGift}` | no | `CartApi.getGift` |
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
 | GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
 | GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
-| GET | `Pengaturan/getWalletConfiguration` | no | `CheckoutApi.getWalletConfiguration` |
 | GET | `User/getVoucher` | yes | `CheckoutApi.getVoucher` |
 | GET | `Voucher/getStatusVoucher/{id}` | yes | `CheckoutApi.getStatusVoucher` |
 | GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
@@ -677,30 +675,6 @@ Response (`AddToCartResult`):
 }
 ```
 
-### `GET Pengaturan/getWalletConfiguration`
-
-App method: `CartApi.getWalletConfiguration`.
-
-Duplicate of the checkout slice's wallet configuration call.
-
-Request:
-
-```http
-GET Pengaturan/getWalletConfiguration
-```
-
-Response (`CartResponses.Wallet`):
-
-```json
-{
-  "walletConfiguration": {
-    "isWalletOn": true,
-    "walletDiscount": "string",
-    "minGrandTotalTransactionForWallet": "string"
-  }
-}
-```
-
 ### `GET gift/gift-transaksi`
 
 App method: `CartApi.getTransactionGift`.
@@ -807,28 +781,6 @@ Response (`CheckoutResponses.DiskonKategori`):
 ```json
 {
   "diskonKategori": "<any JSON>"
-}
-```
-
-### `GET Pengaturan/getWalletConfiguration`
-
-App method: `CheckoutApi.getWalletConfiguration`.
-
-Request:
-
-```http
-GET Pengaturan/getWalletConfiguration
-```
-
-Response (`CheckoutResponses.WalletConfig`):
-
-```json
-{
-  "walletConfiguration": {
-    "isWalletOn": true,
-    "minGrandTotalTransactionForWallet": 0,
-    "walletDiscount": 0
-  }
 }
 ```
 
