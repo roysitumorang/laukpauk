@@ -365,14 +365,19 @@ func (q *userController) V1BuyerSignIn(c fiber.Ctx) error {
 			WithLogin(request.Login).
 			WithStatuses(models.UserStatusActive),
 	)
-	if err != nil && !errors.Is(err, models.ErrUserNotFound) {
+	if errors.Is(err, models.ErrUserNotFound) {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(models.ErrLoginFailed.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
-		return helper.NewResponse(fiber.StatusBadRequest).
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if user == nil || user.EncryptedPassword == nil {
-		return helper.NewResponse(fiber.StatusBadRequest).
+	if user.EncryptedPassword == nil {
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(models.ErrLoginFailed.Error()).
 			WriteResponse(c)
 	}
@@ -380,7 +385,7 @@ func (q *userController) V1BuyerSignIn(c fiber.Ctx) error {
 	matched, err := helper.VerifyPassword(request.Password, *user.EncryptedPassword)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrVerifyPassword")
-		return helper.NewResponse(fiber.StatusBadRequest).
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
@@ -425,7 +430,7 @@ func (q *userController) V1BuyerSignIn(c fiber.Ctx) error {
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateUser")
-		return helper.NewResponse(fiber.StatusBadRequest).
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
@@ -440,7 +445,7 @@ func (q *userController) V1BuyerSignIn(c fiber.Ctx) error {
 		if response.Status == models.UserStatusLocked {
 			err = models.ErrUserLocked
 		}
-		return helper.NewResponse(fiber.StatusBadRequest).
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
