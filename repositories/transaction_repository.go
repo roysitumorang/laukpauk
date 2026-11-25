@@ -1674,7 +1674,6 @@ func (q *transactionRepository) FindVouchersUsages(
 		n-1, n,
 	)
 	if len(voucherIDs) > 0 {
-		sb.Reset()
 		_, _ = sb.WriteString(" AND voucher_id IN (")
 		for i, voucherID := range voucherIDs {
 			params = append(params, voucherID)

@@ -395,7 +395,7 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	n := len(vouchers)
-	response := make([]*models.Voucher, n)
+	var response []*models.Voucher
 	if n == 0 {
 		return helper.NewResponse(fiber.StatusOK).
 			SetData(response).
