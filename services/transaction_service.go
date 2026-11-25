@@ -339,6 +339,10 @@ func (q *transactionService) CreateTransaction(
 			if voucher == nil {
 				return nil, nil, models.ErrVoucherNotFound
 			}
+			// the items' subtotal, without the unique code added to ShoppingCost
+			if request.ShoppingCost-request.UniqueCode < voucher.MinimumPurchase {
+				return nil, nil, errors.New("voucher_code: minimum purchase not reached")
+			}
 			if voucher.QuotaPerBuyer > 0 {
 				_, total, _, err := q.transactionRepository.FindTransactions(
 					ctx,
