@@ -365,6 +365,8 @@ type TransactionFilter struct {
 	PaymentRequestIDs,
 	PaymentTokenIDs,
 	PaymentIDs []string
+	CreatedAtStart,
+	CreatedAtEnd,
 	PaymentDueDate,
 	ShippedAt time.Time
 	TransactionStatuses,
@@ -433,6 +435,16 @@ func (q *TransactionFilter) WithPaymentIDs(paymentIDs ...string) *TransactionFil
 
 func (q *TransactionFilter) WithPaymentDueDate(paymentDueDate time.Time) *TransactionFilter {
 	q.PaymentDueDate = paymentDueDate
+	return q
+}
+
+func (q *TransactionFilter) WithCreatedAtStart(createdAtStart time.Time) *TransactionFilter {
+	q.CreatedAtStart = createdAtStart
+	return q
+}
+
+func (q *TransactionFilter) WithCreatedAtEnd(createdAtEnd time.Time) *TransactionFilter {
+	q.CreatedAtEnd = createdAtEnd
 	return q
 }
 

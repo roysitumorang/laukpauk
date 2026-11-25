@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/utils/v2"
@@ -32,6 +33,24 @@ func FindTransactions(ctx context.Context, c fiber.Ctx) (*models.TransactionFilt
 		urlValues.Set("status", rawStatus)
 		status, _ := strconv.ParseUint(rawStatus, 10, 8)
 		response.WithTransactionStatuses(models.TransactionStatus(status))
+	}
+	if rawCreatedAtStart := strings.TrimSpace(c.Query("created_at_start")); rawCreatedAtStart != "" {
+		createdAtStart, err := time.Parse(time.RFC3339, rawCreatedAtStart)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+			return nil, err
+		}
+		urlValues.Set("created_at_start", createdAtStart.Format(time.RFC3339))
+		response.WithCreatedAtStart(createdAtStart)
+	}
+	if rawCreatedAtEnd := strings.TrimSpace(c.Query("created_at_end")); rawCreatedAtEnd != "" {
+		createdAtEnd, err := time.Parse(time.RFC3339, rawCreatedAtEnd)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+			return nil, err
+		}
+		urlValues.Set("created_at_end", createdAtEnd.Format(time.RFC3339))
+		response.WithCreatedAtEnd(createdAtEnd)
 	}
 	if sortBy := urlValues["sort_by"]; len(sortBy) > 0 {
 		urlValues.Set("sort_by", c.Query("sort_by"))

@@ -1819,6 +1819,18 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
+	if !request.CreatedAtStart.IsZero() {
+		params = append(params, request.CreatedAtStart)
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "created_at >= $%d", len(params))
+		conds = append(conds, sb.String())
+	}
+	if !request.CreatedAtEnd.IsZero() {
+		params = append(params, request.CreatedAtEnd)
+		sb.Reset()
+		_, _ = fmt.Fprintf(sb, "created_at <= $%d", len(params))
+		conds = append(conds, sb.String())
+	}
 	if !request.PaymentDueDate.IsZero() {
 		params = append(params, request.PaymentDueDate)
 		sb.Reset()
