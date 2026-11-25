@@ -8,7 +8,6 @@ import (
 
 	"github.com/coregx/coregex"
 	"github.com/goccy/go-json/jsontext"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -160,24 +159,6 @@ var UsernameRegex = coregex.MustCompile("[^a-z0-9]+")
 var SlugRegex = coregex.MustCompile("^[a-z0-9-]+$")
 
 type Duration time.Duration
-
-func (d *Duration) ScanInterval(v pgtype.Interval) error {
-	if !v.Valid {
-		*d = 0
-		return nil
-	}
-	*d = Duration(v.Microseconds)*Duration(time.Microsecond) +
-		Duration(v.Days)*24*Duration(time.Hour) +
-		Duration(v.Months)*30*24*Duration(time.Hour)
-	return nil
-}
-
-func (d Duration) IntervalValue() (pgtype.Interval, error) {
-	return pgtype.Interval{
-		Microseconds: time.Duration(d).Microseconds(),
-		Valid:        true,
-	}, nil
-}
 
 func (d Duration) MarshalJSONTo(encoder *jsontext.Encoder) error {
 	return encoder.WriteToken(jsontext.String(time.Duration(d).String()))

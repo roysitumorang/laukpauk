@@ -36,8 +36,8 @@ func init() {
 					, delivery_cost_per_km bigint NOT NULL
 					, delivery_max_distance_km bigint NOT NULL
 					, whatsapp_phone_number character varying NOT NULL UNIQUE
-					, payment_terms interval NOT NULL
-					, maximum_delivery_time interval NOT NULL
+					, payment_terms bigint NOT NULL
+					, maximum_delivery_time bigint NOT NULL
 					, transaction_auto_withdrawal_enabled boolean NOT NULL
 					, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
 					, otp_required_for_login boolean NOT NULL
