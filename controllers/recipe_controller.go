@@ -461,6 +461,7 @@ func (q *recipeController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
+		rows[i].Photo = rows[i].PhotoPath(c.BaseURL())
 		pagination.Rows[i] = rows[i]
 	}
 	return helper.NewResponse(fiber.StatusOK).
@@ -518,6 +519,10 @@ func (q *recipeController) V1BuyerShow(c fiber.Ctx) (err error) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
+	}
+	response.Photo = response.PhotoPath(c.BaseURL())
+	for i := range response.Items {
+		response.Items[i].ProductPhoto = response.Items[i].ProductPhotoPath(c.BaseURL())
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
