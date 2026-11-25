@@ -23,10 +23,15 @@ func FindTransactions(ctx context.Context, c fiber.Ctx) (*models.TransactionFilt
 		return nil, err
 	}
 	urlValues := originalURL.Query()
-	response = response.WithPaginationURL(helper.Sprintf("%s%s", c.BaseURL(), originalURL.Path))
+	response.WithPaginationURL(helper.Sprintf("%s%s", c.BaseURL(), originalURL.Path))
 	if keyword := strings.TrimSpace(c.Query("q")); keyword != "" {
 		urlValues.Set("q", keyword)
-		response = response.WithKeyword(keyword)
+		response.WithKeyword(keyword)
+	}
+	if rawStatus := strings.TrimSpace(c.Query("status")); rawStatus != "" {
+		urlValues.Set("status", rawStatus)
+		status, _ := strconv.ParseUint(rawStatus, 10, 8)
+		response.WithTransactionStatuses(models.TransactionStatus(status))
 	}
 	if sortBy := urlValues["sort_by"]; len(sortBy) > 0 {
 		urlValues.Set("sort_by", c.Query("sort_by"))
@@ -60,10 +65,10 @@ func FindTransactions(ctx context.Context, c fiber.Ctx) (*models.TransactionFilt
 		limit = models.Limits[0]
 	}
 	urlValues.Set("limit", strconv.FormatInt(limit, 10))
-	response = response.WithLimit(limit)
+	response.WithLimit(limit)
 	page, _ := utils.ParseInt(c.Query("page"))
 	page = max(page, 0)
-	response = response.WithPage(page).
+	response.WithPage(page).
 		WithUrlValues(urlValues)
 	return response, nil
 }
