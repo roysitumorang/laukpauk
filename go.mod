@@ -67,7 +67,7 @@ require (
 	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.15.1 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.15.2 // indirect
 	github.com/valkey-io/valkey-go v1.0.80 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
