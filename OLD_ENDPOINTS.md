@@ -36,9 +36,9 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [SettingApi](#settingapi) (3)
 - [TransactionApi](#transactionapi) (6)
 - [UserApi](#userapi) (6)
-- [VoucherApi](#voucherapi) (1)
+- [VoucherApi](#voucherapi) (2)
 
-79 endpoint definitions in total.
+80 endpoint definitions in total.
 
 ## Index
 
@@ -123,6 +123,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `User/updateFotoProfil` | yes | `UserApi.updateProfilePhoto` |
 | POST | `User/gantiPassword` | yes | `UserApi.changePassword` |
 | GET | `buyer/vouchers` | yes | `VoucherApi.buyerVouchers` |
+| GET | `buyer/vouchers/{id}` | yes | `VoucherApi.buyerVoucher` |
 
 ## AccountApi
 
@@ -2429,14 +2430,13 @@ Response (`AccountResponses.GantiPassword`):
 
 App method: `VoucherApi.buyerVouchers`.
 
-Used in four places:
+Used in three places:
 
 - "Voucher Saya" (from the home page): without `purchase`, all the buyer's active vouchers.
-- "Detail Voucher": the voucher with the opened `id` in that list ("Detail Voucher Tidak Ditemukan" when it isn't there); it shows `quota_per_buyer` as the maximum use and the effective dates.
 - The voucher count on the home page wallet card and the account dashboard: the length of `data` with `purchase` = the cart grand total (the total of `GET buyer/cart`); `404` counts as 0.
 - The "Voucher Kamu" sheet at checkout, described below.
 
-At checkout, `purchase` is the cart grand total (the shopping total of `GET buyer/cart`); the backend lists the buyer's active vouchers whose `minimum_purchase` is at most `purchase`. The vouchers are in `data` (`404` shows the empty state). Each row shows `name`, `photo`, the type ("ongkir" for `voucher_type` 0, "belanja" for 1), `discount` and `minimum_purchase`. A chosen voucher is "aktif" when today is within `effective_start_date` and `effective_end_date` (inclusive), otherwise "kadaluarsa"; only an "aktif" voucher reduces the total.
+At checkout, `purchase` is the cart grand total (the shopping total of `GET buyer/cart`); the backend lists the buyer's active vouchers whose `minimum_purchase` is at most `purchase`. The vouchers are in `data` (`404` shows the empty state). Each row shows `name`, `photo`, the type ("ongkir" for `voucher_type` 0, "belanja" for 1), `discount` and `minimum_purchase`. The rules follow the backend's `CreateTransaction`: a voucher can be used when now is between `effective_start_date` and `effective_end_date` (instants), the time of day of now between `effective_start_time` and `effective_end_time` (each in its own UTC offset), and the shopping cost is at least `minimum_purchase`; otherwise choosing it shows why. `voucher_type` 0 reduces the delivery cost, any other type the shopping cost, by `discount` up to that cost. Points and a voucher exclude each other, and the picker shows only when `voucher_enabled` of `GET buyer/setting` is true.
 
 Request:
 
@@ -2481,5 +2481,44 @@ Response (`CheckoutResponses.VoucherList`):
       "deletion_reason": null
     }
   ]
+}
+```
+
+### `GET buyer/vouchers/{id}`
+
+App method: `VoucherApi.buyerVoucher`.
+
+"Detail Voucher" (opened from "Voucher Saya" or a push notification): one of the buyer's active vouchers. It shows `name`, `photo`, the type, `discount`, `code`, `minimum_purchase`, `quota_per_buyer` as the maximum use, the effective dates and times with their zone (e.g. "pukul 08:00 - 17:00 WIB" for +07:00), and `description`. `404` shows "Detail Voucher Tidak Ditemukan".
+
+Request:
+
+```http
+GET buyer/vouchers/{id}
+Authorization: Bearer <JWT>
+```
+
+Response (`VoucherResponses.BuyerVoucher`): one voucher, the same attributes as a row of `GET buyer/vouchers`, in `data`.
+
+```json
+{
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "id": "string",
+    "voucher_type": 0,
+    "voucher_type_name": "delivery cost",
+    "code": "ONGKIRHEMAT",
+    "photo": "string",
+    "name": "Gratis Ongkir",
+    "discount": 10000,
+    "minimum_purchase": 50000,
+    "quota_per_buyer": 1,
+    "effective_start_time": "0001-01-01T08:00:00+07:00",
+    "effective_end_time": "0001-01-01T17:00:00+07:00",
+    "effective_start_date": "2026-11-01T00:00:00+07:00",
+    "effective_end_date": "2026-11-30T00:00:00+07:00",
+    "description": "string"
+  }
 }
 ```
