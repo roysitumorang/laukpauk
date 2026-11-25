@@ -51,3 +51,57 @@ func TestReviseWalletCoversDeliveryWithRemainingBalance(t *testing.T) {
 		t.Fatalf("RevisedPaymentAmount = %d, want 4000", q.RevisedPaymentAmount)
 	}
 }
+
+func TestUniqueCodeRangeKeepsTheChannelLimits(t *testing.T) {
+	cases := []struct {
+		amount, minimum, maximum, from, to int64
+		ok                                 bool
+	}{
+		{amount: 50000, minimum: 10000, maximum: 1000000, from: 0, to: 999, ok: true},
+		{amount: 999500, minimum: 10000, maximum: 1000000, from: 0, to: 500, ok: true},
+		{amount: 9500, minimum: 10000, maximum: 1000000, from: 500, to: 999, ok: true},
+		{amount: 50000, minimum: 0, maximum: 0, from: 0, to: 999, ok: true},
+		{amount: 1000001, minimum: 10000, maximum: 1000000, ok: false},
+		{amount: 8000, minimum: 10000, maximum: 1000000, ok: false},
+	}
+	for _, c := range cases {
+		from, to, ok := UniqueCodeRange(c.amount, c.minimum, c.maximum)
+		if ok != c.ok || (ok && (from != c.from || to != c.to)) {
+			t.Fatalf("UniqueCodeRange(%d, %d, %d) = %d, %d, %v; want %d, %d, %v",
+				c.amount, c.minimum, c.maximum, from, to, ok, c.from, c.to, c.ok)
+		}
+	}
+}
+
+// The unique code is added after the discounts, so the buyer always pays it.
+func TestApplyUniqueCodeIsPaidByTheBuyer(t *testing.T) {
+	q := Transaction{
+		ShoppingCost:          6000,
+		DeliveryEstimatedCost: 8000,
+		WalletDiscounted:      true,
+		WalletAmount:          10000,
+	}
+	q.CalculateDiscount()
+	q.ApplyUniqueCode(123)
+	if q.UniqueCode != 123 || q.ShoppingCost != 6123 || q.PaymentAmount != 4123 || q.RevisedPaymentAmount != 4123 {
+		t.Fatalf("UniqueCode = %d, ShoppingCost = %d, PaymentAmount = %d, RevisedPaymentAmount = %d; want 123, 6123, 4123, 4123",
+			q.UniqueCode, q.ShoppingCost, q.PaymentAmount, q.RevisedPaymentAmount)
+	}
+	if q.WalletDiscount != 10000 {
+		t.Fatalf("WalletDiscount = %d, want 10000", q.WalletDiscount)
+	}
+}
+
+// Only the points actually used are kept as the discount (they are what is debited and refunded).
+func TestCalculateDiscountKeepsOnlyTheUsedPoints(t *testing.T) {
+	q := Transaction{
+		ShoppingCost:           6000,
+		DeliveryEstimatedCost:  8000,
+		RewardPointsDiscounted: true,
+		RewardPointsDiscount:   20000,
+	}
+	q.CalculateDiscount()
+	if q.RewardPointsDiscount != 14000 || q.PaymentAmount != 0 {
+		t.Fatalf("RewardPointsDiscount = %d, PaymentAmount = %d; want 14000 and 0", q.RewardPointsDiscount, q.PaymentAmount)
+	}
+}
