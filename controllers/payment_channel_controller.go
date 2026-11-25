@@ -2,12 +2,12 @@ package controllers
 
 import (
 	"log/slog"
+	"strconv"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
-	"github.com/roysitumorang/laukpauk/sanitizers"
 	"github.com/roysitumorang/laukpauk/services"
 )
 
@@ -40,25 +40,19 @@ func (q *paymentChannelController) Mount(r fiber.Router) {
 func (q *paymentChannelController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PaymentChannelController-V1BuyerIndex"
-	request, err := sanitizers.FindPaymentChannels(ctx, c)
+	amount, _ := strconv.ParseInt(c.Query("amount"), 10, 64)
+	response, _, err := q.paymentChannelService.FindPaymentChannels(
+		c,
+		models.NewPaymentChannelFilter().
+			WithAmount(max(0, amount)),
+	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannels")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)
-	}
-	rows, pagination, err := q.paymentChannelService.FindPaymentChannels(c, request)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannels")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
-	pagination.Rows = make([]any, len(rows))
-	for i, row := range rows {
-		pagination.Rows[i] = row
 	}
 	return helper.NewResponse(fiber.StatusOK).
-		SetData(pagination).
+		SetData(response).
 		WriteResponse(c)
 }
