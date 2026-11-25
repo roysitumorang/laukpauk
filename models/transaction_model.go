@@ -86,7 +86,6 @@ type Transaction struct {
 	ReferralPoints                  int64              `json:"referral_points"`
 	VoucherID                       *uuid.UUID         `json:"voucher_id"`
 	VoucherType                     *VoucherType       `json:"voucher_type"`
-	VoucherCode                     *string            `json:"voucher_code"`
 	VoucherDiscount                 int64              `json:"voucher_discount"`
 	RewardPointsDiscounted          bool               `json:"reward_points_discounted"`
 	RewardPointsDiscount            int64              `json:"reward_points_discount"`
@@ -177,11 +176,10 @@ func (q *Transaction) Validate() error {
 			q.ReferralCode = nil
 		}
 	}
-	if q.RewardPointsDiscounted {
-	} else if q.VoucherCode != nil {
-		if *q.VoucherCode = strings.TrimSpace(*q.VoucherCode); *q.VoucherCode == "" {
-			q.VoucherCode = nil
-		}
+	if !q.RewardPointsDiscounted &&
+		q.VoucherID != nil &&
+		q.VoucherID.Compare(uuid.Nil()) == 0 {
+		q.VoucherID = nil
 	}
 	if q.DeliveryAddressID.Compare(uuid.Nil()) == 0 {
 		return errors.New("delivery_address_id: is required")
@@ -247,7 +245,7 @@ func (q *Transaction) CalculateDiscount() {
 			rewardPointsDiscount := min(q.DiscountedDeliveryEstimatedCost, rewardPointsAmount)
 			q.DiscountedDeliveryEstimatedCost -= rewardPointsDiscount
 		}
-	} else if q.VoucherCode != nil && q.VoucherType != nil {
+	} else if q.VoucherID != nil && q.VoucherType != nil {
 		if *q.VoucherType == VoucherTypeShoppingCost {
 			q.DiscountedShoppingCost = max(0, q.DiscountedShoppingCost-q.VoucherDiscount)
 		} else {
@@ -303,7 +301,7 @@ func (q *Transaction) Revise() {
 			rewardPointsDiscount := min(q.DiscountedDeliveryEstimatedCost, rewardPointsAmount)
 			q.DiscountedDeliveryEstimatedCost -= rewardPointsDiscount
 		}
-	} else if q.VoucherCode != nil && q.VoucherType != nil {
+	} else if q.VoucherID != nil && q.VoucherType != nil {
 		if *q.VoucherType == VoucherTypeShoppingCost {
 			q.RevisedDiscountedShoppingCost = max(0, q.RevisedDiscountedShoppingCost-q.VoucherDiscount)
 		} else {

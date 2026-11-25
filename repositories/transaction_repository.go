@@ -98,7 +98,6 @@ func (q *transactionRepository) FindTransactions(
 		, referral_points
 		, voucher_id
 		, voucher_type
-		, voucher_code
 		, voucher_discount
 		, reward_points_discounted
 		, reward_points_discount
@@ -244,7 +243,6 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.ReferralPoints,
 			&transaction.VoucherID,
 			&transaction.VoucherType,
-			&transaction.VoucherCode,
 			&transaction.VoucherDiscount,
 			&transaction.RewardPointsDiscounted,
 			&transaction.RewardPointsDiscount,
@@ -388,7 +386,6 @@ func (q *transactionRepository) FindTransaction(
 			, referral_points
 			, voucher_id
 			, voucher_type
-			, voucher_code
 			, voucher_discount
 			, reward_points_discounted
 			, reward_points_discount
@@ -462,7 +459,6 @@ func (q *transactionRepository) FindTransaction(
 		&response.ReferralPoints,
 		&response.VoucherID,
 		&response.VoucherType,
-		&response.VoucherCode,
 		&response.VoucherDiscount,
 		&response.RewardPointsDiscounted,
 		&response.RewardPointsDiscount,
@@ -612,7 +608,6 @@ func (q *transactionRepository) CreateTransaction(
 			, referral_points
 			, voucher_id
 			, voucher_type
-			, voucher_code
 			, voucher_discount
 			, reward_points_discounted
 			, reward_points_discount
@@ -644,7 +639,7 @@ func (q *transactionRepository) CreateTransaction(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41, $42, $43
+			, $41, $42
 		)
 		RETURNING id
 			, parent_id
@@ -663,7 +658,6 @@ func (q *transactionRepository) CreateTransaction(
 			, referral_points
 			, voucher_id
 			, voucher_type
-			, voucher_code
 			, voucher_discount
 			, reward_points_discounted
 			, reward_points_discount
@@ -730,7 +724,6 @@ func (q *transactionRepository) CreateTransaction(
 		request.ReferralPoints,
 		request.VoucherID,
 		request.VoucherType,
-		request.VoucherCode,
 		request.VoucherDiscount,
 		request.RewardPointsDiscounted,
 		request.RewardPointsDiscount,
@@ -775,7 +768,6 @@ func (q *transactionRepository) CreateTransaction(
 		&response.ReferralPoints,
 		&response.VoucherID,
 		&response.VoucherType,
-		&response.VoucherCode,
 		&response.VoucherDiscount,
 		&response.RewardPointsDiscounted,
 		&response.RewardPointsDiscount,
@@ -1001,7 +993,6 @@ func (q *transactionRepository) UpdateTransaction(
 			, referral_points
 			, voucher_id
 			, voucher_type
-			, voucher_code
 			, voucher_discount
 			, reward_points_discounted
 			, reward_points_discount
@@ -1074,7 +1065,6 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.ReferralPoints,
 		&response.VoucherID,
 		&response.VoucherType,
-		&response.VoucherCode,
 		&response.VoucherDiscount,
 		&response.RewardPointsDiscounted,
 		&response.RewardPointsDiscount,
@@ -1387,7 +1377,6 @@ func (q *transactionRepository) UpdateTransaction(
 				, referral_points
 				, voucher_id
 				, voucher_type
-				, voucher_code
 				, voucher_discount
 				, reward_points_discounted
 				, reward_points_discount
@@ -1456,7 +1445,6 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.ReferralPoints,
 			&response.VoucherID,
 			&response.VoucherType,
-			&response.VoucherCode,
 			&response.VoucherDiscount,
 			&response.RewardPointsDiscounted,
 			&response.RewardPointsDiscount,

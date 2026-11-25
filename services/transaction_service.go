@@ -323,12 +323,12 @@ func (q *transactionService) CreateTransaction(
 			request.RewardPointsDiscount = pointSpendingCap.DisposablePoints
 		}
 	} else if setting.VoucherEnabled {
-		if request.VoucherCode != nil {
+		if request.VoucherID != nil {
 			voucher, err := q.voucherRepository.FindVoucher(
 				ctx,
 				models.NewVoucherFilter().
 					WithRecordStatuses(models.RecordStatusActive).
-					WithCodes(*request.VoucherCode).
+					WithVoucherIDs(*request.VoucherID).
 					WithTransactionDatetime(now).
 					WithUserIDs(buyer.ID),
 			)

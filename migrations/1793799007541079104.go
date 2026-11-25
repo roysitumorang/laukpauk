@@ -34,7 +34,6 @@ func init() {
 					, referral_points bigint NOT NULL
 					, voucher_id UUID REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, voucher_type smallint
-					, voucher_code character varying
 					, voucher_discount bigint NOT NULL
 					, reward_points_discounted BOOLEAN NOT NULL
 					, reward_points_discount bigint NOT NULL
