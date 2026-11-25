@@ -109,6 +109,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 	for _, productVariant := range productVariants {
 		mapProductVariantIDs[productVariant.ID] = productVariant
 	}
+	now := time.Now().In(time.Local)
 	for i, cartItem := range request.Items {
 		productVariant, ok := mapProductVariantIDs[cartItem.ProductVariantID]
 		if !ok || !productVariant.ProductReadyStock {
@@ -131,9 +132,10 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		cartItem.DiscountAmount = productVariant.DiscountAmount
 		cartItem.SalePrice = productVariant.SalePrice
 		cartItem.Description = productVariant.Description
+		cartItem.CreatedAt = now
+		cartItem.UpdatedAt = now
 		request.Items[i] = cartItem
 	}
-	now := time.Now().In(time.Local)
 	request.UserID = &currentUser.ID
 	request.CreatedAt = now
 	request.UpdatedAt = now
