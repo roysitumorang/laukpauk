@@ -32,13 +32,13 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [PromoApi](#promoapi) (2)
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
-- [RecipeApi](#recipeapi) (6)
+- [RecipeApi](#recipeapi) (3)
 - [SettingApi](#settingapi) (3)
 - [TransactionApi](#transactionapi) (7)
 - [UserApi](#userapi) (6)
 - [VoucherApi](#voucherapi) (2)
 
-82 endpoint definitions in total.
+79 endpoint definitions in total.
 
 ## Index
 
@@ -104,10 +104,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `RO/addToCart` | yes | `RepeatOrderApi.addToCart` |
 | GET | `buyer/recipes` | no | `RecipeApi.buyerRecipes` |
 | GET | `data.links.next` of `buyer/recipes` | no | `RecipeApi.buyerRecipesPage` |
-| GET | `Resep/getResep/{idResep}` | no | `RecipeApi.getRecipeDetail` |
-| GET | `Resep/getResepItemFromThisResep/{idResep}` | no | `RecipeApi.getRecipeItem` |
-| GET | `Produk/getHargaProduk` | no | `RecipeApi.getProductPrice` |
-| POST | `Keranjang/belanjaResep` | no | `RecipeApi.shopRecipe` |
+| GET | `buyer/recipes/{id}` | no | `RecipeApi.buyerRecipe` |
 | GET | `buyer/setting` | no | `SettingApi.buyerSetting` |
 | GET | `Pengaturan/getSettingValue/{key}` | no | `SettingApi.getSettingValue` |
 | GET | `Pengaturan/getContactUsWhatsappConfiguration` | no | `SettingApi.getContactUsWhatsappConfiguration` |
@@ -1902,114 +1899,64 @@ App method: `RecipeApi.buyerRecipesPage`.
 
 The next page, requested as is when the list is scrolled to the end. Same response as `GET buyer/recipes`.
 
-### `GET Resep/getResep/{idResep}`
+### `GET buyer/recipes/{id}`
 
-App method: `RecipeApi.getRecipeDetail`.
+App method: `RecipeApi.buyerRecipe`.
+
+The recipe detail: one active recipe with its active `guides` and `items`, both in ascending order. 404 when the recipe isn't there, which shows the "not found" view. The screen shows:
+
+- `photo` (a full URL as is; a bare file name falls back to the legacy recipe folder), `name` and `description`, plus the `instagram_link` / `facebook_link` buttons.
+- The `guides` as numbered "Cara Memasak" steps.
+- Each item as an ingredient row: `product_name`, then "Diperlukan `quantity` `product_variant_stock_unit`" with `note` in brackets. When `product_ready_stock` is false the row shows "Stok habis".
+- A variant picker for each in-stock item, loaded from `GET buyer/products/{id}` (`ProductApi.buyerProduct`, `data.variants`). It starts on `product_variant_id` and `quantity`.
+
+"Belanja Resep" adds the picked variants and quantities to the cart with one read-then-save on `GET buyer/cart` / `POST buyer/cart` (`CartApi`).
 
 Request:
 
 ```http
-GET Resep/getResep/{idResep}?entitasResep=<entitasResep>
+GET buyer/recipes/{id}
 ```
 
-Response (`RecipeResponses.ResepDetail`):
+Response (`BuyerRecipeResponses.One`):
 
 ```json
 {
-  "dataResep": {
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
     "id": "string",
-    "nama": "string",
-    "foto": "string",
-    "keterangan": "string",
-    "igLink": "string",
-    "fbLink": "string"
+    "record_status": 1,
+    "photo": "string",
+    "name": "Sayur Asem",
+    "description": "string",
+    "instagram_link": "https://instagram.com/p/...",
+    "facebook_link": "",
+    "guides": [
+      {
+        "id": "string",
+        "record_status": 1,
+        "recipe_id": "string",
+        "instruction": "Rebus air hingga mendidih"
+      }
+    ],
+    "items": [
+      {
+        "id": "string",
+        "record_status": 1,
+        "recipe_id": "string",
+        "product_id": "string",
+        "product_name": "Asam Jawa",
+        "product_photo": "string",
+        "product_ready_stock": true,
+        "product_variant_id": "string",
+        "product_variant_stock_unit": "gram",
+        "quantity": 2,
+        "note": "secukupnya"
+      }
+    ]
   }
-}
-```
-
-### `GET Resep/getResepItemFromThisResep/{idResep}`
-
-App method: `RecipeApi.getRecipeItem`.
-
-Request:
-
-```http
-GET Resep/getResepItemFromThisResep/{idResep}?entitasResepItem=<entitasResepItem>
-```
-
-Response (`RecipeResponses.ItemList`):
-
-```json
-{
-  "dataResepItem": [
-    {
-      "id": "string",
-      "namaProduk": "string",
-      "takaran": "string",
-      "idProduk": "string"
-    }
-  ]
-}
-```
-
-### `GET Produk/getHargaProduk`
-
-App method: `RecipeApi.getProductPrice`.
-
-Duplicate of the product slice's endpoint (units + prices of a product).
-
-Request:
-
-```http
-GET Produk/getHargaProduk?idProduk=<idProduk>
-```
-
-Response (`RecipeResponses.SatuanList`):
-
-```json
-{
-  "hargaProduk": [
-    {
-      "id": "string",
-      "nama": "string",
-      "harga": "string",
-      "diskon": "string",
-      "jenisHarga": "string"
-    }
-  ]
-}
-```
-
-### `POST Keranjang/belanjaResep`
-
-App method: `RecipeApi.shopRecipe`.
-
-Request:
-
-```http
-POST Keranjang/belanjaResep
-Content-Type: application/json
-
-{
-  "cartCode": "<cartCode>",
-  "selectedItems": {
-    "<idItem>": {
-      "idProduk": "<idProduk>",
-      "quantity": "<quantity>",
-      "idSatuan": "<idSatuan>",
-      "subTotal": 0
-    }
-  },
-  "dayDelivery": "Hari Pengantaran",
-  "jadwalDeliveryCode": "<jadwalDeliveryCode>"
-}
-```
-
-Response (`RecipeResponses.Belanja`):
-
-```json
-{
-  "statusBelanjaResep": true
 }
 ```
 
