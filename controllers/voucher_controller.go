@@ -381,10 +381,12 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	response, _, err := q.voucherService.FindVouchers(
+	now := time.Now()
+	vouchers, _, err := q.voucherService.FindVouchers(
 		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive).
-			WithUserIDs(currentUser.ID),
+			WithUserIDs(currentUser.ID).
+			WithTransactionDatetime(now),
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
@@ -392,10 +394,16 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	voucherIDs := make([]uuid.UUID, len(response))
-	for i, voucher := range response {
-		voucherIDs[i] = voucher.ID
-		response[i].Photo = voucher.PhotoPath(c.BaseURL())
+	n := len(vouchers)
+	response := make([]*models.Voucher, n)
+	if n == 0 {
+		return helper.NewResponse(fiber.StatusOK).
+			SetData(response).
+			WriteResponse(c)
+	}
+	voucherIDs := make([]uuid.UUID, n)
+	for i := range vouchers {
+		voucherIDs[i] = vouchers[i].ID
 	}
 	mapVouchersUsages, err := q.transactionService.FindVouchersUsages(
 		ctx,
@@ -408,8 +416,11 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	for i, voucher := range response {
-		response[i].Usages = mapVouchersUsages[voucher.ID]
+	for _, voucher := range vouchers {
+		if voucher.Usages = mapVouchersUsages[voucher.ID]; voucher.Usages < voucher.QuotaPerBuyer {
+			voucher.Photo = voucher.PhotoPath(c.BaseURL())
+			response = append(response, voucher)
+		}
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
@@ -427,11 +438,13 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(models.ErrVoucherNotFound.Error()).
 			WriteResponse(c)
 	}
+	now := time.Now()
 	response, err := q.voucherService.FindVoucher(
 		ctx,
 		models.NewVoucherFilter().
 			WithRecordStatuses(models.RecordStatusActive).
 			WithUserIDs(currentUser.ID).
+			WithTransactionDatetime(now).
 			WithVoucherIDs(voucherID),
 	)
 	if errors.Is(err, models.ErrVoucherNotFound) {
@@ -445,7 +458,6 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	response.Photo = response.PhotoPath(c.BaseURL())
 	mapVouchersUsages, err := q.transactionService.FindVouchersUsages(
 		ctx,
 		currentUser.ID,
@@ -457,7 +469,12 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	response.Usages = mapVouchersUsages[response.ID]
+	if response.Usages = mapVouchersUsages[response.ID]; response.Usages >= response.QuotaPerBuyer {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrVoucherNotFound.Error()).
+			WriteResponse(c)
+	}
+	response.Photo = response.PhotoPath(c.BaseURL())
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)

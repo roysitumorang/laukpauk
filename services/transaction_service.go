@@ -333,9 +333,9 @@ func (q *transactionService) CreateTransaction(
 				ctx,
 				models.NewVoucherFilter().
 					WithRecordStatuses(models.RecordStatusActive).
-					WithVoucherIDs(*request.VoucherID).
+					WithUserIDs(buyer.ID).
 					WithTransactionDatetime(now).
-					WithUserIDs(buyer.ID),
+					WithVoucherIDs(*request.VoucherID),
 			)
 			if err != nil && !errors.Is(err, models.ErrVoucherNotFound) {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
