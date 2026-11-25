@@ -26,10 +26,15 @@ func FindVouchers(ctx context.Context, c fiber.Ctx) (*models.VoucherFilter, erro
 		return nil, err
 	}
 	urlValues := originalURL.Query()
-	response = response.WithPaginationURL(helper.Sprintf("%s%s", c.BaseURL(), originalURL.Path))
+	response.WithPaginationURL(helper.Sprintf("%s%s", c.BaseURL(), originalURL.Path))
 	if keyword := strings.TrimSpace(c.Query("q")); keyword != "" {
 		urlValues.Set("q", keyword)
-		response = response.WithKeyword(keyword)
+		response.WithKeyword(keyword)
+	}
+	purchase, _ := strconv.ParseInt(c.Query("purchase"), 10, 64)
+	if purchase > 0 {
+		urlValues.Set("purchase", strconv.FormatInt(purchase, 10))
+		response.WithPurchase(purchase)
 	}
 	if sortBy := urlValues["sort_by"]; len(sortBy) > 0 {
 		urlValues.Set("sort_by", c.Query("sort_by"))
@@ -63,10 +68,10 @@ func FindVouchers(ctx context.Context, c fiber.Ctx) (*models.VoucherFilter, erro
 		limit = models.Limits[0]
 	}
 	urlValues.Set("limit", strconv.FormatInt(limit, 10))
-	response = response.WithLimit(limit)
+	response.WithLimit(limit)
 	page, _ := utils.ParseInt(c.Query("page"))
 	page = max(page, 0)
-	response = response.WithPage(page).
+	response.WithPage(page).
 		WithUrlValues(urlValues)
 	return response, nil
 }

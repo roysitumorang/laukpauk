@@ -370,10 +370,16 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "VoucherController-V1BuyerIndex"
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	request, err := sanitizers.FindVouchers(ctx, c)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	response, _, err := q.voucherService.FindVouchers(
 		ctx,
-		models.NewVoucherFilter().
-			WithRecordStatuses(models.RecordStatusActive).
+		request.WithRecordStatuses(models.RecordStatusActive).
 			WithUserIDs(currentUser.ID),
 	)
 	if err != nil {

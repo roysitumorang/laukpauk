@@ -251,6 +251,7 @@ type VoucherFilter struct {
 	VoucherTypes        []VoucherType
 	TargetAudiences     []VoucherTargetAudience
 	Codes               []string
+	Purchase            int64
 	TransactionDatetime time.Time
 	Keyword,
 	PaginationURL string
@@ -300,6 +301,11 @@ func (q *VoucherFilter) WithTargetAudiences(targetAudiences ...VoucherTargetAudi
 
 func (q *VoucherFilter) WithCodes(codes ...string) *VoucherFilter {
 	q.Codes = codes
+	return q
+}
+
+func (q *VoucherFilter) WithPurchase(purchase int64) *VoucherFilter {
+	q.Purchase = purchase
 	return q
 }
 

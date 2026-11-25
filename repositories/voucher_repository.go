@@ -943,6 +943,16 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 		)
 		conds = append(conds, sb.String())
 	}
+	if request.Purchase > 0 {
+		params = append(params, request.Purchase)
+		sb.Reset()
+		_, _ = fmt.Fprintf(
+			sb,
+			"minimum_purchase <= $%d",
+			len(params),
+		)
+		conds = append(conds, sb.String())
+	}
 	if len(conds) > 0 {
 		sb.Reset()
 		_, _ = sb.WriteString("WHERE")
