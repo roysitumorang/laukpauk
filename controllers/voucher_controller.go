@@ -42,11 +42,12 @@ func (q *voucherController) Mount(r fiber.Router) {
 		Get("", q.V1SellerIndex).
 		Post("", q.V1SellerCreate).
 		Get("/:id", q.V1SellerShow).
-		Post("/:id", q.V1SellerUpdate).
-		Post("/:id/delete", q.V1SellerDelete)
+		Put("/:id", q.V1SellerUpdate).
+		Delete("/:id", q.V1SellerDelete)
 	buyerKeyAuth := middlewares.KeyAuthMiddleware(models.RoleBuyer, q.userService, q.jsonWebTokenService)
 	r.Group("/v1/buyer", buyerKeyAuth).
-		Get("", q.V1BuyerIndex)
+		Get("", q.V1BuyerIndex).
+		Get("/:id", q.V1BuyerShow)
 }
 
 func (q *voucherController) V1SellerIndex(c fiber.Ctx) (err error) {
@@ -395,6 +396,40 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	for i := range response {
 		response[i].Photo = response[i].PhotoPath(c.BaseURL())
+	}
+	return helper.NewResponse(fiber.StatusOK).
+		SetData(response).
+		WriteResponse(c)
+}
+
+func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
+	ctx := c.Context()
+	ctxt := "VoucherController-V1BuyerShow"
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
+	voucherID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrVoucherNotFound.Error()).
+			WriteResponse(c)
+	}
+	response, err := q.voucherService.FindVoucher(
+		ctx,
+		models.NewVoucherFilter().
+			WithRecordStatuses(models.RecordStatusActive).
+			WithUserIDs(currentUser.ID).
+			WithVoucherIDs(voucherID),
+	)
+	if errors.Is(err, models.ErrVoucherNotFound) {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrVoucherNotFound.Error()).
+			WriteResponse(c)
+	}
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
