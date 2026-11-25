@@ -130,6 +130,7 @@ type Voucher struct {
 	DeletedBy          *uuid.UUID            `json:"deleted_by"`
 	DeletedAt          *time.Time            `json:"deleted_at"`
 	DeletionReason     *string               `json:"deletion_reason"`
+	Usages             int                   `json:"usages"`
 	UserIDs            []uuid.UUID           `json:"-"`
 }
 

@@ -22,17 +22,20 @@ type voucherController struct {
 	voucherService      services.VoucherService
 	jsonWebTokenService services.JsonWebTokenService
 	userService         services.UserService
+	transactionService  services.TransactionService
 }
 
 func NewVoucherController(
 	voucherService services.VoucherService,
 	jsonWebTokenService services.JsonWebTokenService,
 	userService services.UserService,
+	transactionService services.TransactionService,
 ) *voucherController {
 	return &voucherController{
 		voucherService:      voucherService,
 		jsonWebTokenService: jsonWebTokenService,
 		userService:         userService,
+		transactionService:  transactionService,
 	}
 }
 
@@ -389,13 +392,24 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if response == nil {
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrVoucherNotFound.Error()).
+	voucherIDs := make([]uuid.UUID, len(response))
+	for i, voucher := range response {
+		voucherIDs[i] = voucher.ID
+		response[i].Photo = voucher.PhotoPath(c.BaseURL())
+	}
+	mapVouchersUsages, err := q.transactionService.FindVouchersUsages(
+		ctx,
+		currentUser.ID,
+		voucherIDs...,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchersUsages")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	for i := range response {
-		response[i].Photo = response[i].PhotoPath(c.BaseURL())
+	for i, voucher := range response {
+		response[i].Usages = mapVouchersUsages[voucher.ID]
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
@@ -432,6 +446,18 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	response.Photo = response.PhotoPath(c.BaseURL())
+	mapVouchersUsages, err := q.transactionService.FindVouchersUsages(
+		ctx,
+		currentUser.ID,
+		response.ID,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchersUsages")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	response.Usages = mapVouchersUsages[response.ID]
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)

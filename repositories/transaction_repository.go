@@ -37,6 +37,11 @@ type TransactionRepository interface {
 		tx pgx.Tx,
 		request *models.Transaction,
 	) (*models.Transaction, error)
+	FindVouchersUsages(
+		ctx context.Context,
+		userID uuid.UUID,
+		voucherIDs ...uuid.UUID,
+	) (map[uuid.UUID]int, error)
 }
 
 type transactionRepository struct {
@@ -1635,6 +1640,80 @@ func (q *transactionRepository) UpdateTransaction(
 		response.Items[i] = &itemResponse
 	}
 	return &response, nil
+}
+
+func (q *transactionRepository) FindVouchersUsages(
+	ctx context.Context,
+	userID uuid.UUID,
+	voucherIDs ...uuid.UUID,
+) (map[uuid.UUID]int, error) {
+	ctxt := "TransactionRepository-FindVouchersUsages"
+	response := map[uuid.UUID]int{}
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	params = append(
+		params,
+		userID,
+		models.TransactionStatusCancelled,
+		models.TransactionStatusWithdrawn,
+		models.TransactionStatusCompleted,
+	)
+	n = len(params)
+	_, _ = fmt.Fprintf(
+		sb,
+		`SELECT
+			voucher_id
+			, COUNT(1)
+		FROM transactions
+		WHERE user_id = $%d
+			AND status NOT IN ($%d, $%d, $%d)`,
+		n-3, n-2, n-1, n,
+	)
+	if len(voucherIDs) > 0 {
+		sb.Reset()
+		_, _ = sb.WriteString(" AND voucher_id IN (")
+		for i, voucherID := range voucherIDs {
+			params = append(params, voucherID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+	}
+	_, _ = sb.WriteString(" GROUP BY voucher_id HAVING COUNT(1) > 0")
+	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var voucherID uuid.UUID
+		var usages int
+		if err = rows.Scan(
+			&voucherID,
+			&usages,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
+		response[voucherID] = usages
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, err
+	}
+	return response, nil
 }
 
 func (q *transactionRepository) buildCondition(request *models.TransactionFilter, sb *strings.Builder) (condition string, params []any) {

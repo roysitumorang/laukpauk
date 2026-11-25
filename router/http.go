@@ -254,6 +254,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.VoucherService,
 		q.JsonWebTokenService,
 		q.UserService,
+		q.TransactionService,
 	).Mount(app.Group("/vouchers"))
 	controllers.NewPointEarningCapController(
 		q.PointEarningCapService,

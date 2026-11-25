@@ -51,6 +51,11 @@ type TransactionService interface {
 		request *models.Transaction,
 	) (*models.Transaction, error)
 	AutoCompleteTransactions(ctx context.Context) error
+	FindVouchersUsages(
+		ctx context.Context,
+		userID uuid.UUID,
+		voucherIDs ...uuid.UUID,
+	) (map[uuid.UUID]int, error)
 }
 
 type transactionService struct {
@@ -840,4 +845,21 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		return err
 	}
 	return nil
+}
+
+func (q *transactionService) FindVouchersUsages(
+	ctx context.Context,
+	userID uuid.UUID,
+	voucherIDs ...uuid.UUID,
+) (map[uuid.UUID]int, error) {
+	ctxt := "TransactionService-FindVouchersUsages"
+	response, err := q.transactionRepository.FindVouchersUsages(
+		ctx,
+		userID,
+		voucherIDs...,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchersUsages")
+	}
+	return response, err
 }
