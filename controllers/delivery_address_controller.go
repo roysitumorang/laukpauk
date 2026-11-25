@@ -92,17 +92,17 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "DeliveryAddressController-V1BuyerCreate"
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	setting, err := q.settingService.FindSetting(ctx)
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
-		return helper.NewResponse(fiber.StatusBadRequest).
-			SetMessage(err.Error()).
-			WriteResponse(c)
-	}
 	request, statusCode, err := sanitizers.ValidateDeliveryAddress(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryAddress")
 		return helper.NewResponse(statusCode).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	setting, err := q.settingService.FindSetting(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
@@ -295,12 +295,51 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	setting, err := q.settingService.FindSetting(ctx)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
+		return helper.NewResponse(fiber.StatusUnprocessableEntity).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
 	deliveryAddress.StreetAddress = request.StreetAddress
 	deliveryAddress.StreetAddressNote = request.StreetAddressNote
 	deliveryAddress.Label = request.Label
 	deliveryAddress.UpdatedAt = time.Now()
 	deliveryAddress.DeletedAt = nil
 	deliveryAddress.DeletionReason = nil
+	if deliveryAddress.DestinationLatitude != request.DestinationLatitude ||
+		deliveryAddress.DestinationLongitude != request.DestinationLongitude {
+		if deliveryAddress.DistanceMeters, err = q.routesApiClient.ComputeDistanceMeters(
+			ctx,
+			setting.DeliveryOriginLongitude.String(),
+			setting.DeliveryOriginLatitude.String(),
+			request.DestinationLongitude.String(),
+			request.DestinationLatitude.String(),
+		); err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrComputeDistanceMeters")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		distanceMeters, err := decimal.New(deliveryAddress.DistanceMeters, 0)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		distanceKM, err := distanceMeters.Quo(decimal.Thousand)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrQuo")
+			return helper.NewResponse(fiber.StatusUnprocessableEntity).
+				SetMessage(err.Error()).
+				WriteResponse(c)
+		}
+		deliveryAddress.DestinationLatitude = request.DestinationLatitude
+		deliveryAddress.DestinationLongitude = request.DestinationLongitude
+		deliveryAddress.DistanceKM, _, _ = distanceKM.Ceil(0).Int64(0)
+	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")

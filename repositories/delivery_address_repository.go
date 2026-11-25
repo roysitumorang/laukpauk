@@ -407,6 +407,34 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		}
 		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
 	}
+	if response.DestinationLongitude != request.DestinationLongitude {
+		params = append(params, request.DestinationLongitude)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " destination_longitude = $%d", n)
+	}
+	if response.DestinationLatitude != request.DestinationLatitude {
+		params = append(params, request.DestinationLatitude)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " destination_latitude = $%d", n)
+	}
+	if response.DistanceMeters != request.DistanceMeters {
+		params = append(params, request.DistanceMeters)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " distance_meters = $%d", n)
+	}
+	if response.DistanceKM != request.DistanceKM {
+		params = append(params, request.DistanceKM)
+		if n = len(params); n > 1 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = fmt.Fprintf(sb, " distance_km = $%d", n)
+	}
 	if response.StreetAddress != request.StreetAddress {
 		params = append(params, request.StreetAddress)
 		if n = len(params); n > 1 {
