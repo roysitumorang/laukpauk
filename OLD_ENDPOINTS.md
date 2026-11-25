@@ -32,13 +32,13 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [PromoApi](#promoapi) (2)
 - [PushApi](#pushapi) (2)
 - [RepeatOrderApi](#repeatorderapi) (2)
-- [RecipeApi](#recipeapi) (5)
+- [RecipeApi](#recipeapi) (6)
 - [SettingApi](#settingapi) (3)
 - [TransactionApi](#transactionapi) (7)
 - [UserApi](#userapi) (6)
 - [VoucherApi](#voucherapi) (2)
 
-81 endpoint definitions in total.
+82 endpoint definitions in total.
 
 ## Index
 
@@ -102,7 +102,8 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `User/unregisterFcmToken` | yes | `PushApi.unregisterFcmToken` |
 | GET | `RO/getItemTransaksi` | yes | `RepeatOrderApi.getTransactionItem` |
 | POST | `RO/addToCart` | yes | `RepeatOrderApi.addToCart` |
-| GET | `Resep/getResep` | no | `RecipeApi.getRecipe` |
+| GET | `buyer/recipes` | no | `RecipeApi.buyerRecipes` |
+| GET | `data.links.next` of `buyer/recipes` | no | `RecipeApi.buyerRecipesPage` |
 | GET | `Resep/getResep/{idResep}` | no | `RecipeApi.getRecipeDetail` |
 | GET | `Resep/getResepItemFromThisResep/{idResep}` | no | `RecipeApi.getRecipeItem` |
 | GET | `Produk/getHargaProduk` | no | `RecipeApi.getProductPrice` |
@@ -1839,32 +1840,67 @@ Response (`RepeatOrderResponses.AddToCart`):
 
 ## RecipeApi
 
-### `GET Resep/getResep`
+### `GET buyer/recipes`
 
-App method: `RecipeApi.getRecipe`.
+App method: `RecipeApi.buyerRecipes`.
+
+The Resep page: the active recipes, newest first, 25 per page (`limit=25`). The search box sends the name as `q` (case-insensitive match). Page-based: `data.links.next` (empty on the last page) is loaded when the list is scrolled to the end; the recipes are `data.rows`. Each card shows `name`, `photo` (a full URL as is; a bare file name falls back to the legacy recipe folder), `description` (cut at 30 characters) and the `instagram_link` / `facebook_link` buttons.
 
 Request:
 
 ```http
-GET Resep/getResep
+GET buyer/recipes?limit=25&q=<q>
 ```
 
-Response (`RecipeResponses.ResepList`):
+Response (`BuyerRecipeResponses.Page`):
 
 ```json
 {
-  "dataResep": [
-    {
-      "id": "string",
-      "nama": "string",
-      "foto": "string",
-      "keterangan": "string",
-      "igLink": "string",
-      "fbLink": "string"
-    }
-  ]
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
+  "data": {
+    "links": {
+      "first": "https://sadia.id/v1/buyer/recipes?limit=25&page=1",
+      "previous": "",
+      "current": "https://sadia.id/v1/buyer/recipes?limit=25&page=1",
+      "next": "",
+      "last": "https://sadia.id/v1/buyer/recipes?limit=25&page=1"
+    },
+    "info": {
+      "limit": 25,
+      "page": 1,
+      "pages": 1,
+      "total": 1
+    },
+    "rows": [
+      {
+        "id": "string",
+        "record_status": 1,
+        "photo": "string",
+        "name": "Sayur Asem",
+        "deleted_name": null,
+        "description": "string",
+        "instagram_link": "https://instagram.com/p/...",
+        "facebook_link": "",
+        "created_by": "string",
+        "created_at": "2026-11-25T21:00:00+07:00",
+        "updated_by": "string",
+        "updated_at": "2026-11-25T21:00:00+07:00",
+        "deleted_by": null,
+        "deleted_at": null,
+        "deletion_reason": null
+      }
+    ]
+  }
 }
 ```
+
+### `GET` `data.links.next` of `buyer/recipes`
+
+App method: `RecipeApi.buyerRecipesPage`.
+
+The next page, requested as is when the list is scrolled to the end. Same response as `GET buyer/recipes`.
 
 ### `GET Resep/getResep/{idResep}`
 
