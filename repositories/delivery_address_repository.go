@@ -289,8 +289,6 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 			, street_address
 			, street_address_note
 			, label
-			, recipient_name
-			, recipient_mobile_phone
 			, main
 			, created_at
 			, updated_at
