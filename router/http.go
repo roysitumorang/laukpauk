@@ -134,6 +134,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/seller/users/*", To: "/users/v1/seller/$1"},
 				{From: "/v1/seller/users/*/*", To: "/users/v1/seller/$1/$2"},
 				{From: "/v1/seller/setting", To: "/setting/v1/seller"},
+				{From: "/v1/seller/promotions", To: "/promotions/v1/seller"},
+				{From: "/v1/seller/promotions/*", To: "/promotions/v1/seller/$1"},
 				{From: "/v1/buyer/users", To: "/users/v1/buyer"},
 				{From: "/v1/buyer/users/*", To: "/users/v1/buyer/$1"},
 				{From: "/v1/buyer/users/*/*", To: "/users/v1/buyer/$1/$2"},
@@ -161,6 +163,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				{From: "/v1/buyer/payment_channels", To: "/payment_channels/v1/buyer"},
 				{From: "/v1/buyer/recipes", To: "/recipes/v1/buyer"},
 				{From: "/v1/buyer/recipes/*", To: "/recipes/v1/buyer/$1"},
+				{From: "/v1/buyer/promotions", To: "/promotions/v1/buyer"},
+				{From: "/v1/buyer/promotions/*", To: "/promotions/v1/buyer/$1"},
 			},
 		}),
 		cors.New(),
@@ -343,6 +347,12 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 		q.JsonWebTokenService,
 	).Mount(app.Group("/recipe_items"))
+	controllers.NewPromotionController(
+		q.PromotionService,
+		q.JsonWebTokenService,
+		q.UserService,
+		q.TransactionService,
+	).Mount(app.Group("/promotions"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(utils.StatusMessage(fiber.StatusNotFound)).

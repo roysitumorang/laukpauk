@@ -57,6 +57,7 @@ type Service struct {
 	RecipeGuideService        services.RecipeGuideService
 	RecipeItemService         services.RecipeItemService
 	PointEarningService       services.PointEarningService
+	PromotionService          services.PromotionService
 }
 
 func MakeHandler(ctx context.Context) (*Service, error) {
@@ -157,6 +158,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeGuideRepository := repositories.NewRecipeGuideRepository(dbRead, dbWrite)
 	recipeItemRepository := repositories.NewRecipeItemRepository(dbRead, dbWrite)
 	pointEarningRepository := repositories.NewPointEarningRepository(dbRead, dbWrite)
+	promotionRepository := repositories.NewPromotionRepository(dbRead, dbWrite)
 	userService := services.NewUserService(userRepository)
 	messageService := services.NewMessageService(messageRepository)
 	productCategoryService := services.NewProductCategoryService(productCategoryRepository)
@@ -206,6 +208,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 	recipeGuideService := services.NewRecipeGuideService(recipeGuideRepository)
 	recipeItemService := services.NewRecipeItemService(recipeItemRepository)
 	pointEarningService := services.NewPointEarningService(pointEarningRepository)
+	promotionService := services.NewPromotionService(promotionRepository)
 	return &Service{
 		DbWrite:                   dbWrite,
 		Migrator:                  migrator,
@@ -240,6 +243,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		RecipeGuideService:        recipeGuideService,
 		RecipeItemService:         recipeItemService,
 		PointEarningService:       pointEarningService,
+		PromotionService:          promotionService,
 	}, nil
 }
 

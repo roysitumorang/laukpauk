@@ -17,12 +17,12 @@ func init() {
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE TABLE vouchers_users (
-				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-				, voucher_id UUID NOT NULL REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, created_at timestamp with time zone NOT NULL
-				, UNIQUE (voucher_id, user_id)
-			);`,
+					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+					, voucher_id UUID NOT NULL REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, created_at timestamp with time zone NOT NULL
+					, UNIQUE (voucher_id, user_id)
+				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

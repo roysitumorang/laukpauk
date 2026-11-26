@@ -71,6 +71,17 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	}
 	if _, err = tx.Exec(
 		ctx,
+		`CREATE COLLATION IF NOT EXISTS case_insensitive (
+			PROVIDER = 'icu'
+			, LOCALE = 'und-u-ks-level2'
+			, DETERMINISTIC = false
+		);`,
+	); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		return err
+	}
+	if _, err = tx.Exec(
+		ctx,
 		`CREATE TABLE IF NOT EXISTS migrations (
 			"version" bigint NOT NULL PRIMARY KEY
 		)`,
