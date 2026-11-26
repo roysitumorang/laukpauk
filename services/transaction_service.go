@@ -56,6 +56,11 @@ type TransactionService interface {
 		userID uuid.UUID,
 		voucherIDs ...uuid.UUID,
 	) (map[uuid.UUID]int64, error)
+	FindPromotionsUsages(
+		ctx context.Context,
+		userID uuid.UUID,
+		promotionIDs ...uuid.UUID,
+	) (map[uuid.UUID]int64, error)
 }
 
 type transactionService struct {
@@ -66,6 +71,7 @@ type transactionService struct {
 	deliveryAddressRepository    repositories.DeliveryAddressRepository
 	settingRepository            repositories.SettingRepository
 	voucherRepository            repositories.VoucherRepository
+	promotionRepository          repositories.PromotionRepository
 	pointSpendingCapRepository   repositories.PointSpendingCapRepository
 	pointRepository              repositories.PointRepository
 	productVariantRepository     repositories.ProductVariantRepository
@@ -83,6 +89,7 @@ func NewTransactionService(
 	deliveryAddressRepository repositories.DeliveryAddressRepository,
 	settingRepository repositories.SettingRepository,
 	voucherRepository repositories.VoucherRepository,
+	promotionRepository repositories.PromotionRepository,
 	pointSpendingCapRepository repositories.PointSpendingCapRepository,
 	pointRepository repositories.PointRepository,
 	productVariantRepository repositories.ProductVariantRepository,
@@ -99,6 +106,7 @@ func NewTransactionService(
 		deliveryAddressRepository:    deliveryAddressRepository,
 		settingRepository:            settingRepository,
 		voucherRepository:            voucherRepository,
+		promotionRepository:          promotionRepository,
 		pointSpendingCapRepository:   pointSpendingCapRepository,
 		pointRepository:              pointRepository,
 		productVariantRepository:     productVariantRepository,
@@ -277,7 +285,10 @@ func (q *transactionService) CreateTransaction(
 					WithRoles(models.RoleBuyer).
 					WithReferralCodes(*request.ReferralCode),
 			)
-			if err != nil && !errors.Is(err, models.ErrUserNotFound) {
+			if errors.Is(err, models.ErrUserNotFound) {
+				err = nil
+			}
+			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 				return nil, nil, err
 			}
@@ -311,6 +322,41 @@ func (q *transactionService) CreateTransaction(
 			request.ReferrerID = nil
 			request.ReferralPoints = 0
 		}
+	}
+	if request.PromotionID != nil {
+		promotion, err := q.promotionRepository.FindPromotion(
+			ctx,
+			models.NewPromotionFilter().
+				WithRecordStatuses(models.RecordStatusActive).
+				WithTransactionDatetime(now).
+				WithPromotionIDs(*request.PromotionID),
+		)
+		if errors.Is(err, models.ErrPromotionNotFound) {
+			return nil, nil, models.ErrPromotionNotFound
+		}
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotion")
+			return nil, nil, err
+		}
+		mapPromotionsUsages, err := q.transactionRepository.FindPromotionsUsages(
+			ctx,
+			buyer.ID,
+			promotion.ID,
+		)
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotionsUsages")
+			return nil, nil, err
+		}
+		if mapPromotionsUsages[promotion.ID] >= promotion.QuotaPerBuyer {
+			return nil, nil, errors.New("promotion_id: quota exceeded")
+		}
+		request.PromotionID = &promotion.ID
+		request.PromotionCode = promotion.Code
+		request.PromotionDiscount = promotion.Discount
+	} else {
+		request.PromotionID = nil
+		request.PromotionCode = nil
+		request.PromotionDiscount = 0
 	}
 	request.RewardPointsDiscount = 0
 	if request.RewardPointsDiscounted {
@@ -924,6 +970,23 @@ func (q *transactionService) FindVouchersUsages(
 	)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchersUsages")
+	}
+	return response, err
+}
+
+func (q *transactionService) FindPromotionsUsages(
+	ctx context.Context,
+	userID uuid.UUID,
+	promotionIDs ...uuid.UUID,
+) (map[uuid.UUID]int64, error) {
+	ctxt := "TransactionService-FindPromotionsUsages"
+	response, err := q.transactionRepository.FindPromotionsUsages(
+		ctx,
+		userID,
+		promotionIDs...,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotionsUsages")
 	}
 	return response, err
 }

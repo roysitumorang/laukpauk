@@ -87,6 +87,9 @@ type Transaction struct {
 	VoucherID                       *uuid.UUID         `json:"voucher_id"`
 	VoucherType                     *VoucherType       `json:"voucher_type"`
 	VoucherDiscount                 int64              `json:"voucher_discount"`
+	PromotionID                     *uuid.UUID         `json:"promotion_id"`
+	PromotionCode                   *string            `json:"promotion_code"`
+	PromotionDiscount               int64              `json:"promotion_discount"`
 	RewardPointsDiscounted          bool               `json:"reward_points_discounted"`
 	RewardPointsDiscount            int64              `json:"reward_points_discount"`
 	WalletDiscounted                bool               `json:"wallet_discounted"`

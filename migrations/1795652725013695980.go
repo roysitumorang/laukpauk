@@ -86,11 +86,42 @@ func init() {
 				"CREATE INDEX ON promotions (deleted_by)",
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+			if _, err = tx.Exec(
+				ctx,
+				`ALTER TABLE transactions
+					ADD FOREIGN KEY (promotion_id) REFERENCES promotions (id)
+					ON UPDATE CASCADE ON DELETE RESTRICT`,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+			if _, err = tx.Exec(
+				ctx,
+				"CREATE INDEX ON transactions (promotion_id)",
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}
 			return
 		},
 		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
 			ctxt := "Migration-Down"
+			if _, err = tx.Exec(
+				ctx,
+				"DROP INDEX transactions_promotion_id_idx",
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
+			if _, err = tx.Exec(
+				ctx,
+				`ALTER TABLE transactions
+					DROP CONSTRAINT transactions_promotion_id_fkey`,
+			); err != nil {
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				return
+			}
 			if _, err = tx.Exec(
 				ctx,
 				"DROP TABLE promotions",

@@ -42,6 +42,11 @@ type TransactionRepository interface {
 		userID uuid.UUID,
 		voucherIDs ...uuid.UUID,
 	) (map[uuid.UUID]int64, error)
+	FindPromotionsUsages(
+		ctx context.Context,
+		userID uuid.UUID,
+		promotionIDs ...uuid.UUID,
+	) (map[uuid.UUID]int64, error)
 }
 
 type transactionRepository struct {
@@ -104,6 +109,9 @@ func (q *transactionRepository) FindTransactions(
 		, voucher_id
 		, voucher_type
 		, voucher_discount
+		, promotion_id
+		, promotion_code
+		, promotion_discount
 		, reward_points_discounted
 		, reward_points_discount
 		, wallet_discounted
@@ -249,6 +257,9 @@ func (q *transactionRepository) FindTransactions(
 			&transaction.VoucherID,
 			&transaction.VoucherType,
 			&transaction.VoucherDiscount,
+			&transaction.PromotionID,
+			&transaction.PromotionCode,
+			&transaction.PromotionDiscount,
 			&transaction.RewardPointsDiscounted,
 			&transaction.RewardPointsDiscount,
 			&transaction.WalletDiscounted,
@@ -392,6 +403,9 @@ func (q *transactionRepository) FindTransaction(
 			, voucher_id
 			, voucher_type
 			, voucher_discount
+			, promotion_id
+			, promotion_code
+			, promotion_discount
 			, reward_points_discounted
 			, reward_points_discount
 			, wallet_discounted
@@ -465,6 +479,9 @@ func (q *transactionRepository) FindTransaction(
 		&response.VoucherID,
 		&response.VoucherType,
 		&response.VoucherDiscount,
+		&response.PromotionID,
+		&response.PromotionCode,
+		&response.PromotionDiscount,
 		&response.RewardPointsDiscounted,
 		&response.RewardPointsDiscount,
 		&response.WalletDiscounted,
@@ -614,6 +631,9 @@ func (q *transactionRepository) CreateTransaction(
 			, voucher_id
 			, voucher_type
 			, voucher_discount
+			, promotion_id
+			, promotion_code
+			, promotion_discount
 			, reward_points_discounted
 			, reward_points_discount
 			, wallet_discounted
@@ -644,7 +664,7 @@ func (q *transactionRepository) CreateTransaction(
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
 			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
-			, $41, $42
+			, $41, $42, $43, $44, $45
 		)
 		RETURNING id
 			, parent_id
@@ -664,6 +684,9 @@ func (q *transactionRepository) CreateTransaction(
 			, voucher_id
 			, voucher_type
 			, voucher_discount
+			, promotion_id
+			, promotion_code
+			, promotion_discount
 			, reward_points_discounted
 			, reward_points_discount
 			, wallet_discounted
@@ -730,6 +753,9 @@ func (q *transactionRepository) CreateTransaction(
 		request.VoucherID,
 		request.VoucherType,
 		request.VoucherDiscount,
+		request.PromotionID,
+		request.PromotionCode,
+		request.PromotionDiscount,
 		request.RewardPointsDiscounted,
 		request.RewardPointsDiscount,
 		request.WalletDiscounted,
@@ -774,6 +800,9 @@ func (q *transactionRepository) CreateTransaction(
 		&response.VoucherID,
 		&response.VoucherType,
 		&response.VoucherDiscount,
+		&response.PromotionID,
+		&response.PromotionCode,
+		&response.PromotionDiscount,
 		&response.RewardPointsDiscounted,
 		&response.RewardPointsDiscount,
 		&response.WalletDiscounted,
@@ -999,6 +1028,9 @@ func (q *transactionRepository) UpdateTransaction(
 			, voucher_id
 			, voucher_type
 			, voucher_discount
+			, promotion_id
+			, promotion_code
+			, promotion_discount
 			, reward_points_discounted
 			, reward_points_discount
 			, wallet_discounted
@@ -1071,6 +1103,9 @@ func (q *transactionRepository) UpdateTransaction(
 		&response.VoucherID,
 		&response.VoucherType,
 		&response.VoucherDiscount,
+		&response.PromotionID,
+		&response.PromotionCode,
+		&response.PromotionDiscount,
 		&response.RewardPointsDiscounted,
 		&response.RewardPointsDiscount,
 		&response.WalletDiscounted,
@@ -1383,6 +1418,9 @@ func (q *transactionRepository) UpdateTransaction(
 				, voucher_id
 				, voucher_type
 				, voucher_discount
+				, promotion_id
+				, promotion_code
+				, promotion_discount
 				, reward_points_discounted
 				, reward_points_discount
 				, wallet_discounted
@@ -1451,6 +1489,9 @@ func (q *transactionRepository) UpdateTransaction(
 			&response.VoucherID,
 			&response.VoucherType,
 			&response.VoucherDiscount,
+			&response.PromotionID,
+			&response.PromotionCode,
+			&response.PromotionDiscount,
 			&response.RewardPointsDiscounted,
 			&response.RewardPointsDiscount,
 			&response.WalletDiscounted,
@@ -1705,6 +1746,77 @@ func (q *transactionRepository) FindVouchersUsages(
 			return nil, err
 		}
 		response[voucherID] = usages
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, err
+	}
+	return response, nil
+}
+
+func (q *transactionRepository) FindPromotionsUsages(
+	ctx context.Context,
+	userID uuid.UUID,
+	promotionIDs ...uuid.UUID,
+) (map[uuid.UUID]int64, error) {
+	ctxt := "TransactionRepository-FindPromotionsUsages"
+	response := map[uuid.UUID]int64{}
+	var params []any
+	var n int
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	params = append(
+		params,
+		userID,
+		models.TransactionStatusCancelled,
+	)
+	n = len(params)
+	_, _ = fmt.Fprintf(
+		sb,
+		`SELECT
+			promotion_id
+			, COUNT(1)
+		FROM transactions
+		WHERE user_id = $%d
+			AND status != $%d`,
+		n-1, n,
+	)
+	if len(promotionIDs) > 0 {
+		_, _ = sb.WriteString(" AND promotion_id IN (")
+		for i, promotionID := range promotionIDs {
+			params = append(params, promotionID)
+			if i > 0 {
+				_, _ = sb.WriteString(",")
+			}
+			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		}
+		_, _ = sb.WriteString(")")
+	}
+	_, _ = sb.WriteString(" GROUP BY promotion_id HAVING COUNT(1) > 0")
+	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = nil
+	}
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var promotionID uuid.UUID
+		var usages int64
+		if err = rows.Scan(
+			&promotionID,
+			&usages,
+		); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
+			return nil, err
+		}
+		response[promotionID] = usages
 	}
 	if err = rows.Err(); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")

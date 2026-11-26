@@ -355,6 +355,7 @@ func (q *promotionController) V1SellerDelete(c fiber.Ctx) (err error) {
 func (q *promotionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PromotionController-V1BuyerIndex"
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	request, err := sanitizers.FindPromotions(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotions")
@@ -363,7 +364,7 @@ func (q *promotionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	now := time.Now()
-	response, _, err := q.promotionService.FindPromotions(
+	promotions, _, err := q.promotionService.FindPromotions(
 		ctx,
 		request.WithRecordStatuses(models.RecordStatusActive).
 			WithTransactionDatetime(now),
@@ -374,6 +375,33 @@ func (q *promotionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
+	n := len(promotions)
+	var response []*models.Promotion
+	if n == 0 {
+		return helper.NewResponse(fiber.StatusOK).
+			SetData(response).
+			WriteResponse(c)
+	}
+	promotionIDs := make([]uuid.UUID, n)
+	for i := range promotions {
+		promotionIDs[i] = promotions[i].ID
+	}
+	mapPromotionsUsages, err := q.transactionService.FindPromotionsUsages(
+		ctx,
+		currentUser.ID,
+		promotionIDs...,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotionsUsages")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	for _, promotion := range promotions {
+		if promotion.Usages = mapPromotionsUsages[promotion.ID]; promotion.Usages < promotion.QuotaPerBuyer {
+			response = append(response, promotion)
+		}
+	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
 		WriteResponse(c)
@@ -382,6 +410,7 @@ func (q *promotionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 func (q *promotionController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PromotionController-V1BuyerShow"
+	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
 	promotionID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
@@ -406,6 +435,22 @@ func (q *promotionController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotions")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	mapPromotionsUsages, err := q.transactionService.FindPromotionsUsages(
+		ctx,
+		currentUser.ID,
+		response.ID,
+	)
+	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotionsUsages")
+		return helper.NewResponse(fiber.StatusBadRequest).
+			SetMessage(err.Error()).
+			WriteResponse(c)
+	}
+	if response.Usages = mapPromotionsUsages[response.ID]; response.Usages >= response.QuotaPerBuyer {
+		return helper.NewResponse(fiber.StatusNotFound).
+			SetMessage(models.ErrPromotionNotFound.Error()).
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).

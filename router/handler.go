@@ -183,6 +183,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		deliveryAddressRepository,
 		settingRepository,
 		voucherRepository,
+		promotionRepository,
 		pointSpendingCapRepository,
 		pointRepository,
 		productVariantRepository,
