@@ -34,11 +34,11 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [RepeatOrderApi](#repeatorderapi) (2)
 - [RecipeApi](#recipeapi) (3)
 - [SettingApi](#settingapi) (3)
-- [TransactionApi](#transactionapi) (7)
+- [TransactionApi](#transactionapi) (6)
 - [UserApi](#userapi) (6)
 - [VoucherApi](#voucherapi) (2)
 
-77 endpoint definitions in total.
+76 endpoint definitions in total.
 
 ## Index
 
@@ -110,7 +110,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `data.links.next` of `buyer/transactions` | yes | `TransactionApi.buyerTransactionsPage` |
 | GET | `buyer/transactions/{id}` | yes | `TransactionApi.buyerTransaction` |
 | GET | `Transaksi/getTransaksi/{id}` | yes | `TransactionApi.getTransaction` |
-| GET | `Transaksi/getJumlahItemDiantar/{id}` | yes | `TransactionApi.getDeliveredItemCount` |
 | POST | `Transaksi/pesananDiterima/{id}` | yes | `TransactionApi.orderReceived` |
 | POST | `Transaksi/belanjaUlang/{id}` | no | `TransactionApi.reorder` |
 | GET | `buyer/users/me` | yes | `UserApi.me` |
@@ -2174,25 +2173,6 @@ Response (`TransaksiResponses.Detail`):
     "refundedOngkir": 0,
     "refundedUangBelanja": 0
   }
-}
-```
-
-### `GET Transaksi/getJumlahItemDiantar/{id}`
-
-App method: `TransactionApi.getDeliveredItemCount`.
-
-Request:
-
-```http
-GET Transaksi/getJumlahItemDiantar/{id}
-Authorization: Bearer <JWT>
-```
-
-Response (`TransaksiResponses.Diantar`):
-
-```json
-{
-  "jumlahBarangDiantar": 0
 }
 ```
 
