@@ -278,7 +278,7 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 			, updated_at
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id
-			record_status
+			, record_status
 			, user_id
 			, origin_longitude
 			, origin_latitude
