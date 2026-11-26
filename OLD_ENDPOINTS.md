@@ -22,7 +22,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [AddressApi](#addressapi) (4)
 - [AuthApi](#authapi) (5)
 - [CartApi](#cartapi) (4)
-- [CheckoutApi](#checkoutapi) (3)
+- [CheckoutApi](#checkoutapi) (2)
 - [DeliveryApi](#deliveryapi) (4)
 - [HomeApi](#homeapi) (6)
 - [NotificationApi](#notificationapi) (7)
@@ -38,7 +38,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 - [UserApi](#userapi) (6)
 - [VoucherApi](#voucherapi) (2)
 
-78 endpoint definitions in total.
+77 endpoint definitions in total.
 
 ## Index
 
@@ -63,7 +63,6 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | GET | `Keranjang/bersihkanKeranjang` | no | `CartApi.clearCart` |
 | POST | `Keranjang/saveCart` | no | `CartApi.saveCart` |
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
-| GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
 | GET | `buyer/promotions/{promo_code}` | yes | `CheckoutApi.buyerPromotion` |
 | GET | `buyer/delivery_plans/now` | yes | `DeliveryApi.deliveryPlanNow` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
@@ -682,24 +681,6 @@ Response (`CheckoutResponses.JadwalOpened`):
 ```json
 {
   "isJadwalDeliveryOpened": true
-}
-```
-
-### `GET User/getDiskonKategori`
-
-App method: `CheckoutApi.getCategoryDiscount`.
-
-Request:
-
-```http
-GET User/getDiskonKategori?cartCode=<cartCode>
-```
-
-Response (`CheckoutResponses.DiskonKategori`):
-
-```json
-{
-  "diskonKategori": "<any JSON>"
 }
 ```
 
