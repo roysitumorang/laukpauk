@@ -233,9 +233,14 @@ func (q *Transaction) CalculateShoppingCost() {
 	q.RevisedShoppingCost = q.ShoppingCost
 }
 
+// CalculateDiscount applies, in order: the promotion (shopping cost only), the reward points or the voucher, then the
+// wallet.
 func (q *Transaction) CalculateDiscount() {
 	q.DiscountedShoppingCost = q.ShoppingCost
 	q.DiscountedDeliveryEstimatedCost = q.DeliveryEstimatedCost
+	// only the discount actually used, at most the shopping cost
+	q.PromotionDiscount = q.promotionDeduction(q.DiscountedShoppingCost)
+	q.DiscountedShoppingCost -= q.PromotionDiscount
 	if q.RewardPointsDiscounted && q.RewardPointsDiscount > 0 {
 		rewardPointsAmount := q.RewardPointsDiscount
 		if q.DiscountedShoppingCost > 0 {
@@ -317,6 +322,8 @@ func (q *Transaction) Revise() {
 	}
 	q.RevisedDiscountedShoppingCost = q.RevisedShoppingCost
 	q.DiscountedDeliveryEstimatedCost = q.DeliveryEstimatedCost
+	// the promotion never covers the unique code, which the buyer always pays
+	q.RevisedDiscountedShoppingCost -= q.promotionDeduction(max(0, q.RevisedDiscountedShoppingCost-q.UniqueCode))
 	if q.RewardPointsDiscounted && q.RewardPointsDiscount > 0 {
 		rewardPointsAmount := q.RewardPointsDiscount
 		if q.RevisedDiscountedShoppingCost > 0 {
@@ -352,6 +359,14 @@ func (q *Transaction) Revise() {
 	}
 	q.RevisedPaymentAmount = q.RevisedDiscountedShoppingCost + q.DiscountedDeliveryEstimatedCost
 	q.RefundAmount = q.PaymentAmount - q.RevisedPaymentAmount
+}
+
+// promotionDeduction is the promotion's discount taken off a shopping cost: at most that cost, 0 without a promotion.
+func (q *Transaction) promotionDeduction(shoppingCost int64) int64 {
+	if q.PromotionID == nil || q.PromotionDiscount <= 0 || shoppingCost <= 0 {
+		return 0
+	}
+	return min(shoppingCost, q.PromotionDiscount)
 }
 
 func (q *TransactionItem) PhotoPath(baseURLs ...string) string {
