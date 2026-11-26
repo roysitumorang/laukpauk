@@ -85,10 +85,10 @@ github.com/godruoyi/go-snowflake v0.0.2 h1:rN9imTkrUJ5ZjuwTOi7kTGQFEZSUI3pwPMzAb
 github.com/godruoyi/go-snowflake v0.0.2/go.mod h1:6JXMZzmleLpSK9pYpg4LXTcAz54mdYXTeXUvVks17+4=
 github.com/gofiber/contrib/v3/monitor v1.2.7 h1:2CltRW7k66z/pDBFlxm2EiBga6XQtMq9eZdzWpVKn/U=
 github.com/gofiber/contrib/v3/monitor v1.2.7/go.mod h1:q5mQxK3g6iUc8FSAgX0qDs2B7NLOF+zr0UekbIuyuN4=
-github.com/gofiber/contrib/v3/sentry v1.1.18 h1:RwY+aHMnXFyefDrZCXVUpgcl/S1L8GjmrupmQaRG8z8=
-github.com/gofiber/contrib/v3/sentry v1.1.18/go.mod h1:2lpETkcRAiYrEqzuuPxybLKAbTwmcWZO6ooiQDOkoi8=
-github.com/gofiber/contrib/v3/swaggo v1.0.18 h1:1LiLyq/5TQS9Sqf7afdFHUFojYkqnSmz4y1pkC7c0Fg=
-github.com/gofiber/contrib/v3/swaggo v1.0.18/go.mod h1:JvM5/5+5YR44o47EKio0Sdw4kIPm8+2tNTIMW2aqHXk=
+github.com/gofiber/contrib/v3/sentry v1.1.19 h1:EaUNemFzC/6+fFdB2pKvFuUrUg1l++pwvyHiBdpL0Lo=
+github.com/gofiber/contrib/v3/sentry v1.1.19/go.mod h1:sPDKuo77CRfa7Xcthmr/TOrDp/8KIbehVH3o3X3cJuU=
+github.com/gofiber/contrib/v3/swaggo v1.0.19 h1:m3a0KnPlDTMmfbPv83uWvTF9EGitG0E3imlAgK6qFOM=
+github.com/gofiber/contrib/v3/swaggo v1.0.19/go.mod h1:d0O/BjQmKUYPlWvJsIrzZxfIMF3DP6czMKiJnM2vkMk=
 github.com/gofiber/fiber/v3 v3.7.0 h1:aF+GfB7nP9Dd0wVsv6wmr8675v66OGfjSyoDhPmvKEo=
 github.com/gofiber/fiber/v3 v3.7.0/go.mod h1:7dlbpUZ789TJg4q/VfdS1UWDtB6Fl/Smk6ZYZusMpAQ=
 github.com/gofiber/schema v1.10.2 h1:mjqtglIvi/+NK3gJTra6wKOaBLZYx+tdNu7xtaCVPOg=
