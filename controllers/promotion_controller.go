@@ -411,21 +411,18 @@ func (q *promotionController) V1BuyerShow(c fiber.Ctx) (err error) {
 	ctx := c.Context()
 	ctxt := "PromotionController-V1BuyerShow"
 	currentUser, _ := c.Locals(models.CurrentUser).(*models.User)
-	promotionID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
-		return helper.NewResponse(fiber.StatusNotFound).
-			SetMessage(models.ErrPromotionNotFound.Error()).
-			WriteResponse(c)
-	}
 	now := time.Now()
-	response, err := q.promotionService.FindPromotion(
-		ctx,
-		models.NewPromotionFilter().
-			WithRecordStatuses(models.RecordStatusActive).
-			WithTransactionDatetime(now).
-			WithPromotionIDs(promotionID),
-	)
+	request := models.NewPromotionFilter().
+		WithRecordStatuses(models.RecordStatusActive).
+		WithTransactionDatetime(now)
+	promotionCode := c.Params("id")
+	promotionID, err := uuid.Parse(promotionCode)
+	if err != nil {
+		request.WithCodes(promotionCode)
+	} else {
+		request.WithPromotionIDs(promotionID)
+	}
+	response, err := q.promotionService.FindPromotion(ctx, request)
 	if errors.Is(err, models.ErrPromotionNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPromotionNotFound.Error()).
