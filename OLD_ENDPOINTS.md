@@ -65,7 +65,7 @@ Every backend call the Android app ([roysitumorang/laukpauk_mobile](https://gith
 | POST | `JadwalDelivery/isJadwalDeliveryOpened` | no | `CheckoutApi.isDeliveryScheduleOpened` |
 | GET | `User/getJumlahCart` | no | `CheckoutApi.getCartQuantity` |
 | GET | `User/getDiskonKategori` | no | `CheckoutApi.getCategoryDiscount` |
-| GET | `Promo/cekKodePromo/{kode}` | yes | `CheckoutApi.checkPromoCode` |
+| GET | `buyer/promotions/{promo_code}` | yes | `CheckoutApi.buyerPromotion` |
 | GET | `buyer/delivery_plans/now` | yes | `DeliveryApi.deliveryPlanNow` |
 | GET | `Keranjang/bersihkanKeranjang` | no | `DeliveryApi.clearCart` |
 | GET | `https://maps.googleapis.com/maps/api/geocode/json` | no | `DeliveryApi.reverseGeocode` |
@@ -722,27 +722,48 @@ Response (`CheckoutResponses.DiskonKategori`):
 }
 ```
 
-### `GET Promo/cekKodePromo/{kode}`
+### `GET buyer/promotions/{promo_code}`
 
-App method: `CheckoutApi.checkPromoCode`.
+App method: `CheckoutApi.buyerPromotion`.
+
+The checkout's "Kode Promo" field. Each edit (trimmed) checks the code, and only the latest answer counts. A code outside `^[a-zA-Z0-9-]+$` is rejected without a request. The code matches exactly (case-sensitive); the path also accepts a promotion id.
+
+- **Valid (200):** the promotion is active, within its dates and under the buyer's `quota_per_buyer`. Its `discount`, a flat amount, comes off the shopping cost (at most what is left after the shopping voucher and category discount). The amount shows as "Potongan Kode Promo", and the order sends `id` as `promotion_id`.
+- **Not valid (404 `promotion not found`):** shows "Kode promo tidak berlaku". Any other error shows `message`.
 
 Request:
 
 ```http
-GET Promo/cekKodePromo/{kode}
+GET buyer/promotions/{promo_code}
 Authorization: Bearer <JWT>
 ```
 
-Response (`CheckoutResponses.KodePromo`):
+Response (`BuyerPromotionResponses.One`):
 
 ```json
 {
-  "status": true,
-  "message": "string",
+  "status_code": 200,
+  "status": "OK",
+  "message": "",
   "data": {
-    "promo": {
-      "diskon": 0
-    }
+    "id": "string",
+    "record_status": 1,
+    "name": "string",
+    "code": "HEMAT-10",
+    "deleted_code": null,
+    "description": "string",
+    "discount": 10000,
+    "quota_per_buyer": 2,
+    "effective_start_date": "2026-11-01T00:00:00+07:00",
+    "effective_end_date": "2026-12-01T00:00:00+07:00",
+    "created_by": "string",
+    "created_at": "2026-11-01T00:00:00+07:00",
+    "updated_by": "string",
+    "updated_at": "2026-11-01T00:00:00+07:00",
+    "deleted_by": null,
+    "deleted_at": null,
+    "deletion_reason": null,
+    "usages": 1
   }
 }
 ```
@@ -1335,7 +1356,7 @@ Response (`PaymentChannelsResponse`):
 
 App method: `PaymentApi.createTransaction`.
 
-"Buat Pesanan" in the "Metode Pembayaran" sheet, after a channel is picked. The body (`PaymentRepository.transactionBody`): `cart_id` and `items[]` (`cart_item_id`, `buyer_note`) of `GET buyer/cart`; `recipient_name`, `recipient_mobile_phone` and `buyer_note` from the checkout form; `delivery_address_id` of the chosen delivery address; `delivery_datetime`, the chosen slot's `delivery_time` exactly as `GET buyer/delivery_plans/now` sent it; `reward_points_discounted`, or `voucher_id` when a voucher is chosen; `wallet_discounted` and `wallet_amount` (`wallet` of `GET buyer/users/me`); `payment_channel_id`, the `id` of the picked channel. On `201` the order success screen shows `reference_number`, `payment_amount`, `payment_channel_name`, `payment_virtual_account_number` and `payment_due_date` ("Pesanan sudah lunas." when `payment_amount` is 0); an error shows `message` in a dialog.
+"Buat Pesanan" in the "Metode Pembayaran" sheet, after a channel is picked. The body (`PaymentRepository.transactionBody`): `cart_id` and `items[]` (`cart_item_id`, `buyer_note`) of `GET buyer/cart`; `recipient_name`, `recipient_mobile_phone` and `buyer_note` from the checkout form; `delivery_address_id` of the chosen delivery address; `delivery_datetime`, the chosen slot's `delivery_time` exactly as `GET buyer/delivery_plans/now` sent it; `reward_points_discounted`, or `voucher_id` when a voucher is chosen; `promotion_id` when a valid promo code is entered; `wallet_discounted` and `wallet_amount` (`wallet` of `GET buyer/users/me`); `payment_channel_id`, the `id` of the picked channel. On `201` the order success screen shows `reference_number`, `payment_amount`, `payment_channel_name`, `payment_virtual_account_number` and `payment_due_date` ("Pesanan sudah lunas." when `payment_amount` is 0); an error shows `message` in a dialog.
 
 Request:
 
@@ -1359,6 +1380,7 @@ Authorization: Bearer <JWT>
   "delivery_datetime": "2026-11-26T07:00:00+07:00",
   "reward_points_discounted": false,
   "voucher_id": "string",
+  "promotion_id": "string",
   "wallet_discounted": true,
   "wallet_amount": 10000,
   "payment_channel_id": "string"
