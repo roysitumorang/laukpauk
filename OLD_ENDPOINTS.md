@@ -2169,7 +2169,6 @@ Response (`TransaksiResponses.Detail`):
     "potonganWallet": 0,
     "nilaiVoucher": 0,
     "pointOut": 0,
-    "diskonKategori": 0,
     "diskonPromo": 0,
     "moreDataMetodePembayaran": 0,
     "refundedOngkir": 0,
