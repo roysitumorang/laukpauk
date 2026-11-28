@@ -6,11 +6,12 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: d506006aab4d6d76a410e49ca77d7dd0b6c957e2
+      - run: sudo apt-get update >/dev/null && sudo apt-get install -y libwebp-dev >/dev/null
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.27.3
-      - run: |
-          mkdir p && cd p && go mod init p >/dev/null 2>&1
-          go get github.com/govalues/decimal@v0.1.36 github.com/google/uuid@v1.6.0 >/dev/null 2>&1
-          echo "== decimal"; go doc -all github.com/govalues/decimal Decimal | grep -nE "^func \(d \*?Decimal\) (Scan|Value|MarshalText|UnmarshalText)" || true
-          echo "== uuid"; go doc -all github.com/google/uuid | grep -nE "^func|^var|^\s+Nil|^\s+Max" | head -60 || true
+          go-version-file: go.mod
+      - run: go vet ./externals/
+      - run: go test -count=1 -v -run 'Whatsapp' ./externals/
