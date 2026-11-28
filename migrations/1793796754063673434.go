@@ -28,14 +28,14 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON json_web_tokens (user_id);`,
+				`CREATE INDEX json_web_tokens_user_id_idx ON json_web_tokens (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON json_web_tokens (expired_at);`,
+				`CREATE INDEX json_web_tokens_expired_at_idx ON json_web_tokens (expired_at);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

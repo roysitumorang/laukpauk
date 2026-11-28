@@ -21,7 +21,7 @@ func init() {
 					, message_id UUID NOT NULL REFERENCES messages (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, read_at timestamp with time zone NOT NULL
-					, UNIQUE (message_id, user_id)
+					, CONSTRAINT message_receipts_unique_message_id_user_id UNIQUE (message_id, user_id)
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -29,7 +29,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON message_receipts (user_id);`,
+				`CREATE INDEX message_receipts_user_id_idx ON message_receipts (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

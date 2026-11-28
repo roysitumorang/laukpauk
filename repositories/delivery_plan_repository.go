@@ -405,7 +405,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.ExclusionViolation &&
-			pgxErr.ConstraintName == "no_overlapping_delivery_plans_transaction_window" {
+			pgxErr.ConstraintName == "delivery_plans_no_overlapping_transaction_window" {
 			err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -669,7 +669,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.ExclusionViolation &&
-			pgxErr.ConstraintName == "no_overlapping_delivery_plans_transaction_window" {
+			pgxErr.ConstraintName == "delivery_plans_no_overlapping_transaction_window" {
 			err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

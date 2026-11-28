@@ -18,7 +18,7 @@ func init() {
 				ctx,
 				`CREATE TABLE carts (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, user_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+					, user_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT CONSTRAINT carts_unique_user_id UNIQUE
 					, deleted_user_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
@@ -29,7 +29,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON carts (deleted_user_id);`,
+				`CREATE INDEX carts_deleted_user_id_idx ON carts (deleted_user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

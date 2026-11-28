@@ -659,11 +659,11 @@ func (q *userRepository) CreateUser(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_key":
+			case "users_unique_username":
 				err = models.ErrUniqueUserUsernameViolation
-			case "users_mobile_phone_key":
+			case "users_unique_mobile_phone":
 				err = models.ErrUniqueUserMobilePhoneViolation
-			case "users_email_key":
+			case "users_unique_email":
 				err = models.ErrUniqueUserEmailViolation
 			}
 		} else {
@@ -1178,11 +1178,11 @@ func (q *userRepository) UpdateUser(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "users_username_key":
+			case "users_unique_username":
 				err = models.ErrUniqueUserUsernameViolation
-			case "users_mobile_phone_key":
+			case "users_unique_mobile_phone":
 				err = models.ErrUniqueUserMobilePhoneViolation
-			case "users_email_key":
+			case "users_unique_email":
 				err = models.ErrUniqueUserEmailViolation
 			}
 		} else {

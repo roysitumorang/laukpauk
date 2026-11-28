@@ -37,35 +37,35 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON notifications (user_id);`,
+				`CREATE INDEX notifications_user_id_idx ON notifications (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON notifications (notification_type);`,
+				`CREATE INDEX notifications_notification_type_idx ON notifications (notification_type);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON notifications (created_by);`,
+				`CREATE INDEX notifications_created_by_idx ON notifications (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON notifications (sent_at);`,
+				`CREATE INDEX notifications_sent_at_idx ON notifications (sent_at);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON notifications (read_at);`,
+				`CREATE INDEX notifications_read_at_idx ON notifications (read_at);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

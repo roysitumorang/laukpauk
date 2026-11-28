@@ -34,7 +34,7 @@ func init() {
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_at timestamp with time zone
 					, deletion_reason text
-					, UNIQUE (
+					, CONSTRAINT delivery_addresses_unique_user_destination UNIQUE (
 						user_id
 						, destination_longitude
 						, destination_latitude
@@ -46,56 +46,56 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (record_status);`,
+				`CREATE INDEX delivery_addresses_record_status_idx ON delivery_addresses (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (origin_longitude);`,
+				`CREATE INDEX delivery_addresses_origin_longitude_idx ON delivery_addresses (origin_longitude);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (origin_latitude);`,
+				`CREATE INDEX delivery_addresses_origin_latitude_idx ON delivery_addresses (origin_latitude);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (destination_longitude);`,
+				`CREATE INDEX delivery_addresses_destination_longitude_idx ON delivery_addresses (destination_longitude);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (destination_latitude);`,
+				`CREATE INDEX delivery_addresses_destination_latitude_idx ON delivery_addresses (destination_latitude);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (label, user_id);`,
+				`CREATE INDEX delivery_addresses_label_user_id_idx ON delivery_addresses (label, user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (main);`,
+				`CREATE INDEX delivery_addresses_main_idx ON delivery_addresses (main);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE UNIQUE INDEX one_main_address_per_user_idx ON delivery_addresses (user_id) WHERE main;`,
+				`CREATE UNIQUE INDEX delivery_addresses_unique_main_per_user_idx ON delivery_addresses (user_id) WHERE main;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

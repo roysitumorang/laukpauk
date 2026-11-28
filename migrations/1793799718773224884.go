@@ -30,21 +30,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON wallets (user_id);`,
+				`CREATE INDEX wallets_user_id_idx ON wallets (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON wallets (wallet_transfer_type);`,
+				`CREATE INDEX wallets_wallet_transfer_type_idx ON wallets (wallet_transfer_type);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON wallets (transaction_id);`,
+				`CREATE INDEX wallets_transaction_id_idx ON wallets (transaction_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

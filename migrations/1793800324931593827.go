@@ -29,14 +29,14 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON messages (name);`,
+				`CREATE INDEX messages_name_idx ON messages (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON messages (mobile_phone);`,
+				`CREATE INDEX messages_mobile_phone_idx ON messages (mobile_phone);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

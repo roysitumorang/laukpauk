@@ -39,7 +39,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipes (record_status);`,
+				`CREATE INDEX recipes_record_status_idx ON recipes (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -53,28 +53,28 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipes (deleted_name);`,
+				`CREATE INDEX recipes_deleted_name_idx ON recipes (deleted_name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipes (created_by);`,
+				`CREATE INDEX recipes_created_by_idx ON recipes (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipes (updated_by);`,
+				`CREATE INDEX recipes_updated_by_idx ON recipes (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipes (deleted_by);`,
+				`CREATE INDEX recipes_deleted_by_idx ON recipes (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

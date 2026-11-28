@@ -24,7 +24,7 @@ func init() {
 					, amount bigint NOT NULL
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
-					, UNIQUE (user_id, start_date, end_date)
+					, CONSTRAINT point_earnings_unique_user_id_start_date_end_date UNIQUE (user_id, start_date, end_date)
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -32,14 +32,14 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earnings (start_date);`,
+				`CREATE INDEX point_earnings_start_date_idx ON point_earnings (start_date);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earnings (end_date);`,
+				`CREATE INDEX point_earnings_end_date_idx ON point_earnings (end_date);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

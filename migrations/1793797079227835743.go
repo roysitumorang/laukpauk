@@ -36,7 +36,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_categories (record_status);`,
+				`CREATE INDEX product_categories_record_status_idx ON product_categories (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -50,21 +50,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_categories (created_by);`,
+				`CREATE INDEX product_categories_created_by_idx ON product_categories (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_categories (updated_by);`,
+				`CREATE INDEX product_categories_updated_by_idx ON product_categories (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_categories (deleted_by);`,
+				`CREATE INDEX product_categories_deleted_by_idx ON product_categories (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

@@ -320,7 +320,7 @@ func (q *promotionRepository) CreatePromotion(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "promotions_code_key" {
+			pgxErr.ConstraintName == "promotions_unique_code" {
 			err = models.ErrUniquePromotionCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -556,7 +556,7 @@ func (q *promotionRepository) UpdatePromotion(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "promotions_code_key" {
+			pgxErr.ConstraintName == "promotions_unique_code" {
 			err = models.ErrUniquePromotionCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

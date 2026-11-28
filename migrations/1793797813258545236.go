@@ -35,7 +35,7 @@ func init() {
 					, delivery_origin_latitude text NOT NULL
 					, delivery_cost_per_km bigint NOT NULL
 					, delivery_max_distance_km bigint NOT NULL
-					, whatsapp_phone_number text NOT NULL UNIQUE
+					, whatsapp_phone_number text NOT NULL CONSTRAINT setting_unique_whatsapp_phone_number UNIQUE
 					, payment_terms bigint NOT NULL
 					, maximum_delivery_time bigint NOT NULL
 					, transaction_auto_withdrawal_enabled boolean NOT NULL
@@ -52,7 +52,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON setting (updated_by);`,
+				`CREATE INDEX setting_updated_by_idx ON setting (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

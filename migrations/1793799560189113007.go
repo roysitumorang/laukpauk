@@ -41,35 +41,35 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_spending_caps (record_status);`,
+				`CREATE INDEX point_spending_caps_record_status_idx ON point_spending_caps (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_spending_caps (shopping_cost);`,
+				`CREATE INDEX point_spending_caps_shopping_cost_idx ON point_spending_caps (shopping_cost);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_spending_caps (created_by);`,
+				`CREATE INDEX point_spending_caps_created_by_idx ON point_spending_caps (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_spending_caps (updated_by);`,
+				`CREATE INDEX point_spending_caps_updated_by_idx ON point_spending_caps (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_spending_caps (deleted_by);`,
+				`CREATE INDEX point_spending_caps_deleted_by_idx ON point_spending_caps (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
