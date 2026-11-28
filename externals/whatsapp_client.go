@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/goccy/go-json/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/pools"
 	"github.com/valyala/fasthttp"
@@ -98,6 +99,7 @@ type WhatsappResponse struct {
 	MessagingProduct string                `json:"messaging_product"`
 	Contacts         []WhatsappContact     `json:"contacts"`
 	Messages         []WhatsappSentMessage `json:"messages"`
+	Error            *WhatsappError        `json:"error"`
 }
 
 // MessageID is the ID of the sent message, or "" when the response has none.
@@ -233,23 +235,17 @@ func (q *WhatsappClient) send(ctx context.Context, message *WhatsappMessage) (*W
 	}
 	statusCode := resp.StatusCode()
 	body := resp.Body()
-	if statusCode < 200 || statusCode > 299 {
-		var failure struct {
-			Error *WhatsappError `json:"error"`
-		}
-		if err = json.Unmarshal(body, &failure); err != nil || failure.Error == nil {
-			// err is nil when the body is JSON without an "error" object
-			if err != nil {
-				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
-			}
-			return nil, fmt.Errorf("whatsapp: HTTP %d: %s", statusCode, strings.TrimSpace(helper.ByteSlice2String(body)))
-		}
-		failure.Error.StatusCode = statusCode
-		return nil, failure.Error
-	}
 	var response WhatsappResponse
 	if err = json.Unmarshal(body, &response); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return nil, err
+	}
+	if statusCode < fiber.StatusOK || statusCode >= fiber.StatusMultipleChoices {
+		if response.Error == nil {
+			return nil, fmt.Errorf("whatsapp: HTTP %d: %s", statusCode, helper.ByteSlice2String(body))
+		}
+		response.Error.StatusCode = statusCode
+		return nil, response.Error
 	}
 	return &response, nil
 }
