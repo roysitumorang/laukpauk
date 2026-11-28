@@ -133,7 +133,7 @@ func (q *User) Validate() error {
 			*q.ReferralCode = strings.ToUpper(*q.ReferralCode)
 		}
 	}
-	if q.ReferrerID != nil && q.ReferrerID == uuid.Nil {
+	if q.ReferrerID != nil && *q.ReferrerID == uuid.Nil {
 		q.ReferrerID = nil
 	}
 	return nil
@@ -380,7 +380,7 @@ func (q *UserAccount) Validate(passwordRequired, addressRequired bool) error {
 	if q.Address == nil && addressRequired {
 		return errors.New("address: is required")
 	}
-	if q.ReferrerID != nil && q.ReferrerID == uuid.Nil {
+	if q.ReferrerID != nil && *q.ReferrerID == uuid.Nil {
 		q.ReferrerID = nil
 	}
 	if q.Base64Password = strings.TrimSpace(q.Base64Password); q.Base64Password == "" {

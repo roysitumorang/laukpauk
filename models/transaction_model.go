@@ -170,7 +170,7 @@ type TransactionItem struct {
 func (q *Transaction) Validate() error {
 	if q.New() &&
 		(q.CartID == nil ||
-			q.CartID == uuid.Nil) {
+			*q.CartID == uuid.Nil) {
 		return errors.New("cart_id: is required")
 	}
 	q.BuyerNote = strings.TrimSpace(q.BuyerNote)
@@ -181,7 +181,7 @@ func (q *Transaction) Validate() error {
 	}
 	if !q.RewardPointsDiscounted &&
 		q.VoucherID != nil &&
-		q.VoucherID == uuid.Nil {
+		*q.VoucherID == uuid.Nil {
 		q.VoucherID = nil
 	}
 	if q.DeliveryAddressID == uuid.Nil {
@@ -198,7 +198,7 @@ func (q *Transaction) Validate() error {
 		return errors.New("items: is required")
 	}
 	for i, item := range q.Items {
-		if item.CartItemID == nil || item.CartItemID == uuid.Nil {
+		if item.CartItemID == nil || *item.CartItemID == uuid.Nil {
 			return fmt.Errorf("items[%d].cart_item_id: is required", i)
 		}
 		item.BuyerNote = strings.TrimSpace(item.BuyerNote)
