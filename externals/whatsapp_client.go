@@ -1,15 +1,18 @@
 package externals
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
+	"log/slog"
 	"strings"
 	"time"
+	"unicode/utf8"
+
+	"github.com/goccy/go-json/v2"
+	"github.com/roysitumorang/laukpauk/helper"
+	"github.com/roysitumorang/laukpauk/pools"
+	"github.com/valyala/fasthttp"
 )
 
 // WhatsApp Cloud API (graph.facebook.com/<version>/<phone-number-id>/messages), with only the standard library.
@@ -41,7 +44,7 @@ type WhatsappError struct {
 }
 
 func (e *WhatsappError) Error() string {
-	return fmt.Sprintf("whatsapp: %s (HTTP %d, code %d, subcode %d, fbtrace_id %s)",
+	return helper.Sprintf("whatsapp: %s (HTTP %d, code %d, subcode %d, fbtrace_id %s)",
 		e.Message, e.StatusCode, e.Code, e.ErrorSubcode, e.FbtraceID)
 }
 
@@ -108,7 +111,7 @@ func (q *WhatsappResponse) MessageID() string {
 type WhatsappClient struct {
 	endpoint    string
 	accessToken string
-	client      *http.Client
+	client      *fasthttp.Client
 }
 
 // NewWhatsappClient sends through the Cloud API with the business phone number phoneNumberID. An empty baseURL or
@@ -129,25 +132,29 @@ func NewWhatsappClient(
 	}
 	var endpoint string
 	if phoneNumberID != "" && accessToken != "" {
-		endpoint = strings.TrimRight(baseURL, "/") + "/" + apiVersion + "/" + phoneNumberID + "/messages"
+		endpoint = helper.Sprintf("%s/%s/%s/messages", strings.TrimRight(baseURL, "/"), apiVersion, phoneNumberID)
 	}
 	return &WhatsappClient{
 		endpoint:    endpoint,
 		accessToken: accessToken,
-		client:      &http.Client{Timeout: timeout},
+		client:      &fasthttp.Client{ReadTimeout: timeout, WriteTimeout: timeout},
 	}
 }
 
 // NormalizeWhatsappNumber turns a phone number into the digits the Cloud API takes: "+62 811-609-9887" and
 // "08116099887" both become "628116099887" (a leading 0 is read as Indonesia's 62).
 func NormalizeWhatsappNumber(phone string) string {
-	var b strings.Builder
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
 	for _, r := range phone {
 		if r >= '0' && r <= '9' {
-			b.WriteRune(r)
+			_, _ = sb.WriteRune(r)
 		}
 	}
-	digits := b.String()
+	digits := sb.String()
 	if strings.HasPrefix(digits, "0") {
 		digits = "62" + digits[1:]
 	}
@@ -160,7 +167,7 @@ func (q *WhatsappClient) SendText(ctx context.Context, to, body string, previewU
 	if strings.TrimSpace(body) == "" {
 		return nil, ErrWhatsappEmptyBody
 	}
-	if len([]rune(body)) > WhatsappTextMaxLength {
+	if utf8.RuneCountInString(body) > WhatsappTextMaxLength {
 		return nil, ErrWhatsappBodyTooLong
 	}
 	return q.send(ctx, &WhatsappMessage{
@@ -194,6 +201,7 @@ func (q *WhatsappClient) SendTemplate(
 }
 
 func (q *WhatsappClient) send(ctx context.Context, message *WhatsappMessage) (*WhatsappResponse, error) {
+	ctxt := "WhatsappClient-send"
 	if q.endpoint == "" {
 		return nil, ErrWhatsappNotConfigured
 	}
@@ -205,31 +213,35 @@ func (q *WhatsappClient) send(ctx context.Context, message *WhatsappMessage) (*W
 	}
 	payload, err := json.Marshal(message)
 	if err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrMarshal")
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, q.endpoint, bytes.NewReader(payload))
-	if err != nil {
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+		fasthttp.ReleaseResponse(resp)
+	}()
+	req.SetRequestURI(q.endpoint)
+	req.Header.SetMethod(fasthttp.MethodPost)
+	req.Header.SetContentType("application/json")
+	req.Header.Set("Authorization", helper.Sprintf("Bearer %s", q.accessToken))
+	req.SetBodyRaw(payload)
+	if err = q.client.Do(req, resp); err != nil {
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDo")
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+q.accessToken)
-	resp, err := q.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+	statusCode := resp.StatusCode()
+	body := resp.Body()
+	if statusCode < 200 || statusCode > 299 {
 		var failure struct {
 			Error *WhatsappError `json:"error"`
 		}
 		if err = json.Unmarshal(body, &failure); err != nil || failure.Error == nil {
-			return nil, fmt.Errorf("whatsapp: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
+			return nil, fmt.Errorf("whatsapp: HTTP %d: %s", statusCode, strings.TrimSpace(helper.ByteSlice2String(body)))
 		}
-		failure.Error.StatusCode = resp.StatusCode
+		failure.Error.StatusCode = statusCode
 		return nil, failure.Error
 	}
 	var response WhatsappResponse
