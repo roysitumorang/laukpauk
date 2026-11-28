@@ -36,6 +36,7 @@ import (
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/pools"
 	slogfiber "github.com/samber/slog-fiber"
+	"github.com/shamaton/msgpack/v3"
 )
 
 const DefaultPort uint16 = 8080
@@ -43,6 +44,7 @@ const DefaultPort uint16 = 8080
 func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error {
 	ctxt := "Router-HTTPServerMain"
 	debug := helper.GetEnv() == "development"
+	msgpack.SetDecodedTimeAsLocal()
 	app := fiber.New(fiber.Config{
 		StrictRouting: true,
 		RegexHandler:  coregex.MustCompile,
@@ -60,6 +62,8 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		JSONDecoder: func(data []byte, v any) error {
 			return json.Unmarshal(data, v)
 		},
+		MsgPackEncoder: msgpack.Marshal,
+		MsgPackDecoder: msgpack.Unmarshal,
 		ErrorHandler: func(ctx fiber.Ctx, err error) error {
 			statusCode := fiber.StatusInternalServerError
 			if e, ok := errors.AsType[*fiber.Error](err); ok {
