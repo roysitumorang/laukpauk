@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -91,12 +91,12 @@ func (q *JsonWebTokenFilter) WithUrlValues(urlValues url.Values) *JsonWebTokenFi
 }
 
 func (q *JsonWebToken) Validate() error {
-	if q.UserID.Compare(uuid.Nil()) == 0 {
+	if q.UserID == uuid.Nil {
 		return errors.New("user_id: is required")
 	}
 	return nil
 }
 
 func (q *JsonWebToken) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }

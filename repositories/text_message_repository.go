@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -72,7 +72,7 @@ func (q *textMessageRepository) FindTextMessages(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM text_messages %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -130,7 +130,7 @@ func (q *textMessageRepository) FindTextMessages(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -143,19 +143,17 @@ func (q *textMessageRepository) FindTextMessages(
 	for rows.Next() {
 		var textMessage models.TextMessage
 		if err = rows.Scan(
-			helper.SQLScan(
-				&textMessage.ID,
-				&textMessage.UserID,
-				&textMessage.MobilePhone,
-				&textMessage.MessageType,
-				&textMessage.Body,
-				&textMessage.DeliveryStatus,
-				&textMessage.MessageID,
-				&textMessage.CreatedBy,
-				&textMessage.CreatedAt,
-				&textMessage.UpdatedAt,
-				&textMessage.SentAt,
-			)...,
+			&textMessage.ID,
+			&textMessage.UserID,
+			&textMessage.MobilePhone,
+			&textMessage.MessageType,
+			&textMessage.Body,
+			&textMessage.DeliveryStatus,
+			&textMessage.MessageID,
+			&textMessage.CreatedBy,
+			&textMessage.CreatedAt,
+			&textMessage.UpdatedAt,
+			&textMessage.SentAt,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -198,20 +196,18 @@ func (q *textMessageRepository) FindTextMessage(
 		condition,
 	)
 	var response models.TextMessage
-	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.UserID,
-			&response.MobilePhone,
-			&response.MessageType,
-			&response.Body,
-			&response.DeliveryStatus,
-			&response.MessageID,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedAt,
-			&response.SentAt,
-		)...,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.UserID,
+		&response.MobilePhone,
+		&response.MessageType,
+		&response.Body,
+		&response.DeliveryStatus,
+		&response.MessageID,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+		&response.SentAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrTextMessageNotFound
@@ -252,29 +248,25 @@ func (q *textMessageRepository) CreateTextMessage(
 			, created_at
 			, updated_at
 			, sent_at`,
-		helper.SQLArgs(
-			request.UserID,
-			request.MobilePhone,
-			request.MessageType,
-			request.Body,
-			request.CreatedBy,
-			request.CreatedAt,
-			request.UpdatedAt,
-		)...,
+		request.UserID,
+		request.MobilePhone,
+		request.MessageType,
+		request.Body,
+		request.CreatedBy,
+		request.CreatedAt,
+		request.UpdatedAt,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.UserID,
-			&response.MobilePhone,
-			&response.MessageType,
-			&response.Body,
-			&response.DeliveryStatus,
-			&response.MessageID,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedAt,
-			&response.SentAt,
-		)...,
+		&response.ID,
+		&response.UserID,
+		&response.MobilePhone,
+		&response.MessageType,
+		&response.Body,
+		&response.DeliveryStatus,
+		&response.MessageID,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+		&response.SentAt,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -306,21 +298,19 @@ func (q *textMessageRepository) UpdateTextMessage(
 		FROM text_messages
 		WHERE id = ?
 		FOR UPDATE`,
-		helper.SQLArgs(request.ID)...,
+		request.ID,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.UserID,
-			&response.MobilePhone,
-			&response.MessageType,
-			&response.Body,
-			&response.DeliveryStatus,
-			&response.MessageID,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedAt,
-			&response.SentAt,
-		)...,
+		&response.ID,
+		&response.UserID,
+		&response.MobilePhone,
+		&response.MessageType,
+		&response.Body,
+		&response.DeliveryStatus,
+		&response.MessageID,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+		&response.SentAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrTextMessageNotFound
@@ -391,20 +381,18 @@ func (q *textMessageRepository) UpdateTextMessage(
 			, created_at
 			, updated_at
 			, sent_at`)
-	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.UserID,
-			&response.MobilePhone,
-			&response.MessageType,
-			&response.Body,
-			&response.DeliveryStatus,
-			&response.MessageID,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedAt,
-			&response.SentAt,
-		)...,
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.UserID,
+		&response.MobilePhone,
+		&response.MessageType,
+		&response.Body,
+		&response.DeliveryStatus,
+		&response.MessageID,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedAt,
+		&response.SentAt,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -421,7 +409,7 @@ func (q *textMessageRepository) DeleteTextMessage(
 	result, err := tx.ExecContext(
 		ctx,
 		`DELETE FROM text_messages WHERE id = ?`,
-		helper.SQLArgs(textMessageID)...,
+		textMessageID,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

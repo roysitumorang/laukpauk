@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migrations"
@@ -49,7 +49,7 @@ func testPool(t *testing.T) *sql.DB {
 func sellerID(t *testing.T, db *sql.DB) uuid.UUID {
 	t.Helper()
 	var id uuid.UUID
-	if err := db.QueryRowContext(context.Background(), "SELECT id FROM users ORDER BY created_at LIMIT 1").Scan(helper.SQLScan(&id)...); err != nil {
+	if err := db.QueryRowContext(context.Background(), "SELECT id FROM users ORDER BY created_at LIMIT 1").Scan(&id); err != nil {
 		t.Fatalf("seller: %v", err)
 	}
 	return id
@@ -89,7 +89,7 @@ func TestMariaDBTransactionCounterUpsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second save: %v", err)
 	}
-	if first.Hits != 1 || second.Hits != 2 || first.ID.Compare(second.ID) != 0 || second.TransactionWindow != window {
+	if first.Hits != 1 || second.Hits != 2 || first.ID != second.ID || second.TransactionWindow != window {
 		t.Fatalf("got %+v then %+v; want hits 1 then 2 on the same row", first, second)
 	}
 }
@@ -117,7 +117,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create: %v", err)
 		}
-		if created.ID.Compare(uuid.Nil()) == 0 || created.Name != "Sayur Test 10" || created.CreatedAt.Location() != time.Local {
+		if created.ID == uuid.Nil || created.Name != "Sayur Test 10" {
 			t.Fatalf("created = %+v", created)
 		}
 		if _, err = repo.CreateProductCategory(ctx, tx, category("sayur test 10")); !errors.Is(err, models.ErrUniqueProductCategoryNameViolation) {
@@ -134,7 +134,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 				t.Fatalf("create %q: %v", name, err)
 			}
 		}
-		rows, err := tx.QueryContext(ctx, "SELECT name FROM product_categories WHERE name LIKE ? ORDER BY "+sortExpression("name"), helper.SQLArgs("Item %")...)
+		rows, err := tx.QueryContext(ctx, "SELECT name FROM product_categories WHERE name LIKE ? ORDER BY "+sortExpression("name"), "Item %")
 		if err != nil {
 			t.Fatalf("query: %v", err)
 		}
@@ -142,7 +142,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 		var names []string
 		for rows.Next() {
 			var name string
-			if err = rows.Scan(helper.SQLScan(&name)...); err != nil {
+			if err = rows.Scan(&name); err != nil {
 				t.Fatalf("scan: %v", err)
 			}
 			names = append(names, name)

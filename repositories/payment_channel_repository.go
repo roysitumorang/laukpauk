@@ -56,7 +56,7 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM payment_channels %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -120,7 +120,7 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -133,21 +133,19 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 	for rows.Next() {
 		var paymentChannel models.PaymentChannel
 		if err = rows.Scan(
-			helper.SQLScan(
-				&paymentChannel.ID,
-				&paymentChannel.BusinessID,
-				&paymentChannel.Name,
-				&paymentChannel.ChannelCode,
-				&paymentChannel.Country,
-				&paymentChannel.Currency,
-				&paymentChannel.MinimumAmount,
-				&paymentChannel.MaximumAmount,
-				&paymentChannel.PaymentRequestExpiry,
-				&paymentChannel.Refund,
-				&paymentChannel.ChannelType,
-				&paymentChannel.ChannelCategory,
-				&paymentChannel.CreatedAt,
-			)...,
+			&paymentChannel.ID,
+			&paymentChannel.BusinessID,
+			&paymentChannel.Name,
+			&paymentChannel.ChannelCode,
+			&paymentChannel.Country,
+			&paymentChannel.Currency,
+			&paymentChannel.MinimumAmount,
+			&paymentChannel.MaximumAmount,
+			&paymentChannel.PaymentRequestExpiry,
+			&paymentChannel.Refund,
+			&paymentChannel.ChannelType,
+			&paymentChannel.ChannelCategory,
+			&paymentChannel.CreatedAt,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -193,22 +191,20 @@ func (q *paymentChannelRepository) FindPaymentChannel(
 	)
 	query := sb.String()
 	var response models.PaymentChannel
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.BusinessID,
-			&response.Name,
-			&response.ChannelCode,
-			&response.Country,
-			&response.Currency,
-			&response.MinimumAmount,
-			&response.MaximumAmount,
-			&response.PaymentRequestExpiry,
-			&response.Refund,
-			&response.ChannelType,
-			&response.ChannelCategory,
-			&response.CreatedAt,
-		)...,
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
+		&response.ID,
+		&response.BusinessID,
+		&response.Name,
+		&response.ChannelCode,
+		&response.Country,
+		&response.Currency,
+		&response.MinimumAmount,
+		&response.MaximumAmount,
+		&response.PaymentRequestExpiry,
+		&response.Refund,
+		&response.ChannelType,
+		&response.ChannelCategory,
+		&response.CreatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPaymentChannelNotFound

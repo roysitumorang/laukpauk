@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
 	"github.com/roysitumorang/laukpauk/helper"
 )
@@ -170,7 +170,7 @@ type TransactionItem struct {
 func (q *Transaction) Validate() error {
 	if q.New() &&
 		(q.CartID == nil ||
-			q.CartID.Compare(uuid.Nil()) == 0) {
+			q.CartID == uuid.Nil) {
 		return errors.New("cart_id: is required")
 	}
 	q.BuyerNote = strings.TrimSpace(q.BuyerNote)
@@ -181,10 +181,10 @@ func (q *Transaction) Validate() error {
 	}
 	if !q.RewardPointsDiscounted &&
 		q.VoucherID != nil &&
-		q.VoucherID.Compare(uuid.Nil()) == 0 {
+		q.VoucherID == uuid.Nil {
 		q.VoucherID = nil
 	}
-	if q.DeliveryAddressID.Compare(uuid.Nil()) == 0 {
+	if q.DeliveryAddressID == uuid.Nil {
 		return errors.New("delivery_address_id: is required")
 	}
 	q.DeliveryInstruction = strings.TrimSpace(q.DeliveryInstruction)
@@ -198,7 +198,7 @@ func (q *Transaction) Validate() error {
 		return errors.New("items: is required")
 	}
 	for i, item := range q.Items {
-		if item.CartItemID == nil || item.CartItemID.Compare(uuid.Nil()) == 0 {
+		if item.CartItemID == nil || item.CartItemID == uuid.Nil {
 			return fmt.Errorf("items[%d].cart_item_id: is required", i)
 		}
 		item.BuyerNote = strings.TrimSpace(item.BuyerNote)
@@ -207,7 +207,7 @@ func (q *Transaction) Validate() error {
 }
 
 func (q *Transaction) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 // CalculateShoppingCost sums the items. The unique code is added later by ApplyUniqueCode, once the payment amount

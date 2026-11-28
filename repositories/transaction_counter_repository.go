@@ -53,19 +53,15 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 			, hits
 			, created_at
 			, updated_at`,
-		helper.SQLArgs(
-			request.TransactionWindow,
-			request.CreatedAt,
-			request.UpdatedAt,
-		)...,
+		request.TransactionWindow,
+		request.CreatedAt,
+		request.UpdatedAt,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.TransactionWindow,
-			&response.Hits,
-			&response.CreatedAt,
-			&response.UpdatedAt,
-		)...,
+		&response.ID,
+		&response.TransactionWindow,
+		&response.Hits,
+		&response.CreatedAt,
+		&response.UpdatedAt,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

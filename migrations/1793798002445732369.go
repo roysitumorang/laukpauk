@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -92,8 +92,8 @@ func init() {
 				`SELECT id
 				FROM users
 				WHERE email = ?`,
-				helper.SQLArgs("benni.surbakti@gmail.com")...,
-			).Scan(helper.SQLScan(&sellerID)...); err != nil {
+				"benni.surbakti@gmail.com",
+			).Scan(&sellerID); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 				return
 			}
@@ -381,7 +381,7 @@ func init() {
 						, ?
 						, ?
 					)`,
-					helper.SQLArgs(deliveryPlans[i]...)...,
+					deliveryPlans[i]...,
 				); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 					return

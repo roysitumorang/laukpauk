@@ -150,7 +150,7 @@ func init() {
 						, channel_category
 						, created_at
 					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-					helper.SQLArgs(params[i]...)...,
+					params[i]...,
 				); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 					return

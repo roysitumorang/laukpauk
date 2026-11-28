@@ -75,7 +75,7 @@ func (q *productRepository) FindProducts(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM products %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -140,7 +140,7 @@ func (q *productRepository) FindProducts(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -153,26 +153,24 @@ func (q *productRepository) FindProducts(
 	for rows.Next() {
 		var product models.Product
 		if err = rows.Scan(
-			helper.SQLScan(
-				&product.ID,
-				&product.RecordStatus,
-				&product.ProductCategoryID,
-				&product.ProductCategoryName,
-				&product.Name,
-				&product.Photo,
-				&product.Description,
-				&product.ReadyStock,
-				&product.Pinned,
-				&product.Hits,
-				&product.LowestSellingPrice,
-				&product.CreatedBy,
-				&product.CreatedAt,
-				&product.UpdatedBy,
-				&product.UpdatedAt,
-				&product.DeletedBy,
-				&product.DeletedAt,
-				&product.DeletionReason,
-			)...,
+			&product.ID,
+			&product.RecordStatus,
+			&product.ProductCategoryID,
+			&product.ProductCategoryName,
+			&product.Name,
+			&product.Photo,
+			&product.Description,
+			&product.ReadyStock,
+			&product.Pinned,
+			&product.Hits,
+			&product.LowestSellingPrice,
+			&product.CreatedBy,
+			&product.CreatedAt,
+			&product.UpdatedBy,
+			&product.UpdatedAt,
+			&product.DeletedBy,
+			&product.DeletedAt,
+			&product.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -200,7 +198,7 @@ func (q *productRepository) InfiniteScrollProducts(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM products %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, err
@@ -254,7 +252,7 @@ func (q *productRepository) InfiniteScrollProducts(
 	}
 	params = append(params, request.Limit)
 	_, _ = sb.WriteString(" FETCH FIRST ? ROWS ONLY")
-	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -267,27 +265,25 @@ func (q *productRepository) InfiniteScrollProducts(
 	for rows.Next() {
 		var product models.Product
 		if err = rows.Scan(
-			helper.SQLScan(
-				&product.RowNo,
-				&product.ID,
-				&product.RecordStatus,
-				&product.ProductCategoryID,
-				&product.ProductCategoryName,
-				&product.Name,
-				&product.Photo,
-				&product.Description,
-				&product.ReadyStock,
-				&product.Pinned,
-				&product.Hits,
-				&product.LowestSellingPrice,
-				&product.CreatedBy,
-				&product.CreatedAt,
-				&product.UpdatedBy,
-				&product.UpdatedAt,
-				&product.DeletedBy,
-				&product.DeletedAt,
-				&product.DeletionReason,
-			)...,
+			&product.RowNo,
+			&product.ID,
+			&product.RecordStatus,
+			&product.ProductCategoryID,
+			&product.ProductCategoryName,
+			&product.Name,
+			&product.Photo,
+			&product.Description,
+			&product.ReadyStock,
+			&product.Pinned,
+			&product.Hits,
+			&product.LowestSellingPrice,
+			&product.CreatedBy,
+			&product.CreatedAt,
+			&product.UpdatedBy,
+			&product.UpdatedAt,
+			&product.DeletedBy,
+			&product.DeletedAt,
+			&product.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, err
@@ -339,27 +335,25 @@ func (q *productRepository) FindProduct(
 		condition,
 	)
 	var response models.Product
-	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.ProductCategoryID,
-			&response.ProductCategoryName,
-			&response.Name,
-			&response.Photo,
-			&response.Description,
-			&response.ReadyStock,
-			&response.Pinned,
-			&response.Hits,
-			&response.LowestSellingPrice,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.ProductCategoryID,
+		&response.ProductCategoryName,
+		&response.Name,
+		&response.Photo,
+		&response.Description,
+		&response.ReadyStock,
+		&response.Pinned,
+		&response.Hits,
+		&response.LowestSellingPrice,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductNotFound
@@ -414,43 +408,39 @@ func (q *productRepository) CreateProduct(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		helper.SQLArgs(
-			request.RecordStatus,
-			request.ProductCategoryID,
-			request.ProductCategoryName,
-			request.Name,
-			request.Photo,
-			request.Description,
-			request.ReadyStock,
-			request.Pinned,
-			request.Hits,
-			request.LowestSellingPrice,
-			request.CreatedBy,
-			request.CreatedAt,
-			request.UpdatedBy,
-			request.UpdatedAt,
-		)...,
+		request.RecordStatus,
+		request.ProductCategoryID,
+		request.ProductCategoryName,
+		request.Name,
+		request.Photo,
+		request.Description,
+		request.ReadyStock,
+		request.Pinned,
+		request.Hits,
+		request.LowestSellingPrice,
+		request.CreatedBy,
+		request.CreatedAt,
+		request.UpdatedBy,
+		request.UpdatedAt,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.ProductCategoryID,
-			&response.ProductCategoryName,
-			&response.Name,
-			&response.Photo,
-			&response.Description,
-			&response.ReadyStock,
-			&response.Pinned,
-			&response.Hits,
-			&response.LowestSellingPrice,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.ProductCategoryID,
+		&response.ProductCategoryName,
+		&response.Name,
+		&response.Photo,
+		&response.Description,
+		&response.ReadyStock,
+		&response.Pinned,
+		&response.Hits,
+		&response.LowestSellingPrice,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		if isUniqueViolation(err, "products_unique_name_idx") {
 			err = models.ErrUniqueProductNameViolation
@@ -493,28 +483,26 @@ func (q *productRepository) UpdateProduct(
 		FROM products
 		WHERE id = ?
 		FOR UPDATE`,
-		helper.SQLArgs(request.ID)...,
+		request.ID,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.ProductCategoryID,
-			&response.ProductCategoryName,
-			&response.Name,
-			&response.Photo,
-			&response.Description,
-			&response.ReadyStock,
-			&response.Pinned,
-			&response.Hits,
-			&response.LowestSellingPrice,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.ProductCategoryID,
+		&response.ProductCategoryName,
+		&response.Name,
+		&response.Photo,
+		&response.Description,
+		&response.ReadyStock,
+		&response.Pinned,
+		&response.Hits,
+		&response.LowestSellingPrice,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductNotFound
@@ -539,7 +527,7 @@ func (q *productRepository) UpdateProduct(
 		}
 		_, _ = sb.WriteString(" record_status = ?")
 	}
-	if response.ProductCategoryID.Compare(request.ProductCategoryID) != 0 {
+	if response.ProductCategoryID != request.ProductCategoryID {
 		params = append(params, request.ProductCategoryID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -605,7 +593,7 @@ func (q *productRepository) UpdateProduct(
 	if len(params) == 0 {
 		return &response, nil
 	}
-	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+	if response.UpdatedBy != request.UpdatedBy {
 		params = append(params, request.UpdatedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -622,7 +610,7 @@ func (q *productRepository) UpdateProduct(
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
 		(response.DeletedBy != nil && request.DeletedBy != nil &&
-			response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+			*response.DeletedBy != *request.DeletedBy) {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -669,27 +657,25 @@ func (q *productRepository) UpdateProduct(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.ProductCategoryID,
-			&response.ProductCategoryName,
-			&response.Name,
-			&response.Photo,
-			&response.Description,
-			&response.ReadyStock,
-			&response.Pinned,
-			&response.Hits,
-			&response.LowestSellingPrice,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.ProductCategoryID,
+		&response.ProductCategoryName,
+		&response.Name,
+		&response.Photo,
+		&response.Description,
+		&response.ReadyStock,
+		&response.Pinned,
+		&response.Hits,
+		&response.LowestSellingPrice,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		if isUniqueViolation(err, "products_unique_name_idx") {
 			err = models.ErrUniqueProductNameViolation

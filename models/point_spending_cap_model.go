@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -53,7 +53,7 @@ func (q *PointSpendingCap) Populate() *PointSpendingCap {
 }
 
 func (q *PointSpendingCap) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 type PointSpendingCapFilter struct {

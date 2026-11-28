@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -74,7 +74,7 @@ func (q *Point) Validate() error {
 	if _, ok := MapPointTypes[q.PointType]; !ok {
 		return errors.New("point_type: not found")
 	}
-	if q.UserID.Compare(uuid.Nil()) == 0 {
+	if q.UserID == uuid.Nil {
 		return errors.New("user_id: is required")
 	}
 	if q.Amount < 1 {
@@ -87,7 +87,7 @@ func (q *Point) Validate() error {
 }
 
 func (q *Point) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 func (q *Point) Spendable() bool {

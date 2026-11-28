@@ -66,7 +66,7 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM recipe_guides %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -124,7 +124,7 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -137,19 +137,17 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 	for rows.Next() {
 		var recipeGuide models.RecipeGuide
 		if err = rows.Scan(
-			helper.SQLScan(
-				&recipeGuide.ID,
-				&recipeGuide.RecordStatus,
-				&recipeGuide.RecipeID,
-				&recipeGuide.Instruction,
-				&recipeGuide.CreatedBy,
-				&recipeGuide.CreatedAt,
-				&recipeGuide.UpdatedBy,
-				&recipeGuide.UpdatedAt,
-				&recipeGuide.DeletedBy,
-				&recipeGuide.DeletedAt,
-				&recipeGuide.DeletionReason,
-			)...,
+			&recipeGuide.ID,
+			&recipeGuide.RecordStatus,
+			&recipeGuide.RecipeID,
+			&recipeGuide.Instruction,
+			&recipeGuide.CreatedBy,
+			&recipeGuide.CreatedAt,
+			&recipeGuide.UpdatedBy,
+			&recipeGuide.UpdatedAt,
+			&recipeGuide.DeletedBy,
+			&recipeGuide.DeletedAt,
+			&recipeGuide.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -192,20 +190,18 @@ func (q *recipeGuideRepository) FindRecipeGuide(
 		condition,
 	)
 	var response models.RecipeGuide
-	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.RecipeID,
-			&response.Instruction,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.RecipeID,
+		&response.Instruction,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrRecipeGuideNotFound
@@ -246,29 +242,25 @@ func (q *recipeGuideRepository) CreateRecipeGuide(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		helper.SQLArgs(
-			request.RecordStatus,
-			request.RecipeID,
-			request.Instruction,
-			request.CreatedBy,
-			request.CreatedAt,
-			request.UpdatedBy,
-			request.UpdatedAt,
-		)...,
+		request.RecordStatus,
+		request.RecipeID,
+		request.Instruction,
+		request.CreatedBy,
+		request.CreatedAt,
+		request.UpdatedBy,
+		request.UpdatedAt,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.RecipeID,
-			&response.Instruction,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.RecipeID,
+		&response.Instruction,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -300,21 +292,19 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 		FROM recipe_guides
 		WHERE id = ?
 		FOR UPDATE`,
-		helper.SQLArgs(request.ID)...,
+		request.ID,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.RecipeID,
-			&response.Instruction,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.RecipeID,
+		&response.Instruction,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrRecipeGuideNotFound
@@ -349,7 +339,7 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 	if len(params) == 0 {
 		return &response, nil
 	}
-	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+	if response.UpdatedBy != request.UpdatedBy {
 		params = append(params, request.UpdatedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -366,7 +356,7 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
 		(response.DeletedBy != nil && request.DeletedBy != nil &&
-			response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+			*response.DeletedBy != *request.DeletedBy) {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -406,20 +396,18 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.RecipeID,
-			&response.Instruction,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.RecipeID,
+		&response.Instruction,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

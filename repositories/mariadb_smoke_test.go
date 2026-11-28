@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"uuid"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/models"
 )
 
@@ -39,7 +39,7 @@ func fillFilter(v reflect.Value, flag bool) {
 func fillValue(f reflect.Value, flag bool) {
 	switch {
 	case f.Type() == reflect.TypeFor[uuid.UUID]():
-		f.Set(reflect.ValueOf(uuid.NewV7()))
+		f.Set(reflect.ValueOf(uuid.Must(uuid.NewV7())))
 		return
 	case f.Type() == reflect.TypeFor[time.Time]():
 		f.Set(reflect.ValueOf(time.Now()))
@@ -316,10 +316,10 @@ func TestMariaDBQueries(t *testing.T) {
 		})
 	}
 	trx := NewTransactionRepository(db, db)
-	if _, err := trx.FindVouchersUsages(ctx, uuid.NewV7(), uuid.NewV7()); err != nil {
+	if _, err := trx.FindVouchersUsages(ctx, uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7())); err != nil {
 		t.Errorf("vouchers usages: %v", err)
 	}
-	if _, err := trx.FindPromotionsUsages(ctx, uuid.NewV7(), uuid.NewV7()); err != nil {
+	if _, err := trx.FindPromotionsUsages(ctx, uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7())); err != nil {
 		t.Errorf("promotions usages: %v", err)
 	}
 }

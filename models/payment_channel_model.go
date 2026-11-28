@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 

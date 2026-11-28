@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -68,7 +68,7 @@ func (q *voucherRepository) FindVouchers(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM vouchers %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -138,7 +138,7 @@ func (q *voucherRepository) FindVouchers(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -156,31 +156,29 @@ func (q *voucherRepository) FindVouchers(
 	for rows.Next() {
 		var voucher models.Voucher
 		if err = rows.Scan(
-			helper.SQLScan(
-				&voucher.ID,
-				&voucher.RecordStatus,
-				&voucher.VoucherType,
-				&voucher.TargetAudience,
-				&voucher.Code,
-				&voucher.DeletedCode,
-				&voucher.Photo,
-				&voucher.Name,
-				&voucher.Discount,
-				&voucher.MinimumPurchase,
-				&voucher.QuotaPerBuyer,
-				&voucher.EffectiveStartTime,
-				&voucher.EffectiveEndTime,
-				&voucher.EffectiveStartDate,
-				&voucher.EffectiveEndDate,
-				&voucher.Description,
-				&voucher.CreatedBy,
-				&voucher.CreatedAt,
-				&voucher.UpdatedBy,
-				&voucher.UpdatedAt,
-				&voucher.DeletedBy,
-				&voucher.DeletedAt,
-				&voucher.DeletionReason,
-			)...,
+			&voucher.ID,
+			&voucher.RecordStatus,
+			&voucher.VoucherType,
+			&voucher.TargetAudience,
+			&voucher.Code,
+			&voucher.DeletedCode,
+			&voucher.Photo,
+			&voucher.Name,
+			&voucher.Discount,
+			&voucher.MinimumPurchase,
+			&voucher.QuotaPerBuyer,
+			&voucher.EffectiveStartTime,
+			&voucher.EffectiveEndTime,
+			&voucher.EffectiveStartDate,
+			&voucher.EffectiveEndDate,
+			&voucher.Description,
+			&voucher.CreatedBy,
+			&voucher.CreatedAt,
+			&voucher.UpdatedBy,
+			&voucher.UpdatedAt,
+			&voucher.DeletedBy,
+			&voucher.DeletedAt,
+			&voucher.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -199,7 +197,7 @@ func (q *voucherRepository) FindVouchers(
 	if len(params) == 0 {
 		return response, total, pages, nil
 	}
-	rows, err = q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err = q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -215,10 +213,8 @@ func (q *voucherRepository) FindVouchers(
 	)
 	for rows.Next() {
 		if err = rows.Scan(
-			helper.SQLScan(
-				&voucherID,
-				&buyerID,
-			)...,
+			&voucherID,
+			&buyerID,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -275,32 +271,30 @@ func (q *voucherRepository) FindVoucher(
 	)
 	query := sb.String()
 	var response models.Voucher
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.VoucherType,
-			&response.TargetAudience,
-			&response.Code,
-			&response.DeletedCode,
-			&response.Photo,
-			&response.Name,
-			&response.Discount,
-			&response.MinimumPurchase,
-			&response.QuotaPerBuyer,
-			&response.EffectiveStartTime,
-			&response.EffectiveEndTime,
-			&response.EffectiveStartDate,
-			&response.EffectiveEndDate,
-			&response.Description,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.VoucherType,
+		&response.TargetAudience,
+		&response.Code,
+		&response.DeletedCode,
+		&response.Photo,
+		&response.Name,
+		&response.Discount,
+		&response.MinimumPurchase,
+		&response.QuotaPerBuyer,
+		&response.EffectiveStartTime,
+		&response.EffectiveEndTime,
+		&response.EffectiveStartDate,
+		&response.EffectiveEndDate,
+		&response.Description,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrVoucherNotFound
@@ -315,7 +309,7 @@ func (q *voucherRepository) FindVoucher(
 		FROM vouchers_users
 		WHERE voucher_id = ?
 		ORDER BY id`,
-		helper.SQLArgs(response.ID)...,
+		response.ID,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
@@ -327,7 +321,7 @@ func (q *voucherRepository) FindVoucher(
 	defer func() { _ = rows.Close() }()
 	var buyerID uuid.UUID
 	for rows.Next() {
-		if err = rows.Scan(helper.SQLScan(&buyerID)...); err != nil {
+		if err = rows.Scan(&buyerID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
@@ -391,52 +385,48 @@ func (q *voucherRepository) CreateVoucher(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		helper.SQLArgs(
-			request.RecordStatus,
-			request.VoucherType,
-			request.TargetAudience,
-			request.Code,
-			request.Photo,
-			request.Name,
-			request.Discount,
-			request.MinimumPurchase,
-			request.QuotaPerBuyer,
-			request.EffectiveStartTime,
-			request.EffectiveEndTime,
-			request.EffectiveStartDate,
-			request.EffectiveEndDate,
-			request.Description,
-			request.CreatedBy,
-			request.CreatedAt,
-			request.UpdatedBy,
-			request.UpdatedAt,
-		)...,
+		request.RecordStatus,
+		request.VoucherType,
+		request.TargetAudience,
+		request.Code,
+		request.Photo,
+		request.Name,
+		request.Discount,
+		request.MinimumPurchase,
+		request.QuotaPerBuyer,
+		request.EffectiveStartTime,
+		request.EffectiveEndTime,
+		request.EffectiveStartDate,
+		request.EffectiveEndDate,
+		request.Description,
+		request.CreatedBy,
+		request.CreatedAt,
+		request.UpdatedBy,
+		request.UpdatedAt,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.VoucherType,
-			&response.TargetAudience,
-			&response.Code,
-			&response.DeletedCode,
-			&response.Photo,
-			&response.Name,
-			&response.Discount,
-			&response.MinimumPurchase,
-			&response.QuotaPerBuyer,
-			&response.EffectiveStartTime,
-			&response.EffectiveEndTime,
-			&response.EffectiveStartDate,
-			&response.EffectiveEndDate,
-			&response.Description,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.VoucherType,
+		&response.TargetAudience,
+		&response.Code,
+		&response.DeletedCode,
+		&response.Photo,
+		&response.Name,
+		&response.Discount,
+		&response.MinimumPurchase,
+		&response.QuotaPerBuyer,
+		&response.EffectiveStartTime,
+		&response.EffectiveEndTime,
+		&response.EffectiveStartDate,
+		&response.EffectiveEndDate,
+		&response.Description,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		if isUniqueViolation(err, "vouchers_unique_code_idx") {
 			err = models.ErrUniqueVoucherCodeViolation
@@ -484,33 +474,31 @@ func (q *voucherRepository) UpdateVoucher(
 		FROM vouchers
 		WHERE id = ?
 		FOR UPDATE`,
-		helper.SQLArgs(request.ID)...,
+		request.ID,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.VoucherType,
-			&response.TargetAudience,
-			&response.Code,
-			&response.DeletedCode,
-			&response.Photo,
-			&response.Name,
-			&response.Discount,
-			&response.MinimumPurchase,
-			&response.QuotaPerBuyer,
-			&response.EffectiveStartTime,
-			&response.EffectiveEndTime,
-			&response.EffectiveStartDate,
-			&response.EffectiveEndDate,
-			&response.Description,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.VoucherType,
+		&response.TargetAudience,
+		&response.Code,
+		&response.DeletedCode,
+		&response.Photo,
+		&response.Name,
+		&response.Discount,
+		&response.MinimumPurchase,
+		&response.QuotaPerBuyer,
+		&response.EffectiveStartTime,
+		&response.EffectiveEndTime,
+		&response.EffectiveStartDate,
+		&response.EffectiveEndDate,
+		&response.Description,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrVoucherNotFound
@@ -640,7 +628,7 @@ func (q *voucherRepository) UpdateVoucher(
 		_, _ = sb.WriteString(" description = ?")
 	}
 	if len(params) > 0 {
-		if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+		if response.UpdatedBy != request.UpdatedBy {
 			params = append(params, request.UpdatedBy)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
@@ -657,7 +645,7 @@ func (q *voucherRepository) UpdateVoucher(
 		if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 			(response.DeletedBy != nil && request.DeletedBy == nil) ||
 			(response.DeletedBy != nil && request.DeletedBy != nil &&
-				response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+				*response.DeletedBy != *request.DeletedBy) {
 			params = append(params, request.DeletedBy)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
@@ -709,32 +697,30 @@ func (q *voucherRepository) UpdateVoucher(
 				, deleted_by
 				, deleted_at
 				, deletion_reason`)
-		if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-			helper.SQLScan(
-				&response.ID,
-				&response.RecordStatus,
-				&response.VoucherType,
-				&response.TargetAudience,
-				&response.Code,
-				&response.DeletedCode,
-				&response.Photo,
-				&response.Name,
-				&response.Discount,
-				&response.MinimumPurchase,
-				&response.QuotaPerBuyer,
-				&response.EffectiveStartTime,
-				&response.EffectiveEndTime,
-				&response.EffectiveStartDate,
-				&response.EffectiveEndDate,
-				&response.Description,
-				&response.CreatedBy,
-				&response.CreatedAt,
-				&response.UpdatedBy,
-				&response.UpdatedAt,
-				&response.DeletedBy,
-				&response.DeletedAt,
-				&response.DeletionReason,
-			)...,
+		if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.VoucherType,
+			&response.TargetAudience,
+			&response.Code,
+			&response.DeletedCode,
+			&response.Photo,
+			&response.Name,
+			&response.Discount,
+			&response.MinimumPurchase,
+			&response.QuotaPerBuyer,
+			&response.EffectiveStartTime,
+			&response.EffectiveEndTime,
+			&response.EffectiveStartDate,
+			&response.EffectiveEndDate,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
 		); err != nil {
 			if isUniqueViolation(err, "vouchers_unique_code_idx") {
 				err = models.ErrUniqueVoucherCodeViolation
@@ -750,7 +736,7 @@ func (q *voucherRepository) UpdateVoucher(
 		FROM vouchers_users
 		WHERE voucher_id = ?
 		ORDER BY id`,
-		helper.SQLArgs(request.ID)...,
+		request.ID,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
@@ -762,7 +748,7 @@ func (q *voucherRepository) UpdateVoucher(
 	mapBuyerIDs := map[uuid.UUID]struct{}{}
 	var buyerID uuid.UUID
 	for rows.Next() {
-		if err = rows.Scan(helper.SQLScan(&buyerID)...); err != nil {
+		if err = rows.Scan(&buyerID); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
 		}
@@ -795,11 +781,9 @@ func (q *voucherRepository) UpdateVoucher(
 				, user_id
 				, created_at
 			) VALUES (?, ?, ?)`,
-			helper.SQLArgs(
-				request.ID,
-				buyerID,
-				request.UpdatedAt,
-			)...,
+			request.ID,
+			buyerID,
+			request.UpdatedAt,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return nil, err
@@ -808,7 +792,7 @@ func (q *voucherRepository) UpdateVoucher(
 	if len(request.UserIDs) > 0 {
 		_, _ = sb.WriteString(")")
 	}
-	if _, err = tx.ExecContext(ctx, sb.String(), helper.SQLArgs(params...)...); err != nil {
+	if _, err = tx.ExecContext(ctx, sb.String(), params...); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, err
 	}

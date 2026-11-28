@@ -71,7 +71,7 @@ func (q *productCategoryRepository) FindProductCategories(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM product_categories %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -130,7 +130,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -143,20 +143,18 @@ func (q *productCategoryRepository) FindProductCategories(
 	for rows.Next() {
 		var productCategory models.ProductCategory
 		if err = rows.Scan(
-			helper.SQLScan(
-				&productCategory.ID,
-				&productCategory.RecordStatus,
-				&productCategory.Name,
-				&productCategory.Description,
-				&productCategory.Photo,
-				&productCategory.CreatedBy,
-				&productCategory.CreatedAt,
-				&productCategory.UpdatedBy,
-				&productCategory.UpdatedAt,
-				&productCategory.DeletedBy,
-				&productCategory.DeletedAt,
-				&productCategory.DeletionReason,
-			)...,
+			&productCategory.ID,
+			&productCategory.RecordStatus,
+			&productCategory.Name,
+			&productCategory.Description,
+			&productCategory.Photo,
+			&productCategory.CreatedBy,
+			&productCategory.CreatedAt,
+			&productCategory.UpdatedBy,
+			&productCategory.UpdatedAt,
+			&productCategory.DeletedBy,
+			&productCategory.DeletedAt,
+			&productCategory.DeletionReason,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -201,21 +199,19 @@ func (q *productCategoryRepository) FindProductCategory(
 	)
 	query := sb.String()
 	var response models.ProductCategory
-	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.Name,
-			&response.Description,
-			&response.Photo,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Name,
+		&response.Description,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductCategoryNotFound
@@ -258,31 +254,27 @@ func (q *productCategoryRepository) CreateProductCategory(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		helper.SQLArgs(
-			request.RecordStatus,
-			request.Name,
-			request.Description,
-			request.Photo,
-			request.CreatedBy,
-			request.CreatedAt,
-			request.UpdatedBy,
-			request.UpdatedAt,
-		)...,
+		request.RecordStatus,
+		request.Name,
+		request.Description,
+		request.Photo,
+		request.CreatedBy,
+		request.CreatedAt,
+		request.UpdatedBy,
+		request.UpdatedAt,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.Name,
-			&response.Description,
-			&response.Photo,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.Name,
+		&response.Description,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		if isUniqueViolation(err, "product_categories_unique_name_idx") {
 			err = models.ErrUniqueProductCategoryNameViolation
@@ -319,22 +311,20 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		FROM product_categories
 		WHERE id = ?
 		FOR UPDATE`,
-		helper.SQLArgs(request.ID)...,
+		request.ID,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.Name,
-			&response.Description,
-			&response.Photo,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+		&response.ID,
+		&response.RecordStatus,
+		&response.Name,
+		&response.Description,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductCategoryNotFound
@@ -383,7 +373,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 	if len(params) == 0 {
 		return &response, nil
 	}
-	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+	if response.UpdatedBy != request.UpdatedBy {
 		params = append(params, request.UpdatedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -400,7 +390,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
 		(response.DeletedBy != nil && request.DeletedBy != nil &&
-			response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+			*response.DeletedBy != *request.DeletedBy) {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
@@ -441,21 +431,19 @@ func (q *productCategoryRepository) UpdateProductCategory(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.RecordStatus,
-			&response.Name,
-			&response.Description,
-			&response.Photo,
-			&response.CreatedBy,
-			&response.CreatedAt,
-			&response.UpdatedBy,
-			&response.UpdatedAt,
-			&response.DeletedBy,
-			&response.DeletedAt,
-			&response.DeletionReason,
-		)...,
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
+		&response.ID,
+		&response.RecordStatus,
+		&response.Name,
+		&response.Description,
+		&response.Photo,
+		&response.CreatedBy,
+		&response.CreatedAt,
+		&response.UpdatedBy,
+		&response.UpdatedAt,
+		&response.DeletedBy,
+		&response.DeletedAt,
+		&response.DeletionReason,
 	); err != nil {
 		if isUniqueViolation(err, "product_categories_unique_name_idx") {
 			err = models.ErrUniqueProductCategoryNameViolation

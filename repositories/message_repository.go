@@ -52,20 +52,16 @@ func (q *messageRepository) CreateMessage(
 			, mobile_phone
 			, body
 			, created_at`,
-		helper.SQLArgs(
-			request.Name,
-			request.MobilePhone,
-			request.Body,
-			request.CreatedAt,
-		)...,
+		request.Name,
+		request.MobilePhone,
+		request.Body,
+		request.CreatedAt,
 	).Scan(
-		helper.SQLScan(
-			&response.ID,
-			&response.Name,
-			&response.MobilePhone,
-			&response.Body,
-			&response.CreatedAt,
-		)...,
+		&response.ID,
+		&response.Name,
+		&response.MobilePhone,
+		&response.Body,
+		&response.CreatedAt,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

@@ -21,12 +21,12 @@ import (
 	"time"
 	"unicode"
 	"unsafe"
-	"uuid"
 
 	"github.com/goccy/go-json/v2"
 	"github.com/godruoyi/go-snowflake"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/kolesa-team/go-webp/encoder"
 	"github.com/kolesa-team/go-webp/webp"
 	"github.com/roysitumorang/laukpauk/keys"

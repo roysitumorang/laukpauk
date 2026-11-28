@@ -2,7 +2,8 @@ package models
 
 import (
 	"testing"
-	"uuid"
+
+	"github.com/google/uuid"
 )
 
 // The wallet pays the shopping cost first, then the delivery cost with what is left of the balance.
@@ -111,9 +112,9 @@ func TestCalculateDiscountKeepsOnlyTheUsedPoints(t *testing.T) {
 
 // The promotion comes off the shopping cost before the voucher and the wallet; only what is used is recorded.
 func TestCalculateDiscountPromotionComesOffTheShoppingCost(t *testing.T) {
-	promotionID := uuid.Nil()
+	promotionID := uuid.Nil
 	voucherType := VoucherTypeShoppingCost
-	voucherID := uuid.Nil()
+	voucherID := uuid.Nil
 	q := Transaction{
 		ShoppingCost:          50000,
 		DeliveryEstimatedCost: 8000,
@@ -139,7 +140,7 @@ func TestCalculateDiscountPromotionComesOffTheShoppingCost(t *testing.T) {
 }
 
 func TestCalculateDiscountPromotionLargerThanTheShoppingCost(t *testing.T) {
-	promotionID := uuid.Nil()
+	promotionID := uuid.Nil
 	q := Transaction{
 		ShoppingCost:          6000,
 		DeliveryEstimatedCost: 8000,
@@ -163,7 +164,7 @@ func TestCalculateDiscountWithoutPromotionIgnoresItsDiscount(t *testing.T) {
 
 // A revision keeps the promotion off the items, never off the unique code.
 func TestRevisePromotionLeavesTheUniqueCode(t *testing.T) {
-	promotionID := uuid.Nil()
+	promotionID := uuid.Nil
 	q := Transaction{
 		UniqueCode:        123,
 		PromotionID:       &promotionID,

@@ -6,9 +6,9 @@ import (
 	"errors"
 	"log/slog"
 	"time"
-	"uuid"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"

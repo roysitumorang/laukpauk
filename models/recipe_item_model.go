@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -39,10 +39,10 @@ type RecipeItem struct {
 }
 
 func (q *RecipeItem) Validate() error {
-	if q.RecipeID.Compare(uuid.Nil()) == 0 {
+	if q.RecipeID == uuid.Nil {
 		return errors.New("recipe_id: is required")
 	}
-	if q.ProductVariantID.Compare(uuid.Nil()) == 0 {
+	if q.ProductVariantID == uuid.Nil {
 		return errors.New("product_variant_id: is required")
 	}
 	if q.Quantity < 1 {
@@ -53,7 +53,7 @@ func (q *RecipeItem) Validate() error {
 }
 
 func (q *RecipeItem) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 func (q *RecipeItem) ProductPhotoPath(baseURLs ...string) string {

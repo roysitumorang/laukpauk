@@ -9,9 +9,9 @@ import (
 	"os"
 	"sync/atomic"
 	"time"
-	"uuid"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"

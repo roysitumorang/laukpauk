@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -59,7 +59,7 @@ type Product struct {
 }
 
 func (q *Product) Validate() error {
-	if q.ProductCategoryID.Compare(uuid.Nil()) == 0 {
+	if q.ProductCategoryID == uuid.Nil {
 		return errors.New("product_category_id: is required")
 	}
 	if q.Name = strings.TrimSpace(q.Name); q.Name == "" {
@@ -70,7 +70,7 @@ func (q *Product) Validate() error {
 }
 
 func (q *Product) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 func (q *Product) SetPhoto(photo string) *Product {

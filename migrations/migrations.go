@@ -74,7 +74,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	mapVersions := map[int64]struct{}{}
 	for rows.Next() {
 		var version int64
-		if err = rows.Scan(helper.SQLScan(&version)...); err != nil {
+		if err = rows.Scan(&version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return err
 		}
@@ -97,7 +97,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUp")
 			return err
 		}
-		if _, err = tx.ExecContext(ctx, `INSERT INTO "migrations" ("version") VALUES (?)`, helper.SQLArgs(version)...); err != nil {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO "migrations" ("version") VALUES (?)`, version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return err
 		}

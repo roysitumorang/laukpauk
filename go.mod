@@ -17,6 +17,7 @@ require (
 	github.com/gofiber/storage/valkey v0.5.0
 	github.com/gofiber/utils/v2 v2.6.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/google/uuid v1.6.0
 	github.com/govalues/decimal v0.1.36
 	github.com/joho/godotenv v1.5.1
 	github.com/kolesa-team/go-webp v1.0.6
@@ -50,7 +51,6 @@ require (
 	github.com/go-openapi/swag/typeutils v0.29.2 // indirect
 	github.com/go-openapi/swag/yamlutils v0.29.2 // indirect
 	github.com/gofiber/schema v1.10.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20261101121723-be84dd9509a0 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect

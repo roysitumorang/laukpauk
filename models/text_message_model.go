@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -55,7 +55,7 @@ type TextMessage struct {
 }
 
 func (q *TextMessage) Validate() error {
-	if q.UserID.Compare(uuid.Nil()) == 0 {
+	if q.UserID == uuid.Nil {
 		return errors.New("user_id: is required")
 	}
 	if q.Body = strings.TrimSpace(q.Body); q.Body == "" {

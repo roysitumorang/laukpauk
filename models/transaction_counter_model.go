@@ -2,7 +2,8 @@ package models
 
 import (
 	"time"
-	"uuid"
+
+	"github.com/google/uuid"
 )
 
 type TransactionCounter struct {

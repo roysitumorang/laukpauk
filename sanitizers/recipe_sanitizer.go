@@ -8,11 +8,11 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"uuid"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/utils/v2"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -108,7 +108,7 @@ func ValidateRecipe(
 			return &response, nil, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG/WEBP file")
 		}
 		mimeType = new(mtype.String())
-		response.Photo = helper.Sprintf("%s.webp", uuid.NewV7().String())
+		response.Photo = helper.Sprintf("%s.webp", uuid.Must(uuid.NewV7()).String())
 	}
 	return &response, photo, mimeType, fiber.StatusOK, nil
 }

@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"log/slog"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -67,8 +67,8 @@ func init() {
 				`SELECT id
 				FROM users
 				WHERE email = ?`,
-				helper.SQLArgs("benni.surbakti@gmail.com")...,
-			).Scan(helper.SQLScan(&sellerID)...); err != nil {
+				"benni.surbakti@gmail.com",
+			).Scan(&sellerID); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 				return
 			}
@@ -171,32 +171,30 @@ func init() {
 					, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 					, ?, ?, ?, ?
 				);`,
-				helper.SQLArgs(
-					setting.VacationMode,
-					setting.VacationEndDate,
-					setting.VoucherEnabled,
-					setting.ReferralPointsEnabled,
-					setting.ReferralPointsMinimumShoppingCost,
-					setting.ReferralPointsAmount,
-					setting.ReferralPointsSlots,
-					setting.ReferralPointsExpense,
-					setting.RewardPointsAccumulationWindowInDays,
-					setting.DeliveryOriginLongitude,
-					setting.DeliveryOriginLatitude,
-					setting.DeliveryCostPerKM,
-					setting.DeliveryMaxDistanceKM,
-					setting.WhatsappPhoneNumber,
-					setting.PaymentTerms,
-					setting.MaximumDeliveryTime,
-					setting.TransactionAutoWithdrawalEnabled,
-					setting.TransactionAutoWithdrawalWindowMin,
-					setting.TransactionAutoWithdrawalWindowMax,
-					setting.OtpRequiredForLogin,
-					sellerID,
-					now,
-					sellerID,
-					now,
-				)...,
+				setting.VacationMode,
+				setting.VacationEndDate,
+				setting.VoucherEnabled,
+				setting.ReferralPointsEnabled,
+				setting.ReferralPointsMinimumShoppingCost,
+				setting.ReferralPointsAmount,
+				setting.ReferralPointsSlots,
+				setting.ReferralPointsExpense,
+				setting.RewardPointsAccumulationWindowInDays,
+				setting.DeliveryOriginLongitude,
+				setting.DeliveryOriginLatitude,
+				setting.DeliveryCostPerKM,
+				setting.DeliveryMaxDistanceKM,
+				setting.WhatsappPhoneNumber,
+				setting.PaymentTerms,
+				setting.MaximumDeliveryTime,
+				setting.TransactionAutoWithdrawalEnabled,
+				setting.TransactionAutoWithdrawalWindowMin,
+				setting.TransactionAutoWithdrawalWindowMax,
+				setting.OtpRequiredForLogin,
+				sellerID,
+				now,
+				sellerID,
+				now,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

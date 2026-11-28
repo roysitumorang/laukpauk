@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
