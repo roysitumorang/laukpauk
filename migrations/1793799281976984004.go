@@ -41,28 +41,28 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (shopping_cost);`,
+				`CREATE INDEX point_earning_caps_shopping_cost_idx ON point_earning_caps (shopping_cost);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (created_by);`,
+				`CREATE INDEX point_earning_caps_created_by_idx ON point_earning_caps (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (updated_by);`,
+				`CREATE INDEX point_earning_caps_updated_by_idx ON point_earning_caps (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (deleted_by);`,
+				`CREATE INDEX point_earning_caps_deleted_by_idx ON point_earning_caps (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

@@ -857,7 +857,7 @@ func (q *transactionRepository) CreateTransaction(
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation {
 			switch pgxErr.ConstraintName {
-			case "transactions_cart_id_key":
+			case "transactions_unique_cart_id":
 				err = models.ErrUniqueTransactionCartIdViolation
 			case "transactions_unique_reference_number_idx":
 				err = models.ErrUniqueTransactionReferenceNumberViolation
@@ -982,7 +982,7 @@ func (q *transactionRepository) CreateTransaction(
 		); err != nil {
 			if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 				pgxErr.Code == pgerrcode.UniqueViolation &&
-				pgxErr.ConstraintName == "transaction_items_transaction_id_product_variant_id_key" {
+				pgxErr.ConstraintName == "transaction_items_unique_transaction_id_product_variant_id" {
 				err = models.ErrUniqueTransactionProductVariantIdViolation
 			} else {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

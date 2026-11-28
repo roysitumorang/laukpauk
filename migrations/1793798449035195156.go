@@ -47,21 +47,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (record_status);`,
+				`CREATE INDEX vouchers_record_status_idx ON vouchers (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (voucher_type);`,
+				`CREATE INDEX vouchers_voucher_type_idx ON vouchers (voucher_type);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (target_audience);`,
+				`CREATE INDEX vouchers_target_audience_idx ON vouchers (target_audience);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -75,63 +75,63 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (deleted_code);`,
+				`CREATE INDEX vouchers_deleted_code_idx ON vouchers (deleted_code);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (name);`,
+				`CREATE INDEX vouchers_name_idx ON vouchers (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_start_time);`,
+				`CREATE INDEX vouchers_effective_start_time_idx ON vouchers (effective_start_time);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_end_time);`,
+				`CREATE INDEX vouchers_effective_end_time_idx ON vouchers (effective_end_time);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_start_date);`,
+				`CREATE INDEX vouchers_effective_start_date_idx ON vouchers (effective_start_date);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_end_date);`,
+				`CREATE INDEX vouchers_effective_end_date_idx ON vouchers (effective_end_date);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (created_by);`,
+				`CREATE INDEX vouchers_created_by_idx ON vouchers (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (updated_by);`,
+				`CREATE INDEX vouchers_updated_by_idx ON vouchers (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (deleted_by);`,
+				`CREATE INDEX vouchers_deleted_by_idx ON vouchers (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

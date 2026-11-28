@@ -26,12 +26,12 @@ func init() {
 					, mobile_phone_confirmation_sent_at timestamp with time zone
 					, mobile_phone_confirmation_token text
 					, mobile_phone_confirmed_at timestamp with time zone
-					, mobile_phone text NOT NULL UNIQUE
-					, username text UNIQUE COLLATE "case_insensitive"
+					, mobile_phone text NOT NULL CONSTRAINT users_unique_mobile_phone UNIQUE
+					, username text CONSTRAINT users_unique_username UNIQUE COLLATE "case_insensitive"
 					, email_confirmation_sent_at timestamp with time zone
 					, email_confirmation_token text
 					, email_confirmed_at timestamp with time zone
-					, email text UNIQUE COLLATE "case_insensitive"
+					, email text CONSTRAINT users_unique_email UNIQUE COLLATE "case_insensitive"
 					, encrypted_password text
 					, password_reset_sent_at timestamp with time zone
 					, password_reset_token text
@@ -48,7 +48,7 @@ func init() {
 					, otp_expired_at timestamp with time zone
 					, photo text NOT NULL
 					, user_level text NOT NULL
-					, referral_code text UNIQUE
+					, referral_code text CONSTRAINT users_unique_referral_code UNIQUE
 					, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, referral_points bigint
 					, reward_points bigint
@@ -67,49 +67,49 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (role);`,
+				`CREATE INDEX users_role_idx ON users (role);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (status);`,
+				`CREATE INDEX users_status_idx ON users (status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (name);`,
+				`CREATE INDEX users_name_idx ON users (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (referrer_id);`,
+				`CREATE INDEX users_referrer_id_idx ON users (referrer_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (created_by);`,
+				`CREATE INDEX users_created_by_idx ON users (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (updated_by);`,
+				`CREATE INDEX users_updated_by_idx ON users (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (deactivated_by);`,
+				`CREATE INDEX users_deactivated_by_idx ON users (deactivated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

@@ -35,7 +35,7 @@ func init() {
 				, revised_subtotal bigint NOT NULL
 				, revision_note text NOT NULL
 				, out_of_stock bool NOT NULL
-				, UNIQUE (transaction_id, product_variant_id)
+				, CONSTRAINT transaction_items_unique_transaction_id_product_variant_id UNIQUE (transaction_id, product_variant_id)
 			);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -43,14 +43,14 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transaction_items (product_variant_id);`,
+				`CREATE INDEX transaction_items_product_variant_id_idx ON transaction_items (product_variant_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transaction_items (product_id);`,
+				`CREATE INDEX transaction_items_product_id_idx ON transaction_items (product_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

@@ -39,7 +39,7 @@ func init() {
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
 					, deletion_reason text
-					, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
+					, CONSTRAINT delivery_plans_no_overlapping_transaction_window EXCLUDE USING gist (
 						weekday WITH =,
 						transaction_window WITH &&
 					)
@@ -50,42 +50,42 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (record_status);`,
+				`CREATE INDEX delivery_plans_record_status_idx ON delivery_plans (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (name);`,
+				`CREATE INDEX delivery_plans_name_idx ON delivery_plans (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (weekday);`,
+				`CREATE INDEX delivery_plans_weekday_idx ON delivery_plans (weekday);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (created_by);`,
+				`CREATE INDEX delivery_plans_created_by_idx ON delivery_plans (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (updated_by);`,
+				`CREATE INDEX delivery_plans_updated_by_idx ON delivery_plans (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (deleted_by);`,
+				`CREATE INDEX delivery_plans_deleted_by_idx ON delivery_plans (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

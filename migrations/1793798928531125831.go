@@ -21,7 +21,7 @@ func init() {
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, business_id text NOT NULL
 					, name text NOT NULL COLLATE "case_insensitive"
-					, channel_code text NOT NULL UNIQUE
+					, channel_code text NOT NULL CONSTRAINT payment_channels_unique_channel_code UNIQUE
 					, country text NOT NULL
 					, currency text NOT NULL
 					, minimum_amount bigint NOT NULL
@@ -38,21 +38,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				"CREATE INDEX ON payment_channels (name);",
+				"CREATE INDEX payment_channels_name_idx ON payment_channels (name);",
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				"CREATE INDEX ON payment_channels (minimum_amount);",
+				"CREATE INDEX payment_channels_minimum_amount_idx ON payment_channels (minimum_amount);",
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				"CREATE INDEX ON payment_channels (maximum_amount);",
+				"CREATE INDEX payment_channels_maximum_amount_idx ON payment_channels (maximum_amount);",
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

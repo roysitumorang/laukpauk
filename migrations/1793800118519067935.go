@@ -35,14 +35,14 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON withdrawals (user_id);`,
+				`CREATE INDEX withdrawals_user_id_idx ON withdrawals (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON withdrawals (reviewed_by);`,
+				`CREATE INDEX withdrawals_reviewed_by_idx ON withdrawals (reviewed_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

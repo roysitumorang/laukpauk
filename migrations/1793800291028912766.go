@@ -42,63 +42,63 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (record_status);`,
+				`CREATE INDEX recipe_items_record_status_idx ON recipe_items (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (recipe_id);`,
+				`CREATE INDEX recipe_items_recipe_id_idx ON recipe_items (recipe_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (product_id);`,
+				`CREATE INDEX recipe_items_product_id_idx ON recipe_items (product_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE UNIQUE INDEX ON recipe_items (recipe_id, product_id) WHERE record_status = 0;`,
+				`CREATE UNIQUE INDEX recipe_items_unique_recipe_product_idx ON recipe_items (recipe_id, product_id) WHERE record_status = 0;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (product_ready_stock);`,
+				`CREATE INDEX recipe_items_product_ready_stock_idx ON recipe_items (product_ready_stock);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (product_variant_id);`,
+				`CREATE INDEX recipe_items_product_variant_id_idx ON recipe_items (product_variant_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (created_by);`,
+				`CREATE INDEX recipe_items_created_by_idx ON recipe_items (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (updated_by);`,
+				`CREATE INDEX recipe_items_updated_by_idx ON recipe_items (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipe_items (deleted_by);`,
+				`CREATE INDEX recipe_items_deleted_by_idx ON recipe_items (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

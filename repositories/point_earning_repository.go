@@ -243,7 +243,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 	if err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
+			pgxErr.ConstraintName == "point_earnings_unique_user_id_start_date_end_date" {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -339,7 +339,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
+			pgxErr.ConstraintName == "point_earnings_unique_user_id_start_date_end_date" {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

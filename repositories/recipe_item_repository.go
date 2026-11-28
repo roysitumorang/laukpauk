@@ -328,7 +328,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipe_items_recipe_id_product_id_idx" {
+			pgxErr.ConstraintName == "recipe_items_unique_recipe_product_idx" {
 			err = models.ErrUniqueRecipeItemProductIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -562,7 +562,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipe_items_recipe_id_product_id_idx" {
+			pgxErr.ConstraintName == "recipe_items_unique_recipe_product_idx" {
 			err = models.ErrUniqueRecipeItemProductIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

@@ -49,21 +49,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_variants (record_status);`,
+				`CREATE INDEX product_variants_record_status_idx ON product_variants (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_variants (product_id);`,
+				`CREATE INDEX product_variants_product_id_idx ON product_variants (product_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_variants (stock_unit);`,
+				`CREATE INDEX product_variants_stock_unit_idx ON product_variants (stock_unit);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -77,21 +77,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_variants (created_by);`,
+				`CREATE INDEX product_variants_created_by_idx ON product_variants (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_variants (updated_by);`,
+				`CREATE INDEX product_variants_updated_by_idx ON product_variants (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_variants (deleted_by);`,
+				`CREATE INDEX product_variants_deleted_by_idx ON product_variants (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

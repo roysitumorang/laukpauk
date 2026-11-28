@@ -39,7 +39,7 @@ func init() {
 					, note text NOT NULL
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
-					, UNIQUE (cart_id, product_variant_id)
+					, CONSTRAINT cart_items_unique_cart_id_product_variant_id UNIQUE (cart_id, product_variant_id)
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -47,7 +47,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON cart_items (product_variant_id);`,
+				`CREATE INDEX cart_items_product_variant_id_idx ON cart_items (product_variant_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

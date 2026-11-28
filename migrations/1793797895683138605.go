@@ -35,35 +35,35 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON text_messages (user_id);`,
+				`CREATE INDEX text_messages_user_id_idx ON text_messages (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON text_messages (message_type);`,
+				`CREATE INDEX text_messages_message_type_idx ON text_messages (message_type);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON text_messages (delivery_status);`,
+				`CREATE INDEX text_messages_delivery_status_idx ON text_messages (delivery_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON text_messages (message_id);`,
+				`CREATE INDEX text_messages_message_id_idx ON text_messages (message_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON text_messages (created_by);`,
+				`CREATE INDEX text_messages_created_by_idx ON text_messages (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

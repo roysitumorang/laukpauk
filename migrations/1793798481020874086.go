@@ -21,7 +21,7 @@ func init() {
 					, voucher_id UUID NOT NULL REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
-					, UNIQUE (voucher_id, user_id)
+					, CONSTRAINT vouchers_users_unique_voucher_id_user_id UNIQUE (voucher_id, user_id)
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -29,7 +29,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers_users (user_id);`,
+				`CREATE INDEX vouchers_users_user_id_idx ON vouchers_users (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

@@ -21,7 +21,7 @@ func init() {
 					, parent_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, reordered BOOLEAN NOT NULL
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
+					, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT CONSTRAINT transactions_unique_cart_id UNIQUE
 					, reference_number text NOT NULL COLLATE "case_insensitive"
 					, status smallint NOT NULL
 					, recipient_name text NOT NULL
@@ -58,8 +58,8 @@ func init() {
 					, payment_due_date timestamp with time zone
 					, payment_channel_id UUID REFERENCES payment_channels (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, payment_channel_name text
-					, payment_request_id text UNIQUE
-					, payment_token_id text UNIQUE
+					, payment_request_id text CONSTRAINT transactions_unique_payment_request_id UNIQUE
+					, payment_token_id text CONSTRAINT transactions_unique_payment_token_id UNIQUE
 					, payment_virtual_account_number text
 					, payment_virtual_account_expired_at timestamp with time zone
 					, created_at timestamp with time zone NOT NULL
@@ -68,7 +68,7 @@ func init() {
 					, payment_status text
 					, payment_failure_code text
 					, payment_captured_at timestamp with time zone
-					, payment_id text UNIQUE
+					, payment_id text CONSTRAINT transactions_unique_payment_id UNIQUE
 					, paid_at timestamp with time zone
 					, withdrawal_requested_at timestamp with time zone
 					, withdrawal_reason text
@@ -81,7 +81,7 @@ func init() {
 					, revised_payment_amount bigint NOT NULL
 					, refund_amount bigint NOT NULL
 					, refunded_at timestamp with time zone
-					, refund_id text UNIQUE
+					, refund_id text CONSTRAINT transactions_unique_refund_id UNIQUE
 					, shipped_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, shipped_at timestamp with time zone
 					, delivery_actual_cost bigint NOT NULL
@@ -96,21 +96,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (parent_id);`,
+				`CREATE INDEX transactions_parent_id_idx ON transactions (parent_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (reordered);`,
+				`CREATE INDEX transactions_reordered_idx ON transactions (reordered);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (user_id);`,
+				`CREATE INDEX transactions_user_id_idx ON transactions (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -124,105 +124,105 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (status);`,
+				`CREATE INDEX transactions_status_idx ON transactions (status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (referrer_id);`,
+				`CREATE INDEX transactions_referrer_id_idx ON transactions (referrer_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (voucher_id);`,
+				`CREATE INDEX transactions_voucher_id_idx ON transactions (voucher_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (delivery_address_id);`,
+				`CREATE INDEX transactions_delivery_address_id_idx ON transactions (delivery_address_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (payment_due_date);`,
+				`CREATE INDEX transactions_payment_due_date_idx ON transactions (payment_due_date);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (payment_channel_id);`,
+				`CREATE INDEX transactions_payment_channel_id_idx ON transactions (payment_channel_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (payment_request_id);`,
+				`CREATE INDEX transactions_payment_request_id_idx ON transactions (payment_request_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (payment_token_id);`,
+				`CREATE INDEX transactions_payment_token_id_idx ON transactions (payment_token_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (payment_id);`,
+				`CREATE INDEX transactions_payment_id_idx ON transactions (payment_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (created_at);`,
+				`CREATE INDEX transactions_created_at_idx ON transactions (created_at);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (withdrawn_by);`,
+				`CREATE INDEX transactions_withdrawn_by_idx ON transactions (withdrawn_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (processed_by);`,
+				`CREATE INDEX transactions_processed_by_idx ON transactions (processed_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (shipped_by);`,
+				`CREATE INDEX transactions_shipped_by_idx ON transactions (shipped_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (shipped_at);`,
+				`CREATE INDEX transactions_shipped_at_idx ON transactions (shipped_at);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON transactions (completed_by);`,
+				`CREATE INDEX transactions_completed_by_idx ON transactions (completed_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}
