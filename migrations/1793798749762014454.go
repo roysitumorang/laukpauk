@@ -39,7 +39,7 @@ func init() {
 					-- RESTRICT, not CASCADE: MariaDB won't let a generated column read a column whose foreign key cascades
 					, CONSTRAINT delivery_addresses_user_id_destination_longitude_destination_lat UNIQUE (user_id, destination_longitude, destination_latitude)
 					, CONSTRAINT one_main_address_per_user_idx UNIQUE (main_user_id)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

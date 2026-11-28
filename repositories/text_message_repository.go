@@ -493,7 +493,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		keyword := sb.String()
 		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
@@ -502,7 +502,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 				FROM users
 				WHERE users.id = text_messages.user_id
 					AND (
-						LOWER(users.name) LIKE ?
+						users.name LIKE ?
 						OR users.username LIKE ?
 						OR users.email LIKE ?
 						OR users.mobile_phone LIKE ?

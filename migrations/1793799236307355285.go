@@ -23,7 +23,7 @@ func init() {
 					, created_at DATETIME(6) NOT NULL
 					, updated_at DATETIME(6) NOT NULL
 					, CONSTRAINT transaction_counters_transaction_window_key UNIQUE (transaction_window)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}

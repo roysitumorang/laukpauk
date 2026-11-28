@@ -44,7 +44,7 @@ func init() {
 					, CONSTRAINT cart_items_product_category_id_fkey FOREIGN KEY (product_category_id) REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT cart_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT cart_items_cart_id_product_variant_id_key UNIQUE (cart_id, product_variant_id)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

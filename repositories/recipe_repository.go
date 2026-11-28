@@ -564,7 +564,7 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 	if len(request.Names) > 0 {
 		sb.Reset()
 		for i, name := range request.Names {
-			params = append(params, strings.ToLower(name))
+			params = append(params, name)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -573,18 +573,18 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 		placeholders := sb.String()
 		// the same names again, for the second IN list
 		for _, name := range request.Names {
-			params = append(params, strings.ToLower(name))
+			params = append(params, name)
 		}
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(LOWER(name) IN (%s) OR LOWER(deleted_name) IN (%s))", placeholders, placeholders)
+		_, _ = fmt.Fprintf(sb, "(name IN (%s) OR deleted_name IN (%s))", placeholders, placeholders)
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) LIKE ?")
+		_, _ = sb.WriteString("name LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

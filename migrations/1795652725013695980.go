@@ -19,9 +19,9 @@ func init() {
 				`CREATE TABLE promotions (
 					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
 					, record_status smallint NOT NULL
-					, name VARCHAR(255) COLLATE utf8mb4_uca1400_as_ci NOT NULL
-					, code VARCHAR(255) COLLATE utf8mb4_uca1400_as_ci
-					, deleted_code TEXT COLLATE utf8mb4_uca1400_as_ci
+					, name VARCHAR(255) NOT NULL
+					, code VARCHAR(255)
+					, deleted_code TEXT
 					, description TEXT NOT NULL
 					, discount bigint NOT NULL
 					, quota_per_buyer bigint NOT NULL
@@ -38,7 +38,7 @@ func init() {
 					, CONSTRAINT promotions_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT promotions_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT promotions_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

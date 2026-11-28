@@ -35,13 +35,13 @@ func init() {
 					, deleted_by UUID
 					, deleted_at DATETIME(6)
 					, deletion_reason TEXT
-					, active_name_key VARCHAR(255) AS (IF(record_status = 0, LOWER(name), NULL)) PERSISTENT INVISIBLE
+					, active_name_key VARCHAR(255) AS (IF(record_status = 0, name, NULL)) PERSISTENT INVISIBLE
 					, CONSTRAINT products_product_category_id_fkey FOREIGN KEY (product_category_id) REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT products_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT products_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT products_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT products_unique_name_idx UNIQUE (active_name_key)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

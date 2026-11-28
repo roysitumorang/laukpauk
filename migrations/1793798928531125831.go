@@ -32,7 +32,7 @@ func init() {
 					, channel_category TEXT NOT NULL
 					, created_at DATETIME(6) NOT NULL
 					, CONSTRAINT payment_channels_channel_code_key UNIQUE (channel_code)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

@@ -42,14 +42,14 @@ func init() {
 					, deleted_by UUID
 					, deleted_at DATETIME(6)
 					, deletion_reason TEXT
-					, active_stock_unit_key VARCHAR(255) AS (IF(record_status = 0, LOWER(stock_unit), NULL)) PERSISTENT INVISIBLE
+					, active_stock_unit_key VARCHAR(255) AS (IF(record_status = 0, stock_unit, NULL)) PERSISTENT INVISIBLE
 					, CONSTRAINT product_variants_product_category_id_fkey FOREIGN KEY (product_category_id) REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT product_variants_product_id_fkey FOREIGN KEY (product_id) REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT product_variants_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT product_variants_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT product_variants_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT product_variants_lower_product_id_idx UNIQUE (active_stock_unit_key, product_id)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

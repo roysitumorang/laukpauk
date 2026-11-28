@@ -416,38 +416,37 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 		conds = append(conds, sb.String())
 	}
 	if request.Login != "" {
-		login := strings.ToLower(request.Login)
-		params = append(params, login, login, login)
+		params = append(params, request.Login, request.Login, request.Login)
 		sb.Reset()
 		_, _ = sb.WriteString("(username = ? OR email = ? OR mobile_phone = ?)")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		keyword := sb.String()
 		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = sb.WriteString(`(LOWER(name) LIKE ?
+		_, _ = sb.WriteString(`(name LIKE ?
 				OR username LIKE ?
 				OR email LIKE ?
 				OR mobile_phone LIKE ?)`)
 		conds = append(conds, sb.String())
 	}
 	if request.Username != "" {
-		params = append(params, strings.ToLower(request.Username))
+		params = append(params, request.Username)
 		sb.Reset()
 		_, _ = sb.WriteString("username = ?")
 		conds = append(conds, sb.String())
 	}
 	if request.Email != "" {
-		params = append(params, strings.ToLower(request.Email))
+		params = append(params, request.Email)
 		sb.Reset()
 		_, _ = sb.WriteString("email = ?")
 		conds = append(conds, sb.String())
 	}
 	if request.MobilePhone != "" {
-		params = append(params, strings.ToLower(request.MobilePhone))
+		params = append(params, request.MobilePhone)
 		sb.Reset()
 		_, _ = sb.WriteString("mobile_phone = ?")
 		conds = append(conds, sb.String())

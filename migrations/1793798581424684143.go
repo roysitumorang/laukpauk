@@ -25,7 +25,7 @@ func init() {
 					, CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT carts_user_id_key UNIQUE (user_id)
 					, CONSTRAINT carts_deleted_user_id_fkey FOREIGN KEY (deleted_user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

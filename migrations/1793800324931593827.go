@@ -22,7 +22,7 @@ func init() {
 					, mobile_phone VARCHAR(255) NOT NULL
 					, body TEXT NOT NULL
 					, created_at DATETIME(6) NOT NULL
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

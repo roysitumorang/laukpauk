@@ -92,11 +92,7 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		field := item.Field
-		if item.Field == models.PaymentChannelSortingFieldName {
-			field = "LOWER(name)"
-		}
-		_, _ = fmt.Fprintf(sb, " %s %s", field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -243,10 +239,10 @@ func (q *paymentChannelRepository) buildCondition(request *models.PaymentChannel
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) LIKE ?")
+		_, _ = sb.WriteString("name LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

@@ -770,7 +770,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 	if len(request.StockUnits) > 0 {
 		sb.Reset()
 		for i, stockUnit := range request.StockUnits {
-			params = append(params, strings.ToLower(stockUnit))
+			params = append(params, stockUnit)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -778,7 +778,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(stock_unit) IN (%s)", placeholders)
+		_, _ = fmt.Fprintf(sb, "stock_unit IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

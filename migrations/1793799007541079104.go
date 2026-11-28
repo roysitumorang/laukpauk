@@ -89,7 +89,6 @@ func init() {
 					, complaint TEXT
 					, completed_by UUID
 					, completed_at DATETIME(6)
-					, reference_number_key VARCHAR(255) AS (LOWER(reference_number)) PERSISTENT INVISIBLE
 					, CONSTRAINT transactions_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT transactions_cart_id_fkey FOREIGN KEY (cart_id) REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -106,8 +105,8 @@ func init() {
 					, CONSTRAINT transactions_refund_id_key UNIQUE (refund_id)
 					, CONSTRAINT transactions_shipped_by_fkey FOREIGN KEY (shipped_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT transactions_completed_by_fkey FOREIGN KEY (completed_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, CONSTRAINT transactions_unique_reference_number_idx UNIQUE (reference_number_key)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+					, CONSTRAINT transactions_unique_reference_number_idx UNIQUE (reference_number)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

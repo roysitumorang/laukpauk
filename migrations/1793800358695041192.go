@@ -24,7 +24,7 @@ func init() {
 					, CONSTRAINT message_receipts_message_id_fkey FOREIGN KEY (message_id) REFERENCES messages (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT message_receipts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT message_receipts_message_id_user_id_key UNIQUE (message_id, user_id)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

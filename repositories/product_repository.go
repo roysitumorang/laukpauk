@@ -776,7 +776,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	if len(request.Names) > 0 {
 		sb.Reset()
 		for i, name := range request.Names {
-			params = append(params, strings.ToLower(name))
+			params = append(params, name)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -784,7 +784,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) IN (%s)", placeholders)
+		_, _ = fmt.Fprintf(sb, "name IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if request.ReadyStock != nil {
@@ -796,10 +796,10 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(name) LIKE ?")
+		_, _ = sb.WriteString("name LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

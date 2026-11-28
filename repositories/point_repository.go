@@ -536,7 +536,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		keyword := sb.String()
 		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
@@ -545,11 +545,11 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 				FROM users u
 				WHERE u.id = points.user_id
 					AND (
-						LOWER(u.name) LIKE ?
+						u.name LIKE ?
 						OR u.username LIKE ?
 						OR u.mobile_phone LIKE ?
 					)
-			) OR LOWER(points.description) LIKE ?)`)
+			) OR points.description LIKE ?)`)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

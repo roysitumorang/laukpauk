@@ -24,17 +24,17 @@ func init() {
 					, status VARCHAR(255) NOT NULL
 					, name TEXT NOT NULL
 					, mobile_phone_confirmation_sent_at DATETIME(6)
-					, mobile_phone_confirmation_token TEXT
+					, mobile_phone_confirmation_token TEXT COLLATE utf8mb4_bin
 					, mobile_phone_confirmed_at DATETIME(6)
 					, mobile_phone VARCHAR(255) NOT NULL
 					, username VARCHAR(255)
 					, email_confirmation_sent_at DATETIME(6)
-					, email_confirmation_token TEXT
+					, email_confirmation_token TEXT COLLATE utf8mb4_bin
 					, email_confirmed_at DATETIME(6)
 					, email VARCHAR(255)
-					, encrypted_password TEXT
+					, encrypted_password TEXT COLLATE utf8mb4_bin
 					, password_reset_sent_at DATETIME(6)
-					, password_reset_token TEXT
+					, password_reset_token TEXT COLLATE utf8mb4_bin
 					, password_changed_at DATETIME(6)
 					, sign_in_count integer NOT NULL DEFAULT 0
 					, current_sign_in_at DATETIME(6)
@@ -42,9 +42,9 @@ func init() {
 					, current_sign_in_ip TEXT
 					, last_sign_in_ip TEXT
 					, failed_attempts integer NOT NULL DEFAULT 0
-					, unlock_token TEXT
+					, unlock_token TEXT COLLATE utf8mb4_bin
 					, locked_at DATETIME(6)
-					, otp_secret TEXT
+					, otp_secret TEXT COLLATE utf8mb4_bin
 					, otp_expired_at DATETIME(6)
 					, photo TEXT NOT NULL
 					, user_level TEXT NOT NULL
@@ -68,7 +68,7 @@ func init() {
 					, CONSTRAINT users_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT users_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT users_deactivated_by_fkey FOREIGN KEY (deactivated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return

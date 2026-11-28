@@ -40,12 +40,11 @@ func init() {
 					, deleted_by UUID
 					, deleted_at DATETIME(6)
 					, deletion_reason TEXT
-					, code_key VARCHAR(255) AS (LOWER(code)) PERSISTENT INVISIBLE
 					, CONSTRAINT vouchers_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT vouchers_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT vouchers_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, CONSTRAINT vouchers_unique_code_idx UNIQUE (code_key)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
+					, CONSTRAINT vouchers_unique_code_idx UNIQUE (code)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
