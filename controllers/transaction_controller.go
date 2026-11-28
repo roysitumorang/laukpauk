@@ -229,7 +229,7 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
-		WriteResponse(c)
+		SendStatus(c)
 }
 
 func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
