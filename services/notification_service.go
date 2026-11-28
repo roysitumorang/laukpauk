@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -24,12 +24,12 @@ type NotificationService interface {
 	) (*models.Notification, error)
 	CreateNotification(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 	UpdateNotification(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 	ConsumeMessage(
@@ -104,7 +104,7 @@ func (q *notificationService) FindNotification(
 
 func (q *notificationService) CreateNotification(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationService-CreateNotification"
@@ -118,7 +118,7 @@ func (q *notificationService) CreateNotification(
 
 func (q *notificationService) UpdateNotification(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationService-UpdateNotification"
@@ -190,7 +190,7 @@ func (q *notificationService) ConsumeMessage(
 			return err
 		}
 		defer func(ctx context.Context) {
-			if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
+			if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 				err = nil
 			}
 			if err != nil {
@@ -201,7 +201,7 @@ func (q *notificationService) ConsumeMessage(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateNotification")
 			return err
 		}
-		if err = tx.Commit(ctx); err != nil {
+		if err = tx.Commit(); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return err
 		}

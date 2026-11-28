@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"reflect"
 	"strings"
@@ -10,7 +11,6 @@ import (
 	"uuid"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/models"
 )
 
@@ -80,7 +80,7 @@ func TestMariaDBQueries(t *testing.T) {
 	}
 	// only errors from MariaDB, the driver or the scanning count: "not found" and other model errors don't
 	check := func(err error) error {
-		if err == nil || database.IsNoRows(err) {
+		if err == nil || errors.Is(err, sql.ErrNoRows) {
 			return nil
 		}
 		var mysqlErr *mysql.MySQLError
@@ -330,7 +330,7 @@ func TestMariaDBInfiniteScrollProducts(t *testing.T) {
 	ctx := context.Background()
 	seller := sellerID(t, db)
 	now := time.Now()
-	tx, err := db.Begin(ctx)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		t.Fatalf("begin: %v", err)
 	}
@@ -339,7 +339,7 @@ func TestMariaDBInfiniteScrollProducts(t *testing.T) {
 		CreatedBy: seller, CreatedAt: now, UpdatedBy: seller, UpdatedAt: now,
 	})
 	if err != nil {
-		_ = tx.Rollback(ctx)
+		_ = tx.Rollback()
 		t.Fatalf("category: %v", err)
 	}
 	for _, name := range []string{"Scroll 1", "Scroll 2", "Scroll 3"} {
@@ -348,11 +348,11 @@ func TestMariaDBInfiniteScrollProducts(t *testing.T) {
 			Name: name, Photo: "test.webp", Description: "test", ReadyStock: true,
 			CreatedBy: seller, CreatedAt: now, UpdatedBy: seller, UpdatedAt: now,
 		}); err != nil {
-			_ = tx.Rollback(ctx)
+			_ = tx.Rollback()
 			t.Fatalf("product %q: %v", name, err)
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		t.Fatalf("commit: %v", err)
 	}
 	next := int64(2)

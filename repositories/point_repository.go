@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -25,24 +25,24 @@ type PointRepository interface {
 	) (*models.Point, error)
 	CreatePoint(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 	UpdatePoint(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 }
 
 type pointRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewPointRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) PointRepository {
 	return &pointRepository{
 		dbRead:  dbRead,
@@ -66,7 +66,7 @@ func (q *pointRepository) FindPoints(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM points %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -127,8 +127,8 @@ func (q *pointRepository) FindPoints(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -140,20 +140,22 @@ func (q *pointRepository) FindPoints(
 	for rows.Next() {
 		var point models.Point
 		if err = rows.Scan(
-			&point.ID,
-			&point.RecordStatus,
-			&point.PointType,
-			&point.UserID,
-			&point.Amount,
-			&point.TransactionID,
-			&point.Description,
-			&point.CreatedBy,
-			&point.CreatedAt,
-			&point.UpdatedBy,
-			&point.UpdatedAt,
-			&point.DeletedBy,
-			&point.DeletedAt,
-			&point.DeletionReason,
+			helper.SQLScan(
+				&point.ID,
+				&point.RecordStatus,
+				&point.PointType,
+				&point.UserID,
+				&point.Amount,
+				&point.TransactionID,
+				&point.Description,
+				&point.CreatedBy,
+				&point.CreatedAt,
+				&point.UpdatedBy,
+				&point.UpdatedAt,
+				&point.DeletedBy,
+				&point.DeletedAt,
+				&point.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -200,23 +202,25 @@ func (q *pointRepository) FindPoint(
 	)
 	query := sb.String()
 	var response models.Point
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.PointType,
-		&response.UserID,
-		&response.Amount,
-		&response.TransactionID,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.PointType,
+			&response.UserID,
+			&response.Amount,
+			&response.TransactionID,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointNotFound
 	}
 	if err != nil {
@@ -228,12 +232,12 @@ func (q *pointRepository) FindPoint(
 
 func (q *pointRepository) CreatePoint(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointRepository-CreatePoint"
 	var response models.Point
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO points (
 			record_status
@@ -261,31 +265,35 @@ func (q *pointRepository) CreatePoint(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.PointType,
-		request.UserID,
-		request.Amount,
-		request.TransactionID,
-		request.Description,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.PointType,
+			request.UserID,
+			request.Amount,
+			request.TransactionID,
+			request.Description,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.PointType,
-		&response.UserID,
-		&response.Amount,
-		&response.TransactionID,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.PointType,
+			&response.UserID,
+			&response.Amount,
+			&response.TransactionID,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -296,12 +304,12 @@ func (q *pointRepository) CreatePoint(
 
 func (q *pointRepository) UpdatePoint(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointRepository-UpdatePoint"
 	var response models.Point
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -321,24 +329,26 @@ func (q *pointRepository) UpdatePoint(
 		FROM points
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.PointType,
-		&response.UserID,
-		&response.Amount,
-		&response.TransactionID,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.PointType,
+			&response.UserID,
+			&response.Amount,
+			&response.TransactionID,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointNotFound
 	}
 	if err != nil {
@@ -441,21 +451,23 @@ func (q *pointRepository) UpdatePoint(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.PointType,
-		&response.UserID,
-		&response.Amount,
-		&response.TransactionID,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.PointType,
+			&response.UserID,
+			&response.Amount,
+			&response.TransactionID,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +26,24 @@ type PointEarningCapRepository interface {
 	) (*models.PointEarningCap, error)
 	CreatePointEarningCap(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarningCap,
 	) (*models.PointEarningCap, error)
 	UpdatePointEarningCap(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarningCap,
 	) (*models.PointEarningCap, error)
 }
 
 type pointEarningCapRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewPointEarningCapRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) PointEarningCapRepository {
 	return &pointEarningCapRepository{
 		dbRead:  dbRead,
@@ -67,7 +67,7 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM point_earning_caps %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -126,8 +126,8 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -139,18 +139,20 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 	for rows.Next() {
 		var pointEarningCap models.PointEarningCap
 		if err = rows.Scan(
-			&pointEarningCap.ID,
-			&pointEarningCap.RecordStatus,
-			&pointEarningCap.MinimumShoppingCost,
-			&pointEarningCap.MaximumShoppingCost,
-			&pointEarningCap.EarnedPoints,
-			&pointEarningCap.CreatedBy,
-			&pointEarningCap.CreatedAt,
-			&pointEarningCap.UpdatedBy,
-			&pointEarningCap.UpdatedAt,
-			&pointEarningCap.DeletedBy,
-			&pointEarningCap.DeletedAt,
-			&pointEarningCap.DeletionReason,
+			helper.SQLScan(
+				&pointEarningCap.ID,
+				&pointEarningCap.RecordStatus,
+				&pointEarningCap.MinimumShoppingCost,
+				&pointEarningCap.MaximumShoppingCost,
+				&pointEarningCap.EarnedPoints,
+				&pointEarningCap.CreatedBy,
+				&pointEarningCap.CreatedAt,
+				&pointEarningCap.UpdatedBy,
+				&pointEarningCap.UpdatedAt,
+				&pointEarningCap.DeletedBy,
+				&pointEarningCap.DeletedAt,
+				&pointEarningCap.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -195,21 +197,23 @@ func (q *pointEarningCapRepository) FindPointEarningCap(
 	)
 	query := sb.String()
 	var response models.PointEarningCap
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.EarnedPoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.EarnedPoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningCapNotFound
 	}
 	if err != nil {
@@ -221,7 +225,7 @@ func (q *pointEarningCapRepository) FindPointEarningCap(
 
 func (q *pointEarningCapRepository) CreatePointEarningCap(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarningCap,
 ) (*models.PointEarningCap, error) {
 	ctxt := "PointEarningCapRepository-CreatePointEarningCap"
@@ -229,7 +233,7 @@ func (q *pointEarningCapRepository) CreatePointEarningCap(
 	if err := q.checkShoppingCost(ctx, tx, nil, request.MinimumShoppingCost, request.MaximumShoppingCost); err != nil {
 		return nil, err
 	}
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO point_earning_caps (
 			record_status
@@ -253,27 +257,31 @@ func (q *pointEarningCapRepository) CreatePointEarningCap(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.MinimumShoppingCost,
-		request.MaximumShoppingCost,
-		request.EarnedPoints,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.MinimumShoppingCost,
+			request.MaximumShoppingCost,
+			request.EarnedPoints,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.EarnedPoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.EarnedPoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -284,12 +292,12 @@ func (q *pointEarningCapRepository) CreatePointEarningCap(
 
 func (q *pointEarningCapRepository) UpdatePointEarningCap(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarningCap,
 ) (*models.PointEarningCap, error) {
 	ctxt := "PointEarningCapRepository-UpdatePointEarningCap"
 	var response models.PointEarningCap
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -307,22 +315,24 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		FROM point_earning_caps
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.EarnedPoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.EarnedPoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningCapNotFound
 	}
 	if err != nil {
@@ -430,19 +440,21 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.EarnedPoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.EarnedPoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -517,7 +529,7 @@ func (q *pointEarningCapRepository) buildCondition(request *models.PointEarningC
 // range around them) until the transaction ends, so two transactions can't add overlapping caps at the same time.
 func (q *pointEarningCapRepository) checkShoppingCost(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	excludeID *uuid.UUID,
 	minimum,
 	maximum int64,
@@ -532,7 +544,7 @@ func (q *pointEarningCapRepository) checkShoppingCost(
 		params = append(params, *excludeID)
 		query += " AND id != ?"
 	}
-	rows, err := tx.Query(ctx, query+" FOR UPDATE", params...)
+	rows, err := tx.QueryContext(ctx, query+" FOR UPDATE", helper.SQLArgs(params...)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return err

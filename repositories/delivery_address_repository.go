@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,29 +26,29 @@ type DeliveryAddressRepository interface {
 	) (*models.DeliveryAddress, error)
 	CreateDeliveryAddress(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.DeliveryAddress,
 	) (*models.DeliveryAddress, error)
 	UpdateDeliveryAddress(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.DeliveryAddress,
 	) (*models.DeliveryAddress, error)
 	UnsetMain(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		userID uuid.UUID,
 	) error
 }
 
 type deliveryAddressRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewDeliveryAddressRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) DeliveryAddressRepository {
 	return &deliveryAddressRepository{
 		dbRead:  dbRead,
@@ -72,7 +72,7 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM delivery_addresses %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -140,8 +140,8 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -153,23 +153,25 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 	for rows.Next() {
 		var deliveryAddress models.DeliveryAddress
 		if err = rows.Scan(
-			&deliveryAddress.ID,
-			&deliveryAddress.RecordStatus,
-			&deliveryAddress.UserID,
-			&deliveryAddress.OriginLongitude,
-			&deliveryAddress.OriginLatitude,
-			&deliveryAddress.DestinationLongitude,
-			&deliveryAddress.DestinationLatitude,
-			&deliveryAddress.DistanceMeters,
-			&deliveryAddress.DistanceKM,
-			&deliveryAddress.StreetAddress,
-			&deliveryAddress.StreetAddressNote,
-			&deliveryAddress.Label,
-			&deliveryAddress.Main,
-			&deliveryAddress.CreatedAt,
-			&deliveryAddress.UpdatedAt,
-			&deliveryAddress.DeletedAt,
-			&deliveryAddress.DeletionReason,
+			helper.SQLScan(
+				&deliveryAddress.ID,
+				&deliveryAddress.RecordStatus,
+				&deliveryAddress.UserID,
+				&deliveryAddress.OriginLongitude,
+				&deliveryAddress.OriginLatitude,
+				&deliveryAddress.DestinationLongitude,
+				&deliveryAddress.DestinationLatitude,
+				&deliveryAddress.DistanceMeters,
+				&deliveryAddress.DistanceKM,
+				&deliveryAddress.StreetAddress,
+				&deliveryAddress.StreetAddressNote,
+				&deliveryAddress.Label,
+				&deliveryAddress.Main,
+				&deliveryAddress.CreatedAt,
+				&deliveryAddress.UpdatedAt,
+				&deliveryAddress.DeletedAt,
+				&deliveryAddress.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -222,26 +224,28 @@ func (q *deliveryAddressRepository) FindDeliveryAddress(
 		condition,
 	)
 	var response models.DeliveryAddress
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.UserID,
-		&response.OriginLongitude,
-		&response.OriginLatitude,
-		&response.DestinationLongitude,
-		&response.DestinationLatitude,
-		&response.DistanceMeters,
-		&response.DistanceKM,
-		&response.StreetAddress,
-		&response.StreetAddressNote,
-		&response.Label,
-		&response.Main,
-		&response.CreatedAt,
-		&response.UpdatedAt,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.UserID,
+			&response.OriginLongitude,
+			&response.OriginLatitude,
+			&response.DestinationLongitude,
+			&response.DestinationLatitude,
+			&response.DistanceMeters,
+			&response.DistanceKM,
+			&response.StreetAddress,
+			&response.StreetAddressNote,
+			&response.Label,
+			&response.Main,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrDeliveryAddressNotFound
 	}
 	if err != nil {
@@ -253,12 +257,12 @@ func (q *deliveryAddressRepository) FindDeliveryAddress(
 
 func (q *deliveryAddressRepository) CreateDeliveryAddress(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.DeliveryAddress,
 ) (*models.DeliveryAddress, error) {
 	ctxt := "DeliveryAddressRepository-CreateDeliveryAddress"
 	var response models.DeliveryAddress
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO delivery_addresses (
 			record_status
@@ -293,38 +297,42 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 			, updated_at
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.UserID,
-		request.OriginLongitude,
-		request.OriginLatitude,
-		request.DestinationLongitude,
-		request.DestinationLatitude,
-		request.DistanceMeters,
-		request.DistanceKM,
-		request.StreetAddress,
-		request.StreetAddressNote,
-		request.Label,
-		request.Main,
-		request.CreatedAt,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.UserID,
+			request.OriginLongitude,
+			request.OriginLatitude,
+			request.DestinationLongitude,
+			request.DestinationLatitude,
+			request.DistanceMeters,
+			request.DistanceKM,
+			request.StreetAddress,
+			request.StreetAddressNote,
+			request.Label,
+			request.Main,
+			request.CreatedAt,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.UserID,
-		&response.OriginLongitude,
-		&response.OriginLatitude,
-		&response.DestinationLongitude,
-		&response.DestinationLatitude,
-		&response.DistanceMeters,
-		&response.DistanceKM,
-		&response.StreetAddress,
-		&response.StreetAddressNote,
-		&response.Label,
-		&response.Main,
-		&response.CreatedAt,
-		&response.UpdatedAt,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.UserID,
+			&response.OriginLongitude,
+			&response.OriginLatitude,
+			&response.DestinationLongitude,
+			&response.DestinationLatitude,
+			&response.DistanceMeters,
+			&response.DistanceKM,
+			&response.StreetAddress,
+			&response.StreetAddressNote,
+			&response.Label,
+			&response.Main,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -334,12 +342,12 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 
 func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.DeliveryAddress,
 ) (*models.DeliveryAddress, error) {
 	ctxt := "DeliveryAddressRepository-UpdateDeliveryAddress"
 	var response models.DeliveryAddress
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -362,27 +370,29 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		FROM delivery_addresses
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.UserID,
-		&response.OriginLongitude,
-		&response.OriginLatitude,
-		&response.DestinationLongitude,
-		&response.DestinationLatitude,
-		&response.DistanceMeters,
-		&response.DistanceKM,
-		&response.StreetAddress,
-		&response.StreetAddressNote,
-		&response.Label,
-		&response.Main,
-		&response.CreatedAt,
-		&response.UpdatedAt,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.UserID,
+			&response.OriginLongitude,
+			&response.OriginLatitude,
+			&response.DestinationLongitude,
+			&response.DestinationLatitude,
+			&response.DistanceMeters,
+			&response.DistanceKM,
+			&response.StreetAddress,
+			&response.StreetAddressNote,
+			&response.Label,
+			&response.Main,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrDeliveryAddressNotFound
 	}
 	if err != nil {
@@ -503,24 +513,26 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 			, updated_at
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.UserID,
-		&response.OriginLongitude,
-		&response.OriginLatitude,
-		&response.DestinationLongitude,
-		&response.DestinationLatitude,
-		&response.DistanceMeters,
-		&response.DistanceKM,
-		&response.StreetAddress,
-		&response.StreetAddressNote,
-		&response.Label,
-		&response.Main,
-		&response.CreatedAt,
-		&response.UpdatedAt,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.UserID,
+			&response.OriginLongitude,
+			&response.OriginLatitude,
+			&response.DestinationLongitude,
+			&response.DestinationLatitude,
+			&response.DistanceMeters,
+			&response.DistanceKM,
+			&response.StreetAddress,
+			&response.StreetAddressNote,
+			&response.Label,
+			&response.Main,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -530,17 +542,17 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 
 func (q *deliveryAddressRepository) UnsetMain(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	userID uuid.UUID,
 ) error {
 	ctxt := "DeliveryAddressRepository-UnsetMain"
-	_, err := tx.Exec(
+	_, err := tx.ExecContext(
 		ctx,
 		`UPDATE delivery_addresses SET
 			main = NOT main
 		WHERE user_id = ?
 			AND main`,
-		userID,
+		helper.SQLArgs(userID)...,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

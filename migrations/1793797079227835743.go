@@ -2,19 +2,19 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793797079227835743] = Migration{
 		Version: 1793797079227835743,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// product_categories
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE product_categories (
 					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
@@ -39,28 +39,28 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX product_categories_record_status_idx ON product_categories (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX product_categories_created_by_idx ON product_categories (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX product_categories_updated_by_idx ON product_categories (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX product_categories_deleted_by_idx ON product_categories (deleted_by);`,
 			); err != nil {
@@ -68,9 +68,9 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE product_categories",
 			); err != nil {

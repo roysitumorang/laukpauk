@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -25,24 +25,24 @@ type PointEarningRepository interface {
 	) (*models.PointEarning, error)
 	CreatePointEarning(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 	UpdatePointEarning(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 }
 
 type pointEarningRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewPointEarningRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) PointEarningRepository {
 	return &pointEarningRepository{
 		dbRead:  dbRead,
@@ -66,7 +66,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM point_earnings %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -120,8 +120,8 @@ func (q *pointEarningRepository) FindPointEarnings(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -133,13 +133,15 @@ func (q *pointEarningRepository) FindPointEarnings(
 	for rows.Next() {
 		var pointEarning models.PointEarning
 		if err = rows.Scan(
-			&pointEarning.ID,
-			&pointEarning.UserID,
-			&pointEarning.StartDate,
-			&pointEarning.EndDate,
-			&pointEarning.Amount,
-			&pointEarning.CreatedAt,
-			&pointEarning.UpdatedAt,
+			helper.SQLScan(
+				&pointEarning.ID,
+				&pointEarning.UserID,
+				&pointEarning.StartDate,
+				&pointEarning.EndDate,
+				&pointEarning.Amount,
+				&pointEarning.CreatedAt,
+				&pointEarning.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -179,16 +181,18 @@ func (q *pointEarningRepository) FindPointEarning(
 	)
 	query := sb.String()
 	var response models.PointEarning
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.StartDate,
-		&response.EndDate,
-		&response.Amount,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.StartDate,
+			&response.EndDate,
+			&response.Amount,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningNotFound
 	}
 	if err != nil {
@@ -200,12 +204,12 @@ func (q *pointEarningRepository) FindPointEarning(
 
 func (q *pointEarningRepository) CreatePointEarning(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningRepository-CreatePointEarning"
 	var response models.PointEarning
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO point_earnings (
 			user_id
@@ -222,23 +226,27 @@ func (q *pointEarningRepository) CreatePointEarning(
 			, amount
 			, created_at
 			, updated_at`,
-		request.UserID,
-		request.StartDate,
-		request.EndDate,
-		request.Amount,
-		request.CreatedAt,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.UserID,
+			request.StartDate,
+			request.EndDate,
+			request.Amount,
+			request.CreatedAt,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.StartDate,
-		&response.EndDate,
-		&response.Amount,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.StartDate,
+			&response.EndDate,
+			&response.Amount,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	)
 	if err != nil {
-		if database.IsUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
+		if isUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -250,12 +258,12 @@ func (q *pointEarningRepository) CreatePointEarning(
 
 func (q *pointEarningRepository) UpdatePointEarning(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningRepository-UpdatePointEarning"
 	var response models.PointEarning
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -268,16 +276,18 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		FROM point_earnings
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.StartDate,
-		&response.EndDate,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.StartDate,
+			&response.EndDate,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningNotFound
 	}
 	if err != nil {
@@ -319,16 +329,18 @@ func (q *pointEarningRepository) UpdatePointEarning(
 			, amount
 			, created_at
 			, updated_at`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.StartDate,
-		&response.EndDate,
-		&response.Amount,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.StartDate,
+			&response.EndDate,
+			&response.Amount,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
+		if isUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

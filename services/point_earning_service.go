@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,17 +22,17 @@ type PointEarningService interface {
 	) (*models.PointEarning, error)
 	CreatePointEarning(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 	UpdatePointEarning(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 	SavePointEarning(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 }
@@ -93,7 +93,7 @@ func (q *pointEarningService) FindPointEarning(
 
 func (q *pointEarningService) CreatePointEarning(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningService-CreatePointEarning"
@@ -106,7 +106,7 @@ func (q *pointEarningService) CreatePointEarning(
 
 func (q *pointEarningService) UpdatePointEarning(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningService-UpdatePointEarning"
@@ -119,7 +119,7 @@ func (q *pointEarningService) UpdatePointEarning(
 
 func (q *pointEarningService) SavePointEarning(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarning,
 ) (response *models.PointEarning, err error) {
 	ctxt := "PointEarningService-SavePointEarning"

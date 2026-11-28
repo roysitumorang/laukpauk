@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -25,24 +25,24 @@ type NotificationRepository interface {
 	) (*models.Notification, error)
 	CreateNotification(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 	UpdateNotification(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 }
 
 type notificationRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewNotificationRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) NotificationRepository {
 	return &notificationRepository{
 		dbRead:  dbRead,
@@ -66,7 +66,7 @@ func (q *notificationRepository) FindNotifications(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM notifications %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -125,8 +125,8 @@ func (q *notificationRepository) FindNotifications(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -138,18 +138,20 @@ func (q *notificationRepository) FindNotifications(
 	for rows.Next() {
 		var notification models.Notification
 		if err = rows.Scan(
-			&notification.ID,
-			&notification.UserID,
-			&notification.NotificationType,
-			&notification.Link,
-			&notification.LinkID,
-			&notification.Subject,
-			&notification.Body,
-			&notification.Photo,
-			&notification.Params,
-			&notification.CreatedBy,
-			&notification.CreatedAt,
-			&notification.ReadAt,
+			helper.SQLScan(
+				&notification.ID,
+				&notification.UserID,
+				&notification.NotificationType,
+				&notification.Link,
+				&notification.LinkID,
+				&notification.Subject,
+				&notification.Body,
+				&notification.Photo,
+				&notification.Params,
+				&notification.CreatedBy,
+				&notification.CreatedAt,
+				&notification.ReadAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -193,21 +195,23 @@ func (q *notificationRepository) FindNotification(
 		condition,
 	)
 	var response models.Notification
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.NotificationType,
-		&response.Link,
-		&response.LinkID,
-		&response.Subject,
-		&response.Body,
-		&response.Photo,
-		&response.Params,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.ReadAt,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.NotificationType,
+			&response.Link,
+			&response.LinkID,
+			&response.Subject,
+			&response.Body,
+			&response.Photo,
+			&response.Params,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.ReadAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrNotificationNotFound
 	}
 	if err != nil {
@@ -219,12 +223,12 @@ func (q *notificationRepository) FindNotification(
 
 func (q *notificationRepository) CreateNotification(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationRepository-CreateNotification"
 	var response models.Notification
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO notifications (
 			user_id
@@ -251,30 +255,34 @@ func (q *notificationRepository) CreateNotification(
 			, created_at
 			, sent_at
 			, read_at`,
-		request.UserID,
-		request.NotificationType,
-		request.Link,
-		request.LinkID,
-		request.Subject,
-		request.Body,
-		request.Photo,
-		request.Params,
-		request.CreatedBy,
-		request.CreatedAt,
+		helper.SQLArgs(
+			request.UserID,
+			request.NotificationType,
+			request.Link,
+			request.LinkID,
+			request.Subject,
+			request.Body,
+			request.Photo,
+			request.Params,
+			request.CreatedBy,
+			request.CreatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.NotificationType,
-		&response.Link,
-		&response.LinkID,
-		&response.Subject,
-		&response.Body,
-		&response.Photo,
-		&response.Params,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.SentAt,
-		&response.ReadAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.NotificationType,
+			&response.Link,
+			&response.LinkID,
+			&response.Subject,
+			&response.Body,
+			&response.Photo,
+			&response.Params,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.SentAt,
+			&response.ReadAt,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -284,12 +292,12 @@ func (q *notificationRepository) CreateNotification(
 
 func (q *notificationRepository) UpdateNotification(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationRepository-UpdateNotification"
 	var response models.Notification
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -308,23 +316,25 @@ func (q *notificationRepository) UpdateNotification(
 		FROM notifications
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.NotificationType,
-		&response.Link,
-		&response.LinkID,
-		&response.Subject,
-		&response.Body,
-		&response.Photo,
-		&response.Params,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.SentAt,
-		&response.ReadAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.NotificationType,
+			&response.Link,
+			&response.LinkID,
+			&response.Subject,
+			&response.Body,
+			&response.Photo,
+			&response.Params,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.SentAt,
+			&response.ReadAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrNotificationNotFound
 	}
 	if err != nil {
@@ -378,20 +388,22 @@ func (q *notificationRepository) UpdateNotification(
 			, created_at
 			, sent_at
 			, read_at`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.NotificationType,
-		&response.Link,
-		&response.LinkID,
-		&response.Subject,
-		&response.Body,
-		&response.Photo,
-		&response.Params,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.SentAt,
-		&response.ReadAt,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.NotificationType,
+			&response.Link,
+			&response.LinkID,
+			&response.Subject,
+			&response.Body,
+			&response.Photo,
+			&response.Params,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.SentAt,
+			&response.ReadAt,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

@@ -2,12 +2,12 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"slices"
 	"time"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -19,19 +19,19 @@ type SettingRepository interface {
 	) (*models.Setting, error)
 	UpdateSetting(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Setting,
 	) (*models.Setting, error)
 }
 
 type settingRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewSettingRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) SettingRepository {
 	return &settingRepository{
 		dbRead:  dbRead,
@@ -44,7 +44,7 @@ func (q *settingRepository) FindSetting(
 ) (*models.Setting, error) {
 	ctxt := "SettingRepository-FindSetting"
 	var response models.Setting
-	err := q.dbRead.QueryRow(
+	err := q.dbRead.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -74,33 +74,35 @@ func (q *settingRepository) FindSetting(
 			, updated_at
 		FROM setting`,
 	).Scan(
-		&response.ID,
-		&response.VacationMode,
-		&response.VacationEndDate,
-		&response.VoucherEnabled,
-		&response.ReferralPointsEnabled,
-		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsAmount,
-		&response.ReferralPointsSlots,
-		&response.ReferralPointsExpense,
-		&response.RewardPointsAccumulationWindowInDays,
-		&response.DeliveryOriginLongitude,
-		&response.DeliveryOriginLatitude,
-		&response.DeliveryCostPerKM,
-		&response.DeliveryMaxDistanceKM,
-		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
-		&response.TransactionAutoWithdrawalEnabled,
-		&response.TransactionAutoWithdrawalWindowMin,
-		&response.TransactionAutoWithdrawalWindowMax,
-		&response.OtpRequiredForLogin,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.VacationMode,
+			&response.VacationEndDate,
+			&response.VoucherEnabled,
+			&response.ReferralPointsEnabled,
+			&response.ReferralPointsMinimumShoppingCost,
+			&response.ReferralPointsAmount,
+			&response.ReferralPointsSlots,
+			&response.ReferralPointsExpense,
+			&response.RewardPointsAccumulationWindowInDays,
+			&response.DeliveryOriginLongitude,
+			&response.DeliveryOriginLatitude,
+			&response.DeliveryCostPerKM,
+			&response.DeliveryMaxDistanceKM,
+			&response.WhatsappPhoneNumber,
+			&response.PaymentTerms,
+			&response.MaximumDeliveryTime,
+			&response.TransactionAutoWithdrawalEnabled,
+			&response.TransactionAutoWithdrawalWindowMin,
+			&response.TransactionAutoWithdrawalWindowMax,
+			&response.OtpRequiredForLogin,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrSettingNotFound
 	}
 	if err != nil {
@@ -112,12 +114,12 @@ func (q *settingRepository) FindSetting(
 
 func (q *settingRepository) UpdateSetting(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Setting,
 ) (*models.Setting, error) {
 	ctxt := "SettingRepository-UpdateSetting"
 	var response models.Setting
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -149,31 +151,33 @@ func (q *settingRepository) UpdateSetting(
 		WHERE id = 1
 		FOR UPDATE`,
 	).Scan(
-		&response.ID,
-		&response.VacationMode,
-		&response.VacationEndDate,
-		&response.VoucherEnabled,
-		&response.ReferralPointsEnabled,
-		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsAmount,
-		&response.ReferralPointsSlots,
-		&response.ReferralPointsExpense,
-		&response.RewardPointsAccumulationWindowInDays,
-		&response.DeliveryOriginLongitude,
-		&response.DeliveryOriginLatitude,
-		&response.DeliveryCostPerKM,
-		&response.DeliveryMaxDistanceKM,
-		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
-		&response.TransactionAutoWithdrawalEnabled,
-		&response.TransactionAutoWithdrawalWindowMin,
-		&response.TransactionAutoWithdrawalWindowMax,
-		&response.OtpRequiredForLogin,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.VacationMode,
+			&response.VacationEndDate,
+			&response.VoucherEnabled,
+			&response.ReferralPointsEnabled,
+			&response.ReferralPointsMinimumShoppingCost,
+			&response.ReferralPointsAmount,
+			&response.ReferralPointsSlots,
+			&response.ReferralPointsExpense,
+			&response.RewardPointsAccumulationWindowInDays,
+			&response.DeliveryOriginLongitude,
+			&response.DeliveryOriginLatitude,
+			&response.DeliveryCostPerKM,
+			&response.DeliveryMaxDistanceKM,
+			&response.WhatsappPhoneNumber,
+			&response.PaymentTerms,
+			&response.MaximumDeliveryTime,
+			&response.TransactionAutoWithdrawalEnabled,
+			&response.TransactionAutoWithdrawalWindowMin,
+			&response.TransactionAutoWithdrawalWindowMax,
+			&response.OtpRequiredForLogin,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+		)...,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -376,32 +380,34 @@ func (q *settingRepository) UpdateSetting(
 			, created_at
 			, updated_by
 			, updated_at`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.VacationMode,
-		&response.VacationEndDate,
-		&response.VoucherEnabled,
-		&response.ReferralPointsEnabled,
-		&response.ReferralPointsMinimumShoppingCost,
-		&response.ReferralPointsAmount,
-		&response.ReferralPointsSlots,
-		&response.ReferralPointsExpense,
-		&response.RewardPointsAccumulationWindowInDays,
-		&response.DeliveryOriginLongitude,
-		&response.DeliveryOriginLatitude,
-		&response.DeliveryCostPerKM,
-		&response.DeliveryMaxDistanceKM,
-		&response.WhatsappPhoneNumber,
-		&response.PaymentTerms,
-		&response.MaximumDeliveryTime,
-		&response.TransactionAutoWithdrawalEnabled,
-		&response.TransactionAutoWithdrawalWindowMin,
-		&response.TransactionAutoWithdrawalWindowMax,
-		&response.OtpRequiredForLogin,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.VacationMode,
+			&response.VacationEndDate,
+			&response.VoucherEnabled,
+			&response.ReferralPointsEnabled,
+			&response.ReferralPointsMinimumShoppingCost,
+			&response.ReferralPointsAmount,
+			&response.ReferralPointsSlots,
+			&response.ReferralPointsExpense,
+			&response.RewardPointsAccumulationWindowInDays,
+			&response.DeliveryOriginLongitude,
+			&response.DeliveryOriginLatitude,
+			&response.DeliveryCostPerKM,
+			&response.DeliveryMaxDistanceKM,
+			&response.WhatsappPhoneNumber,
+			&response.PaymentTerms,
+			&response.MaximumDeliveryTime,
+			&response.TransactionAutoWithdrawalEnabled,
+			&response.TransactionAutoWithdrawalWindowMin,
+			&response.TransactionAutoWithdrawalWindowMax,
+			&response.OtpRequiredForLogin,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

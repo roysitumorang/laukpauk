@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +26,24 @@ type JsonWebTokenRepository interface {
 	) (*models.JsonWebToken, error)
 	CreateJsonWebToken(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.JsonWebToken,
 	) (*models.JsonWebToken, error)
 	DeleteJsonWebToken(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.JsonWebTokenFilter,
 	) (int64, error)
 }
 
 type jsonWebTokenRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewJsonWebTokenRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) JsonWebTokenRepository {
 	return &jsonWebTokenRepository{
 		dbRead:  dbRead,
@@ -67,7 +67,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM json_web_tokens %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -118,8 +118,8 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -131,10 +131,12 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 	for rows.Next() {
 		var jsonWebToken models.JsonWebToken
 		if err = rows.Scan(
-			&jsonWebToken.ID,
-			&jsonWebToken.UserID,
-			&jsonWebToken.CreatedAt,
-			&jsonWebToken.ExpiredAt,
+			helper.SQLScan(
+				&jsonWebToken.ID,
+				&jsonWebToken.UserID,
+				&jsonWebToken.CreatedAt,
+				&jsonWebToken.ExpiredAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -171,13 +173,15 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 	)
 	query := sb.String()
 	var response models.JsonWebToken
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.CreatedAt,
-		&response.ExpiredAt,
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.CreatedAt,
+			&response.ExpiredAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrJsonWebTokenNotFound
 	}
 	if err != nil {
@@ -189,12 +193,12 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 
 func (q *jsonWebTokenRepository) CreateJsonWebToken(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.JsonWebToken,
 ) (*models.JsonWebToken, error) {
 	ctxt := "JsonWebTokenRepository-CreateJsonWebToken"
 	var response models.JsonWebToken
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO json_web_tokens (
 			user_id
@@ -205,14 +209,18 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 			, user_id
 			, created_at
 			, expired_at`,
-		request.UserID,
-		request.CreatedAt,
-		request.ExpiredAt,
+		helper.SQLArgs(
+			request.UserID,
+			request.CreatedAt,
+			request.ExpiredAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.CreatedAt,
-		&response.ExpiredAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.CreatedAt,
+			&response.ExpiredAt,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -222,7 +230,7 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 
 func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.JsonWebTokenFilter,
 ) (int64, error) {
 	ctxt := "JsonWebTokenRepository-DeleteJsonWebToken"
@@ -238,12 +246,12 @@ func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	}
 	sb.Reset()
 	_, _ = fmt.Fprintf(sb, "DELETE FROM json_web_tokens %s", condition)
-	result, err := tx.Exec(ctx, sb.String(), params...)
+	result, err := tx.ExecContext(ctx, sb.String(), helper.SQLArgs(params...)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return 0, err
 	}
-	return result.RowsAffected(), nil
+	return result.RowsAffected()
 }
 
 func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilter, sb *strings.Builder) (condition string, params []any) {

@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/roysitumorang/laukpauk/config"
-	"github.com/roysitumorang/laukpauk/database"
 )
 
 var (
@@ -94,8 +94,8 @@ func Capture(ctx context.Context, level slog.Level, err error, context, scope st
 	case slog.LevelWarn:
 		logger.WarnContext(ctx, err.Error(), entries...)
 	case slog.LevelError:
-		// ignoring database.ErrNoRows
-		if errors.Is(err, database.ErrNoRows) {
+		// ignoring sql.ErrNoRows
+		if errors.Is(err, sql.ErrNoRows) {
 			return
 		}
 		var name string

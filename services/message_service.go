@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -14,7 +14,7 @@ type (
 	MessageService interface {
 		CreateMessage(
 			ctx context.Context,
-			tx database.Tx,
+			tx *sql.Tx,
 			request *models.Message,
 		) (*models.Message, error)
 	}
@@ -34,7 +34,7 @@ func NewMessageService(
 
 func (q *messageService) CreateMessage(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Message,
 ) (*models.Message, error) {
 	ctxt := "MessageService-CreateMessage"

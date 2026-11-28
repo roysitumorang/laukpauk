@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"os"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/roysitumorang/laukpauk/database"
+	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migrations"
 	"github.com/roysitumorang/laukpauk/models"
@@ -21,11 +22,11 @@ import (
 
 var (
 	testPoolOnce sync.Once
-	testPoolDB   *database.Pool
+	testPoolDB   *sql.DB
 	testPoolErr  error
 )
 
-func testPool(t *testing.T) *database.Pool {
+func testPool(t *testing.T) *sql.DB {
 	t.Helper()
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
@@ -34,7 +35,7 @@ func testPool(t *testing.T) *database.Pool {
 	testPoolOnce.Do(func() {
 		ctx := context.Background()
 		helper.NewLogger()
-		if testPoolDB, testPoolErr = database.Open(ctx, dsn, 4); testPoolErr != nil {
+		if testPoolDB, testPoolErr = config.CreateDbConnection(ctx, dsn, 4); testPoolErr != nil {
 			return
 		}
 		testPoolErr = migrations.NewMigrator(testPoolDB).Migrate(ctx)
@@ -45,24 +46,24 @@ func testPool(t *testing.T) *database.Pool {
 	return testPoolDB
 }
 
-func sellerID(t *testing.T, db *database.Pool) uuid.UUID {
+func sellerID(t *testing.T, db *sql.DB) uuid.UUID {
 	t.Helper()
 	var id uuid.UUID
-	if err := db.QueryRow(context.Background(), "SELECT id FROM users ORDER BY created_at LIMIT 1").Scan(&id); err != nil {
+	if err := db.QueryRowContext(context.Background(), "SELECT id FROM users ORDER BY created_at LIMIT 1").Scan(helper.SQLScan(&id)...); err != nil {
 		t.Fatalf("seller: %v", err)
 	}
 	return id
 }
 
 // inTx runs fn in a transaction that is always rolled back, so tests leave no rows behind.
-func inTx(t *testing.T, db *database.Pool, fn func(tx database.Tx)) {
+func inTx(t *testing.T, db *sql.DB, fn func(tx *sql.Tx)) {
 	t.Helper()
 	ctx := context.Background()
-	tx, err := db.Begin(ctx)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		t.Fatalf("begin: %v", err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer func() { _ = tx.Rollback() }()
 	fn(tx)
 }
 
@@ -98,7 +99,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 	ctx := context.Background()
 	seller := sellerID(t, db)
 	repo := NewProductCategoryRepository(db, db)
-	inTx(t, db, func(tx database.Tx) {
+	inTx(t, db, func(tx *sql.Tx) {
 		now := time.Now()
 		category := func(name string) *models.ProductCategory {
 			return &models.ProductCategory{
@@ -123,7 +124,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 			t.Fatalf("duplicate name: err = %v; want ErrUniqueProductCategoryNameViolation", err)
 		}
 	})
-	inTx(t, db, func(tx database.Tx) {
+	inTx(t, db, func(tx *sql.Tx) {
 		now := time.Now()
 		for _, name := range []string{"Item 10", "Item 2", "Item 1"} {
 			if _, err := repo.CreateProductCategory(ctx, tx, &models.ProductCategory{
@@ -133,7 +134,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 				t.Fatalf("create %q: %v", name, err)
 			}
 		}
-		rows, err := tx.Query(ctx, "SELECT name FROM product_categories WHERE name LIKE ? ORDER BY "+sortExpression("name"), "Item %")
+		rows, err := tx.QueryContext(ctx, "SELECT name FROM product_categories WHERE name LIKE ? ORDER BY "+sortExpression("name"), helper.SQLArgs("Item %")...)
 		if err != nil {
 			t.Fatalf("query: %v", err)
 		}
@@ -141,7 +142,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 		var names []string
 		for rows.Next() {
 			var name string
-			if err = rows.Scan(&name); err != nil {
+			if err = rows.Scan(helper.SQLScan(&name)...); err != nil {
 				t.Fatalf("scan: %v", err)
 			}
 			names = append(names, name)
@@ -179,7 +180,7 @@ func TestMariaDBDeliveryPlanOverlap(t *testing.T) {
 			UpdatedAt:            now,
 		}
 	}
-	inTx(t, db, func(tx database.Tx) {
+	inTx(t, db, func(tx *sql.Tx) {
 		first, err := repo.CreateDeliveryPlan(ctx, tx, plan(99, 1, 5))
 		if err != nil {
 			t.Fatalf("create: %v", err)
@@ -233,7 +234,7 @@ func TestMariaDBPointEarningCapOverlap(t *testing.T) {
 			UpdatedAt:           now,
 		}
 	}
-	inTx(t, db, func(tx database.Tx) {
+	inTx(t, db, func(tx *sql.Tx) {
 		created, err := repo.CreatePointEarningCap(ctx, tx, pointCap(limit, limit+100))
 		if err != nil {
 			t.Fatalf("create: %v", err)

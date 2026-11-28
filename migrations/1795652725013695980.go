@@ -2,19 +2,19 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1795652725013695980] = Migration{
 		Version: 1795652725013695980,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// promotions
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE promotions (
 					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
@@ -43,56 +43,56 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX promotions_record_status_idx ON promotions (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX promotions_name_idx ON promotions (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX promotions_effective_start_date_idx ON promotions (effective_start_date);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX promotions_effective_end_date_idx ON promotions (effective_end_date);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX promotions_created_by_idx ON promotions (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX promotions_updated_by_idx ON promotions (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX promotions_deleted_by_idx ON promotions (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`ALTER TABLE transactions
 					ADD CONSTRAINT transactions_promotion_id_fkey FOREIGN KEY (promotion_id) REFERENCES promotions (id)
@@ -101,7 +101,7 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX transactions_promotion_id_idx ON transactions (promotion_id);`,
 			); err != nil {
@@ -109,9 +109,9 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`ALTER TABLE transactions
 					DROP FOREIGN KEY transactions_promotion_id_fkey`,
@@ -119,14 +119,14 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP INDEX transactions_promotion_id_idx ON transactions",
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE promotions",
 			); err != nil {

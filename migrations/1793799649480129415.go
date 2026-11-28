@@ -2,19 +2,19 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793799649480129415] = Migration{
 		Version: 1793799649480129415,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// points
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE points (
 					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
@@ -41,49 +41,49 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX points_record_status_idx ON points (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX points_point_type_idx ON points (point_type);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX points_user_id_idx ON points (user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX points_transaction_id_idx ON points (transaction_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX points_created_by_idx ON points (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX points_updated_by_idx ON points (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX points_deleted_by_idx ON points (deleted_by);`,
 			); err != nil {
@@ -91,9 +91,9 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE points",
 			); err != nil {

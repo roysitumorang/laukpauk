@@ -2,21 +2,21 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
-var dbWrite *database.Pool
+var dbWrite *sql.DB
 
-func SetDbWrite(db *database.Pool) {
+func SetDbWrite(db *sql.DB) {
 	dbWrite = db
 }
 
-func BeginTx(ctx context.Context) (database.Tx, error) {
+func BeginTx(ctx context.Context) (*sql.Tx, error) {
 	ctxt := "Repositories-BeginTx"
-	tx, err := dbWrite.Begin(ctx)
+	tx, err := dbWrite.BeginTx(ctx, nil)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBegin")
 	}

@@ -2,20 +2,20 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793798928531125831] = Migration{
 		Version: 1793798928531125831,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// payment_channels
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE payment_channels (
 					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
@@ -37,14 +37,14 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX payment_channels_minimum_amount_idx ON payment_channels (minimum_amount);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX payment_channels_maximum_amount_idx ON payment_channels (maximum_amount);`,
 			); err != nil {
@@ -134,7 +134,7 @@ func init() {
 				},
 			}
 			for i := range params {
-				if _, err = tx.Exec(
+				if _, err = tx.ExecContext(
 					ctx,
 					`INSERT INTO payment_channels (
 						business_id
@@ -150,7 +150,7 @@ func init() {
 						, channel_category
 						, created_at
 					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-					params[i]...,
+					helper.SQLArgs(params[i]...)...,
 				); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 					return
@@ -158,9 +158,9 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE payment_channels",
 			); err != nil {

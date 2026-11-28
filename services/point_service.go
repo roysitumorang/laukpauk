@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"uuid"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,12 +23,12 @@ type PointService interface {
 	) (*models.Point, error)
 	CreatePoint(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 	UpdatePoint(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 }
@@ -179,7 +179,7 @@ func (q *pointService) FindPoint(
 
 func (q *pointService) CreatePoint(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointService-CreatePoint"
@@ -215,7 +215,7 @@ func (q *pointService) CreatePoint(
 
 func (q *pointService) UpdatePoint(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointService-UpdatePoint"

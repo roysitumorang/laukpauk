@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,17 +22,17 @@ type RecipeItemService interface {
 	) (*models.RecipeItem, error)
 	CreateRecipeItem(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.RecipeItem,
 	) (*models.RecipeItem, error)
 	UpdateRecipeItem(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.RecipeItem,
 	) (*models.RecipeItem, error)
 	SaveRecipeItem(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.RecipeItem,
 	) (*models.RecipeItem, error)
 }
@@ -93,7 +93,7 @@ func (q *recipeItemService) FindRecipeItem(
 
 func (q *recipeItemService) CreateRecipeItem(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.RecipeItem,
 ) (*models.RecipeItem, error) {
 	ctxt := "RecipeItemService-CreateRecipeItem"
@@ -106,7 +106,7 @@ func (q *recipeItemService) CreateRecipeItem(
 
 func (q *recipeItemService) UpdateRecipeItem(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.RecipeItem,
 ) (*models.RecipeItem, error) {
 	ctxt := "RecipeItemService-UpdateRecipeItem"
@@ -119,7 +119,7 @@ func (q *recipeItemService) UpdateRecipeItem(
 
 func (q *recipeItemService) SaveRecipeItem(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.RecipeItem,
 ) (*models.RecipeItem, error) {
 	ctxt := "RecipeItemService-SaveRecipeItem"

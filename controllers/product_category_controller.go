@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
 	"github.com/roysitumorang/laukpauk/models"
@@ -169,7 +169,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -222,7 +222,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 				WriteResponse(c)
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
@@ -363,7 +363,7 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -410,7 +410,7 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 				WriteResponse(c)
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
@@ -462,7 +462,7 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -475,7 +475,7 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).

@@ -2,19 +2,19 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793800324931593827] = Migration{
 		Version: 1793800324931593827,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// messages
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE messages (
 					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
@@ -27,7 +27,7 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX messages_mobile_phone_idx ON messages (mobile_phone);`,
 			); err != nil {
@@ -35,9 +35,9 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE messages",
 			); err != nil {

@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,12 +22,12 @@ type UserService interface {
 	) (*models.User, error)
 	CreateUser(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.User,
 	) (*models.User, error)
 	UpdateUser(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.User,
 	) (*models.User, error)
 }
@@ -88,7 +88,7 @@ func (q *userService) FindUser(
 
 func (q *userService) CreateUser(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.User,
 ) (*models.User, error) {
 	ctxt := "UserService-CreateUser"
@@ -101,7 +101,7 @@ func (q *userService) CreateUser(
 
 func (q *userService) UpdateUser(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.User,
 ) (*models.User, error) {
 	ctxt := "UserService-UpdateUser"

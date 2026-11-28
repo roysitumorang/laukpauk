@@ -2,11 +2,11 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
 	"uuid"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -14,10 +14,10 @@ import (
 func init() {
 	Migrations[1793799560189113007] = Migration{
 		Version: 1793799560189113007,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// point_spending_caps
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE point_spending_caps (
 					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
@@ -40,35 +40,35 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_spending_caps_record_status_idx ON point_spending_caps (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_spending_caps_shopping_cost_idx ON point_spending_caps (shopping_cost_min, shopping_cost_max);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_spending_caps_created_by_idx ON point_spending_caps (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_spending_caps_updated_by_idx ON point_spending_caps (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_spending_caps_deleted_by_idx ON point_spending_caps (deleted_by);`,
 			); err != nil {
@@ -76,13 +76,13 @@ func init() {
 				return
 			}
 			var sellerID uuid.UUID
-			if err = tx.QueryRow(
+			if err = tx.QueryRowContext(
 				ctx,
 				`SELECT id
 				FROM users
 				WHERE email = ?`,
-				"benni.surbakti@gmail.com",
-			).Scan(&sellerID); err != nil {
+				helper.SQLArgs("benni.surbakti@gmail.com")...,
+			).Scan(helper.SQLScan(&sellerID)...); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 				return
 			}
@@ -127,7 +127,7 @@ func init() {
 				},
 			}
 			for i := range pointSpendingCaps {
-				if _, err = tx.Exec(
+				if _, err = tx.ExecContext(
 					ctx,
 					`INSERT INTO point_spending_caps (
 						record_status
@@ -139,7 +139,7 @@ func init() {
 						, updated_by
 						, updated_at
 					) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-					pointSpendingCaps[i]...,
+					helper.SQLArgs(pointSpendingCaps[i]...)...,
 				); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 					return
@@ -147,9 +147,9 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE point_spending_caps",
 			); err != nil {

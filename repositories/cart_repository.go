@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,19 +26,19 @@ type CartRepository interface {
 	) (*models.Cart, error)
 	SaveCart(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Cart,
 	) (*models.Cart, error)
 }
 
 type cartRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewCartRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) CartRepository {
 	return &cartRepository{
 		dbRead:  dbRead,
@@ -62,7 +62,7 @@ func (q *cartRepository) FindCarts(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM carts %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -114,8 +114,8 @@ func (q *cartRepository) FindCarts(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -158,11 +158,13 @@ func (q *cartRepository) FindCarts(
 	for rows.Next() {
 		var cart models.Cart
 		if err = rows.Scan(
-			&cart.ID,
-			&cart.UserID,
-			&cart.DeletedUserID,
-			&cart.CreatedAt,
-			&cart.UpdatedAt,
+			helper.SQLScan(
+				&cart.ID,
+				&cart.UserID,
+				&cart.DeletedUserID,
+				&cart.CreatedAt,
+				&cart.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -181,8 +183,8 @@ func (q *cartRepository) FindCarts(
 		return response, total, pages, nil
 	}
 	_, _ = sb.WriteString(") ORDER BY id")
-	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err = q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -193,28 +195,30 @@ func (q *cartRepository) FindCarts(
 	for rows.Next() {
 		var cartItem models.CartItem
 		if err = rows.Scan(
-			&cartItem.ID,
-			&cartItem.CartID,
-			&cartItem.ProductVariantID,
-			&cartItem.ProductCategoryID,
-			&cartItem.ProductCategoryName,
-			&cartItem.ProductID,
-			&cartItem.ProductName,
-			&cartItem.ProductPhoto,
-			&cartItem.ProductReadyStock,
-			&cartItem.StockUnit,
-			&cartItem.BasePrice,
-			&cartItem.SellingPrice,
-			&cartItem.DiscountType,
-			&cartItem.DiscountRate,
-			&cartItem.DiscountMinimumQuantity,
-			&cartItem.DiscountAmount,
-			&cartItem.SalePrice,
-			&cartItem.Description,
-			&cartItem.Quantity,
-			&cartItem.Note,
-			&cartItem.CreatedAt,
-			&cartItem.UpdatedAt,
+			helper.SQLScan(
+				&cartItem.ID,
+				&cartItem.CartID,
+				&cartItem.ProductVariantID,
+				&cartItem.ProductCategoryID,
+				&cartItem.ProductCategoryName,
+				&cartItem.ProductID,
+				&cartItem.ProductName,
+				&cartItem.ProductPhoto,
+				&cartItem.ProductReadyStock,
+				&cartItem.StockUnit,
+				&cartItem.BasePrice,
+				&cartItem.SellingPrice,
+				&cartItem.DiscountType,
+				&cartItem.DiscountRate,
+				&cartItem.DiscountMinimumQuantity,
+				&cartItem.DiscountAmount,
+				&cartItem.SalePrice,
+				&cartItem.Description,
+				&cartItem.Quantity,
+				&cartItem.Note,
+				&cartItem.CreatedAt,
+				&cartItem.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -253,21 +257,23 @@ func (q *cartRepository) FindCart(
 		condition,
 	)
 	var response models.Cart
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.DeletedUserID,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.DeletedUserID,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrCartNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	rows, err := q.dbRead.Query(
+	rows, err := q.dbRead.QueryContext(
 		ctx,
 		`SELECT
 			id
@@ -295,9 +301,9 @@ func (q *cartRepository) FindCart(
 		FROM cart_items
 		WHERE cart_id = ?
 		ORDER BY id`,
-		response.ID,
+		helper.SQLArgs(response.ID)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -308,28 +314,30 @@ func (q *cartRepository) FindCart(
 	for rows.Next() {
 		var cartItem models.CartItem
 		if err = rows.Scan(
-			&cartItem.ID,
-			&cartItem.CartID,
-			&cartItem.ProductVariantID,
-			&cartItem.ProductCategoryID,
-			&cartItem.ProductCategoryName,
-			&cartItem.ProductID,
-			&cartItem.ProductName,
-			&cartItem.ProductPhoto,
-			&cartItem.ProductReadyStock,
-			&cartItem.StockUnit,
-			&cartItem.BasePrice,
-			&cartItem.SellingPrice,
-			&cartItem.DiscountType,
-			&cartItem.DiscountRate,
-			&cartItem.DiscountMinimumQuantity,
-			&cartItem.DiscountAmount,
-			&cartItem.SalePrice,
-			&cartItem.Description,
-			&cartItem.Quantity,
-			&cartItem.Note,
-			&cartItem.CreatedAt,
-			&cartItem.UpdatedAt,
+			helper.SQLScan(
+				&cartItem.ID,
+				&cartItem.CartID,
+				&cartItem.ProductVariantID,
+				&cartItem.ProductCategoryID,
+				&cartItem.ProductCategoryName,
+				&cartItem.ProductID,
+				&cartItem.ProductName,
+				&cartItem.ProductPhoto,
+				&cartItem.ProductReadyStock,
+				&cartItem.StockUnit,
+				&cartItem.BasePrice,
+				&cartItem.SellingPrice,
+				&cartItem.DiscountType,
+				&cartItem.DiscountRate,
+				&cartItem.DiscountMinimumQuantity,
+				&cartItem.DiscountAmount,
+				&cartItem.SalePrice,
+				&cartItem.Description,
+				&cartItem.Quantity,
+				&cartItem.Note,
+				&cartItem.CreatedAt,
+				&cartItem.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
@@ -342,7 +350,7 @@ func (q *cartRepository) FindCart(
 
 func (q *cartRepository) SaveCart(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Cart,
 ) (*models.Cart, error) {
 	ctxt := "CartRepository-SaveCart"
@@ -355,7 +363,7 @@ func (q *cartRepository) SaveCart(
 	} else if request.DeletedUserID != nil {
 		buyerID = *request.DeletedUserID
 	}
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -366,25 +374,29 @@ func (q *cartRepository) SaveCart(
 		FROM carts
 		WHERE id = ? AND user_id = ?
 		FOR UPDATE`,
-		request.ID,
-		buyerID,
+		helper.SQLArgs(
+			request.ID,
+			buyerID,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.DeletedUserID,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.DeletedUserID,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	var row database.Row
+	var row *sql.Row
 	if response.ID.Compare(uuid.Nil()) == 0 {
-		row = tx.QueryRow(
+		row = tx.QueryRowContext(
 			ctx,
 			`INSERT INTO carts (
 				user_id
@@ -398,12 +410,14 @@ func (q *cartRepository) SaveCart(
 				, deleted_user_id
 				, created_at
 				, updated_at`,
-			request.UserID,
-			request.CreatedAt,
-			request.UpdatedAt,
+			helper.SQLArgs(
+				request.UserID,
+				request.CreatedAt,
+				request.UpdatedAt,
+			)...,
 		)
 	} else {
-		row = tx.QueryRow(
+		row = tx.QueryRowContext(
 			ctx,
 			`UPDATE carts SET
 				user_id = ?
@@ -415,18 +429,22 @@ func (q *cartRepository) SaveCart(
 				, deleted_user_id
 				, created_at
 				, updated_at`,
-			request.UserID,
-			request.DeletedUserID,
-			request.UpdatedAt,
-			request.ID,
+			helper.SQLArgs(
+				request.UserID,
+				request.DeletedUserID,
+				request.UpdatedAt,
+				request.ID,
+			)...,
 		)
 	}
 	if err = row.Scan(
-		&response.ID,
-		&response.UserID,
-		&response.DeletedUserID,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.DeletedUserID,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -513,53 +531,57 @@ func (q *cartRepository) SaveCart(
 			continue
 		}
 		var newCartItem models.CartItem
-		if err = tx.QueryRow(
+		if err = tx.QueryRowContext(
 			ctx,
 			sb.String(),
-			response.ID,
-			oldCartItem.ProductVariantID,
-			oldCartItem.ProductCategoryID,
-			oldCartItem.ProductCategoryName,
-			oldCartItem.ProductID,
-			oldCartItem.ProductName,
-			oldCartItem.ProductPhoto,
-			oldCartItem.ProductReadyStock,
-			oldCartItem.StockUnit,
-			oldCartItem.BasePrice,
-			oldCartItem.SellingPrice,
-			oldCartItem.DiscountType,
-			oldCartItem.DiscountRate,
-			oldCartItem.DiscountMinimumQuantity,
-			oldCartItem.DiscountAmount,
-			oldCartItem.SalePrice,
-			oldCartItem.Description,
-			oldCartItem.Quantity,
-			oldCartItem.Note,
-			oldCartItem.CreatedAt,
-			oldCartItem.UpdatedAt,
+			helper.SQLArgs(
+				response.ID,
+				oldCartItem.ProductVariantID,
+				oldCartItem.ProductCategoryID,
+				oldCartItem.ProductCategoryName,
+				oldCartItem.ProductID,
+				oldCartItem.ProductName,
+				oldCartItem.ProductPhoto,
+				oldCartItem.ProductReadyStock,
+				oldCartItem.StockUnit,
+				oldCartItem.BasePrice,
+				oldCartItem.SellingPrice,
+				oldCartItem.DiscountType,
+				oldCartItem.DiscountRate,
+				oldCartItem.DiscountMinimumQuantity,
+				oldCartItem.DiscountAmount,
+				oldCartItem.SalePrice,
+				oldCartItem.Description,
+				oldCartItem.Quantity,
+				oldCartItem.Note,
+				oldCartItem.CreatedAt,
+				oldCartItem.UpdatedAt,
+			)...,
 		).Scan(
-			&newCartItem.ID,
-			&newCartItem.CartID,
-			&newCartItem.ProductVariantID,
-			&newCartItem.ProductCategoryID,
-			&newCartItem.ProductCategoryName,
-			&newCartItem.ProductID,
-			&newCartItem.ProductName,
-			&newCartItem.ProductPhoto,
-			&newCartItem.ProductReadyStock,
-			&newCartItem.StockUnit,
-			&newCartItem.BasePrice,
-			&newCartItem.SellingPrice,
-			&newCartItem.DiscountType,
-			&newCartItem.DiscountRate,
-			&newCartItem.DiscountMinimumQuantity,
-			&newCartItem.DiscountAmount,
-			&newCartItem.SalePrice,
-			&newCartItem.Description,
-			&newCartItem.Quantity,
-			&newCartItem.Note,
-			&newCartItem.CreatedAt,
-			&newCartItem.UpdatedAt,
+			helper.SQLScan(
+				&newCartItem.ID,
+				&newCartItem.CartID,
+				&newCartItem.ProductVariantID,
+				&newCartItem.ProductCategoryID,
+				&newCartItem.ProductCategoryName,
+				&newCartItem.ProductID,
+				&newCartItem.ProductName,
+				&newCartItem.ProductPhoto,
+				&newCartItem.ProductReadyStock,
+				&newCartItem.StockUnit,
+				&newCartItem.BasePrice,
+				&newCartItem.SellingPrice,
+				&newCartItem.DiscountType,
+				&newCartItem.DiscountRate,
+				&newCartItem.DiscountMinimumQuantity,
+				&newCartItem.DiscountAmount,
+				&newCartItem.SalePrice,
+				&newCartItem.Description,
+				&newCartItem.Quantity,
+				&newCartItem.Note,
+				&newCartItem.CreatedAt,
+				&newCartItem.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
@@ -581,7 +603,7 @@ func (q *cartRepository) SaveCart(
 		}
 		_, _ = sb.WriteString(")")
 	}
-	if _, err = tx.Exec(ctx, sb.String(), params...); err != nil {
+	if _, err = tx.ExecContext(ctx, sb.String(), helper.SQLArgs(params...)...); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, err
 	}

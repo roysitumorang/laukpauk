@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,12 +22,12 @@ type RecipeGuideService interface {
 	) (*models.RecipeGuide, error)
 	CreateRecipeGuide(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.RecipeGuide,
 	) (*models.RecipeGuide, error)
 	UpdateRecipeGuide(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.RecipeGuide,
 	) (*models.RecipeGuide, error)
 }
@@ -88,7 +88,7 @@ func (q *recipeGuideService) FindRecipeGuide(
 
 func (q *recipeGuideService) CreateRecipeGuide(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.RecipeGuide,
 ) (*models.RecipeGuide, error) {
 	ctxt := "RecipeGuideService-CreateRecipeGuide"
@@ -101,7 +101,7 @@ func (q *recipeGuideService) CreateRecipeGuide(
 
 func (q *recipeGuideService) UpdateRecipeGuide(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.RecipeGuide,
 ) (*models.RecipeGuide, error) {
 	ctxt := "RecipeGuideService-UpdateRecipeGuide"

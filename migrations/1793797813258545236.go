@@ -2,12 +2,12 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -15,10 +15,10 @@ import (
 func init() {
 	Migrations[1793797813258545236] = Migration{
 		Version: 1793797813258545236,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// setting
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE setting (
 					id bigint NOT NULL PRIMARY KEY DEFAULT 1 CHECK (id = 1)
@@ -54,7 +54,7 @@ func init() {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX setting_updated_by_idx ON setting (updated_by);`,
 			); err != nil {
@@ -62,13 +62,13 @@ func init() {
 				return
 			}
 			var sellerID uuid.UUID
-			if err = tx.QueryRow(
+			if err = tx.QueryRowContext(
 				ctx,
 				`SELECT id
 				FROM users
 				WHERE email = ?`,
-				"benni.surbakti@gmail.com",
-			).Scan(&sellerID); err != nil {
+				helper.SQLArgs("benni.surbakti@gmail.com")...,
+			).Scan(helper.SQLScan(&sellerID)...); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 				return
 			}
@@ -139,7 +139,7 @@ func init() {
 					now.Location(),
 				),
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`INSERT INTO setting (
 					vacation_mode
@@ -171,38 +171,40 @@ func init() {
 					, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 					, ?, ?, ?, ?
 				);`,
-				setting.VacationMode,
-				setting.VacationEndDate,
-				setting.VoucherEnabled,
-				setting.ReferralPointsEnabled,
-				setting.ReferralPointsMinimumShoppingCost,
-				setting.ReferralPointsAmount,
-				setting.ReferralPointsSlots,
-				setting.ReferralPointsExpense,
-				setting.RewardPointsAccumulationWindowInDays,
-				setting.DeliveryOriginLongitude,
-				setting.DeliveryOriginLatitude,
-				setting.DeliveryCostPerKM,
-				setting.DeliveryMaxDistanceKM,
-				setting.WhatsappPhoneNumber,
-				setting.PaymentTerms,
-				setting.MaximumDeliveryTime,
-				setting.TransactionAutoWithdrawalEnabled,
-				setting.TransactionAutoWithdrawalWindowMin,
-				setting.TransactionAutoWithdrawalWindowMax,
-				setting.OtpRequiredForLogin,
-				sellerID,
-				now,
-				sellerID,
-				now,
+				helper.SQLArgs(
+					setting.VacationMode,
+					setting.VacationEndDate,
+					setting.VoucherEnabled,
+					setting.ReferralPointsEnabled,
+					setting.ReferralPointsMinimumShoppingCost,
+					setting.ReferralPointsAmount,
+					setting.ReferralPointsSlots,
+					setting.ReferralPointsExpense,
+					setting.RewardPointsAccumulationWindowInDays,
+					setting.DeliveryOriginLongitude,
+					setting.DeliveryOriginLatitude,
+					setting.DeliveryCostPerKM,
+					setting.DeliveryMaxDistanceKM,
+					setting.WhatsappPhoneNumber,
+					setting.PaymentTerms,
+					setting.MaximumDeliveryTime,
+					setting.TransactionAutoWithdrawalEnabled,
+					setting.TransactionAutoWithdrawalWindowMin,
+					setting.TransactionAutoWithdrawalWindowMax,
+					setting.OtpRequiredForLogin,
+					sellerID,
+					now,
+					sellerID,
+					now,
+				)...,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE setting",
 			); err != nil {

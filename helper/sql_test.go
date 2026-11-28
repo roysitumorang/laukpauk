@@ -1,4 +1,4 @@
-package database
+package helper
 
 import (
 	"encoding/hex"
@@ -45,39 +45,6 @@ func mustUUID(t *testing.T) testUUID {
 		t.Fatal(err)
 	}
 	return u
-}
-
-func TestHasDollarPlaceholder(t *testing.T) {
-	cases := []struct {
-		query string
-		want  bool
-	}{
-		{"SELECT 1", false},
-		{"SELECT * FROM t WHERE a = ? AND b = ?", false},
-		{"SELECT * FROM t WHERE a = $1", true},
-		{"SELECT '$1', \"$2\", `$3` -- $4\n /* $5 */", false},
-		{"SELECT 'it''s $1', 'a\\'$2', ?", false},
-		{"SELECT $ FROM t", false},
-	}
-	for _, c := range cases {
-		if got := hasDollarPlaceholder(c.query); got != c.want {
-			t.Errorf("hasDollarPlaceholder(%q) = %v; want %v", c.query, got, c.want)
-		}
-	}
-}
-
-func TestPrepareConverts(t *testing.T) {
-	u := mustUUID(t)
-	args, err := prepare("UPDATE t SET a = ? WHERE id = ?", []any{int64(5), u})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(args, []any{int64(5), testUUIDText}) {
-		t.Fatalf("args = %#v", args)
-	}
-	if _, err = prepare("SELECT $1", []any{1}); err == nil {
-		t.Fatal("want an error for a $n placeholder")
-	}
 }
 
 func TestConvertArg(t *testing.T) {

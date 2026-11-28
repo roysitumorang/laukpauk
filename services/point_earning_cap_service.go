@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,17 +22,17 @@ type PointEarningCapService interface {
 	) (*models.PointEarningCap, error)
 	CreatePointEarningCap(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarningCap,
 	) (*models.PointEarningCap, error)
 	UpdatePointEarningCap(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarningCap,
 	) (*models.PointEarningCap, error)
 	SavePointEarningCap(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointEarningCap,
 	) (*models.PointEarningCap, error)
 }
@@ -93,7 +93,7 @@ func (q *pointEarningCapService) FindPointEarningCap(
 
 func (q *pointEarningCapService) CreatePointEarningCap(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarningCap,
 ) (*models.PointEarningCap, error) {
 	ctxt := "PointEarningCapService-CreatePointEarningCap"
@@ -106,7 +106,7 @@ func (q *pointEarningCapService) CreatePointEarningCap(
 
 func (q *pointEarningCapService) UpdatePointEarningCap(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarningCap,
 ) (*models.PointEarningCap, error) {
 	ctxt := "PointEarningCapService-UpdatePointEarningCap"
@@ -119,7 +119,7 @@ func (q *pointEarningCapService) UpdatePointEarningCap(
 
 func (q *pointEarningCapService) SavePointEarningCap(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointEarningCap,
 ) (response *models.PointEarningCap, err error) {
 	ctxt := "PointEarningCapService-SavePointEarningCap"

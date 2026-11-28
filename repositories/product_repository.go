@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -29,29 +29,29 @@ type ProductRepository interface {
 	) (*models.Product, error)
 	CreateProduct(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 	UpdateProduct(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 	SaveProduct(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 }
 
 type productRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewProductRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) ProductRepository {
 	return &productRepository{
 		dbRead:  dbRead,
@@ -75,7 +75,7 @@ func (q *productRepository) FindProducts(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM products %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -140,8 +140,8 @@ func (q *productRepository) FindProducts(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -153,24 +153,26 @@ func (q *productRepository) FindProducts(
 	for rows.Next() {
 		var product models.Product
 		if err = rows.Scan(
-			&product.ID,
-			&product.RecordStatus,
-			&product.ProductCategoryID,
-			&product.ProductCategoryName,
-			&product.Name,
-			&product.Photo,
-			&product.Description,
-			&product.ReadyStock,
-			&product.Pinned,
-			&product.Hits,
-			&product.LowestSellingPrice,
-			&product.CreatedBy,
-			&product.CreatedAt,
-			&product.UpdatedBy,
-			&product.UpdatedAt,
-			&product.DeletedBy,
-			&product.DeletedAt,
-			&product.DeletionReason,
+			helper.SQLScan(
+				&product.ID,
+				&product.RecordStatus,
+				&product.ProductCategoryID,
+				&product.ProductCategoryName,
+				&product.Name,
+				&product.Photo,
+				&product.Description,
+				&product.ReadyStock,
+				&product.Pinned,
+				&product.Hits,
+				&product.LowestSellingPrice,
+				&product.CreatedBy,
+				&product.CreatedAt,
+				&product.UpdatedBy,
+				&product.UpdatedAt,
+				&product.DeletedBy,
+				&product.DeletedAt,
+				&product.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -198,7 +200,7 @@ func (q *productRepository) InfiniteScrollProducts(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM products %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, err
@@ -252,8 +254,8 @@ func (q *productRepository) InfiniteScrollProducts(
 	}
 	params = append(params, request.Limit)
 	_, _ = sb.WriteString(" FETCH FIRST ? ROWS ONLY")
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -265,25 +267,27 @@ func (q *productRepository) InfiniteScrollProducts(
 	for rows.Next() {
 		var product models.Product
 		if err = rows.Scan(
-			&product.RowNo,
-			&product.ID,
-			&product.RecordStatus,
-			&product.ProductCategoryID,
-			&product.ProductCategoryName,
-			&product.Name,
-			&product.Photo,
-			&product.Description,
-			&product.ReadyStock,
-			&product.Pinned,
-			&product.Hits,
-			&product.LowestSellingPrice,
-			&product.CreatedBy,
-			&product.CreatedAt,
-			&product.UpdatedBy,
-			&product.UpdatedAt,
-			&product.DeletedBy,
-			&product.DeletedAt,
-			&product.DeletionReason,
+			helper.SQLScan(
+				&product.RowNo,
+				&product.ID,
+				&product.RecordStatus,
+				&product.ProductCategoryID,
+				&product.ProductCategoryName,
+				&product.Name,
+				&product.Photo,
+				&product.Description,
+				&product.ReadyStock,
+				&product.Pinned,
+				&product.Hits,
+				&product.LowestSellingPrice,
+				&product.CreatedBy,
+				&product.CreatedAt,
+				&product.UpdatedBy,
+				&product.UpdatedAt,
+				&product.DeletedBy,
+				&product.DeletedAt,
+				&product.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, err
@@ -335,27 +339,29 @@ func (q *productRepository) FindProduct(
 		condition,
 	)
 	var response models.Product
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.ReadyStock,
-		&response.Pinned,
-		&response.Hits,
-		&response.LowestSellingPrice,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.ReadyStock,
+			&response.Pinned,
+			&response.Hits,
+			&response.LowestSellingPrice,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductNotFound
 	}
 	if err != nil {
@@ -367,12 +373,12 @@ func (q *productRepository) FindProduct(
 
 func (q *productRepository) CreateProduct(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	ctxt := "ProductRepository-CreateProduct"
 	var response models.Product
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO products (
 			record_status
@@ -408,41 +414,45 @@ func (q *productRepository) CreateProduct(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.ProductCategoryID,
-		request.ProductCategoryName,
-		request.Name,
-		request.Photo,
-		request.Description,
-		request.ReadyStock,
-		request.Pinned,
-		request.Hits,
-		request.LowestSellingPrice,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.ProductCategoryID,
+			request.ProductCategoryName,
+			request.Name,
+			request.Photo,
+			request.Description,
+			request.ReadyStock,
+			request.Pinned,
+			request.Hits,
+			request.LowestSellingPrice,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.ReadyStock,
-		&response.Pinned,
-		&response.Hits,
-		&response.LowestSellingPrice,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.ReadyStock,
+			&response.Pinned,
+			&response.Hits,
+			&response.LowestSellingPrice,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "products_unique_name_idx") {
+		if isUniqueViolation(err, "products_unique_name_idx") {
 			err = models.ErrUniqueProductNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -454,12 +464,12 @@ func (q *productRepository) CreateProduct(
 
 func (q *productRepository) UpdateProduct(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	ctxt := "ProductRepository-UpdateProduct"
 	var response models.Product
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -483,28 +493,30 @@ func (q *productRepository) UpdateProduct(
 		FROM products
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.ReadyStock,
-		&response.Pinned,
-		&response.Hits,
-		&response.LowestSellingPrice,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.ReadyStock,
+			&response.Pinned,
+			&response.Hits,
+			&response.LowestSellingPrice,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductNotFound
 	}
 	if err != nil {
@@ -657,27 +669,29 @@ func (q *productRepository) UpdateProduct(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.ReadyStock,
-		&response.Pinned,
-		&response.Hits,
-		&response.LowestSellingPrice,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.ReadyStock,
+			&response.Pinned,
+			&response.Hits,
+			&response.LowestSellingPrice,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "products_unique_name_idx") {
+		if isUniqueViolation(err, "products_unique_name_idx") {
 			err = models.ErrUniqueProductNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -689,7 +703,7 @@ func (q *productRepository) UpdateProduct(
 
 func (q *productRepository) SaveProduct(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	if request.New() {

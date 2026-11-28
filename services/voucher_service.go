@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,12 +22,12 @@ type VoucherService interface {
 	) (*models.Voucher, error)
 	CreateVoucher(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Voucher,
 	) (*models.Voucher, error)
 	UpdateVoucher(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Voucher,
 	) (*models.Voucher, error)
 }
@@ -91,7 +91,7 @@ func (q *voucherService) FindVoucher(
 
 func (q *voucherService) CreateVoucher(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Voucher,
 ) (*models.Voucher, error) {
 	ctxt := "VoucherService-CreateVoucher"
@@ -103,7 +103,7 @@ func (q *voucherService) CreateVoucher(
 }
 func (q *voucherService) UpdateVoucher(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Voucher,
 ) (*models.Voucher, error) {
 	ctxt := "VoucherService-UpdateVoucher"

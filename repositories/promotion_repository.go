@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -25,24 +25,24 @@ type PromotionRepository interface {
 	) (*models.Promotion, error)
 	CreatePromotion(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Promotion,
 	) (*models.Promotion, error)
 	UpdatePromotion(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Promotion,
 	) (*models.Promotion, error)
 }
 
 type promotionRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewPromotionRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) PromotionRepository {
 	return &promotionRepository{
 		dbRead:  dbRead,
@@ -66,7 +66,7 @@ func (q *promotionRepository) FindPromotions(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM promotions %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -130,8 +130,8 @@ func (q *promotionRepository) FindPromotions(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -143,23 +143,25 @@ func (q *promotionRepository) FindPromotions(
 	for rows.Next() {
 		var promotion models.Promotion
 		if err = rows.Scan(
-			&promotion.ID,
-			&promotion.RecordStatus,
-			&promotion.Name,
-			&promotion.Code,
-			&promotion.DeletedCode,
-			&promotion.Description,
-			&promotion.Discount,
-			&promotion.QuotaPerBuyer,
-			&promotion.EffectiveStartDate,
-			&promotion.EffectiveEndDate,
-			&promotion.CreatedBy,
-			&promotion.CreatedAt,
-			&promotion.UpdatedBy,
-			&promotion.UpdatedAt,
-			&promotion.DeletedBy,
-			&promotion.DeletedAt,
-			&promotion.DeletionReason,
+			helper.SQLScan(
+				&promotion.ID,
+				&promotion.RecordStatus,
+				&promotion.Name,
+				&promotion.Code,
+				&promotion.DeletedCode,
+				&promotion.Description,
+				&promotion.Discount,
+				&promotion.QuotaPerBuyer,
+				&promotion.EffectiveStartDate,
+				&promotion.EffectiveEndDate,
+				&promotion.CreatedBy,
+				&promotion.CreatedAt,
+				&promotion.UpdatedBy,
+				&promotion.UpdatedAt,
+				&promotion.DeletedBy,
+				&promotion.DeletedAt,
+				&promotion.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -212,26 +214,28 @@ func (q *promotionRepository) FindPromotion(
 		condition,
 	)
 	var response models.Promotion
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Code,
-		&response.DeletedCode,
-		&response.Description,
-		&response.Discount,
-		&response.QuotaPerBuyer,
-		&response.EffectiveStartDate,
-		&response.EffectiveEndDate,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Code,
+			&response.DeletedCode,
+			&response.Description,
+			&response.Discount,
+			&response.QuotaPerBuyer,
+			&response.EffectiveStartDate,
+			&response.EffectiveEndDate,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPromotionNotFound
 	}
 	if err != nil {
@@ -243,12 +247,12 @@ func (q *promotionRepository) FindPromotion(
 
 func (q *promotionRepository) CreatePromotion(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Promotion,
 ) (*models.Promotion, error) {
 	ctxt := "PromotionRepository-CreatePromotion"
 	var response models.Promotion
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO promotions (
 			record_status
@@ -284,38 +288,42 @@ func (q *promotionRepository) CreatePromotion(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.Name,
-		request.Code,
-		request.Description,
-		request.Discount,
-		request.QuotaPerBuyer,
-		request.EffectiveStartDate,
-		request.EffectiveEndDate,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.Name,
+			request.Code,
+			request.Description,
+			request.Discount,
+			request.QuotaPerBuyer,
+			request.EffectiveStartDate,
+			request.EffectiveEndDate,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Code,
-		&response.DeletedCode,
-		&response.Description,
-		&response.Discount,
-		&response.QuotaPerBuyer,
-		&response.EffectiveStartDate,
-		&response.EffectiveEndDate,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Code,
+			&response.DeletedCode,
+			&response.Description,
+			&response.Discount,
+			&response.QuotaPerBuyer,
+			&response.EffectiveStartDate,
+			&response.EffectiveEndDate,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "promotions_code_key") {
+		if isUniqueViolation(err, "promotions_code_key") {
 			err = models.ErrUniquePromotionCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -327,12 +335,12 @@ func (q *promotionRepository) CreatePromotion(
 
 func (q *promotionRepository) UpdatePromotion(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Promotion,
 ) (*models.Promotion, error) {
 	ctxt := "PromotionRepository-UpdatePromotion"
 	var response models.Promotion
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -355,27 +363,29 @@ func (q *promotionRepository) UpdatePromotion(
 		FROM promotions
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Code,
-		&response.DeletedCode,
-		&response.Description,
-		&response.Discount,
-		&response.QuotaPerBuyer,
-		&response.EffectiveStartDate,
-		&response.EffectiveEndDate,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Code,
+			&response.DeletedCode,
+			&response.Description,
+			&response.Discount,
+			&response.QuotaPerBuyer,
+			&response.EffectiveStartDate,
+			&response.EffectiveEndDate,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPromotionNotFound
 	}
 	if err != nil {
@@ -526,26 +536,28 @@ func (q *promotionRepository) UpdatePromotion(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Code,
-		&response.DeletedCode,
-		&response.Description,
-		&response.Discount,
-		&response.QuotaPerBuyer,
-		&response.EffectiveStartDate,
-		&response.EffectiveEndDate,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Code,
+			&response.DeletedCode,
+			&response.Description,
+			&response.Discount,
+			&response.QuotaPerBuyer,
+			&response.EffectiveStartDate,
+			&response.EffectiveEndDate,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "promotions_code_key") {
+		if isUniqueViolation(err, "promotions_code_key") {
 			err = models.ErrUniquePromotionCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

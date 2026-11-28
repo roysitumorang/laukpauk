@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,17 +23,17 @@ type (
 		) (*models.ProductVariant, error)
 		CreateProductVariant(
 			ctx context.Context,
-			tx database.Tx,
+			tx *sql.Tx,
 			request *models.ProductVariant,
 		) (*models.ProductVariant, error)
 		UpdateProductVariant(
 			ctx context.Context,
-			tx database.Tx,
+			tx *sql.Tx,
 			request *models.ProductVariant,
 		) (*models.ProductVariant, error)
 		SaveProductVariant(
 			ctx context.Context,
-			tx database.Tx,
+			tx *sql.Tx,
 			request *models.ProductVariant,
 		) (*models.ProductVariant, error)
 	}
@@ -98,7 +98,7 @@ func (q *productVariantService) FindProductVariant(
 
 func (q *productVariantService) CreateProductVariant(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantService-CreateProductVariant"
@@ -111,7 +111,7 @@ func (q *productVariantService) CreateProductVariant(
 
 func (q *productVariantService) UpdateProductVariant(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantService-UpdateProductVariant"
@@ -124,7 +124,7 @@ func (q *productVariantService) UpdateProductVariant(
 
 func (q *productVariantService) SaveProductVariant(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.ProductVariant,
 ) (response *models.ProductVariant, err error) {
 	ctxt := "ProductVariantService-SaveProductVariant"

@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -25,24 +25,24 @@ type RecipeGuideRepository interface {
 	) (*models.RecipeGuide, error)
 	CreateRecipeGuide(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.RecipeGuide,
 	) (*models.RecipeGuide, error)
 	UpdateRecipeGuide(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.RecipeGuide,
 	) (*models.RecipeGuide, error)
 }
 
 type recipeGuideRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewRecipeGuideRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) RecipeGuideRepository {
 	return &recipeGuideRepository{
 		dbRead:  dbRead,
@@ -66,7 +66,7 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM recipe_guides %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -124,8 +124,8 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -137,17 +137,19 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 	for rows.Next() {
 		var recipeGuide models.RecipeGuide
 		if err = rows.Scan(
-			&recipeGuide.ID,
-			&recipeGuide.RecordStatus,
-			&recipeGuide.RecipeID,
-			&recipeGuide.Instruction,
-			&recipeGuide.CreatedBy,
-			&recipeGuide.CreatedAt,
-			&recipeGuide.UpdatedBy,
-			&recipeGuide.UpdatedAt,
-			&recipeGuide.DeletedBy,
-			&recipeGuide.DeletedAt,
-			&recipeGuide.DeletionReason,
+			helper.SQLScan(
+				&recipeGuide.ID,
+				&recipeGuide.RecordStatus,
+				&recipeGuide.RecipeID,
+				&recipeGuide.Instruction,
+				&recipeGuide.CreatedBy,
+				&recipeGuide.CreatedAt,
+				&recipeGuide.UpdatedBy,
+				&recipeGuide.UpdatedAt,
+				&recipeGuide.DeletedBy,
+				&recipeGuide.DeletedAt,
+				&recipeGuide.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -190,20 +192,22 @@ func (q *recipeGuideRepository) FindRecipeGuide(
 		condition,
 	)
 	var response models.RecipeGuide
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.RecipeID,
-		&response.Instruction,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.RecipeID,
+			&response.Instruction,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrRecipeGuideNotFound
 	}
 	if err != nil {
@@ -215,12 +219,12 @@ func (q *recipeGuideRepository) FindRecipeGuide(
 
 func (q *recipeGuideRepository) CreateRecipeGuide(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.RecipeGuide,
 ) (*models.RecipeGuide, error) {
 	ctxt := "RecipeGuideRepository-CreateRecipeGuide"
 	var response models.RecipeGuide
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO recipe_guides (
 			record_status
@@ -242,25 +246,29 @@ func (q *recipeGuideRepository) CreateRecipeGuide(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.RecipeID,
-		request.Instruction,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.RecipeID,
+			request.Instruction,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.RecipeID,
-		&response.Instruction,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.RecipeID,
+			&response.Instruction,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -270,12 +278,12 @@ func (q *recipeGuideRepository) CreateRecipeGuide(
 
 func (q *recipeGuideRepository) UpdateRecipeGuide(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.RecipeGuide,
 ) (*models.RecipeGuide, error) {
 	ctxt := "RecipeGuideRepository-UpdateRecipeGuide"
 	var response models.RecipeGuide
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -292,21 +300,23 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 		FROM recipe_guides
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.RecipeID,
-		&response.Instruction,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.RecipeID,
+			&response.Instruction,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrRecipeGuideNotFound
 	}
 	if err != nil {
@@ -396,18 +406,20 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.RecipeID,
-		&response.Instruction,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.RecipeID,
+			&response.Instruction,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

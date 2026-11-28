@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,24 +11,23 @@ import (
 	"slices"
 	"time"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 type Migrator struct {
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 type Migration struct {
 	Version int64
-	Up      func(ctx context.Context, tx database.Tx) error
-	Down    func(ctx context.Context, tx database.Tx) error
+	Up      func(ctx context.Context, tx *sql.Tx) error
+	Down    func(ctx context.Context, tx *sql.Tx) error
 }
 
 var Migrations = map[int64]Migration{}
 
 func NewMigrator(
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) *Migrator {
 	return &Migrator{
 		dbWrite: dbWrite,
@@ -38,22 +38,22 @@ func NewMigrator(
 // its own, so a migration that fails halfway is not rolled back by the transaction: its Down undoes what it can.
 func (m *Migrator) Migrate(ctx context.Context) error {
 	ctxt := "Migrator-Migrate"
-	tx, err := m.dbWrite.BeginTx(ctx, database.TxOptions{
-		IsoLevel: database.Serializable,
+	tx, err := m.dbWrite.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
 	})
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBeginTx")
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = tx.Exec(
+	if _, err = tx.ExecContext(
 		ctx,
 		`CREATE TABLE IF NOT EXISTS migrations (
 			"version" bigint NOT NULL PRIMARY KEY
@@ -62,8 +62,8 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return err
 	}
-	rows, err := tx.Query(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := tx.QueryContext(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -74,7 +74,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	mapVersions := map[int64]struct{}{}
 	for rows.Next() {
 		var version int64
-		if err = rows.Scan(&version); err != nil {
+		if err = rows.Scan(helper.SQLScan(&version)...); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return err
 		}
@@ -97,12 +97,12 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUp")
 			return err
 		}
-		if _, err = tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES (?)`, version); err != nil {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO "migrations" ("version") VALUES (?)`, helper.SQLArgs(version)...); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return err
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommit")
 		return err
 	}
@@ -119,17 +119,16 @@ func (m *Migrator) CreateMigrationFile() error {
 import (
 	"context"
 
-	"github.com/roysitumorang/laukpauk/database"
 )
 
 func init() {
 	Migrations[%d] = Migration{
 		Version: %d,
-		Up: func(ctx context.Context, tx database.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			return
 		},
-		Down: func(ctx context.Context, tx database.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
 			return
 		},

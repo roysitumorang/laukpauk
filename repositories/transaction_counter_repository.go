@@ -2,9 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -18,12 +18,12 @@ type TransactionCounterRepository interface {
 
 type transactionCounterRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewTransactionCounterRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) TransactionCounterRepository {
 	return &transactionCounterRepository{
 		dbRead:  dbRead,
@@ -37,7 +37,7 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 ) (*models.TransactionCounter, error) {
 	ctxt := "TransactionCounterRepository-SaveTransactionCounter"
 	var response models.TransactionCounter
-	if err := q.dbWrite.QueryRow(
+	if err := q.dbWrite.QueryRowContext(
 		ctx,
 		`INSERT INTO transaction_counters (
 			transaction_window
@@ -53,15 +53,19 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 			, hits
 			, created_at
 			, updated_at`,
-		request.TransactionWindow,
-		request.CreatedAt,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.TransactionWindow,
+			request.CreatedAt,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.TransactionWindow,
-		&response.Hits,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.TransactionWindow,
+			&response.Hits,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err

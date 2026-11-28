@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +26,24 @@ type DeliveryPlanRepository interface {
 	) (*models.DeliveryPlan, error)
 	CreateDeliveryPlan(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.DeliveryPlan,
 	) (*models.DeliveryPlan, error)
 	UpdateDeliveryPlan(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.DeliveryPlan,
 	) (*models.DeliveryPlan, error)
 }
 
 type deliveryPlanRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewDeliveryPlanRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) DeliveryPlanRepository {
 	return &deliveryPlanRepository{
 		dbRead:  dbRead,
@@ -67,7 +67,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM delivery_plans %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -137,8 +137,8 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -150,29 +150,31 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 	for rows.Next() {
 		var deliveryPlan models.DeliveryPlan
 		if err = rows.Scan(
-			&deliveryPlan.ID,
-			&deliveryPlan.RecordStatus,
-			&deliveryPlan.Name,
-			&deliveryPlan.Weekday,
-			&deliveryPlan.TransactionWindowMin,
-			&deliveryPlan.TransactionWindowMax,
-			&deliveryPlan.DeliveryTimeInterval,
-			&deliveryPlan.SameDay,
-			&deliveryPlan.SameDayWindowMin,
-			&deliveryPlan.SameDayWindowMax,
-			&deliveryPlan.NextDay,
-			&deliveryPlan.NextDayWindowMin,
-			&deliveryPlan.NextDayWindowMax,
-			&deliveryPlan.NextTwoDay,
-			&deliveryPlan.NextTwoDayWindowMin,
-			&deliveryPlan.NextTwoDayWindowMax,
-			&deliveryPlan.CreatedBy,
-			&deliveryPlan.CreatedAt,
-			&deliveryPlan.UpdatedBy,
-			&deliveryPlan.UpdatedAt,
-			&deliveryPlan.DeletedBy,
-			&deliveryPlan.DeletedAt,
-			&deliveryPlan.DeletionReason,
+			helper.SQLScan(
+				&deliveryPlan.ID,
+				&deliveryPlan.RecordStatus,
+				&deliveryPlan.Name,
+				&deliveryPlan.Weekday,
+				&deliveryPlan.TransactionWindowMin,
+				&deliveryPlan.TransactionWindowMax,
+				&deliveryPlan.DeliveryTimeInterval,
+				&deliveryPlan.SameDay,
+				&deliveryPlan.SameDayWindowMin,
+				&deliveryPlan.SameDayWindowMax,
+				&deliveryPlan.NextDay,
+				&deliveryPlan.NextDayWindowMin,
+				&deliveryPlan.NextDayWindowMax,
+				&deliveryPlan.NextTwoDay,
+				&deliveryPlan.NextTwoDayWindowMin,
+				&deliveryPlan.NextTwoDayWindowMax,
+				&deliveryPlan.CreatedBy,
+				&deliveryPlan.CreatedAt,
+				&deliveryPlan.UpdatedBy,
+				&deliveryPlan.UpdatedAt,
+				&deliveryPlan.DeletedBy,
+				&deliveryPlan.DeletedAt,
+				&deliveryPlan.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -231,32 +233,34 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		condition,
 	)
 	var response models.DeliveryPlan
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Weekday,
-		&response.TransactionWindowMin,
-		&response.TransactionWindowMax,
-		&response.DeliveryTimeInterval,
-		&response.SameDay,
-		&response.SameDayWindowMin,
-		&response.SameDayWindowMax,
-		&response.NextDay,
-		&response.NextDayWindowMin,
-		&response.NextDayWindowMax,
-		&response.NextTwoDay,
-		&response.NextTwoDayWindowMin,
-		&response.NextTwoDayWindowMax,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Weekday,
+			&response.TransactionWindowMin,
+			&response.TransactionWindowMax,
+			&response.DeliveryTimeInterval,
+			&response.SameDay,
+			&response.SameDayWindowMin,
+			&response.SameDayWindowMax,
+			&response.NextDay,
+			&response.NextDayWindowMin,
+			&response.NextDayWindowMax,
+			&response.NextTwoDay,
+			&response.NextTwoDayWindowMin,
+			&response.NextTwoDayWindowMax,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrDeliveryPlanNotFound
 	}
 	if err != nil {
@@ -268,7 +272,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 
 func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.DeliveryPlan,
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-CreateDeliveryPlan"
@@ -345,52 +349,56 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, deleted_at
 			, deletion_reason`,
 	)
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		sb.String(),
-		request.RecordStatus,
-		request.Name,
-		request.Weekday,
-		request.TransactionWindowMin,
-		request.TransactionWindowMax,
-		request.DeliveryTimeInterval,
-		request.SameDay,
-		request.SameDayWindowMin,
-		request.SameDayWindowMax,
-		request.NextDay,
-		request.NextDayWindowMin,
-		request.NextDayWindowMax,
-		request.NextTwoDay,
-		request.NextTwoDayWindowMin,
-		request.NextTwoDayWindowMax,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.Name,
+			request.Weekday,
+			request.TransactionWindowMin,
+			request.TransactionWindowMax,
+			request.DeliveryTimeInterval,
+			request.SameDay,
+			request.SameDayWindowMin,
+			request.SameDayWindowMax,
+			request.NextDay,
+			request.NextDayWindowMin,
+			request.NextDayWindowMax,
+			request.NextTwoDay,
+			request.NextTwoDayWindowMin,
+			request.NextTwoDayWindowMax,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Weekday,
-		&response.TransactionWindowMin,
-		&response.TransactionWindowMax,
-		&response.DeliveryTimeInterval,
-		&response.SameDay,
-		&response.SameDayWindowMin,
-		&response.SameDayWindowMax,
-		&response.NextDay,
-		&response.NextDayWindowMin,
-		&response.NextDayWindowMax,
-		&response.NextTwoDay,
-		&response.NextTwoDayWindowMin,
-		&response.NextTwoDayWindowMax,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Weekday,
+			&response.TransactionWindowMin,
+			&response.TransactionWindowMax,
+			&response.DeliveryTimeInterval,
+			&response.SameDay,
+			&response.SameDayWindowMin,
+			&response.SameDayWindowMax,
+			&response.NextDay,
+			&response.NextDayWindowMin,
+			&response.NextDayWindowMax,
+			&response.NextTwoDay,
+			&response.NextTwoDayWindowMin,
+			&response.NextTwoDayWindowMax,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -401,12 +409,12 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 
 func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.DeliveryPlan,
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-UpdateDeliveryPlan"
 	var response models.DeliveryPlan
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -435,31 +443,33 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		FROM delivery_plans
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Weekday,
-		&response.TransactionWindowMin,
-		&response.TransactionWindowMax,
-		&response.DeliveryTimeInterval,
-		&response.SameDay,
-		&response.SameDayWindowMin,
-		&response.SameDayWindowMax,
-		&response.NextDay,
-		&response.NextDayWindowMin,
-		&response.NextDayWindowMax,
-		&response.NextTwoDay,
-		&response.NextTwoDayWindowMin,
-		&response.NextTwoDayWindowMax,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Weekday,
+			&response.TransactionWindowMin,
+			&response.TransactionWindowMax,
+			&response.DeliveryTimeInterval,
+			&response.SameDay,
+			&response.SameDayWindowMin,
+			&response.SameDayWindowMax,
+			&response.NextDay,
+			&response.NextDayWindowMin,
+			&response.NextDayWindowMax,
+			&response.NextTwoDay,
+			&response.NextTwoDayWindowMin,
+			&response.NextTwoDayWindowMax,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -615,30 +625,32 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Weekday,
-		&response.TransactionWindowMin,
-		&response.TransactionWindowMax,
-		&response.DeliveryTimeInterval,
-		&response.SameDay,
-		&response.SameDayWindowMin,
-		&response.SameDayWindowMax,
-		&response.NextDay,
-		&response.NextDayWindowMin,
-		&response.NextDayWindowMax,
-		&response.NextTwoDay,
-		&response.NextTwoDayWindowMin,
-		&response.NextTwoDayWindowMax,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Weekday,
+			&response.TransactionWindowMin,
+			&response.TransactionWindowMax,
+			&response.DeliveryTimeInterval,
+			&response.SameDay,
+			&response.SameDayWindowMin,
+			&response.SameDayWindowMax,
+			&response.NextDay,
+			&response.NextDayWindowMin,
+			&response.NextDayWindowMax,
+			&response.NextTwoDay,
+			&response.NextTwoDayWindowMin,
+			&response.NextTwoDayWindowMax,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -747,7 +759,7 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 // transactions can't add overlapping plans at the same time.
 func (q *deliveryPlanRepository) checkTransactionWindow(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	excludeID *uuid.UUID,
 	request *models.DeliveryPlan,
 ) error {
@@ -762,7 +774,7 @@ func (q *deliveryPlanRepository) checkTransactionWindow(
 		params = append(params, *excludeID)
 		query += " AND id != ?"
 	}
-	rows, err := tx.Query(ctx, query+" FOR UPDATE", params...)
+	rows, err := tx.QueryContext(ctx, query+" FOR UPDATE", helper.SQLArgs(params...)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return err

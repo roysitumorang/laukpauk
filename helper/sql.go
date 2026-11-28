@@ -1,4 +1,4 @@
-package database
+package helper
 
 import (
 	"database/sql"
@@ -7,74 +7,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 )
 
-// prepare converts each argument to something the MariaDB driver takes. Queries use ? placeholders; a PostgreSQL
-// style $n left in one is an error rather than a silently mis-bound argument.
-func prepare(query string, args []any) ([]any, error) {
-	if strings.IndexByte(query, '$') >= 0 && hasDollarPlaceholder(query) {
-		return nil, fmt.Errorf("database: query has a $n placeholder; use ?: %s", query)
-	}
+// SQLArgs converts query arguments to values database/sql and the MariaDB driver take: a uuid.UUID (which has no
+// driver.Valuer) becomes its text form, a type with only a text form (MarshalText) becomes that text, and a slice,
+// map or struct becomes JSON. Everything else (numbers, strings, booleans, times, Valuers, pointers to them) is left
+// to database/sql.
+func SQLArgs(args ...any) []any {
 	out := make([]any, len(args))
 	for i, a := range args {
 		out[i] = convertArg(a)
 	}
-	return out, nil
+	return out
 }
 
-// hasDollarPlaceholder reports whether the query has a $n outside quotes and comments.
-func hasDollarPlaceholder(query string) bool {
-	n := len(query)
-	for i := 0; i < n; {
-		c := query[i]
-		switch {
-		case c == '\'' || c == '"' || c == '`':
-			i = skipQuoted(query, i)
-		case c == '-' && i+1 < n && query[i+1] == '-':
-			j := strings.IndexByte(query[i:], '\n')
-			if j < 0 {
-				return false
-			}
-			i += j
-		case c == '/' && i+1 < n && query[i+1] == '*':
-			j := strings.Index(query[i+2:], "*/")
-			if j < 0 {
-				return false
-			}
-			i += j + 4
-		case c == '$' && i+1 < n && query[i+1] >= '0' && query[i+1] <= '9':
-			return true
-		default:
-			i++
-		}
+// SQLScan wraps scan destinations database/sql can't fill by itself: a *uuid.UUID / **uuid.UUID (from its text
+// form), a slice, map or struct (from JSON), a type with only a text form, and times, which come back in the local
+// time zone (MariaDB keeps them in UTC).
+func SQLScan(dest ...any) []any {
+	out := make([]any, len(dest))
+	for i, d := range dest {
+		out[i] = wrapDest(d)
 	}
-	return false
-}
-
-// skipQuoted returns the index right after the quoted string, identifier or backtick name starting at i; a doubled
-// quote stays inside, and so does a backslash escape in a string.
-func skipQuoted(query string, i int) int {
-	q := query[i]
-	n := len(query)
-	j := i + 1
-	for j < n {
-		c := query[j]
-		if c == '\\' && q == '\'' {
-			j += 2
-			continue
-		}
-		if c == q {
-			if j+1 < n && query[j+1] == q {
-				j += 2
-				continue
-			}
-			return j + 1
-		}
-		j++
-	}
-	return n
+	return out
 }
 
 var (

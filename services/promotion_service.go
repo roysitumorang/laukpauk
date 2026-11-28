@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,12 +22,12 @@ type PromotionService interface {
 	) (*models.Promotion, error)
 	CreatePromotion(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Promotion,
 	) (*models.Promotion, error)
 	UpdatePromotion(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Promotion,
 	) (*models.Promotion, error)
 }
@@ -91,7 +91,7 @@ func (q *promotionService) FindPromotion(
 
 func (q *promotionService) CreatePromotion(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Promotion,
 ) (*models.Promotion, error) {
 	ctxt := "PromotionService-CreatePromotion"
@@ -103,7 +103,7 @@ func (q *promotionService) CreatePromotion(
 }
 func (q *promotionService) UpdatePromotion(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Promotion,
 ) (*models.Promotion, error) {
 	ctxt := "PromotionService-UpdatePromotion"

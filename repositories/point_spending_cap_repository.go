@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +26,24 @@ type PointSpendingCapRepository interface {
 	) (*models.PointSpendingCap, error)
 	CreatePointSpendingCap(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointSpendingCap,
 	) (*models.PointSpendingCap, error)
 	UpdatePointSpendingCap(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.PointSpendingCap,
 	) (*models.PointSpendingCap, error)
 }
 
 type pointSpendingCapRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewPointSpendingCapRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) PointSpendingCapRepository {
 	return &pointSpendingCapRepository{
 		dbRead:  dbRead,
@@ -67,7 +67,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM point_spending_caps %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -126,8 +126,8 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -139,18 +139,20 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 	for rows.Next() {
 		var pointSpendingCap models.PointSpendingCap
 		if err = rows.Scan(
-			&pointSpendingCap.ID,
-			&pointSpendingCap.RecordStatus,
-			&pointSpendingCap.MinimumShoppingCost,
-			&pointSpendingCap.MaximumShoppingCost,
-			&pointSpendingCap.DisposablePoints,
-			&pointSpendingCap.CreatedBy,
-			&pointSpendingCap.CreatedAt,
-			&pointSpendingCap.UpdatedBy,
-			&pointSpendingCap.UpdatedAt,
-			&pointSpendingCap.DeletedBy,
-			&pointSpendingCap.DeletedAt,
-			&pointSpendingCap.DeletionReason,
+			helper.SQLScan(
+				&pointSpendingCap.ID,
+				&pointSpendingCap.RecordStatus,
+				&pointSpendingCap.MinimumShoppingCost,
+				&pointSpendingCap.MaximumShoppingCost,
+				&pointSpendingCap.DisposablePoints,
+				&pointSpendingCap.CreatedBy,
+				&pointSpendingCap.CreatedAt,
+				&pointSpendingCap.UpdatedBy,
+				&pointSpendingCap.UpdatedAt,
+				&pointSpendingCap.DeletedBy,
+				&pointSpendingCap.DeletedAt,
+				&pointSpendingCap.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -195,21 +197,23 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 	)
 	query := sb.String()
 	var response models.PointSpendingCap
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.DisposablePoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.DisposablePoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointSpendingCapNotFound
 	}
 	if err != nil {
@@ -221,7 +225,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 
 func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointSpendingCap,
 ) (*models.PointSpendingCap, error) {
 	ctxt := "PointSpendingCapRepository-CreatePointSpendingCap"
@@ -229,7 +233,7 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 	if err := q.checkShoppingCost(ctx, tx, nil, request.MinimumShoppingCost, request.MaximumShoppingCost); err != nil {
 		return nil, err
 	}
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO point_spending_caps (
 			record_status
@@ -253,27 +257,31 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.MinimumShoppingCost,
-		request.MaximumShoppingCost,
-		request.DisposablePoints,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.MinimumShoppingCost,
+			request.MaximumShoppingCost,
+			request.DisposablePoints,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.DisposablePoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.DisposablePoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -284,12 +292,12 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 
 func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.PointSpendingCap,
 ) (*models.PointSpendingCap, error) {
 	ctxt := "PointSpendingCapRepository-UpdatePointSpendingCap"
 	var response models.PointSpendingCap
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -307,22 +315,24 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		FROM point_spending_caps
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.DisposablePoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.DisposablePoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointSpendingCapNotFound
 	}
 	if err != nil {
@@ -430,19 +440,21 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.MinimumShoppingCost,
-		&response.MaximumShoppingCost,
-		&response.DisposablePoints,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.MinimumShoppingCost,
+			&response.MaximumShoppingCost,
+			&response.DisposablePoints,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
@@ -517,7 +529,7 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 // range around them) until the transaction ends, so two transactions can't add overlapping caps at the same time.
 func (q *pointSpendingCapRepository) checkShoppingCost(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	excludeID *uuid.UUID,
 	minimum,
 	maximum int64,
@@ -532,7 +544,7 @@ func (q *pointSpendingCapRepository) checkShoppingCost(
 		params = append(params, *excludeID)
 		query += " AND id != ?"
 	}
-	rows, err := tx.Query(ctx, query+" FOR UPDATE", params...)
+	rows, err := tx.QueryContext(ctx, query+" FOR UPDATE", helper.SQLArgs(params...)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return err

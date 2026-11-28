@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -25,24 +25,24 @@ type ProductVariantRepository interface {
 	) (*models.ProductVariant, error)
 	CreateProductVariant(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.ProductVariant,
 	) (*models.ProductVariant, error)
 	UpdateProductVariant(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.ProductVariant,
 	) (*models.ProductVariant, error)
 }
 
 type productVariantRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewProductVariantRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) ProductVariantRepository {
 	return &productVariantRepository{
 		dbRead:  dbRead,
@@ -66,7 +66,7 @@ func (q *productVariantRepository) FindProductVariants(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM product_variants %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -138,8 +138,8 @@ func (q *productVariantRepository) FindProductVariants(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -151,31 +151,33 @@ func (q *productVariantRepository) FindProductVariants(
 	for rows.Next() {
 		var productVariant models.ProductVariant
 		if err = rows.Scan(
-			&productVariant.ID,
-			&productVariant.RecordStatus,
-			&productVariant.ProductCategoryID,
-			&productVariant.ProductCategoryName,
-			&productVariant.ProductID,
-			&productVariant.ProductName,
-			&productVariant.ProductPhoto,
-			&productVariant.ProductReadyStock,
-			&productVariant.StockUnit,
-			&productVariant.WeightInGrams,
-			&productVariant.BasePrice,
-			&productVariant.SellingPrice,
-			&productVariant.DiscountType,
-			&productVariant.DiscountRate,
-			&productVariant.DiscountMinimumQuantity,
-			&productVariant.DiscountAmount,
-			&productVariant.SalePrice,
-			&productVariant.Description,
-			&productVariant.CreatedBy,
-			&productVariant.CreatedAt,
-			&productVariant.UpdatedBy,
-			&productVariant.UpdatedAt,
-			&productVariant.DeletedBy,
-			&productVariant.DeletedAt,
-			&productVariant.DeletionReason,
+			helper.SQLScan(
+				&productVariant.ID,
+				&productVariant.RecordStatus,
+				&productVariant.ProductCategoryID,
+				&productVariant.ProductCategoryName,
+				&productVariant.ProductID,
+				&productVariant.ProductName,
+				&productVariant.ProductPhoto,
+				&productVariant.ProductReadyStock,
+				&productVariant.StockUnit,
+				&productVariant.WeightInGrams,
+				&productVariant.BasePrice,
+				&productVariant.SellingPrice,
+				&productVariant.DiscountType,
+				&productVariant.DiscountRate,
+				&productVariant.DiscountMinimumQuantity,
+				&productVariant.DiscountAmount,
+				&productVariant.SalePrice,
+				&productVariant.Description,
+				&productVariant.CreatedBy,
+				&productVariant.CreatedAt,
+				&productVariant.UpdatedBy,
+				&productVariant.UpdatedAt,
+				&productVariant.DeletedBy,
+				&productVariant.DeletedAt,
+				&productVariant.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -232,34 +234,36 @@ func (q *productVariantRepository) FindProductVariant(
 		condition,
 	)
 	var response models.ProductVariant
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.ProductID,
-		&response.ProductName,
-		&response.ProductPhoto,
-		&response.ProductReadyStock,
-		&response.StockUnit,
-		&response.WeightInGrams,
-		&response.BasePrice,
-		&response.SellingPrice,
-		&response.DiscountType,
-		&response.DiscountRate,
-		&response.DiscountMinimumQuantity,
-		&response.DiscountAmount,
-		&response.SalePrice,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.ProductID,
+			&response.ProductName,
+			&response.ProductPhoto,
+			&response.ProductReadyStock,
+			&response.StockUnit,
+			&response.WeightInGrams,
+			&response.BasePrice,
+			&response.SellingPrice,
+			&response.DiscountType,
+			&response.DiscountRate,
+			&response.DiscountMinimumQuantity,
+			&response.DiscountAmount,
+			&response.SalePrice,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductVariantNotFound
 	}
 	if err != nil {
@@ -271,12 +275,12 @@ func (q *productVariantRepository) FindProductVariant(
 
 func (q *productVariantRepository) CreateProductVariant(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantRepository-CreateProductVariant"
 	var response models.ProductVariant
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO product_variants (
 			record_status
@@ -326,55 +330,59 @@ func (q *productVariantRepository) CreateProductVariant(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.ProductCategoryID,
-		request.ProductCategoryName,
-		request.ProductID,
-		request.ProductName,
-		request.ProductPhoto,
-		request.ProductReadyStock,
-		request.StockUnit,
-		request.WeightInGrams,
-		request.BasePrice,
-		request.SellingPrice,
-		request.DiscountType,
-		request.DiscountRate,
-		request.DiscountMinimumQuantity,
-		request.DiscountAmount,
-		request.SalePrice,
-		request.Description,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.ProductCategoryID,
+			request.ProductCategoryName,
+			request.ProductID,
+			request.ProductName,
+			request.ProductPhoto,
+			request.ProductReadyStock,
+			request.StockUnit,
+			request.WeightInGrams,
+			request.BasePrice,
+			request.SellingPrice,
+			request.DiscountType,
+			request.DiscountRate,
+			request.DiscountMinimumQuantity,
+			request.DiscountAmount,
+			request.SalePrice,
+			request.Description,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.ProductID,
-		&response.ProductName,
-		&response.ProductPhoto,
-		&response.ProductReadyStock,
-		&response.StockUnit,
-		&response.WeightInGrams,
-		&response.BasePrice,
-		&response.SellingPrice,
-		&response.DiscountType,
-		&response.DiscountRate,
-		&response.DiscountMinimumQuantity,
-		&response.DiscountAmount,
-		&response.SalePrice,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.ProductID,
+			&response.ProductName,
+			&response.ProductPhoto,
+			&response.ProductReadyStock,
+			&response.StockUnit,
+			&response.WeightInGrams,
+			&response.BasePrice,
+			&response.SellingPrice,
+			&response.DiscountType,
+			&response.DiscountRate,
+			&response.DiscountMinimumQuantity,
+			&response.DiscountAmount,
+			&response.SalePrice,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "product_variants_lower_product_id_idx") {
+		if isUniqueViolation(err, "product_variants_lower_product_id_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -386,12 +394,12 @@ func (q *productVariantRepository) CreateProductVariant(
 
 func (q *productVariantRepository) UpdateProductVariant(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantRepository-UpdateProductVariant"
 	var response models.ProductVariant
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -422,35 +430,37 @@ func (q *productVariantRepository) UpdateProductVariant(
 		FROM product_variants
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.ProductID,
-		&response.ProductName,
-		&response.ProductPhoto,
-		&response.ProductReadyStock,
-		&response.StockUnit,
-		&response.WeightInGrams,
-		&response.BasePrice,
-		&response.SellingPrice,
-		&response.DiscountType,
-		&response.DiscountRate,
-		&response.DiscountMinimumQuantity,
-		&response.DiscountAmount,
-		&response.SalePrice,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.ProductID,
+			&response.ProductName,
+			&response.ProductPhoto,
+			&response.ProductReadyStock,
+			&response.StockUnit,
+			&response.WeightInGrams,
+			&response.BasePrice,
+			&response.SellingPrice,
+			&response.DiscountType,
+			&response.DiscountRate,
+			&response.DiscountMinimumQuantity,
+			&response.DiscountAmount,
+			&response.SalePrice,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductVariantNotFound
 	}
 	if err != nil {
@@ -659,34 +669,36 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.ProductCategoryID,
-		&response.ProductCategoryName,
-		&response.ProductID,
-		&response.ProductName,
-		&response.ProductPhoto,
-		&response.ProductReadyStock,
-		&response.StockUnit,
-		&response.WeightInGrams,
-		&response.BasePrice,
-		&response.SellingPrice,
-		&response.DiscountType,
-		&response.DiscountRate,
-		&response.DiscountMinimumQuantity,
-		&response.DiscountAmount,
-		&response.SalePrice,
-		&response.Description,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.ProductCategoryID,
+			&response.ProductCategoryName,
+			&response.ProductID,
+			&response.ProductName,
+			&response.ProductPhoto,
+			&response.ProductReadyStock,
+			&response.StockUnit,
+			&response.WeightInGrams,
+			&response.BasePrice,
+			&response.SellingPrice,
+			&response.DiscountType,
+			&response.DiscountRate,
+			&response.DiscountMinimumQuantity,
+			&response.DiscountAmount,
+			&response.SalePrice,
+			&response.Description,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "product_variants_lower_product_id_idx") {
+		if isUniqueViolation(err, "product_variants_lower_product_id_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

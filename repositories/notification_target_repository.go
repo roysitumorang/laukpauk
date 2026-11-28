@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +26,24 @@ type NotificationTargetRepository interface {
 	) (*models.NotificationTarget, error)
 	SaveNotificationTarget(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.NotificationTarget,
 	) (*models.NotificationTarget, error)
 	DeleteNotificationTarget(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.NotificationTargetFilter,
 	) (int64, error)
 }
 
 type notificationTargetRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewNotificationTargetRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) NotificationTargetRepository {
 	return &notificationTargetRepository{
 		dbRead:  dbRead,
@@ -67,7 +67,7 @@ func (q *notificationTargetRepository) FindNotificationTargets(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM notification_targets %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -119,8 +119,8 @@ func (q *notificationTargetRepository) FindNotificationTargets(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -132,11 +132,13 @@ func (q *notificationTargetRepository) FindNotificationTargets(
 	for rows.Next() {
 		var notificationTarget models.NotificationTarget
 		if err = rows.Scan(
-			&notificationTarget.ID,
-			&notificationTarget.UserID,
-			&notificationTarget.FirebaseInstallationID,
-			&notificationTarget.CreatedAt,
-			&notificationTarget.UpdatedAt,
+			helper.SQLScan(
+				&notificationTarget.ID,
+				&notificationTarget.UserID,
+				&notificationTarget.FirebaseInstallationID,
+				&notificationTarget.CreatedAt,
+				&notificationTarget.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -174,14 +176,16 @@ func (q *notificationTargetRepository) FindNotificationTarget(
 	)
 	query := sb.String()
 	var response models.NotificationTarget
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.FirebaseInstallationID,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.FirebaseInstallationID,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrNotificationTargetNotFound
 	}
 	if err != nil {
@@ -193,12 +197,12 @@ func (q *notificationTargetRepository) FindNotificationTarget(
 
 func (q *notificationTargetRepository) SaveNotificationTarget(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.NotificationTarget,
 ) (*models.NotificationTarget, error) {
 	ctxt := "NotificationTargetRepository-SaveNotificationTarget"
 	var response models.NotificationTarget
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -209,15 +213,17 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		FROM notification_targets
 		WHERE firebase_installation_id = ?
 		FOR UPDATE`,
-		request.FirebaseInstallationID,
+		helper.SQLArgs(request.FirebaseInstallationID)...,
 	).Scan(
-		&response.ID,
-		&response.UserID,
-		&response.FirebaseInstallationID,
-		&response.CreatedAt,
-		&response.UpdatedAt,
+		helper.SQLScan(
+			&response.ID,
+			&response.UserID,
+			&response.FirebaseInstallationID,
+			&response.CreatedAt,
+			&response.UpdatedAt,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -225,7 +231,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		return nil, err
 	}
 	if response.ID.Compare(uuid.Nil()) == 0 {
-		if err = tx.QueryRow(
+		if err = tx.QueryRowContext(
 			ctx,
 			`INSERT INTO notification_targets (
 				user_id
@@ -238,16 +244,20 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 				, firebase_installation_id
 				, created_at
 				, updated_at`,
-			request.UserID,
-			request.FirebaseInstallationID,
-			request.CreatedAt,
-			request.UpdatedAt,
+			helper.SQLArgs(
+				request.UserID,
+				request.FirebaseInstallationID,
+				request.CreatedAt,
+				request.UpdatedAt,
+			)...,
 		).Scan(
-			&response.ID,
-			&response.UserID,
-			&response.FirebaseInstallationID,
-			&response.CreatedAt,
-			&response.UpdatedAt,
+			helper.SQLScan(
+				&response.ID,
+				&response.UserID,
+				&response.FirebaseInstallationID,
+				&response.CreatedAt,
+				&response.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
@@ -286,12 +296,14 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 				, firebase_installation_id
 				, created_at
 				, updated_at`)
-		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-			&response.ID,
-			&response.UserID,
-			&response.FirebaseInstallationID,
-			&response.CreatedAt,
-			&response.UpdatedAt,
+		if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+			helper.SQLScan(
+				&response.ID,
+				&response.UserID,
+				&response.FirebaseInstallationID,
+				&response.CreatedAt,
+				&response.UpdatedAt,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, err
@@ -302,7 +314,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 
 func (q *notificationTargetRepository) DeleteNotificationTarget(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.NotificationTargetFilter,
 ) (int64, error) {
 	ctxt := "NotificationTargetRepository-DeleteNotificationTarget"
@@ -318,12 +330,12 @@ func (q *notificationTargetRepository) DeleteNotificationTarget(
 	}
 	sb.Reset()
 	_, _ = fmt.Fprintf(sb, "DELETE FROM notification_targets %s", condition)
-	result, err := tx.Exec(ctx, sb.String(), params...)
+	result, err := tx.ExecContext(ctx, sb.String(), helper.SQLArgs(params...)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return 0, err
 	}
-	return result.RowsAffected(), nil
+	return result.RowsAffected()
 }
 
 func (q *notificationTargetRepository) buildCondition(request *models.NotificationTargetFilter, sb *strings.Builder) (condition string, params []any) {

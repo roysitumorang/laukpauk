@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,7 +23,7 @@ type (
 		) (*models.Cart, error)
 		SaveCart(
 			ctx context.Context,
-			tx database.Tx,
+			tx *sql.Tx,
 			request *models.Cart,
 		) (*models.Cart, error)
 	}
@@ -85,7 +85,7 @@ func (q *cartService) FindCart(
 
 func (q *cartService) SaveCart(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Cart,
 ) (*models.Cart, error) {
 	ctxt := "CartService-CreateCart"

@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -25,29 +25,29 @@ type RecipeRepository interface {
 	) (*models.Recipe, error)
 	CreateRecipe(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Recipe,
 	) (*models.Recipe, error)
 	UpdateRecipe(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Recipe,
 	) (*models.Recipe, error)
 	SaveRecipe(
 		ctx context.Context,
-		tx database.Tx,
+		tx *sql.Tx,
 		request *models.Recipe,
 	) (*models.Recipe, error)
 }
 
 type recipeRepository struct {
 	dbRead,
-	dbWrite *database.Pool
+	dbWrite *sql.DB
 }
 
 func NewRecipeRepository(
 	dbRead,
-	dbWrite *database.Pool,
+	dbWrite *sql.DB,
 ) RecipeRepository {
 	return &recipeRepository{
 		dbRead:  dbRead,
@@ -71,7 +71,7 @@ func (q *recipeRepository) FindRecipes(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM recipes %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, helper.SQLArgs(params...)...).Scan(helper.SQLScan(&total)...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return nil, 0, 0, err
@@ -132,8 +132,8 @@ func (q *recipeRepository) FindRecipes(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, database.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), helper.SQLArgs(params...)...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -145,20 +145,22 @@ func (q *recipeRepository) FindRecipes(
 	for rows.Next() {
 		var recipe models.Recipe
 		if err = rows.Scan(
-			&recipe.ID,
-			&recipe.RecordStatus,
-			&recipe.Name,
-			&recipe.Photo,
-			&recipe.Description,
-			&recipe.InstagramLink,
-			&recipe.FacebookLink,
-			&recipe.CreatedBy,
-			&recipe.CreatedAt,
-			&recipe.UpdatedBy,
-			&recipe.UpdatedAt,
-			&recipe.DeletedBy,
-			&recipe.DeletedAt,
-			&recipe.DeletionReason,
+			helper.SQLScan(
+				&recipe.ID,
+				&recipe.RecordStatus,
+				&recipe.Name,
+				&recipe.Photo,
+				&recipe.Description,
+				&recipe.InstagramLink,
+				&recipe.FacebookLink,
+				&recipe.CreatedBy,
+				&recipe.CreatedAt,
+				&recipe.UpdatedBy,
+				&recipe.UpdatedAt,
+				&recipe.DeletedBy,
+				&recipe.DeletedAt,
+				&recipe.DeletionReason,
+			)...,
 		); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 			return nil, 0, 0, err
@@ -204,23 +206,25 @@ func (q *recipeRepository) FindRecipe(
 		condition,
 	)
 	var response models.Recipe
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.InstagramLink,
-		&response.FacebookLink,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.InstagramLink,
+			&response.FacebookLink,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrRecipeNotFound
 	}
 	if err != nil {
@@ -232,12 +236,12 @@ func (q *recipeRepository) FindRecipe(
 
 func (q *recipeRepository) CreateRecipe(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Recipe,
 ) (*models.Recipe, error) {
 	ctxt := "RecipeRepository-CreateRecipe"
 	var response models.Recipe
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO recipes (
 			record_status
@@ -265,33 +269,37 @@ func (q *recipeRepository) CreateRecipe(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		request.RecordStatus,
-		request.Name,
-		request.Photo,
-		request.Description,
-		request.InstagramLink,
-		request.FacebookLink,
-		request.CreatedBy,
-		request.CreatedAt,
-		request.UpdatedBy,
-		request.UpdatedAt,
+		helper.SQLArgs(
+			request.RecordStatus,
+			request.Name,
+			request.Photo,
+			request.Description,
+			request.InstagramLink,
+			request.FacebookLink,
+			request.CreatedBy,
+			request.CreatedAt,
+			request.UpdatedBy,
+			request.UpdatedAt,
+		)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.InstagramLink,
-		&response.FacebookLink,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.InstagramLink,
+			&response.FacebookLink,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "recipes_lower_idx") {
+		if isUniqueViolation(err, "recipes_lower_idx") {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -303,12 +311,12 @@ func (q *recipeRepository) CreateRecipe(
 
 func (q *recipeRepository) UpdateRecipe(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Recipe,
 ) (*models.Recipe, error) {
 	ctxt := "RecipeRepository-UpdateRecipe"
 	var response models.Recipe
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -328,24 +336,26 @@ func (q *recipeRepository) UpdateRecipe(
 		FROM recipes
 		WHERE id = ?
 		FOR UPDATE`,
-		request.ID,
+		helper.SQLArgs(request.ID)...,
 	).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.InstagramLink,
-		&response.FacebookLink,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.InstagramLink,
+			&response.FacebookLink,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	)
-	if errors.Is(err, database.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrRecipeNotFound
 	}
 	if err != nil {
@@ -479,23 +489,25 @@ func (q *recipeRepository) UpdateRecipe(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
-		&response.ID,
-		&response.RecordStatus,
-		&response.Name,
-		&response.Photo,
-		&response.Description,
-		&response.InstagramLink,
-		&response.FacebookLink,
-		&response.CreatedBy,
-		&response.CreatedAt,
-		&response.UpdatedBy,
-		&response.UpdatedAt,
-		&response.DeletedBy,
-		&response.DeletedAt,
-		&response.DeletionReason,
+	if err = tx.QueryRowContext(ctx, sb.String(), helper.SQLArgs(params...)...).Scan(
+		helper.SQLScan(
+			&response.ID,
+			&response.RecordStatus,
+			&response.Name,
+			&response.Photo,
+			&response.Description,
+			&response.InstagramLink,
+			&response.FacebookLink,
+			&response.CreatedBy,
+			&response.CreatedAt,
+			&response.UpdatedBy,
+			&response.UpdatedAt,
+			&response.DeletedBy,
+			&response.DeletedAt,
+			&response.DeletionReason,
+		)...,
 	); err != nil {
-		if database.IsUniqueViolation(err, "recipes_lower_idx") {
+		if isUniqueViolation(err, "recipes_lower_idx") {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -507,7 +519,7 @@ func (q *recipeRepository) UpdateRecipe(
 
 func (q *recipeRepository) SaveRecipe(
 	ctx context.Context,
-	tx database.Tx,
+	tx *sql.Tx,
 	request *models.Recipe,
 ) (*models.Recipe, error) {
 	if request.New() {
