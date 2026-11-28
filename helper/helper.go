@@ -26,7 +26,6 @@ import (
 	"github.com/godruoyi/go-snowflake"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/kolesa-team/go-webp/encoder"
 	"github.com/kolesa-team/go-webp/webp"
 	"github.com/roysitumorang/laukpauk/keys"
@@ -142,10 +141,6 @@ func DecodeShortUniqueIDs(id string) uint64 {
 		return 0
 	}
 	return unsignedNumbers[0]
-}
-
-func GenerateUniqueID() string {
-	return uuid.New().String()
 }
 
 func GetEnv() string {

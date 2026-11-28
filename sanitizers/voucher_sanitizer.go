@@ -113,7 +113,12 @@ func ValidateVoucher(
 		if _, ok := mimeTypes[mtype.String()]; !ok {
 			return &response, nil, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG/WEBP file")
 		}
-		response.Photo = helper.Sprintf("%s.webp", uuid.Must(uuid.NewV7()).String())
+		photoID, err := uuid.NewV7()
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewV7")
+			return &response, nil, nil, fiber.StatusInternalServerError, err
+		}
+		response.Photo = helper.Sprintf("%s.webp", photoID.String())
 	}
 	return &response, photo, mimeType, fiber.StatusOK, nil
 }

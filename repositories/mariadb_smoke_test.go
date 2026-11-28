@@ -39,7 +39,10 @@ func fillFilter(v reflect.Value, flag bool) {
 func fillValue(f reflect.Value, flag bool) {
 	switch {
 	case f.Type() == reflect.TypeFor[uuid.UUID]():
-		f.Set(reflect.ValueOf(uuid.Must(uuid.NewV7())))
+		// a zero UUID still exercises the condition if generating one fails
+		if id, err := uuid.NewV7(); err == nil {
+			f.Set(reflect.ValueOf(id))
+		}
 		return
 	case f.Type() == reflect.TypeFor[time.Time]():
 		f.Set(reflect.ValueOf(time.Now()))
@@ -316,10 +319,11 @@ func TestMariaDBQueries(t *testing.T) {
 		})
 	}
 	trx := NewTransactionRepository(db, db)
-	if _, err := trx.FindVouchersUsages(ctx, uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7())); err != nil {
+	userID, voucherID := newTestUUID(t), newTestUUID(t)
+	if _, err := trx.FindVouchersUsages(ctx, userID, voucherID); err != nil {
 		t.Errorf("vouchers usages: %v", err)
 	}
-	if _, err := trx.FindPromotionsUsages(ctx, uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7())); err != nil {
+	if _, err := trx.FindPromotionsUsages(ctx, userID, newTestUUID(t)); err != nil {
 		t.Errorf("promotions usages: %v", err)
 	}
 }
@@ -367,4 +371,14 @@ func TestMariaDBInfiniteScrollProducts(t *testing.T) {
 	if len(products) != 1 || products[0].Name != "Scroll 2" {
 		t.Fatalf("products = %+v; want only Scroll 2", products)
 	}
+}
+
+// newTestUUID returns a new UUID, failing the test if one can't be generated.
+func newTestUUID(t *testing.T) uuid.UUID {
+	t.Helper()
+	id, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("new uuid: %v", err)
+	}
+	return id
 }

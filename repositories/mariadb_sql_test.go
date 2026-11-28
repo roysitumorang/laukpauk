@@ -24,7 +24,7 @@ func TestMariaDBSQLRoundTrip(t *testing.T) {
 	if _, err = conn.ExecContext(ctx, "CREATE TEMPORARY TABLE sql_test (id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7()), `code` VARCHAR(255) NOT NULL, ref_id UUID, slots JSON NOT NULL, at DATETIME(6) NOT NULL, done_at DATETIME(6), flag BOOLEAN NOT NULL, CONSTRAINT sql_test_code_key UNIQUE (`code`))"); err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	ref := uuid.Must(uuid.NewV7())
+	ref := newTestUUID(t)
 	at := time.Date(2026, 11, 28, 10, 47, 1, 123456000, time.Local)
 	var id uuid.UUID
 	var gotRef *uuid.UUID

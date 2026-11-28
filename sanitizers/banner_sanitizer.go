@@ -96,7 +96,12 @@ func ValidateBanner(ctx context.Context, c fiber.Ctx) (*models.Banner, *multipar
 			return &response, nil, nil, fiber.StatusBadRequest, errors.New("photo: invalid JPG/PNG/WEBP file")
 		}
 		mimeType = new(mtype.String())
-		response.Photo = helper.Sprintf("%s.webp", uuid.Must(uuid.NewV7()).String())
+		photoID, err := uuid.NewV7()
+		if err != nil {
+			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNewV7")
+			return &response, nil, nil, fiber.StatusInternalServerError, err
+		}
+		response.Photo = helper.Sprintf("%s.webp", photoID.String())
 	}
 	if err = (&response).Validate(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidate")
