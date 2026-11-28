@@ -36,7 +36,8 @@ func init() {
 					, deleted_at DATETIME(6)
 					, deletion_reason TEXT
 					, active_recipe_id UUID AS (IF(record_status = 0, recipe_id, NULL)) PERSISTENT INVISIBLE
-					, CONSTRAINT recipe_items_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT recipe_items_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES recipes (id) ON UPDATE RESTRICT ON DELETE RESTRICT
+					-- RESTRICT, not CASCADE: MariaDB won't let a generated column read a column whose foreign key cascades
 					, CONSTRAINT recipe_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT recipe_items_product_variant_id_fkey FOREIGN KEY (product_variant_id) REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT recipe_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT

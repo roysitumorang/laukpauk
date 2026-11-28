@@ -35,7 +35,8 @@ func init() {
 					, deleted_at DATETIME(6)
 					, deletion_reason TEXT
 					, main_user_id UUID AS (IF(main, user_id, NULL)) PERSISTENT INVISIBLE
-					, CONSTRAINT delivery_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT delivery_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE RESTRICT ON DELETE RESTRICT
+					-- RESTRICT, not CASCADE: MariaDB won't let a generated column read a column whose foreign key cascades
 					, CONSTRAINT delivery_addresses_user_id_destination_longitude_destination_lat UNIQUE (user_id, destination_longitude, destination_latitude)
 					, CONSTRAINT one_main_address_per_user_idx UNIQUE (main_user_id)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
