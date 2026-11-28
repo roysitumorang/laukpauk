@@ -41,49 +41,49 @@ func init() {
 					, CONSTRAINT one_main_address_per_user_idx UNIQUE (main_user_id)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX delivery_addresses_record_status_idx ON delivery_addresses (record_status);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX delivery_addresses_origin_longitude_idx ON delivery_addresses (origin_longitude);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX delivery_addresses_origin_latitude_idx ON delivery_addresses (origin_latitude);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX delivery_addresses_destination_longitude_idx ON delivery_addresses (destination_longitude);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX delivery_addresses_destination_latitude_idx ON delivery_addresses (destination_latitude);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX delivery_addresses_main_idx ON delivery_addresses (main);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			return
@@ -94,7 +94,7 @@ func init() {
 				ctx,
 				"DROP TABLE delivery_addresses",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

@@ -37,35 +37,35 @@ func init() {
 					, CONSTRAINT point_earning_caps_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_earning_caps_shopping_cost_idx ON point_earning_caps (shopping_cost_min, shopping_cost_max);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_earning_caps_created_by_idx ON point_earning_caps (created_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_earning_caps_updated_by_idx ON point_earning_caps (updated_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_earning_caps_deleted_by_idx ON point_earning_caps (deleted_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			var sellerID uuid.UUID
@@ -179,7 +179,7 @@ func init() {
 					) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
 					pointEarningCaps[i]...,
 				); err != nil {
-					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 					return
 				}
 			}
@@ -191,7 +191,7 @@ func init() {
 				ctx,
 				"DROP TABLE point_earning_caps",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

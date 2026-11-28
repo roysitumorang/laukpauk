@@ -46,14 +46,14 @@ func init() {
 					, CONSTRAINT cart_items_cart_id_product_variant_id_key UNIQUE (cart_id, product_variant_id)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX cart_items_product_variant_id_idx ON cart_items (product_variant_id);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
@@ -63,7 +63,7 @@ func init() {
 				ctx,
 				"DROP TABLE cart_items",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

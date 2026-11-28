@@ -28,21 +28,21 @@ func init() {
 					, CONSTRAINT point_earnings_user_id_start_date_end_date_key UNIQUE (user_id, start_date, end_date)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_earnings_start_date_idx ON point_earnings (start_date);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX point_earnings_end_date_idx ON point_earnings (end_date);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
@@ -52,7 +52,7 @@ func init() {
 				ctx,
 				"DROP TABLE point_earnings",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

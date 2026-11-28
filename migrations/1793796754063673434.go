@@ -24,21 +24,21 @@ func init() {
 					, CONSTRAINT json_web_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX json_web_tokens_user_id_idx ON json_web_tokens (user_id);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX json_web_tokens_expired_at_idx ON json_web_tokens (expired_at);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
@@ -48,7 +48,7 @@ func init() {
 				ctx,
 				"DROP TABLE json_web_tokens",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

@@ -34,21 +34,21 @@ func init() {
 					, CONSTRAINT payment_channels_channel_code_key UNIQUE (channel_code)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX payment_channels_minimum_amount_idx ON payment_channels (minimum_amount);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE INDEX payment_channels_maximum_amount_idx ON payment_channels (maximum_amount);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			now := time.Now().In(time.Local)
@@ -152,7 +152,7 @@ func init() {
 					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
 					params[i]...,
 				); err != nil {
-					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 					return
 				}
 			}
@@ -164,7 +164,7 @@ func init() {
 				ctx,
 				"DROP TABLE payment_channels",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

@@ -59,7 +59,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			"version" bigint NOT NULL PRIMARY KEY
 		) ENGINE=InnoDB`,
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 		return err
 	}
 	rows, err := tx.QueryContext(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
