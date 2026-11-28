@@ -20,7 +20,7 @@ func init() {
 				`CREATE TABLE payment_channels (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, business_id text NOT NULL
-					, name text NOT NULL
+					, name text NOT NULL COLLATE "case_insensitive"
 					, channel_code text NOT NULL UNIQUE
 					, country text NOT NULL
 					, currency text NOT NULL
@@ -38,7 +38,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				"CREATE INDEX ON payment_channels (LOWER(name));",
+				"CREATE INDEX ON payment_channels (name);",
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

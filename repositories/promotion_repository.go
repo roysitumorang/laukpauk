@@ -622,7 +622,7 @@ func (q *promotionRepository) buildCondition(request *models.PromotionFilter, sb
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		n := len(params)
 		sb.Reset()

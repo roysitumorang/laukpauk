@@ -415,7 +415,7 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 		conds = append(conds, sb.String())
 	}
 	if request.Login != "" {
-		params = append(params, strings.ToLower(request.Login))
+		params = append(params, request.Login)
 		n := len(params)
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "(username = $%d OR email = $%d OR mobile_phone = $%d)", n, n, n)
@@ -423,13 +423,13 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		n := len(params)
 		sb.Reset()
 		_, _ = fmt.Fprintf(
 			sb,
-			`(LOWER(name) LIKE $%d
+			`(name LIKE $%d
 				OR username LIKE $%d
 				OR email LIKE $%d
 				OR mobile_phone LIKE $%d)`,
@@ -438,19 +438,19 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 		conds = append(conds, sb.String())
 	}
 	if request.Username != "" {
-		params = append(params, strings.ToLower(request.Username))
+		params = append(params, request.Username)
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "username = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.Email != "" {
-		params = append(params, strings.ToLower(request.Email))
+		params = append(params, request.Email)
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "email = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.MobilePhone != "" {
-		params = append(params, strings.ToLower(request.MobilePhone))
+		params = append(params, request.MobilePhone)
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "mobile_phone = $%d", len(params))
 		conds = append(conds, sb.String())

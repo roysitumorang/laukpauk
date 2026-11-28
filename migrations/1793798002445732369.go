@@ -22,7 +22,7 @@ func init() {
 				`CREATE TABLE delivery_plans (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
-					, name text COLLATE "natural_sort"
+					, name text COLLATE "case_insensitive"
 					, weekday bigint NOT NULL
 					, transaction_window TSTZRANGE NOT NULL
 					, delivery_time_interval bigint NOT NULL
@@ -57,7 +57,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (LOWER(name));`,
+				`CREATE INDEX ON delivery_plans (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

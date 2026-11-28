@@ -721,9 +721,9 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		conds = append(conds, sb.String())
 	}
 	if request.Name != "" {
-		params = append(params, strings.ToLower(request.Name))
+		params = append(params, request.Name)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "name = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(request.DeliveryWeekdays) > 0 {
@@ -754,10 +754,10 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "name LIKE $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

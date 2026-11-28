@@ -25,7 +25,7 @@ func init() {
 					, product_name text NOT NULL COLLATE "natural_sort"
 					, product_photo text NOT NULL
 					, product_ready_stock bool NOT NULL
-					, stock_unit text NOT NULL COLLATE "natural_sort"
+					, stock_unit text NOT NULL COLLATE "case_insensitive"
 					, weight_in_grams bigint NOT NULL
 					, base_price bigint NOT NULL
 					, selling_price bigint NOT NULL
@@ -63,14 +63,14 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON product_variants (LOWER(stock_unit));`,
+				`CREATE INDEX ON product_variants (stock_unit);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE UNIQUE INDEX ON product_variants (LOWER(stock_unit), product_id) WHERE record_status = 0;`,
+				`CREATE UNIQUE INDEX product_variants_unique_product_stock_unit_idx ON product_variants (stock_unit, product_id) WHERE record_status = 0;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

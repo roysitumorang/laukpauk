@@ -19,8 +19,8 @@ func init() {
 				`CREATE TABLE recipes (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
-					, name text
-					, deleted_name text
+					, name text COLLATE "case_insensitive"
+					, deleted_name text COLLATE "case_insensitive"
 					, photo text NOT NULL
 					, description text NOT NULL
 					, instagram_link text NOT NULL
@@ -46,14 +46,14 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE UNIQUE INDEX ON recipes (LOWER(name)) WHERE record_status = 0;`,
+				`CREATE UNIQUE INDEX recipes_unique_name_idx ON recipes (name) WHERE record_status = 0;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON recipes (LOWER(deleted_name));`,
+				`CREATE INDEX ON recipes (deleted_name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

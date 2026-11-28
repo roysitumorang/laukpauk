@@ -19,7 +19,7 @@ func init() {
 				`CREATE TABLE banners (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
-					, name text NOT NULL COLLATE "natural_sort"
+					, name text NOT NULL COLLATE "case_insensitive"
 					, description text NOT NULL
 					, photo text NOT NULL
 					, visible boolean NOT NULL
@@ -44,7 +44,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON banners (LOWER(name));`,
+				`CREATE INDEX ON banners (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
