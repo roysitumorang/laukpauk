@@ -8,10 +8,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 32b667b211d16cf940664eff8e0a61bf9aa212fb
+          ref: 6e82329101fb40a5a09e69e8e96545157efb818e
       - run: sudo apt-get update >/dev/null && sudo apt-get install -y libwebp-dev >/dev/null
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go vet ./externals/
-      - run: go test -count=1 -v -run 'Whatsapp' ./externals/
+      - run: go vet ./controllers/ ./externals/ ./router/
+      - run: go test -count=1 -v -run 'Whatsapp' ./controllers/ ./externals/
