@@ -104,7 +104,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	request.UserID = currentUser.ID
 	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, currentUser, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)

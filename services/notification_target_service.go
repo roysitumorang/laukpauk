@@ -96,7 +96,7 @@ func (q *notificationTargetService) SaveNotificationTarget(
 	ctxt := "NotificationTargetService-CreateNotificationTarget"
 	response, err := q.notificationTargetRepository.SaveNotificationTarget(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateNotificationTarget")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveNotificationTarget")
 	}
 	return response, err
 }

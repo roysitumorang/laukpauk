@@ -179,7 +179,7 @@ func (q *voucherController) V1SellerShow(c fiber.Ctx) (err error) {
 			WithVoucherIDs(voucherID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -212,7 +212,7 @@ func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			WithVoucherIDs(voucherID),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -453,7 +453,7 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)

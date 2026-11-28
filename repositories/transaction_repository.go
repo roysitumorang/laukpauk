@@ -82,7 +82,7 @@ func (q *transactionRepository) FindTransactions(
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 || request.ReturnCountOnly {
@@ -992,7 +992,7 @@ func (q *transactionRepository) CreateTransaction(
 		response.Items = append(response.Items, &transactionItem)
 	}
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return nil, err
 	}
 	return &response, nil
@@ -1748,7 +1748,7 @@ func (q *transactionRepository) FindVouchersUsages(
 		response[voucherID] = usages
 	}
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return nil, err
 	}
 	return response, nil
@@ -1819,7 +1819,7 @@ func (q *transactionRepository) FindPromotionsUsages(
 		response[promotionID] = usages
 	}
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return nil, err
 	}
 	return response, nil

@@ -283,7 +283,7 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAddress")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -407,7 +407,7 @@ func (q *deliveryAddressController) V1BuyerSetAsMain(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAddress")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
@@ -484,7 +484,7 @@ func (q *deliveryAddressController) V1BuyerDelete(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindAddress")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
 			WriteResponse(c)
