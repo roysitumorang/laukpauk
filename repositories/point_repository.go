@@ -135,7 +135,7 @@ func (q *pointRepository) FindPoints(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Point
 	for rows.Next() {
 		var point models.Point

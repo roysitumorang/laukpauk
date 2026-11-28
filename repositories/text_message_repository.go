@@ -138,7 +138,7 @@ func (q *textMessageRepository) FindTextMessages(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.TextMessage
 	for rows.Next() {
 		var textMessage models.TextMessage

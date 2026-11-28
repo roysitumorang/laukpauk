@@ -122,7 +122,7 @@ func (q *cartRepository) FindCarts(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Cart
 	var n int
 	params = params[:0]
@@ -191,7 +191,7 @@ func (q *cartRepository) FindCarts(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var cartItem models.CartItem
 		if err = rows.Scan(
@@ -310,7 +310,7 @@ func (q *cartRepository) FindCart(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var cartItem models.CartItem
 		if err = rows.Scan(

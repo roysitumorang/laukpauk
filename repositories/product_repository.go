@@ -148,7 +148,7 @@ func (q *productRepository) FindProducts(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Product
 	for rows.Next() {
 		var product models.Product
@@ -262,7 +262,7 @@ func (q *productRepository) InfiniteScrollProducts(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Product
 	for rows.Next() {
 		var product models.Product

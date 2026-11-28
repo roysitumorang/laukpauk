@@ -148,7 +148,7 @@ func (q *deliveryAddressRepository) FindDeliveryAddresses(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.DeliveryAddress
 	for rows.Next() {
 		var deliveryAddress models.DeliveryAddress

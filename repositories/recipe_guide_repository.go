@@ -132,7 +132,7 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.RecipeGuide
 	for rows.Next() {
 		var recipeGuide models.RecipeGuide

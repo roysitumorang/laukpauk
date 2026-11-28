@@ -128,7 +128,7 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.PaymentChannel
 	for rows.Next() {
 		var paymentChannel models.PaymentChannel

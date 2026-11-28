@@ -146,7 +146,7 @@ func (q *voucherRepository) FindVouchers(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Voucher
 	params = []any{}
 	sb.Reset()
@@ -207,7 +207,7 @@ func (q *voucherRepository) FindVouchers(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var (
 		voucherID,
 		buyerID uuid.UUID
@@ -324,7 +324,7 @@ func (q *voucherRepository) FindVoucher(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var buyerID uuid.UUID
 	for rows.Next() {
 		if err = rows.Scan(helper.SQLScan(&buyerID)...); err != nil {

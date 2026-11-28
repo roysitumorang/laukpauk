@@ -134,7 +134,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.PointSpendingCap
 	for rows.Next() {
 		var pointSpendingCap models.PointSpendingCap
@@ -549,7 +549,7 @@ func (q *pointSpendingCapRepository) checkShoppingCost(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	overlapping := rows.Next()
 	if err = rows.Err(); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")

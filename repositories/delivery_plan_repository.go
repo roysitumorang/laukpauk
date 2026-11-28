@@ -145,7 +145,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.DeliveryPlan
 	for rows.Next() {
 		var deliveryPlan models.DeliveryPlan
@@ -779,7 +779,7 @@ func (q *deliveryPlanRepository) checkTransactionWindow(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	overlapping := rows.Next()
 	if err = rows.Err(); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")

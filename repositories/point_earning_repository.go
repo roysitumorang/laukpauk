@@ -128,7 +128,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.PointEarning
 	for rows.Next() {
 		var pointEarning models.PointEarning

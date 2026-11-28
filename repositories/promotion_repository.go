@@ -138,7 +138,7 @@ func (q *promotionRepository) FindPromotions(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Promotion
 	for rows.Next() {
 		var promotion models.Promotion

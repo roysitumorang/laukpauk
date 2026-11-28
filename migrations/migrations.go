@@ -70,7 +70,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	mapVersions := map[int64]struct{}{}
 	for rows.Next() {
 		var version int64

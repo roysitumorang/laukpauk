@@ -7,6 +7,11 @@ linters:
   # errcheck, govet, ineffassign, staticcheck, unused
   default: standard
 
+issues:
+  # report every finding, not the first three per linter
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
 formatters:
   enable:
     - gofmt

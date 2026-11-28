@@ -202,7 +202,7 @@ func (q *transactionRepository) FindTransactions(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var (
 		response []*models.Transaction
 		n        int
@@ -334,7 +334,7 @@ func (q *transactionRepository) FindTransactions(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var i int
 	for rows.Next() {
 		var transactionItem models.TransactionItem
@@ -575,7 +575,7 @@ func (q *transactionRepository) FindTransaction(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var transactionItem models.TransactionItem
 		if err = rows.Scan(
@@ -961,7 +961,7 @@ func (q *transactionRepository) CreateTransaction(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var transactionItem models.TransactionItem
 		if err = rows.Scan(
@@ -1733,7 +1733,7 @@ func (q *transactionRepository) FindVouchersUsages(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var voucherID uuid.UUID
 		var usages int64
@@ -1800,7 +1800,7 @@ func (q *transactionRepository) FindPromotionsUsages(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var promotionID uuid.UUID
 		var usages int64
