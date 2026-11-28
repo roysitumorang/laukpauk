@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 // SQLArgs converts query arguments to values database/sql and the MariaDB driver take: a uuid.UUID (which has no
