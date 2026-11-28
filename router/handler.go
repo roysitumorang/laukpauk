@@ -125,6 +125,8 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		os.Getenv("WHATSAPP_API_VERSION"),
 		os.Getenv("WHATSAPP_PHONE_NUMBER_ID"),
 		os.Getenv("WHATSAPP_ACCESS_TOKEN"),
+		os.Getenv("WHATSAPP_APP_SECRET"),
+		os.Getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
 		externalApiCallTimeoutDuration,
 	)
 	routesApiClient := externals.NewRoutesApiClient(

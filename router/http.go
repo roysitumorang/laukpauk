@@ -354,8 +354,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.TransactionService,
 	).Mount(app.Group("/promotions"))
 	controllers.NewWhatsappController(
-		os.Getenv("WHATSAPP_APP_SECRET"),
-		os.Getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
+		q.WhatsappClient,
 	).Mount(app.Group("/whatsapp"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).

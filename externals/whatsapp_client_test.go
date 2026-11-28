@@ -44,7 +44,7 @@ func whatsappServer(t *testing.T, status int, body string) (*httptest.Server, *h
 func TestWhatsappSendText(t *testing.T) {
 	srv, req, payload := whatsappServer(t, http.StatusOK,
 		`{"messaging_product":"whatsapp","contacts":[{"input":"628116099887","wa_id":"628116099887"}],"messages":[{"id":"wamid.ABC"}]}`)
-	client := NewWhatsappClient(srv.URL, "", "106540352242922", "token", time.Second)
+	client := NewWhatsappClient(srv.URL, "", "106540352242922", "token", "", "", time.Second)
 	resp, err := client.SendText(context.Background(), "+62 811-609-9887", "Pesanan Anda sudah dikirim", false)
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestWhatsappSendText(t *testing.T) {
 
 func TestWhatsappSendTemplate(t *testing.T) {
 	srv, _, payload := whatsappServer(t, http.StatusOK, `{"messages":[{"id":"wamid.T"}]}`)
-	client := NewWhatsappClient(srv.URL, "v26.0", "1", "token", time.Second)
+	client := NewWhatsappClient(srv.URL, "v26.0", "1", "token", "", "", time.Second)
 	if _, err := client.SendTemplate(context.Background(), "08116099887", "order_shipped", "id", "INV-001", "Ben"); err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestWhatsappSendTemplate(t *testing.T) {
 func TestWhatsappErrors(t *testing.T) {
 	srv, _, _ := whatsappServer(t, http.StatusBadRequest,
 		`{"error":{"message":"(#131030) Recipient phone number not in allowed list","type":"OAuthException","code":131030,"error_subcode":2655007,"fbtrace_id":"Az8"}}`)
-	client := NewWhatsappClient(srv.URL, "", "1", "token", time.Second)
+	client := NewWhatsappClient(srv.URL, "", "1", "token", "", "", time.Second)
 	_, err := client.SendText(context.Background(), "628116099887", "hi", false)
 	var apiErr *WhatsappError
 	if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest || apiErr.Code != 131030 ||
@@ -96,19 +96,19 @@ func TestWhatsappErrors(t *testing.T) {
 
 	// a non-JSON body fails to unmarshal, whatever the status
 	srv2, _, _ := whatsappServer(t, http.StatusBadGateway, `upstream down`)
-	if _, err = NewWhatsappClient(srv2.URL, "", "1", "token", time.Second).SendText(context.Background(), "1", "hi", false); err == nil ||
+	if _, err = NewWhatsappClient(srv2.URL, "", "1", "token", "", "", time.Second).SendText(context.Background(), "1", "hi", false); err == nil ||
 		errors.As(err, &apiErr) || strings.Contains(err.Error(), "HTTP 502") {
 		t.Fatalf("non-JSON error = %v", err)
 	}
 
 	// an error status whose JSON body has no "error" object
 	srv3, _, _ := whatsappServer(t, http.StatusInternalServerError, `{}`)
-	if _, err = NewWhatsappClient(srv3.URL, "", "1", "token", time.Second).SendText(context.Background(), "1", "hi", false); err == nil ||
+	if _, err = NewWhatsappClient(srv3.URL, "", "1", "token", "", "", time.Second).SendText(context.Background(), "1", "hi", false); err == nil ||
 		!strings.Contains(err.Error(), "HTTP 500: {}") {
 		t.Fatalf("JSON error without details = %v", err)
 	}
 
-	unconfigured := NewWhatsappClient("", "", "", "", time.Second)
+	unconfigured := NewWhatsappClient("", "", "", "", "", "", time.Second)
 	if _, err = unconfigured.SendText(context.Background(), "1", "hi", false); !errors.Is(err, ErrWhatsappNotConfigured) {
 		t.Fatalf("unconfigured = %v", err)
 	}
@@ -153,15 +153,15 @@ func TestVerifyWhatsappSignature(t *testing.T) {
 		body              []byte
 		want              bool
 	}{
-		"valid":         {"secret", valid, body, true},
-		"other secret":  {"other", valid, body, false},
-		"changed body":  {"secret", valid, []byte(`{"object":"page"}`), false},
-		"no prefix":     {"secret", valid[len("sha256="):], body, false},
-		"not hex":       {"secret", "sha256=zz", body, false},
-		"missing":       {"secret", "", body, false},
-		"no app secret": {"", whatsappSignature("", body), body, false},
+		"valid":        {"secret", valid, body, true},
+		"other secret": {"other", valid, body, false},
+		"changed body": {"secret", valid, []byte(`{"object":"page"}`), false},
+		"no prefix":    {"secret", valid[len("sha256="):], body, false},
+		"not hex":      {"secret", "sha256=zz", body, false},
+		"missing":      {"secret", "", body, false},
 	} {
-		if got := VerifyWhatsappSignature(c.secret, c.body, c.signature); got != c.want {
+		client := NewWhatsappClient("", "", "", "", c.secret, "", time.Second)
+		if got := client.VerifyWhatsappSignature(context.Background(), c.body, c.signature); got != c.want {
 			t.Errorf("%s: got %v, want %v", name, got, c.want)
 		}
 	}

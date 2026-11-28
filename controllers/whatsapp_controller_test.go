@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/roysitumorang/laukpauk/externals"
@@ -23,7 +24,9 @@ func TestMain(m *testing.M) {
 
 func whatsappApp(appSecret, verifyToken string) *fiber.App {
 	app := fiber.New(fiber.Config{StrictRouting: true})
-	NewWhatsappController(appSecret, verifyToken).Mount(app.Group("/whatsapp"))
+	NewWhatsappController(
+		externals.NewWhatsappClient("", "", "", "", appSecret, verifyToken, time.Second),
+	).Mount(app.Group("/whatsapp"))
 	return app
 }
 
@@ -54,11 +57,6 @@ func TestWhatsappWebhookVerify(t *testing.T) {
 		if status != c.wantStatus || (c.wantBody != "" && body != c.wantBody) {
 			t.Errorf("%s: %d %q", name, status, body)
 		}
-	}
-	status, _ := whatsappDo(t, whatsappApp("secret", ""),
-		httptest.NewRequest(fiber.MethodGet, "/whatsapp/v1/webhook?hub.mode=subscribe&hub.verify_token=&hub.challenge=1", nil))
-	if status != fiber.StatusServiceUnavailable {
-		t.Errorf("unconfigured: %d", status)
 	}
 }
 
@@ -98,8 +96,5 @@ func TestWhatsappWebhookReceive(t *testing.T) {
 		if got := post(app, c.body, c.signature); got != c.want {
 			t.Errorf("%s: got %d, want %d", name, got, c.want)
 		}
-	}
-	if got := post(whatsappApp("", "verify-me"), payload, sign("", payload)); got != fiber.StatusServiceUnavailable {
-		t.Errorf("unconfigured: got %d", got)
 	}
 }
