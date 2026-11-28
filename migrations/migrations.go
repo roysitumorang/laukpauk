@@ -55,14 +55,12 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	}(ctx)
 	if _, err = tx.ExecContext(
 		ctx,
-		`CREATE TABLE IF NOT EXISTS migrations (
-			"version" bigint NOT NULL PRIMARY KEY
-		) ENGINE=InnoDB`,
+		"CREATE TABLE IF NOT EXISTS `migrations` (`version` bigint NOT NULL PRIMARY KEY) ENGINE=InnoDB",
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 		return err
 	}
-	rows, err := tx.QueryContext(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
+	rows, err := tx.QueryContext(ctx, "SELECT `version` FROM `migrations` ORDER BY `version`")
 	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
@@ -101,7 +99,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUp")
 			return err
 		}
-		if _, err = tx.ExecContext(ctx, `INSERT INTO "migrations" ("version") VALUES (?)`, version); err != nil {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO `migrations` (`version`) VALUES (?)", version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			return err
 		}

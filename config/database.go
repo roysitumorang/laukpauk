@@ -8,9 +8,8 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-// sqlMode keeps the habits the queries rely on, "double quoted" identifiers and || for concatenation, and makes
-// invalid or truncated values errors instead of warnings.
-const sqlMode = "'STRICT_ALL_TABLES,ANSI_QUOTES,PIPES_AS_CONCAT,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+// sqlMode makes invalid or truncated values errors instead of warnings.
+const sqlMode = "'STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
 
 // CreateDbConnection connects to MariaDB with at most maxConns open connections and checks the connection.
 // dataSourceName is a go-sql-driver/mysql DSN, e.g. user:password@tcp(localhost:3306)/laukpauk. Times are parsed and
