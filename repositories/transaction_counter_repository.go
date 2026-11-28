@@ -44,10 +44,10 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 			, hits
 			, created_at
 			, updated_at
-		) VALUES ($1, 1, $2, $3)
+		) VALUES (?, 1, ?, ?)
 		ON DUPLICATE KEY UPDATE
 			hits = hits + 1
-			, updated_at = $3
+			, updated_at = VALUES(updated_at)
 		RETURNING id
 			, transaction_window
 			, hits

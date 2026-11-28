@@ -47,40 +47,36 @@ func mustUUID(t *testing.T) testUUID {
 	return u
 }
 
-func TestRewritePlaceholders(t *testing.T) {
+func TestHasDollarPlaceholder(t *testing.T) {
 	cases := []struct {
-		in, out string
-		order   []int
+		query string
+		want  bool
 	}{
-		{"SELECT 1", "SELECT 1", nil},
-		{"SELECT * FROM t WHERE a = $1 AND b = $2", "SELECT * FROM t WHERE a = ? AND b = ?", []int{0, 1}},
-		{"UPDATE t SET a = $2, b = $2 WHERE id = $1", "UPDATE t SET a = ?, b = ? WHERE id = ?", []int{1, 1, 0}},
-		{"SELECT '$1', \"$2\", `$3`, $4 -- $5\n, $6 /* $7 */", "SELECT '$1', \"$2\", `$3`, ? -- $5\n, ? /* $7 */", []int{3, 5}},
-		{"SELECT 'it''s $1', 'a\\'$2', $10", "SELECT 'it''s $1', 'a\\'$2', ?", []int{9}},
-		{"SELECT $ FROM t", "SELECT $ FROM t", nil},
+		{"SELECT 1", false},
+		{"SELECT * FROM t WHERE a = ? AND b = ?", false},
+		{"SELECT * FROM t WHERE a = $1", true},
+		{"SELECT '$1', \"$2\", `$3` -- $4\n /* $5 */", false},
+		{"SELECT 'it''s $1', 'a\\'$2', ?", false},
+		{"SELECT $ FROM t", false},
 	}
 	for _, c := range cases {
-		out, order := rewritePlaceholders(c.in)
-		if out != c.out || !reflect.DeepEqual(order, c.order) {
-			t.Errorf("rewritePlaceholders(%q) = %q, %v; want %q, %v", c.in, out, order, c.out, c.order)
+		if got := hasDollarPlaceholder(c.query); got != c.want {
+			t.Errorf("hasDollarPlaceholder(%q) = %v; want %v", c.query, got, c.want)
 		}
 	}
 }
 
-func TestPrepareReordersAndConverts(t *testing.T) {
+func TestPrepareConverts(t *testing.T) {
 	u := mustUUID(t)
-	q, args, err := prepare("UPDATE t SET a = $2, b = $2 WHERE id = $1", []any{u, int64(5)})
+	args, err := prepare("UPDATE t SET a = ? WHERE id = ?", []any{int64(5), u})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if q != "UPDATE t SET a = ?, b = ? WHERE id = ?" {
-		t.Fatalf("query = %q", q)
-	}
-	if !reflect.DeepEqual(args, []any{int64(5), int64(5), testUUIDText}) {
+	if !reflect.DeepEqual(args, []any{int64(5), testUUIDText}) {
 		t.Fatalf("args = %#v", args)
 	}
-	if _, _, err = prepare("SELECT $3", []any{1}); err == nil {
-		t.Fatal("want an error for a missing argument")
+	if _, err = prepare("SELECT $1", []any{1}); err == nil {
+		t.Fatal("want an error for a $n placeholder")
 	}
 }
 

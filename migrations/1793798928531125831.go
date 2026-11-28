@@ -149,7 +149,7 @@ func init() {
 						, channel_type
 						, channel_category
 						, created_at
-					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
 					params[i]...,
 				); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

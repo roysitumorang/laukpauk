@@ -246,7 +246,7 @@ func (q *pointRepository) CreatePoint(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, point_type
@@ -319,7 +319,7 @@ func (q *pointRepository) UpdatePoint(
 			, deleted_at
 			, deletion_reason
 		FROM points
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -359,21 +359,21 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.Amount != request.Amount {
 		params = append(params, request.Amount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " amount = $%d", n)
+		_, _ = sb.WriteString(" amount = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -386,14 +386,14 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
@@ -403,7 +403,7 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -413,7 +413,7 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -423,12 +423,10 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, point_type
@@ -442,9 +440,7 @@ func (q *pointRepository) UpdatePoint(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -477,7 +473,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -490,7 +486,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -503,7 +499,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -516,7 +512,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -529,7 +525,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -537,23 +533,19 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		keyword := sb.String()
+		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`(EXISTS(
+		_, _ = sb.WriteString(`(EXISTS(
 				SELECT 1
 				FROM users u
 				WHERE u.id = points.user_id
 					AND (
-						LOWER(u.name) LIKE $%d
-						OR u.username LIKE $%d
-						OR u.mobile_phone LIKE $%d
+						LOWER(u.name) LIKE ?
+						OR u.username LIKE ?
+						OR u.mobile_phone LIKE ?
 					)
-			) OR LOWER(points.description) LIKE $%d)`,
-			n, n, n, n,
-		)
+			) OR LOWER(points.description) LIKE ?)`)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

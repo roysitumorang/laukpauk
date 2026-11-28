@@ -8,100 +8,49 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 	"time"
 )
 
-// placeholders caches the rewrite of each query: the query with ? and, for each ?, the index of its argument.
-var placeholders sync.Map // map[string]*rewrite
-
-type rewrite struct {
-	query string
-	order []int // order[i] is the 0-based index of the argument of the i-th ?; nil when the query has no $n
+// prepare converts each argument to something the MariaDB driver takes. Queries use ? placeholders; a PostgreSQL
+// style $n left in one is an error rather than a silently mis-bound argument.
+func prepare(query string, args []any) ([]any, error) {
+	if strings.IndexByte(query, '$') >= 0 && hasDollarPlaceholder(query) {
+		return nil, fmt.Errorf("database: query has a $n placeholder; use ?: %s", query)
+	}
+	out := make([]any, len(args))
+	for i, a := range args {
+		out[i] = convertArg(a)
+	}
+	return out, nil
 }
 
-// prepare turns a query with PostgreSQL-style $n placeholders into one with ?, reorders and repeats the arguments to
-// match, and converts each argument to something the MariaDB driver takes.
-func prepare(query string, args []any) (string, []any, error) {
-	var rw *rewrite
-	if v, ok := placeholders.Load(query); ok {
-		rw = v.(*rewrite)
-	} else {
-		q, order := rewritePlaceholders(query)
-		rw = &rewrite{query: q, order: order}
-		placeholders.Store(query, rw)
-	}
-	if rw.order == nil {
-		out := make([]any, len(args))
-		for i, a := range args {
-			out[i] = convertArg(a)
-		}
-		return rw.query, out, nil
-	}
-	out := make([]any, len(rw.order))
-	for i, n := range rw.order {
-		if n < 0 || n >= len(args) {
-			return "", nil, fmt.Errorf("database: query uses $%d but has %d arguments", n+1, len(args))
-		}
-		out[i] = convertArg(args[n])
-	}
-	return rw.query, out, nil
-}
-
-// rewritePlaceholders replaces each $n outside quotes and comments with ?; order lists the argument of each ?, or is
-// nil when the query has no $n.
-func rewritePlaceholders(query string) (string, []int) {
-	if !strings.Contains(query, "$") {
-		return query, nil
-	}
-	var sb strings.Builder
-	sb.Grow(len(query))
-	var order []int
+// hasDollarPlaceholder reports whether the query has a $n outside quotes and comments.
+func hasDollarPlaceholder(query string) bool {
 	n := len(query)
 	for i := 0; i < n; {
 		c := query[i]
 		switch {
 		case c == '\'' || c == '"' || c == '`':
-			j := skipQuoted(query, i)
-			sb.WriteString(query[i:j])
-			i = j
+			i = skipQuoted(query, i)
 		case c == '-' && i+1 < n && query[i+1] == '-':
 			j := strings.IndexByte(query[i:], '\n')
 			if j < 0 {
-				j = n
-			} else {
-				j += i
+				return false
 			}
-			sb.WriteString(query[i:j])
-			i = j
+			i += j
 		case c == '/' && i+1 < n && query[i+1] == '*':
 			j := strings.Index(query[i+2:], "*/")
 			if j < 0 {
-				j = n
-			} else {
-				j += i + 4
+				return false
 			}
-			sb.WriteString(query[i:j])
-			i = j
+			i += j + 4
 		case c == '$' && i+1 < n && query[i+1] >= '0' && query[i+1] <= '9':
-			j := i + 1
-			num := 0
-			for j < n && query[j] >= '0' && query[j] <= '9' {
-				num = num*10 + int(query[j]-'0')
-				j++
-			}
-			sb.WriteByte('?')
-			order = append(order, num-1)
-			i = j
+			return true
 		default:
-			sb.WriteByte(c)
 			i++
 		}
 	}
-	if order == nil {
-		return query, nil
-	}
-	return sb.String(), order
+	return false
 }
 
 // skipQuoted returns the index right after the quoted string, identifier or backtick name starting at i; a doubled

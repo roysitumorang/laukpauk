@@ -66,7 +66,7 @@ func init() {
 				ctx,
 				`SELECT id
 				FROM users
-				WHERE email = $1`,
+				WHERE email = ?`,
 				"benni.surbakti@gmail.com",
 			).Scan(&sellerID); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -167,9 +167,9 @@ func init() {
 					, updated_by
 					, updated_at
 				) VALUES (
-					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-					, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-					, $21, $22, $23, $24
+					?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+					, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+					, ?, ?, ?, ?
 				);`,
 				setting.VacationMode,
 				setting.VacationEndDate,

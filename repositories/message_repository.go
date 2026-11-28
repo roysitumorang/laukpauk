@@ -46,7 +46,7 @@ func (q *messageRepository) CreateMessage(
 			, mobile_phone
 			, body
 			, created_at
-		) VALUES ($1, $2, $3, $4)
+		) VALUES (?, ?, ?, ?)
 		RETURNING id
 			, name
 			, mobile_phone

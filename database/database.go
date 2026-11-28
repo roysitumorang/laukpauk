@@ -1,6 +1,6 @@
 // Package database is a small pgx-style layer over database/sql for MariaDB: the pool, transactions and rows keep
-// the Exec / Query / QueryRow(ctx, sql, args...) shape the repositories were written for, PostgreSQL-style $n
-// placeholders are rewritten to ?, and UUIDs, JSON values and times are converted on the way in and out.
+// the Exec / Query / QueryRow(ctx, sql, args...) shape the repositories were written for, with ? placeholders, and
+// UUIDs, JSON values and times are converted on the way in and out.
 package database
 
 import (
@@ -151,7 +151,7 @@ func (r result) RowsAffected() int64 {
 }
 
 func exec(ctx context.Context, r runner, query string, args []any) (Result, error) {
-	query, args, err := prepare(query, args)
+	args, err := prepare(query, args)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func exec(ctx context.Context, r runner, query string, args []any) (Result, erro
 }
 
 func queryRows(ctx context.Context, r runner, query string, args []any) (Rows, error) {
-	query, args, err := prepare(query, args)
+	args, err := prepare(query, args)
 	if err != nil {
 		return nil, err
 	}

@@ -175,7 +175,7 @@ func (q *cartRepository) FindCarts(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, "$%d", n)
+		_, _ = sb.WriteString("?")
 	}
 	if len(params) == 0 {
 		return response, total, pages, nil
@@ -293,7 +293,7 @@ func (q *cartRepository) FindCart(
 			, created_at
 			, updated_at
 		FROM cart_items
-		WHERE cart_id = $1
+		WHERE cart_id = ?
 		ORDER BY id`,
 		response.ID,
 	)
@@ -364,7 +364,7 @@ func (q *cartRepository) SaveCart(
 			, created_at
 			, updated_at
 		FROM carts
-		WHERE id = $1 AND user_id = $2
+		WHERE id = ? AND user_id = ?
 		FOR UPDATE`,
 		request.ID,
 		buyerID,
@@ -390,7 +390,7 @@ func (q *cartRepository) SaveCart(
 				user_id
 				, created_at
 				, updated_at
-			) VALUES ($1, $2, $3)
+			) VALUES (?, ?, ?)
 			ON DUPLICATE KEY UPDATE
 				user_id = VALUES(user_id)
 			RETURNING id
@@ -406,10 +406,10 @@ func (q *cartRepository) SaveCart(
 		row = tx.QueryRow(
 			ctx,
 			`UPDATE carts SET
-				user_id = $1
-				, deleted_user_id = $2
-				, updated_at = $3
-			WHERE id = $4
+				user_id = ?
+				, deleted_user_id = ?
+				, updated_at = ?
+			WHERE id = ?
 			RETURNING id
 				, user_id
 				, deleted_user_id
@@ -463,28 +463,28 @@ func (q *cartRepository) SaveCart(
 			, created_at
 			, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+			, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+			, ?
 		) ON DUPLICATE KEY UPDATE
-			product_category_id = $3
-			, product_category_name = $4
-			, product_id = $5
-			, product_name = $6
-			, product_photo = $7
-			, product_ready_stock = $8
-			, stock_unit = $9
-			, base_price = $10
-			, selling_price = $11
-			, discount_type = $12
-			, discount_rate = $13
-			, discount_minimum_quantity = $14
-			, discount_amount = $15
-			, sale_price = $16
-			, description = $17
-			, quantity = $18
-			, note = $19
-			, updated_at = $21
+			product_category_id = VALUES(product_category_id)
+			, product_category_name = VALUES(product_category_name)
+			, product_id = VALUES(product_id)
+			, product_name = VALUES(product_name)
+			, product_photo = VALUES(product_photo)
+			, product_ready_stock = VALUES(product_ready_stock)
+			, stock_unit = VALUES(stock_unit)
+			, base_price = VALUES(base_price)
+			, selling_price = VALUES(selling_price)
+			, discount_type = VALUES(discount_type)
+			, discount_rate = VALUES(discount_rate)
+			, discount_minimum_quantity = VALUES(discount_minimum_quantity)
+			, discount_amount = VALUES(discount_amount)
+			, sale_price = VALUES(sale_price)
+			, description = VALUES(description)
+			, quantity = VALUES(quantity)
+			, note = VALUES(note)
+			, updated_at = VALUES(updated_at)
 		RETURNING id
 			, cart_id
 			, product_variant_id
@@ -570,14 +570,14 @@ func (q *cartRepository) SaveCart(
 	}
 	params = append([]any{response.ID}, params...)
 	sb.Reset()
-	_, _ = sb.WriteString("DELETE FROM cart_items WHERE cart_id = $1")
+	_, _ = sb.WriteString("DELETE FROM cart_items WHERE cart_id = ?")
 	if n = len(params) - 1; n > 0 {
 		_, _ = sb.WriteString(" AND id NOT IN (")
 		for i := range n {
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", i+2)
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 	}
@@ -598,7 +598,7 @@ func (q *cartRepository) buildCondition(request *models.CartFilter, sb *strings.
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())

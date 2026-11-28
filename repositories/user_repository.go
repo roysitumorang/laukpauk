@@ -354,7 +354,7 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -367,7 +367,7 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -380,7 +380,7 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -393,7 +393,7 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -406,56 +406,52 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.Login != "" {
-		params = append(params, strings.ToLower(request.Login))
-		n := len(params)
+		login := strings.ToLower(request.Login)
+		params = append(params, login, login, login)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(username = $%d OR email = $%d OR mobile_phone = $%d)", n, n, n)
+		_, _ = sb.WriteString("(username = ? OR email = ? OR mobile_phone = ?)")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		keyword := sb.String()
+		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`(LOWER(name) LIKE $%d
-				OR username LIKE $%d
-				OR email LIKE $%d
-				OR mobile_phone LIKE $%d)`,
-			n, n, n, n,
-		)
+		_, _ = sb.WriteString(`(LOWER(name) LIKE ?
+				OR username LIKE ?
+				OR email LIKE ?
+				OR mobile_phone LIKE ?)`)
 		conds = append(conds, sb.String())
 	}
 	if request.Username != "" {
 		params = append(params, strings.ToLower(request.Username))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "username = $%d", len(params))
+		_, _ = sb.WriteString("username = ?")
 		conds = append(conds, sb.String())
 	}
 	if request.Email != "" {
 		params = append(params, strings.ToLower(request.Email))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "email = $%d", len(params))
+		_, _ = sb.WriteString("email = ?")
 		conds = append(conds, sb.String())
 	}
 	if request.MobilePhone != "" {
 		params = append(params, strings.ToLower(request.MobilePhone))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "mobile_phone = $%d", len(params))
+		_, _ = sb.WriteString("mobile_phone = ?")
 		conds = append(conds, sb.String())
 	}
 	if request.PasswordResetToken != "" {
 		params = append(params, request.PasswordResetToken)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "password_reset_token = $%d", len(params))
+		_, _ = sb.WriteString("password_reset_token = ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
@@ -523,10 +519,10 @@ func (q *userRepository) CreateUser(
 			, deactivated_at
 			, deactivation_reason
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-			, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-			, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+			, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+			, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+			, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 		RETURNING id
 			, role
@@ -722,7 +718,7 @@ func (q *userRepository) UpdateUser(
 			, deactivated_at
 			, deactivation_reason
 		FROM users
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -789,14 +785,14 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " status = $%d", n)
+		_, _ = sb.WriteString(" status = ?")
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if (response.MobilePhoneConfirmationSentAt != nil && request.MobilePhoneConfirmationSentAt == nil) ||
 		(response.MobilePhoneConfirmationSentAt == nil && request.MobilePhoneConfirmationSentAt != nil) ||
@@ -806,7 +802,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " mobile_phone_confirmation_sent_at = $%d", n)
+		_, _ = sb.WriteString(" mobile_phone_confirmation_sent_at = ?")
 	}
 	if (response.MobilePhoneConfirmationToken != nil && request.MobilePhoneConfirmationToken == nil) ||
 		(response.MobilePhoneConfirmationToken == nil && request.MobilePhoneConfirmationToken != nil) ||
@@ -816,7 +812,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " mobile_phone_confirmation_token = $%d", n)
+		_, _ = sb.WriteString(" mobile_phone_confirmation_token = ?")
 	}
 	if (response.MobilePhoneConfirmedAt != nil && request.MobilePhoneConfirmedAt == nil) ||
 		(response.MobilePhoneConfirmedAt == nil && request.MobilePhoneConfirmedAt != nil) ||
@@ -826,21 +822,21 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " mobile_phone_confirmed_at = $%d", n)
+		_, _ = sb.WriteString(" mobile_phone_confirmed_at = ?")
 	}
 	if response.MobilePhone != request.MobilePhone {
 		params = append(params, request.MobilePhone)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " mobile_phone = $%d", n)
+		_, _ = sb.WriteString(" mobile_phone = ?")
 	}
 	if response.Username != request.Username {
 		params = append(params, request.Username)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " username = $%d", n)
+		_, _ = sb.WriteString(" username = ?")
 	}
 	if (response.EmailConfirmationSentAt != nil && request.EmailConfirmationSentAt == nil) ||
 		(response.EmailConfirmationSentAt == nil && request.EmailConfirmationSentAt != nil) ||
@@ -850,7 +846,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " email_confirmation_sent_at = $%d", n)
+		_, _ = sb.WriteString(" email_confirmation_sent_at = ?")
 	}
 	if (response.EmailConfirmationToken != nil && request.EmailConfirmationToken == nil) ||
 		(response.EmailConfirmationToken == nil && request.EmailConfirmationToken != nil) ||
@@ -860,7 +856,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " email_confirmation_token = $%d", n)
+		_, _ = sb.WriteString(" email_confirmation_token = ?")
 	}
 	if (response.EmailConfirmedAt != nil && request.EmailConfirmedAt == nil) ||
 		(response.EmailConfirmedAt == nil && request.EmailConfirmedAt != nil) ||
@@ -870,14 +866,14 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " email_confirmed_at = $%d", n)
+		_, _ = sb.WriteString(" email_confirmed_at = ?")
 	}
 	if response.Email != request.Email {
 		params = append(params, request.Email)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " email = $%d", n)
+		_, _ = sb.WriteString(" email = ?")
 	}
 	if (response.EncryptedPassword != nil && request.EncryptedPassword == nil) ||
 		(response.EncryptedPassword == nil && request.EncryptedPassword != nil) ||
@@ -887,7 +883,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " encrypted_password = $%d", n)
+		_, _ = sb.WriteString(" encrypted_password = ?")
 	}
 	if (response.PasswordResetSentAt != nil && request.PasswordResetSentAt == nil) ||
 		(response.PasswordResetSentAt == nil && request.PasswordResetSentAt != nil) ||
@@ -897,7 +893,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " password_reset_sent_at = $%d", n)
+		_, _ = sb.WriteString(" password_reset_sent_at = ?")
 	}
 	if (response.PasswordResetToken != nil && request.PasswordResetToken == nil) ||
 		(response.PasswordResetToken == nil && request.PasswordResetToken != nil) ||
@@ -907,7 +903,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " password_reset_token = $%d", n)
+		_, _ = sb.WriteString(" password_reset_token = ?")
 	}
 	if (response.PasswordChangedAt != nil && request.PasswordChangedAt == nil) ||
 		(response.PasswordChangedAt == nil && request.PasswordChangedAt != nil) ||
@@ -917,14 +913,14 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " password_changed_at = $%d", n)
+		_, _ = sb.WriteString(" password_changed_at = ?")
 	}
 	if response.SignInCount != request.SignInCount {
 		params = append(params, request.SignInCount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " sign_in_count = $%d", n)
+		_, _ = sb.WriteString(" sign_in_count = ?")
 	}
 	if (response.CurrentSignInAt != nil && request.CurrentSignInAt == nil) ||
 		(response.CurrentSignInAt == nil && request.CurrentSignInAt != nil) ||
@@ -934,7 +930,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " current_sign_in_at = $%d", n)
+		_, _ = sb.WriteString(" current_sign_in_at = ?")
 	}
 	if (response.LastSignInAt != nil && request.LastSignInAt == nil) ||
 		(response.LastSignInAt == nil && request.LastSignInAt != nil) ||
@@ -944,7 +940,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " last_sign_in_at = $%d", n)
+		_, _ = sb.WriteString(" last_sign_in_at = ?")
 	}
 	if (response.CurrentSignInIP != nil && request.CurrentSignInIP == nil) ||
 		(response.CurrentSignInIP == nil && request.CurrentSignInIP != nil) ||
@@ -954,7 +950,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " current_sign_in_ip = $%d", n)
+		_, _ = sb.WriteString(" current_sign_in_ip = ?")
 	}
 	if (response.LastSignInIP != nil && request.LastSignInIP == nil) ||
 		(response.LastSignInIP == nil && request.LastSignInIP != nil) ||
@@ -964,14 +960,14 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " last_sign_in_ip = $%d", n)
+		_, _ = sb.WriteString(" last_sign_in_ip = ?")
 	}
 	if response.FailedAttempts != request.FailedAttempts {
 		params = append(params, request.FailedAttempts)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " failed_attempts = $%d", n)
+		_, _ = sb.WriteString(" failed_attempts = ?")
 	}
 	if (response.UnlockToken != nil && request.UnlockToken == nil) ||
 		(response.UnlockToken == nil && request.UnlockToken != nil) ||
@@ -981,7 +977,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " unlock_token = $%d", n)
+		_, _ = sb.WriteString(" unlock_token = ?")
 	}
 	if (response.LockedAt != nil && request.LockedAt == nil) ||
 		(response.LockedAt == nil && request.LockedAt != nil) ||
@@ -991,7 +987,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " locked_at = $%d", n)
+		_, _ = sb.WriteString(" locked_at = ?")
 	}
 	if (response.OtpSecret != nil && request.OtpSecret == nil) ||
 		(response.OtpSecret == nil && request.OtpSecret != nil) ||
@@ -1001,7 +997,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " otp_secret = $%d", n)
+		_, _ = sb.WriteString(" otp_secret = ?")
 	}
 	if (response.OtpExpiredAt != nil && request.OtpExpiredAt == nil) ||
 		(response.OtpExpiredAt == nil && request.OtpExpiredAt != nil) ||
@@ -1011,14 +1007,14 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " otp_expired_at = $%d", n)
+		_, _ = sb.WriteString(" otp_expired_at = ?")
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+		_, _ = sb.WriteString(" photo = ?")
 	}
 	if (response.ReferrerID == nil && request.ReferrerID != nil) ||
 		(response.ReferrerID != nil && request.ReferrerID == nil) ||
@@ -1028,7 +1024,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " referrer_id = $%d", n)
+		_, _ = sb.WriteString(" referrer_id = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -1041,14 +1037,14 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeactivatedBy != nil && request.DeactivatedBy == nil) ||
 		(response.DeactivatedBy == nil && request.DeactivatedBy != nil) ||
@@ -1058,7 +1054,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deactivated_by = $%d", n)
+		_, _ = sb.WriteString(" deactivated_by = ?")
 	}
 	if (response.DeactivatedAt != nil && request.DeactivatedAt == nil) ||
 		(response.DeactivatedAt == nil && request.DeactivatedAt != nil) ||
@@ -1068,7 +1064,7 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deactivated_at = $%d", n)
+		_, _ = sb.WriteString(" deactivated_at = ?")
 	}
 	if (response.DeactivationReason != nil && request.DeactivationReason == nil) ||
 		(response.DeactivationReason == nil && request.DeactivationReason != nil) ||
@@ -1078,12 +1074,10 @@ func (q *userRepository) UpdateUser(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deactivation_reason = $%d", n)
+		_, _ = sb.WriteString(" deactivation_reason = ?")
 	}
 	params = append(params, response.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, role
 			, status
@@ -1124,9 +1118,7 @@ func (q *userRepository) UpdateUser(
 			, updated_at
 			, deactivated_by
 			, deactivated_at
-			, deactivation_reason`,
-		len(params),
-	)
+			, deactivation_reason`)
 	err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.Role,
@@ -1246,7 +1238,7 @@ func (q *userRepository) AddUserBalances(
 			, deactivated_at
 			, deactivation_reason
 		FROM users
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		userID,
 	).Scan(
@@ -1313,21 +1305,21 @@ func (q *userRepository) AddUserBalances(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " referral_points = COALESCE(referral_points, 0) + $%d", n)
+		_, _ = sb.WriteString(" referral_points = COALESCE(referral_points, 0) + ?")
 	}
 	if rewardPoints != 0 {
 		params = append(params, rewardPoints)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " reward_points = COALESCE(reward_points, 0) + $%d", n)
+		_, _ = sb.WriteString(" reward_points = COALESCE(reward_points, 0) + ?")
 	}
 	if wallet != 0 {
 		params = append(params, wallet)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " wallet = COALESCE(wallet, 0) + $%d", n)
+		_, _ = sb.WriteString(" wallet = COALESCE(wallet, 0) + ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -1336,11 +1328,9 @@ func (q *userRepository) AddUserBalances(
 	if n = len(params); n > 1 {
 		_, _ = sb.WriteString(",")
 	}
-	_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+	_, _ = sb.WriteString(" updated_at = ?")
 	params = append(params, userID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, role
 			, status
@@ -1381,9 +1371,7 @@ func (q *userRepository) AddUserBalances(
 			, updated_at
 			, deactivated_by
 			, deactivated_at
-			, deactivation_reason`,
-		len(params),
-	)
+			, deactivation_reason`)
 	err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.Role,

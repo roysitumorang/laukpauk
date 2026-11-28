@@ -305,21 +305,21 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, updated_by
 			, updated_at
 		) VALUES (
-			$1
-			, $2
-			, $3
-			, $4, $5
-			, $6
-			, $7
-			, $8, $9
-			, $10
-			, $11, $12
-			, $13
-			, $14, $15
-			, $16
-			, $17
-			, $18
-			, $19
+			?
+			, ?
+			, ?
+			, ?, ?
+			, ?
+			, ?
+			, ?, ?
+			, ?
+			, ?, ?
+			, ?
+			, ?, ?
+			, ?
+			, ?
+			, ?
+			, ?
 		)
 		RETURNING id
 			, record_status
@@ -433,7 +433,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, deleted_at
 			, deletion_reason
 		FROM delivery_plans
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -486,21 +486,21 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if response.Weekday != request.Weekday {
 		params = append(params, request.Weekday)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " weekday = $%d", n)
+		_, _ = sb.WriteString(" weekday = ?")
 	}
 	if !response.TransactionWindowMin.Equal(request.TransactionWindowMin) ||
 		!response.TransactionWindowMax.Equal(request.TransactionWindowMax) {
@@ -508,21 +508,21 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " transaction_window_min = $%d, transaction_window_max = $%d", n-1, n)
+		_, _ = sb.WriteString(" transaction_window_min = ?, transaction_window_max = ?")
 	}
 	if response.DeliveryTimeInterval != request.DeliveryTimeInterval {
 		params = append(params, request.DeliveryTimeInterval)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_time_interval = $%d", n)
+		_, _ = sb.WriteString(" delivery_time_interval = ?")
 	}
 	if response.SameDay != request.SameDay {
 		params = append(params, request.SameDay)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " same_day = $%d", n)
+		_, _ = sb.WriteString(" same_day = ?")
 	}
 	if (response.SameDayWindowMin != nil && request.SameDayWindowMin == nil) ||
 		(response.SameDayWindowMin == nil && request.SameDayWindowMin != nil) ||
@@ -536,14 +536,14 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " same_day_window_min = $%d, same_day_window_max = $%d", n-1, n)
+		_, _ = sb.WriteString(" same_day_window_min = ?, same_day_window_max = ?")
 	}
 	if response.NextDay != request.NextDay {
 		params = append(params, request.NextDay)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " next_day = $%d", n)
+		_, _ = sb.WriteString(" next_day = ?")
 	}
 	if (response.NextDayWindowMin != nil && request.NextDayWindowMin == nil) ||
 		(response.NextDayWindowMin == nil && request.NextDayWindowMin != nil) ||
@@ -557,14 +557,14 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " next_day_window_min = $%d, next_day_window_max = $%d", n-1, n)
+		_, _ = sb.WriteString(" next_day_window_min = ?, next_day_window_max = ?")
 	}
 	if response.NextTwoDay != request.NextTwoDay {
 		params = append(params, request.NextTwoDay)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " next_two_day = $%d", n)
+		_, _ = sb.WriteString(" next_two_day = ?")
 	}
 	if (response.NextTwoDayWindowMin != nil && request.NextTwoDayWindowMin == nil) ||
 		(response.NextTwoDayWindowMin == nil && request.NextTwoDayWindowMin != nil) ||
@@ -578,24 +578,20 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " next_two_day_window_min = $%d, next_two_day_window_max = $%d", n-1, n)
+		_, _ = sb.WriteString(" next_two_day_window_min = ?, next_two_day_window_max = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
 	if request.RecordStatus == models.RecordStatusDeleted {
 		params = append(params, request.DeletedBy, request.DeletedAt, request.DeletionReason)
-		n := len(params)
-		_, _ = fmt.Fprintf(sb, ", deleted_by = $%d, deleted_at = $%d, deletion_reason = $%d", n-2, n-1, n)
+		_, _ = sb.WriteString(", deleted_by = ?, deleted_at = ?, deletion_reason = ?")
 	} else {
 		params = append(params, request.UpdatedBy, request.UpdatedAt)
-		n := len(params)
-		_, _ = fmt.Fprintf(sb, ", updated_by = $%d, updated_at = $%d", n-1, n)
+		_, _ = sb.WriteString(", updated_by = ?, updated_at = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, name
@@ -618,9 +614,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -662,7 +656,7 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -675,7 +669,7 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -688,7 +682,7 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -696,7 +690,7 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 	if request.Name != "" {
 		params = append(params, strings.ToLower(request.Name))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) = $%d", len(params))
+		_, _ = sb.WriteString("LOWER(name) = ?")
 		conds = append(conds, sb.String())
 	}
 	if len(request.DeliveryWeekdays) > 0 {
@@ -707,22 +701,21 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if !request.TransactionDatetime.IsZero() {
-		params = append(params, request.TransactionDatetime)
+		params = append(params, request.TransactionDatetime, request.TransactionDatetime)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "transaction_window_min <= $%d AND transaction_window_max >= $%d", len(params), len(params))
+		_, _ = sb.WriteString("transaction_window_min <= ? AND transaction_window_max >= ?")
 		conds = append(conds, sb.String())
 	}
 	if request.TransactionWindow != nil {
-		params = append(params, request.TransactionWindow.Min, request.TransactionWindow.Max)
-		n := len(params)
+		params = append(params, request.TransactionWindow.Max, request.TransactionWindow.Min)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "transaction_window_min <= $%d AND transaction_window_max >= $%d", n, n-1)
+		_, _ = sb.WriteString("transaction_window_min <= ? AND transaction_window_max >= ?")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
@@ -730,7 +723,7 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("LOWER(name) LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
@@ -762,12 +755,12 @@ func (q *deliveryPlanRepository) checkTransactionWindow(
 	params := []any{request.Weekday, request.TransactionWindowMax, request.TransactionWindowMin}
 	query := `SELECT id
 		FROM delivery_plans
-		WHERE weekday = $1
-			AND transaction_window_min <= $2
-			AND transaction_window_max >= $3`
+		WHERE weekday = ?
+			AND transaction_window_min <= ?
+			AND transaction_window_max >= ?`
 	if excludeID != nil {
 		params = append(params, *excludeID)
-		query += " AND id != $4"
+		query += " AND id != ?"
 	}
 	rows, err := tx.Query(ctx, query+" FOR UPDATE", params...)
 	if err != nil {

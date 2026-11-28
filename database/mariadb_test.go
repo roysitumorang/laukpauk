@@ -41,11 +41,11 @@ func TestMariaDB(t *testing.T) {
 	var doneAt *time.Time
 	var flag bool
 	var code string
-	// $n placeholders out of order and repeated, a UUID, a JSON slice, a time and || concatenation
+	// a UUID, a JSON slice, a time and || concatenation
 	if err = db.QueryRow(ctx, `INSERT INTO adapter_test ("code", ref_id, slots, at, flag)
-		VALUES ($2 || '-' || $2, $1, $3, $4, $5)
+		VALUES (? || '-' || ?, ?, ?, ?, ?)
 		RETURNING id, "code", ref_id, slots, at, done_at, flag`,
-		ref, "A", []int64{5, 10}, at, true,
+		"A", "A", ref, []int64{5, 10}, at, true,
 	).Scan(&id, &code, &gotRef, &slots, &gotAt, &doneAt, &flag); err != nil {
 		t.Fatalf("insert: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestMariaDB(t *testing.T) {
 
 	// UPDATE ... RETURNING (MariaDB 13)
 	done := at.Add(time.Hour)
-	if err = db.QueryRow(ctx, `UPDATE adapter_test SET done_at = $1, ref_id = $2 WHERE id = $3 RETURNING done_at, ref_id`,
+	if err = db.QueryRow(ctx, `UPDATE adapter_test SET done_at = ?, ref_id = ? WHERE id = ? RETURNING done_at, ref_id`,
 		done, nil, id).Scan(&doneAt, &gotRef); err != nil {
 		t.Fatalf("update returning: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestMariaDB(t *testing.T) {
 
 	// ON DUPLICATE KEY UPDATE ... RETURNING gives the updated row
 	var n int64
-	if err = db.QueryRow(ctx, `INSERT INTO adapter_test ("code", slots, at, flag) VALUES ($1, '[]', $2, FALSE)
+	if err = db.QueryRow(ctx, `INSERT INTO adapter_test ("code", slots, at, flag) VALUES (?, '[]', ?, FALSE)
 		ON DUPLICATE KEY UPDATE slots = '[1,2,3]'
 		RETURNING JSON_LENGTH(slots)`, "A-A", at).Scan(&n); err != nil {
 		t.Fatalf("upsert returning: %v", err)
@@ -78,7 +78,7 @@ func TestMariaDB(t *testing.T) {
 	// duplicate entries name their key
 	_, err = db.Exec(ctx, `UPDATE adapter_test SET "code" = 'A-A'`)
 	if err == nil {
-		if _, err = db.Exec(ctx, `INSERT INTO adapter_test ("code", slots, at, flag) VALUES ('A-A', '[]', $1, FALSE)`, at); err == nil {
+		if _, err = db.Exec(ctx, `INSERT INTO adapter_test ("code", slots, at, flag) VALUES ('A-A', '[]', ?, FALSE)`, at); err == nil {
 			t.Fatal("want a duplicate entry error")
 		}
 	}
@@ -91,7 +91,7 @@ func TestMariaDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("begin: %v", err)
 	}
-	if _, err = tx.Exec(ctx, `DELETE FROM adapter_test WHERE id = $1`, id); err != nil {
+	if _, err = tx.Exec(ctx, `DELETE FROM adapter_test WHERE id = ?`, id); err != nil {
 		t.Fatalf("delete: %v", err)
 	}
 	if err = tx.Rollback(ctx); err != nil {
@@ -100,10 +100,10 @@ func TestMariaDB(t *testing.T) {
 	if err = tx.Commit(ctx); err != ErrTxClosed {
 		t.Fatalf("commit after rollback: err = %v; want ErrTxClosed", err)
 	}
-	if err = db.QueryRow(ctx, `SELECT id FROM adapter_test WHERE id = $1`, id).Scan(&id); err != nil {
+	if err = db.QueryRow(ctx, `SELECT id FROM adapter_test WHERE id = ?`, id).Scan(&id); err != nil {
 		t.Fatalf("row gone after rollback: %v", err)
 	}
-	if err = db.QueryRow(ctx, `SELECT id FROM adapter_test WHERE "code" = $1`, "none").Scan(&id); !IsNoRows(err) {
+	if err = db.QueryRow(ctx, `SELECT id FROM adapter_test WHERE "code" = ?`, "none").Scan(&id); !IsNoRows(err) {
 		t.Fatalf("no rows: err = %v", err)
 	}
 }

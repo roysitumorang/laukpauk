@@ -207,7 +207,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 			, created_at
 			, updated_at
 		FROM notification_targets
-		WHERE firebase_installation_id = $1
+		WHERE firebase_installation_id = ?
 		FOR UPDATE`,
 		request.FirebaseInstallationID,
 	).Scan(
@@ -232,7 +232,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 				, firebase_installation_id
 				, created_at
 				, updated_at
-			) VALUES ($1, $2, $3, $4)
+			) VALUES (?, ?, ?, ?)
 			RETURNING id
 				, user_id
 				, firebase_installation_id
@@ -267,7 +267,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " user_id = $%d", n)
+			_, _ = sb.WriteString(" user_id = ?")
 		}
 		if len(params) == 0 {
 			return &response, nil
@@ -277,19 +277,15 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+			_, _ = sb.WriteString(" updated_at = ?")
 		}
 		params = append(params, response.ID)
-		_, _ = fmt.Fprintf(
-			sb,
-			` WHERE id = $%d
+		_, _ = sb.WriteString(` WHERE id = ?
 			RETURNING id
 				, user_id
 				, firebase_installation_id
 				, created_at
-				, updated_at`,
-			len(params),
-		)
+				, updated_at`)
 		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 			&response.ID,
 			&response.UserID,
@@ -340,7 +336,7 @@ func (q *notificationTargetRepository) buildCondition(request *models.Notificati
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -353,7 +349,7 @@ func (q *notificationTargetRepository) buildCondition(request *models.Notificati
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -367,7 +363,7 @@ func (q *notificationTargetRepository) buildCondition(request *models.Notificati
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())

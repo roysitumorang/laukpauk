@@ -214,7 +214,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 			, amount
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6)
+		) VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, user_id
 			, start_date
@@ -266,7 +266,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 			, created_at
 			, updated_at
 		FROM point_earnings
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -298,7 +298,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " amount = $%d", n)
+		_, _ = sb.WriteString(" amount = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -308,21 +308,17 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, user_id
 			, start_date
 			, end_date
 			, amount
 			, created_at
-			, updated_at`,
-		len(params),
-	)
+			, updated_at`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
@@ -352,7 +348,7 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -365,7 +361,7 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -373,13 +369,13 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 	if !request.StartDate.IsZero() {
 		params = append(params, request.StartDate)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "start_date = $%d", len(params))
+		_, _ = sb.WriteString("start_date = ?")
 		conds = append(conds, sb.String())
 	}
 	if !request.EndDate.IsZero() {
 		params = append(params, request.EndDate)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "end_date = $%d", len(params))
+		_, _ = sb.WriteString("end_date = ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

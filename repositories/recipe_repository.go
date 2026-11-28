@@ -250,7 +250,7 @@ func (q *recipeRepository) CreateRecipe(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, name
@@ -326,7 +326,7 @@ func (q *recipeRepository) UpdateRecipe(
 			, deleted_at
 			, deletion_reason
 		FROM recipes
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -366,7 +366,7 @@ func (q *recipeRepository) UpdateRecipe(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if (response.Name == nil && request.Name != nil) ||
 		(response.Name != nil && request.Name == nil) ||
@@ -376,7 +376,7 @@ func (q *recipeRepository) UpdateRecipe(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if (response.DeletedName == nil && request.DeletedName != nil) ||
 		(response.DeletedName != nil && request.DeletedName == nil) ||
@@ -386,35 +386,35 @@ func (q *recipeRepository) UpdateRecipe(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_name = $%d", n)
+		_, _ = sb.WriteString(" deleted_name = ?")
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+		_, _ = sb.WriteString(" photo = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if response.InstagramLink != request.InstagramLink {
 		params = append(params, request.InstagramLink)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " instagram_link = $%d", n)
+		_, _ = sb.WriteString(" instagram_link = ?")
 	}
 	if response.FacebookLink != request.FacebookLink {
 		params = append(params, request.FacebookLink)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " facebook_link = $%d", n)
+		_, _ = sb.WriteString(" facebook_link = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -424,14 +424,14 @@ func (q *recipeRepository) UpdateRecipe(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
@@ -441,7 +441,7 @@ func (q *recipeRepository) UpdateRecipe(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -451,7 +451,7 @@ func (q *recipeRepository) UpdateRecipe(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -461,12 +461,10 @@ func (q *recipeRepository) UpdateRecipe(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, name
@@ -480,9 +478,7 @@ func (q *recipeRepository) UpdateRecipe(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -530,7 +526,7 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -543,7 +539,7 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -556,7 +552,7 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -568,7 +564,7 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		placeholders := sb.String()
 		sb.Reset()
@@ -580,7 +576,7 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("LOWER(name) LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

@@ -323,3 +323,48 @@ func TestMariaDBQueries(t *testing.T) {
 		t.Errorf("promotions usages: %v", err)
 	}
 }
+
+// TestMariaDBInfiniteScrollProducts pages through products with ROW_NUMBER() and FETCH FIRST ? ROWS ONLY.
+func TestMariaDBInfiniteScrollProducts(t *testing.T) {
+	db := testPool(t)
+	ctx := context.Background()
+	seller := sellerID(t, db)
+	now := time.Now()
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	category, err := NewProductCategoryRepository(db, db).CreateProductCategory(ctx, tx, &models.ProductCategory{
+		RecordStatus: models.RecordStatusActive, Name: "Scroll Test", Description: "test", Photo: "test.webp",
+		CreatedBy: seller, CreatedAt: now, UpdatedBy: seller, UpdatedAt: now,
+	})
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		t.Fatalf("category: %v", err)
+	}
+	for _, name := range []string{"Scroll 1", "Scroll 2", "Scroll 3"} {
+		if _, err = NewProductRepository(db, db).CreateProduct(ctx, tx, &models.Product{
+			RecordStatus: models.RecordStatusActive, ProductCategoryID: category.ID, ProductCategoryName: category.Name,
+			Name: name, Photo: "test.webp", Description: "test", ReadyStock: true,
+			CreatedBy: seller, CreatedAt: now, UpdatedBy: seller, UpdatedAt: now,
+		}); err != nil {
+			_ = tx.Rollback(ctx)
+			t.Fatalf("product %q: %v", name, err)
+		}
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+	next := int64(2)
+	products, _, err := NewProductRepository(db, db).InfiniteScrollProducts(ctx, models.NewProductFilter().
+		WithProductCategoryIDs(category.ID).
+		WithNextRowNo(&next).
+		WithSortings(models.Sorting{Field: models.SortingFieldName, Direction: models.SortingDirectionAsc}).
+		WithLimit(1))
+	if err != nil {
+		t.Fatalf("scroll: %v", err)
+	}
+	if len(products) != 1 || products[0].Name != "Scroll 2" {
+		t.Fatalf("products = %+v; want only Scroll 2", products)
+	}
+}

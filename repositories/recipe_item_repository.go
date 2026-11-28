@@ -270,7 +270,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, recipe_id
@@ -362,7 +362,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, deleted_at
 			, deletion_reason
 		FROM recipe_items
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -406,63 +406,63 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.ProductID.Compare(request.ProductID) != 0 {
 		params = append(params, request.ProductID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_id = $%d", n)
+		_, _ = sb.WriteString(" product_id = ?")
 	}
 	if response.ProductName != request.ProductName {
 		params = append(params, request.ProductName)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_name = $%d", n)
+		_, _ = sb.WriteString(" product_name = ?")
 	}
 	if response.ProductPhoto != request.ProductPhoto {
 		params = append(params, request.ProductPhoto)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_photo = $%d", n)
+		_, _ = sb.WriteString(" product_photo = ?")
 	}
 	if response.ProductReadyStock != request.ProductReadyStock {
 		params = append(params, request.ProductReadyStock)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_ready_stock = $%d", n)
+		_, _ = sb.WriteString(" product_ready_stock = ?")
 	}
 	if response.ProductVariantID != request.ProductVariantID {
 		params = append(params, request.ProductVariantID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_variant_id = $%d", n)
+		_, _ = sb.WriteString(" product_variant_id = ?")
 	}
 	if response.ProductVariantStockUnit != request.ProductVariantStockUnit {
 		params = append(params, request.ProductVariantStockUnit)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_variant_stock_unit = $%d", n)
+		_, _ = sb.WriteString(" product_variant_stock_unit = ?")
 	}
 	if response.Quantity != request.Quantity {
 		params = append(params, request.Quantity)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " quantity = $%d", n)
+		_, _ = sb.WriteString(" quantity = ?")
 	}
 	if response.Note != request.Note {
 		params = append(params, request.Note)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " note = $%d", n)
+		_, _ = sb.WriteString(" note = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -472,14 +472,14 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
@@ -489,7 +489,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -499,7 +499,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -509,12 +509,10 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, recipe_id
@@ -532,9 +530,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -586,7 +582,7 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -598,7 +594,7 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		placeholder := sb.String()
 		sb.Reset()
@@ -612,7 +608,7 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		placeholder := sb.String()
 		sb.Reset()
@@ -627,7 +623,7 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -640,7 +636,7 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -660,7 +656,7 @@ func (q *recipeItemRepository) buildCondition(request *models.RecipeItemFilter, 
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())

@@ -97,7 +97,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUp")
 			return err
 		}
-		if _, err = tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES ($1)`, version); err != nil {
+		if _, err = tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES (?)`, version); err != nil {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			return err
 		}

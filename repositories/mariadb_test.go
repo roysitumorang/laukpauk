@@ -133,7 +133,7 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 				t.Fatalf("create %q: %v", name, err)
 			}
 		}
-		rows, err := tx.Query(ctx, "SELECT name FROM product_categories WHERE name LIKE $1 ORDER BY "+sortExpression("name"), "Item %")
+		rows, err := tx.Query(ctx, "SELECT name FROM product_categories WHERE name LIKE ? ORDER BY "+sortExpression("name"), "Item %")
 		if err != nil {
 			t.Fatalf("query: %v", err)
 		}

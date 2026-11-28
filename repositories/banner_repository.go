@@ -239,7 +239,7 @@ func (q *bannerRepository) CreateBanner(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, name
@@ -307,7 +307,7 @@ func (q *bannerRepository) UpdateBanner(
 			, deleted_at
 			, deletion_reason
 		FROM banners
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -345,35 +345,35 @@ func (q *bannerRepository) UpdateBanner(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+		_, _ = sb.WriteString(" photo = ?")
 	}
 	if response.Visible != request.Visible {
 		params = append(params, request.Visible)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " visible = $%d", n)
+		_, _ = sb.WriteString(" visible = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -383,40 +383,38 @@ func (q *bannerRepository) UpdateBanner(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if response.DeletedBy == nil && request.DeletedBy != nil {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if response.DeletedAt == nil && request.DeletedAt != nil {
 		params = append(params, request.DeletedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if response.DeletionReason == nil && request.DeletionReason != nil {
 		params = append(params, request.DeletionReason)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, name
@@ -429,9 +427,7 @@ func (q *bannerRepository) UpdateBanner(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -463,7 +459,7 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -476,7 +472,7 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -493,7 +489,7 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("LOWER(name) LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

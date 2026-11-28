@@ -226,7 +226,7 @@ func (q *paymentChannelRepository) buildCondition(request *models.PaymentChannel
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -234,7 +234,7 @@ func (q *paymentChannelRepository) buildCondition(request *models.PaymentChannel
 	if request.Amount > 0 {
 		params = append(params, request.Amount)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "($%d BETWEEN minimum_amount AND maximum_amount)", len(params))
+		_, _ = sb.WriteString("(? BETWEEN minimum_amount AND maximum_amount)")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
@@ -242,7 +242,7 @@ func (q *paymentChannelRepository) buildCondition(request *models.PaymentChannel
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("LOWER(name) LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

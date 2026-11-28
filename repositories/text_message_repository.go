@@ -236,7 +236,7 @@ func (q *textMessageRepository) CreateTextMessage(
 			, created_by
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, user_id
 			, mobile_phone
@@ -296,7 +296,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 			, updated_at
 			, sent_at
 		FROM text_messages
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -336,7 +336,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_status = $%d", n)
+		_, _ = sb.WriteString(" delivery_status = ?")
 	}
 	if (response.MessageID == nil && request.MessageID != nil) ||
 		(response.MessageID != nil && request.MessageID == nil) ||
@@ -346,14 +346,14 @@ func (q *textMessageRepository) UpdateTextMessage(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " message_id = $%d", n)
+		_, _ = sb.WriteString(" message_id = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.SentAt == nil && request.SentAt != nil) ||
 		(response.SentAt != nil && request.SentAt == nil) ||
@@ -363,15 +363,13 @@ func (q *textMessageRepository) UpdateTextMessage(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " sent_at = $%d", n)
+		_, _ = sb.WriteString(" sent_at = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, user_id
 			, mobile_phone
@@ -382,9 +380,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 			, created_by
 			, created_at
 			, updated_at
-			, sent_at`,
-		len(params),
-	)
+			, sent_at`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
@@ -412,7 +408,7 @@ func (q *textMessageRepository) DeleteTextMessage(
 	ctxt := "TextMessageRepository-DeleteTextMessage"
 	result, err := tx.Exec(
 		ctx,
-		`DELETE FROM text_messages WHERE id = $1`,
+		`DELETE FROM text_messages WHERE id = ?`,
 		textMessageID,
 	)
 	if err != nil {
@@ -431,7 +427,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -444,7 +440,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -457,7 +453,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -473,7 +469,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -486,7 +482,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -494,24 +490,20 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		keyword := sb.String()
+		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`EXISTS(
+		_, _ = sb.WriteString(`EXISTS(
 				SELECT 1
 				FROM users
 				WHERE users.id = text_messages.user_id
 					AND (
-						LOWER(users.name) LIKE $%d
-						OR users.username LIKE $%d
-						OR users.email LIKE $%d
-						OR users.mobile_phone LIKE $%d
+						LOWER(users.name) LIKE ?
+						OR users.username LIKE ?
+						OR users.email LIKE ?
+						OR users.mobile_phone LIKE ?
 					)
-			)`,
-			n, n, n, n,
-		)
+			)`)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

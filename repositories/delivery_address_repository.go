@@ -275,7 +275,7 @@ func (q *deliveryAddressRepository) CreateDeliveryAddress(
 			, main
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, user_id
@@ -360,7 +360,7 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 			, deleted_at
 			, deletion_reason
 		FROM delivery_addresses
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -402,63 +402,63 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.DestinationLongitude != request.DestinationLongitude {
 		params = append(params, request.DestinationLongitude)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " destination_longitude = $%d", n)
+		_, _ = sb.WriteString(" destination_longitude = ?")
 	}
 	if response.DestinationLatitude != request.DestinationLatitude {
 		params = append(params, request.DestinationLatitude)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " destination_latitude = $%d", n)
+		_, _ = sb.WriteString(" destination_latitude = ?")
 	}
 	if response.DistanceMeters != request.DistanceMeters {
 		params = append(params, request.DistanceMeters)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " distance_meters = $%d", n)
+		_, _ = sb.WriteString(" distance_meters = ?")
 	}
 	if response.DistanceKM != request.DistanceKM {
 		params = append(params, request.DistanceKM)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " distance_km = $%d", n)
+		_, _ = sb.WriteString(" distance_km = ?")
 	}
 	if response.StreetAddress != request.StreetAddress {
 		params = append(params, request.StreetAddress)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " street_address = $%d", n)
+		_, _ = sb.WriteString(" street_address = ?")
 	}
 	if response.StreetAddressNote != request.StreetAddressNote {
 		params = append(params, request.StreetAddressNote)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " street_address_note = $%d", n)
+		_, _ = sb.WriteString(" street_address_note = ?")
 	}
 	if response.Label != request.Label {
 		params = append(params, request.Label)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " label = $%d", n)
+		_, _ = sb.WriteString(" label = ?")
 	}
 	if response.Main != request.Main {
 		params = append(params, request.Main)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " main = $%d", n)
+		_, _ = sb.WriteString(" main = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -468,26 +468,24 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if response.DeletedAt == nil && request.DeletedAt != nil {
 		params = append(params, request.DeletedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if response.DeletionReason == nil && request.DeletionReason != nil {
 		params = append(params, request.DeletionReason)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, user_id
@@ -504,9 +502,7 @@ func (q *deliveryAddressRepository) UpdateDeliveryAddress(
 			, created_at
 			, updated_at
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -542,7 +538,7 @@ func (q *deliveryAddressRepository) UnsetMain(
 		ctx,
 		`UPDATE delivery_addresses SET
 			main = NOT main
-		WHERE user_id = $1
+		WHERE user_id = ?
 			AND main`,
 		userID,
 	)
@@ -562,7 +558,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -575,7 +571,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -588,7 +584,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -601,7 +597,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -614,7 +610,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -627,7 +623,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -640,7 +636,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -653,7 +649,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -661,7 +657,7 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 	if request.Label != "" {
 		params = append(params, strings.ToLower(request.Label))
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(label) = $%d", len(params))
+		_, _ = sb.WriteString("LOWER(label) = ?")
 		conds = append(conds, sb.String())
 	}
 	if request.Main != nil {

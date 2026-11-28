@@ -200,7 +200,7 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 			user_id
 			, created_at
 			, expired_at
-		) VALUES ($1, $2, $3)
+		) VALUES (?, ?, ?)
 		RETURNING id
 			, user_id
 			, created_at
@@ -256,7 +256,7 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -269,7 +269,7 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -283,7 +283,7 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 		} else {
 			_, _ = sb.WriteString(">")
 		}
-		_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		_, _ = sb.WriteString("?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

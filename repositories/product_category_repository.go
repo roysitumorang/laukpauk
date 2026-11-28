@@ -241,7 +241,7 @@ func (q *productCategoryRepository) CreateProductCategory(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, name
@@ -309,7 +309,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 			, deleted_at
 			, deletion_reason
 		FROM product_categories
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -347,28 +347,28 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+		_, _ = sb.WriteString(" photo = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -378,14 +378,14 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
@@ -395,7 +395,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -405,7 +405,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -415,12 +415,10 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, name
@@ -432,9 +430,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -480,7 +476,7 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -493,7 +489,7 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -506,7 +502,7 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -518,7 +514,7 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		placeholders := sb.String()
 		sb.Reset()
@@ -530,7 +526,7 @@ func (q *productCategoryRepository) buildCondition(request *models.ProductCatego
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("LOWER(name) LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

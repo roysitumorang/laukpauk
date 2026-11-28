@@ -80,7 +80,7 @@ func init() {
 				ctx,
 				`SELECT id
 				FROM users
-				WHERE email = $1`,
+				WHERE email = ?`,
 				"benni.surbakti@gmail.com",
 			).Scan(&sellerID); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -138,7 +138,7 @@ func init() {
 						, created_at
 						, updated_by
 						, updated_at
-					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
 					pointSpendingCaps[i]...,
 				); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

@@ -240,7 +240,7 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, shopping_cost_min
@@ -305,7 +305,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 			, deleted_at
 			, deletion_reason
 		FROM point_spending_caps
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -343,7 +343,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if (response.MinimumShoppingCost != request.MinimumShoppingCost) ||
 		(response.MaximumShoppingCost != request.MaximumShoppingCost) {
@@ -360,14 +360,14 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " shopping_cost_min = $%d, shopping_cost_max = $%d", n-1, n)
+		_, _ = sb.WriteString(" shopping_cost_min = ?, shopping_cost_max = ?")
 	}
 	if response.DisposablePoints != request.DisposablePoints {
 		params = append(params, request.DisposablePoints)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " disposable_points = $%d", n)
+		_, _ = sb.WriteString(" disposable_points = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -377,14 +377,14 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
@@ -394,7 +394,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -404,7 +404,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -414,12 +414,10 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, shopping_cost_min
@@ -431,9 +429,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
+			, deletion_reason`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
@@ -464,7 +460,7 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -477,7 +473,7 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -490,16 +486,15 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.MinimumShoppingCost > 0 && request.MaximumShoppingCost > 0 {
-		params = append(params, request.MinimumShoppingCost, request.MaximumShoppingCost)
-		n := len(params)
+		params = append(params, request.MaximumShoppingCost, request.MinimumShoppingCost)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "shopping_cost_min <= $%d AND shopping_cost_max >= $%d", n, n-1)
+		_, _ = sb.WriteString("shopping_cost_min <= ? AND shopping_cost_max >= ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
@@ -531,11 +526,11 @@ func (q *pointSpendingCapRepository) checkShoppingCost(
 	params := []any{maximum, minimum}
 	query := `SELECT id
 		FROM point_spending_caps
-		WHERE shopping_cost_min <= $1
-			AND shopping_cost_max >= $2`
+		WHERE shopping_cost_min <= ?
+			AND shopping_cost_max >= ?`
 	if excludeID != nil {
 		params = append(params, *excludeID)
-		query += " AND id != $3"
+		query += " AND id != ?"
 	}
 	rows, err := tx.Query(ctx, query+" FOR UPDATE", params...)
 	if err != nil {

@@ -237,7 +237,7 @@ func (q *notificationRepository) CreateNotification(
 			, params
 			, created_by
 			, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, user_id
 			, notification_type
@@ -306,7 +306,7 @@ func (q *notificationRepository) UpdateNotification(
 			, sent_at
 			, read_at
 		FROM notifications
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -348,7 +348,7 @@ func (q *notificationRepository) UpdateNotification(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " sent_at = $%d", n)
+		_, _ = sb.WriteString(" sent_at = ?")
 	}
 	if (response.ReadAt == nil && request.ReadAt != nil) ||
 		(response.ReadAt != nil && request.ReadAt == nil) ||
@@ -358,15 +358,13 @@ func (q *notificationRepository) UpdateNotification(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " read_at = $%d", n)
+		_, _ = sb.WriteString(" read_at = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, user_id
 			, notification_type
@@ -379,9 +377,7 @@ func (q *notificationRepository) UpdateNotification(
 			, created_by
 			, created_at
 			, sent_at
-			, read_at`,
-		len(params),
-	)
+			, read_at`)
 	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
@@ -413,7 +409,7 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -426,7 +422,7 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -439,7 +435,7 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -461,24 +457,20 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 	if request.Keyword != "" {
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		keyword := sb.String()
+		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`EXISTS(
+		_, _ = sb.WriteString(`EXISTS(
 				SELECT 1
 				FROM users
 				WHERE users.id = notifications.user_id
 					AND (
-						LOWER(users.name) LIKE $%d
-						OR users.username LIKE $%d
-						OR users.email LIKE $%d
-						OR users.mobile_phone LIKE $%d
+						LOWER(users.name) LIKE ?
+						OR users.username LIKE ?
+						OR users.email LIKE ?
+						OR users.mobile_phone LIKE ?
 					)
-			)`,
-			n, n, n, n,
-		)
+			)`)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
