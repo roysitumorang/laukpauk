@@ -29,6 +29,7 @@ type Service struct {
 	KafkaClient               *externals.KafkaClient
 	FcmClient                 *externals.FcmClient
 	ZenzivaClient             *externals.ZenzivaClient
+	WhatsappClient            *externals.WhatsappClient
 	RoutesApiClient           *externals.RoutesApiClient
 	XenditClient              *externals.XenditClient
 	Storage                   fiber.Storage
@@ -117,6 +118,13 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		os.Getenv("ZENZIVA_USER_KEY"),
 		os.Getenv("ZENZIVA_API_KEY"),
 		zenzivaMessageMaxLength,
+		externalApiCallTimeoutDuration,
+	)
+	whatsappClient := externals.NewWhatsappClient(
+		os.Getenv("WHATSAPP_BASE_URL"),
+		os.Getenv("WHATSAPP_API_VERSION"),
+		os.Getenv("WHATSAPP_PHONE_NUMBER_ID"),
+		os.Getenv("WHATSAPP_ACCESS_TOKEN"),
 		externalApiCallTimeoutDuration,
 	)
 	routesApiClient := externals.NewRoutesApiClient(
@@ -216,6 +224,7 @@ func MakeHandler(ctx context.Context) (*Service, error) {
 		KafkaClient:               kafkaClient,
 		FcmClient:                 fcmClient,
 		ZenzivaClient:             zenzivaClient,
+		WhatsappClient:            whatsappClient,
 		RoutesApiClient:           routesApiClient,
 		XenditClient:              xenditClient,
 		Storage:                   storage,
