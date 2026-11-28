@@ -295,7 +295,7 @@ func (q *recipeRepository) CreateRecipe(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if isUniqueViolation(err, "recipes_lower_idx") {
+		if isUniqueViolation(err, "recipes_unique_name_idx") {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -499,7 +499,7 @@ func (q *recipeRepository) UpdateRecipe(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if isUniqueViolation(err, "recipes_lower_idx") {
+		if isUniqueViolation(err, "recipes_unique_name_idx") {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

@@ -378,7 +378,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if isUniqueViolation(err, "product_variants_lower_product_id_idx") {
+		if isUniqueViolation(err, "product_variants_unique_product_stock_unit_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -690,7 +690,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if isUniqueViolation(err, "product_variants_lower_product_id_idx") {
+		if isUniqueViolation(err, "product_variants_unique_product_stock_unit_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

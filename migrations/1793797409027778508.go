@@ -48,7 +48,7 @@ func init() {
 					, CONSTRAINT product_variants_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT product_variants_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, CONSTRAINT product_variants_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, CONSTRAINT product_variants_lower_product_id_idx UNIQUE (active_stock_unit_key, product_id)
+					, CONSTRAINT product_variants_unique_product_stock_unit_idx UNIQUE (active_stock_unit_key, product_id)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
