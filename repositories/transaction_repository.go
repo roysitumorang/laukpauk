@@ -1996,10 +1996,10 @@ func (q *transactionRepository) buildCondition(request *models.TransactionFilter
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, `LOWER(reference_number) LIKE $%d`, len(params))
+		_, _ = fmt.Fprintf(sb, `reference_number LIKE $%d`, len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

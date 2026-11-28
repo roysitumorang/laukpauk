@@ -23,7 +23,7 @@ func init() {
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, amount bigint NOT NULL
 					, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, description text NOT NULL
+					, description text NOT NULL COLLATE "case_insensitive"
 					, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
 					, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -66,7 +66,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON points (LOWER(description));`,
+				`CREATE INDEX ON points (description);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

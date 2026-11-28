@@ -379,7 +379,7 @@ func (q *productVariantRepository) CreateProductVariant(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_lower_product_id_idx" {
+			pgxErr.ConstraintName == "product_variants_unique_product_stock_unit_idx" {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -697,7 +697,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_lower_product_id_idx" {
+			pgxErr.ConstraintName == "product_variants_unique_product_stock_unit_idx" {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -777,7 +777,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 	if len(request.StockUnits) > 0 {
 		sb.Reset()
 		for i, stockUnit := range request.StockUnits {
-			params = append(params, strings.ToLower(stockUnit))
+			params = append(params, stockUnit)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -785,7 +785,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(stock_unit) IN (%s)", placeholders)
+		_, _ = fmt.Fprintf(sb, "stock_unit IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

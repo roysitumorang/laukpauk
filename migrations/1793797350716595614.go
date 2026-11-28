@@ -21,7 +21,7 @@ func init() {
 					, record_status smallint NOT NULL
 					, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, product_category_name text NOT NULL COLLATE "natural_sort"
-					, name text NOT NULL COLLATE "natural_sort"
+					, name text NOT NULL COLLATE "case_insensitive"
 					, photo text NOT NULL
 					, description text NOT NULL
 					, ready_stock BOOLEAN NOT NULL
@@ -56,7 +56,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE UNIQUE INDEX products_unique_name_idx ON products (LOWER(name)) WHERE record_status = 0;`,
+				`CREATE UNIQUE INDEX products_unique_name_idx ON products (name) WHERE record_status = 0;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

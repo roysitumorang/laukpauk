@@ -22,16 +22,16 @@ func init() {
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, role text NOT NULL
 					, status text NOT NULL
-					, name text NOT NULL COLLATE "natural_sort"
+					, name text NOT NULL COLLATE "case_insensitive"
 					, mobile_phone_confirmation_sent_at timestamp with time zone
 					, mobile_phone_confirmation_token text
 					, mobile_phone_confirmed_at timestamp with time zone
 					, mobile_phone text NOT NULL UNIQUE
-					, username text UNIQUE
+					, username text UNIQUE COLLATE "case_insensitive"
 					, email_confirmation_sent_at timestamp with time zone
 					, email_confirmation_token text
 					, email_confirmed_at timestamp with time zone
-					, email text UNIQUE
+					, email text UNIQUE COLLATE "case_insensitive"
 					, encrypted_password text
 					, password_reset_sent_at timestamp with time zone
 					, password_reset_token text
@@ -81,7 +81,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON users (LOWER(name));`,
+				`CREATE INDEX ON users (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

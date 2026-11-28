@@ -28,7 +28,7 @@ func init() {
 					, distance_km bigint NOT NULL
 					, street_address text NOT NULL
 					, street_address_note text NOT NULL
-					, label text NOT NULL
+					, label text NOT NULL COLLATE "case_insensitive"
 					, main boolean NOT NULL
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
@@ -81,7 +81,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_addresses (LOWER(label), user_id);`,
+				`CREATE INDEX ON delivery_addresses (label, user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

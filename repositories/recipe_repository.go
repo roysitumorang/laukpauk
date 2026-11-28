@@ -296,7 +296,7 @@ func (q *recipeRepository) CreateRecipe(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipes_lower_idx" {
+			pgxErr.ConstraintName == "recipes_unique_name_idx" {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -506,7 +506,7 @@ func (q *recipeRepository) UpdateRecipe(
 	); err != nil {
 		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
 			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipes_lower_idx" {
+			pgxErr.ConstraintName == "recipes_unique_name_idx" {
 			err = models.ErrUniqueRecipeNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -571,7 +571,7 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 	if len(request.Names) > 0 {
 		sb.Reset()
 		for i, name := range request.Names {
-			params = append(params, strings.ToLower(name))
+			params = append(params, name)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -579,15 +579,15 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(LOWER(name) IN (%s) OR LOWER(deleted_name) IN (%s))", placeholders, placeholders)
+		_, _ = fmt.Fprintf(sb, "(name IN (%s) OR deleted_name IN (%s))", placeholders, placeholders)
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "name LIKE $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

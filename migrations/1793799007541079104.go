@@ -22,7 +22,7 @@ func init() {
 					, reordered BOOLEAN NOT NULL
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-					, reference_number text NOT NULL
+					, reference_number text NOT NULL COLLATE "case_insensitive"
 					, status smallint NOT NULL
 					, recipient_name text NOT NULL
 					, recipient_mobile_phone text NOT NULL
@@ -117,7 +117,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE UNIQUE INDEX transactions_unique_reference_number_idx ON transactions (LOWER(reference_number));`,
+				`CREATE UNIQUE INDEX transactions_unique_reference_number_idx ON transactions (reference_number);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

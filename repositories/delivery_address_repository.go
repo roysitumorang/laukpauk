@@ -660,9 +660,9 @@ func (q *deliveryAddressRepository) buildCondition(request *models.DeliveryAddre
 		conds = append(conds, sb.String())
 	}
 	if request.Label != "" {
-		params = append(params, strings.ToLower(request.Label))
+		params = append(params, request.Label)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(label) = $%d", len(params))
+		_, _ = fmt.Fprintf(sb, "label = $%d", len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.Main != nil {

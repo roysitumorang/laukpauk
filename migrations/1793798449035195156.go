@@ -21,10 +21,10 @@ func init() {
 					, record_status smallint NOT NULL
 					, voucher_type smallint NOT NULL
 					, target_audience smallint NOT NULL
-					, code text
-					, deleted_code text
+					, code text COLLATE "case_insensitive"
+					, deleted_code text COLLATE "case_insensitive"
 					, photo text NOT NULL
-					, name text NOT NULL COLLATE "natural_sort"
+					, name text NOT NULL COLLATE "case_insensitive"
 					, discount bigint NOT NULL
 					, minimum_purchase bigint NOT NULL
 					, quota_per_buyer bigint NOT NULL
@@ -68,21 +68,21 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE UNIQUE INDEX vouchers_unique_code_idx ON vouchers (LOWER(code));`,
+				`CREATE UNIQUE INDEX vouchers_unique_code_idx ON vouchers (code);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (LOWER(deleted_code));`,
+				`CREATE INDEX ON vouchers (deleted_code);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON vouchers (LOWER(name));`,
+				`CREATE INDEX ON vouchers (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return

@@ -879,9 +879,9 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 	}
 	if len(request.Codes) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(code) IN (")
+		_, _ = sb.WriteString("code IN (")
 		for i, name := range request.Codes {
-			params = append(params, strings.ToLower(name))
+			params = append(params, name)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
@@ -892,11 +892,11 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(LOWER(code) LIKE $%d OR LOWER(name) LIKE $%d)", n, n)
+		_, _ = fmt.Fprintf(sb, "(code LIKE $%d OR name LIKE $%d)", n, n)
 		conds = append(conds, sb.String())
 	}
 	if len(request.UserIDs) > 0 {

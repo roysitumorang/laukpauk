@@ -71,9 +71,11 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	}
 	if _, err = tx.Exec(
 		ctx,
+		// case-insensitive comparisons ("ks-level2") that also sort numbers naturally ("kn-true": "Item 2" before
+		// "Item 10"), like natural_sort
 		`CREATE COLLATION IF NOT EXISTS case_insensitive (
 			PROVIDER = 'icu'
-			, LOCALE = 'und-u-ks-level2'
+			, LOCALE = 'und-u-kn-true-ks-level2'
 			, DETERMINISTIC = false
 		);`,
 	); err != nil {

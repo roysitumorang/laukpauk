@@ -18,7 +18,7 @@ func init() {
 				ctx,
 				`CREATE TABLE messages (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, name text NOT NULL
+					, name text NOT NULL COLLATE "case_insensitive"
 					, mobile_phone text NOT NULL
 					, body text NOT NULL
 					, created_at timestamp with time zone NOT NULL
@@ -29,7 +29,7 @@ func init() {
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON messages (LOWER(name));`,
+				`CREATE INDEX ON messages (name);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
