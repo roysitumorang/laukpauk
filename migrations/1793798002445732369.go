@@ -99,18 +99,18 @@ func init() {
 			}
 			now := time.Now().In(time.Local)
 			deliveryTimeInterval := 2 * time.Hour
-			today000000 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today095959 := time.Date(now.Year(), now.Month(), now.Day(), 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano)
-			today100000 := time.Date(now.Year(), now.Month(), now.Day(), 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today120000 := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today215959 := time.Date(now.Year(), now.Month(), now.Day(), 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano)
-			today220000 := time.Date(now.Year(), now.Month(), now.Day(), 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today235959 := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano)
-			nextDay080000 := time.Date(now.Year(), now.Month(), now.Day()+1, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextDay100000 := time.Date(now.Year(), now.Month(), now.Day()+1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextDay120000 := time.Date(now.Year(), now.Month(), now.Day()+1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextTwoDay080000 := time.Date(now.Year(), now.Month(), now.Day()+2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextTwoDay120000 := time.Date(now.Year(), now.Month(), now.Day()+2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
+			today000000 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+			today095959 := time.Date(now.Year(), now.Month(), now.Day(), 9, 59, 59, 0, time.Local)
+			today100000 := time.Date(now.Year(), now.Month(), now.Day(), 10, 0, 0, 0, time.Local)
+			today120000 := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.Local)
+			today215959 := time.Date(now.Year(), now.Month(), now.Day(), 21, 59, 59, 0, time.Local)
+			today220000 := time.Date(now.Year(), now.Month(), now.Day(), 22, 0, 0, 0, time.Local)
+			today235959 := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
+			nextDay080000 := time.Date(now.Year(), now.Month(), now.Day()+1, 8, 0, 0, 0, time.Local)
+			nextDay100000 := time.Date(now.Year(), now.Month(), now.Day()+1, 10, 0, 0, 0, time.Local)
+			nextDay120000 := time.Date(now.Year(), now.Month(), now.Day()+1, 12, 0, 0, 0, time.Local)
+			nextTwoDay080000 := time.Date(now.Year(), now.Month(), now.Day()+2, 8, 0, 0, 0, time.Local)
+			nextTwoDay120000 := time.Date(now.Year(), now.Month(), now.Day()+2, 12, 0, 0, 0, time.Local)
 			deliveryPlans := [][]any{
 				// weekdays
 				{
