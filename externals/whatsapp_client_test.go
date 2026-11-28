@@ -91,9 +91,10 @@ func TestWhatsappErrors(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 
+	// a non-JSON body fails to unmarshal, whatever the status
 	srv2, _, _ := whatsappServer(t, http.StatusBadGateway, `upstream down`)
 	if _, err = NewWhatsappClient(srv2.URL, "", "1", "token", time.Second).SendText(context.Background(), "1", "hi", false); err == nil ||
-		!strings.Contains(err.Error(), "HTTP 502: upstream down") {
+		errors.As(err, &apiErr) || strings.Contains(err.Error(), "HTTP 502") {
 		t.Fatalf("non-JSON error = %v", err)
 	}
 
