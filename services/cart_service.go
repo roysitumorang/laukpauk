@@ -91,7 +91,7 @@ func (q *cartService) SaveCart(
 	ctxt := "CartService-CreateCart"
 	response, err := q.cartRepository.SaveCart(ctx, tx, request)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateCart")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
 	}
 	return response, err
 }

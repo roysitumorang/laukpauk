@@ -131,7 +131,7 @@ func (q *deliveryPlanService) AutoUpdateDate(ctx context.Context) error {
 			WithDeliveryWeekdays(weekday),
 	)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
 		return err
 	}
 	var request []*models.DeliveryPlan

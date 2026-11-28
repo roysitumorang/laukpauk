@@ -429,7 +429,7 @@ func (q *promotionController) V1BuyerShow(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotions")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPromotion")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
 			WriteResponse(c)

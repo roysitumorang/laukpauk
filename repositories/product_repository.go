@@ -80,7 +80,7 @@ func (q *productRepository) FindProducts(
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -203,7 +203,7 @@ func (q *productRepository) InfiniteScrollProducts(
 	var total int64
 	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, err
 	}
 	if total == 0 ||

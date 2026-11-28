@@ -89,7 +89,7 @@ func (q *FcmClient) Send(ctx context.Context, fid, title, body, image string, da
 	ctxt := "FcmClient-Send"
 	bearerToken, err := q.CreateOauth2Token(ctx)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrTokenSource")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateOauth2Token")
 		return nil, err
 	}
 	sb := pools.BuilderPool.Get()
@@ -139,7 +139,7 @@ func (q *FcmClient) CheckStaleToken(ctx context.Context, token string) (bool, er
 	ctxt := "FcmClient-CheckStaleToken"
 	bearerToken, err := q.CreateOauth2Token(ctx)
 	if err != nil {
-		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrTokenSource")
+		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateOauth2Token")
 		return false, err
 	}
 	sb := pools.BuilderPool.Get()
