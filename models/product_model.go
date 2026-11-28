@@ -17,24 +17,6 @@ var MapProductSortings = map[string]struct{}{
 	SortingFieldName: {},
 }
 
-type ProductType uint8
-
-const (
-	ProductTypeStandalone ProductType = iota
-	ProductTypeBundled
-)
-
-func (q ProductType) Int() uint8 {
-	return uint8(q)
-}
-
-func (q ProductType) String() string {
-	if q == ProductTypeBundled {
-		return "paket"
-	}
-	return "non paket"
-}
-
 type Product struct {
 	RowNo               int64             `json:"-"`
 	ID                  uuid.UUID         `json:"id"`
@@ -99,7 +81,6 @@ type ProductFilter struct {
 	ProductIDs,
 	ExcludedProductIDs []uuid.UUID
 	RecordStatuses []RecordStatus
-	ProductTypes   []ProductType
 	Names          []string
 	ReadyStock     *bool
 	Keyword,
@@ -140,11 +121,6 @@ func (q *ProductFilter) WithExcludedProductIDs(excludedProductIDs ...uuid.UUID) 
 
 func (q *ProductFilter) WithRecordStatuses(recordStatuses ...RecordStatus) *ProductFilter {
 	q.RecordStatuses = recordStatuses
-	return q
-}
-
-func (q *ProductFilter) WithProductTypes(productTypes ...ProductType) *ProductFilter {
-	q.ProductTypes = productTypes
 	return q
 }
 

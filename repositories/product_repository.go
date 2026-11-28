@@ -771,19 +771,6 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
-	if len(request.ProductTypes) > 0 {
-		sb.Reset()
-		_, _ = sb.WriteString("product_type IN (")
-		for i, productType := range request.ProductTypes {
-			params = append(params, productType)
-			if i > 0 {
-				_, _ = sb.WriteString(",")
-			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
-		}
-		_, _ = sb.WriteString(")")
-		conds = append(conds, sb.String())
-	}
 	if len(request.Names) > 0 {
 		sb.Reset()
 		for i, name := range request.Names {
