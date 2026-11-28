@@ -18,7 +18,7 @@ func init() {
 				ctx,
 				`CREATE TABLE transaction_counters (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, transaction_window character varying NOT NULL
+					, transaction_window text NOT NULL
 					, hits bigint NOT NULL CHECK (hits >= 0)
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL

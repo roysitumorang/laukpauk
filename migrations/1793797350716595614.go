@@ -20,10 +20,10 @@ func init() {
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
 					, product_category_id UUID REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, product_category_name character varying NOT NULL COLLATE "natural_sort"
-					, name character varying NOT NULL COLLATE "natural_sort"
-					, photo character varying NOT NULL
-					, description character varying NOT NULL
+					, product_category_name text NOT NULL COLLATE "natural_sort"
+					, name text NOT NULL COLLATE "natural_sort"
+					, photo text NOT NULL
+					, description text NOT NULL
 					, ready_stock BOOLEAN NOT NULL
 					, pinned BOOLEAN NOT NULL DEFAULT FALSE
 					, hits bigint NOT NULL
@@ -34,7 +34,7 @@ func init() {
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

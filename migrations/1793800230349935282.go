@@ -20,14 +20,14 @@ func init() {
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
 					, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, instruction character varying NOT NULL
+					, instruction text NOT NULL
 					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
 					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

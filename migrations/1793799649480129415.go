@@ -23,14 +23,14 @@ func init() {
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, amount bigint NOT NULL
 					, transaction_id UUID REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, description character varying NOT NULL
+					, description text NOT NULL
 					, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
 					, updated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

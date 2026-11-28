@@ -19,17 +19,17 @@ func init() {
 				ctx,
 				`CREATE TABLE payment_channels (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, business_id character varying NOT NULL
-					, name character varying NOT NULL
-					, channel_code character varying NOT NULL UNIQUE
-					, country character varying NOT NULL
-					, currency character varying NOT NULL
+					, business_id text NOT NULL
+					, name text NOT NULL
+					, channel_code text NOT NULL UNIQUE
+					, country text NOT NULL
+					, currency text NOT NULL
 					, minimum_amount bigint NOT NULL
 					, maximum_amount bigint NOT NULL
 					, payment_request_expiry double precision NOT NULL
 					, refund boolean NOT NULL
-					, channel_type character varying NOT NULL
-					, channel_category character varying NOT NULL
+					, channel_type text NOT NULL
+					, channel_category text NOT NULL
 					, created_at timestamp with time zone NOT NULL
 				);`,
 			); err != nil {

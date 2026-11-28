@@ -19,14 +19,14 @@ func init() {
 				`CREATE TABLE withdrawals (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, recipient_name character varying NOT NULL
-					, bank_account character varying NOT NULL
+					, recipient_name text NOT NULL
+					, bank_account text NOT NULL
 					, amount bigint NOT NULL
-					, description character varying NOT NULL
-					, status character varying NOT NULL
+					, description text NOT NULL
+					, status text NOT NULL
 					, reviewed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, reviewed_at timestamp with time zone
-					, rejection_reason character varying
+					, rejection_reason text
 					, created_at timestamp with time zone NOT NULL
 				);`,
 			); err != nil {

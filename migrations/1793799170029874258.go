@@ -21,19 +21,19 @@ func init() {
 				, transaction_id UUID NOT NULL REFERENCES transactions (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, product_name character varying NOT NULL
-				, product_photo character varying NOT NULL
-				, stock_unit character varying NOT NULL
+				, product_name text NOT NULL
+				, product_photo text NOT NULL
+				, stock_unit text NOT NULL
 				, base_price bigint NOT NULL
 				, selling_price bigint NOT NULL
 				, discount_minimum_quantity bigint NOT NULL
 				, discount_amount bigint NOT NULL
 				, quantity bigint NOT NULL
 				, subtotal bigint NOT NULL
-				, buyer_note character varying NOT NULL
+				, buyer_note text NOT NULL
 				, revised_quantity bigint NOT NULL
 				, revised_subtotal bigint NOT NULL
-				, revision_note character varying NOT NULL
+				, revision_note text NOT NULL
 				, out_of_stock bool NOT NULL
 				, UNIQUE (transaction_id, product_variant_id)
 			);`,

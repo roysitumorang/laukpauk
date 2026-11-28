@@ -19,19 +19,19 @@ func init() {
 				`CREATE TABLE recipes (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
-					, name character varying
-					, deleted_name character varying
-					, photo character varying NOT NULL
-					, description character varying NOT NULL
-					, instagram_link character varying NOT NULL
-					, facebook_link character varying NOT NULL
+					, name text
+					, deleted_name text
+					, photo text NOT NULL
+					, description text NOT NULL
+					, instagram_link text NOT NULL
+					, facebook_link text NOT NULL
 					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
 					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

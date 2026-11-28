@@ -18,9 +18,9 @@ func init() {
 				ctx,
 				`CREATE TABLE messages (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, name character varying NOT NULL
-					, mobile_phone character varying NOT NULL
-					, body character varying NOT NULL
+					, name text NOT NULL
+					, mobile_phone text NOT NULL
+					, body text NOT NULL
 					, created_at timestamp with time zone NOT NULL
 				);`,
 			); err != nil {

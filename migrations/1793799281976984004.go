@@ -30,7 +30,7 @@ func init() {
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 					, CONSTRAINT point_earning_caps_no_overlapping_shopping_cost EXCLUDE USING gist (
 						shopping_cost WITH &&
 					)

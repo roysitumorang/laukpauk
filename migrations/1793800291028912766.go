@@ -21,20 +21,20 @@ func init() {
 					, record_status smallint NOT NULL
 					, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, product_name character varying NOT NULL
-					, product_photo character varying NOT NULL
+					, product_name text NOT NULL
+					, product_photo text NOT NULL
 					, product_ready_stock BOOLEAN NOT NULL
 					, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, product_variant_stock_unit character varying NOT NULL
+					, product_variant_stock_unit text NOT NULL
 					, quantity bigint NOT NULL
-					, note character varying NOT NULL
+					, note text NOT NULL
 					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
 					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
