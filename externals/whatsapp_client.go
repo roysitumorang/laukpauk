@@ -15,7 +15,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// WhatsApp Cloud API (graph.facebook.com/<version>/<phone-number-id>/messages), with only the standard library.
+// WhatsApp Cloud API (graph.facebook.com/<version>/<phone-number-id>/messages).
 
 const (
 	WhatsappDefaultBaseURL    = "https://graph.facebook.com"
@@ -238,7 +238,10 @@ func (q *WhatsappClient) send(ctx context.Context, message *WhatsappMessage) (*W
 			Error *WhatsappError `json:"error"`
 		}
 		if err = json.Unmarshal(body, &failure); err != nil || failure.Error == nil {
-			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
+			// err is nil when the body is JSON without an "error" object
+			if err != nil {
+				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
+			}
 			return nil, fmt.Errorf("whatsapp: HTTP %d: %s", statusCode, strings.TrimSpace(helper.ByteSlice2String(body)))
 		}
 		failure.Error.StatusCode = statusCode

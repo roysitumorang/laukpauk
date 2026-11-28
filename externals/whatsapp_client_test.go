@@ -7,10 +7,19 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/roysitumorang/laukpauk/helper"
 )
+
+// TestMain sets up the logger: the client logs failed sends with helper.Log.
+func TestMain(m *testing.M) {
+	helper.NewLogger()
+	os.Exit(m.Run())
+}
 
 // whatsappServer records the last request and answers with status and body.
 func whatsappServer(t *testing.T, status int, body string) (*httptest.Server, *http.Request, *map[string]any) {
@@ -86,6 +95,13 @@ func TestWhatsappErrors(t *testing.T) {
 	if _, err = NewWhatsappClient(srv2.URL, "", "1", "token", time.Second).SendText(context.Background(), "1", "hi", false); err == nil ||
 		!strings.Contains(err.Error(), "HTTP 502: upstream down") {
 		t.Fatalf("non-JSON error = %v", err)
+	}
+
+	// an error status whose JSON body has no "error" object
+	srv3, _, _ := whatsappServer(t, http.StatusInternalServerError, `{}`)
+	if _, err = NewWhatsappClient(srv3.URL, "", "1", "token", time.Second).SendText(context.Background(), "1", "hi", false); err == nil ||
+		!strings.Contains(err.Error(), "HTTP 500: {}") {
+		t.Fatalf("JSON error without details = %v", err)
 	}
 
 	unconfigured := NewWhatsappClient("", "", "", "", time.Second)
