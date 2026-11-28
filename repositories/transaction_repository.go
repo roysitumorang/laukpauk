@@ -1385,7 +1385,6 @@ func (q *transactionRepository) UpdateTransaction(
 	}
 	if len(params) > 0 {
 		params = append(params, request.UpdatedAt, request.ID)
-		n = len(params)
 		_, _ = sb.WriteString(`, updated_at = ?
 			WHERE id = ?
 			RETURNING id

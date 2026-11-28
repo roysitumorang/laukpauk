@@ -567,6 +567,10 @@ func (q *recipeRepository) buildCondition(request *models.RecipeFilter, sb *stri
 			_, _ = sb.WriteString("?")
 		}
 		placeholders := sb.String()
+		// the same names again, for the second IN list
+		for _, name := range request.Names {
+			params = append(params, strings.ToLower(name))
+		}
 		sb.Reset()
 		_, _ = fmt.Fprintf(sb, "(LOWER(name) IN (%s) OR LOWER(deleted_name) IN (%s))", placeholders, placeholders)
 		conds = append(conds, sb.String())

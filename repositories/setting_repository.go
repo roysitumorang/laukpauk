@@ -348,7 +348,6 @@ func (q *settingRepository) UpdateSetting(
 		return &response, nil
 	}
 	params = append(params, request.UpdatedBy, request.UpdatedAt, response.ID)
-	n = len(params)
 	_, _ = sb.WriteString(`, updated_by = ?
 		, updated_at = ?
 		WHERE id = ?

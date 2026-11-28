@@ -230,7 +230,7 @@ func (d *textDest) Scan(src any) error {
 	b, ok := asBytes(src)
 	if !ok {
 		// numbers, for a decimal type read from a numeric column
-		b, ok = []byte(fmt.Sprint(src)), src != nil
+		b = []byte(fmt.Sprint(src))
 	}
 	if len(b) == 16 && isUUIDType(target.Type()) {
 		reflect.Copy(target, reflect.ValueOf(b))
