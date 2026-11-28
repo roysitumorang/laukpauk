@@ -20,35 +20,35 @@ func init() {
 				ctx,
 				`CREATE TABLE users (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, role character varying NOT NULL
-					, status character varying NOT NULL
-					, name character varying NOT NULL COLLATE "natural_sort"
+					, role text NOT NULL
+					, status text NOT NULL
+					, name text NOT NULL COLLATE "natural_sort"
 					, mobile_phone_confirmation_sent_at timestamp with time zone
-					, mobile_phone_confirmation_token character varying
+					, mobile_phone_confirmation_token text
 					, mobile_phone_confirmed_at timestamp with time zone
-					, mobile_phone character varying NOT NULL UNIQUE
-					, username character varying UNIQUE
+					, mobile_phone text NOT NULL UNIQUE
+					, username text UNIQUE
 					, email_confirmation_sent_at timestamp with time zone
-					, email_confirmation_token character varying
+					, email_confirmation_token text
 					, email_confirmed_at timestamp with time zone
-					, email character varying UNIQUE
-					, encrypted_password character varying
+					, email text UNIQUE
+					, encrypted_password text
 					, password_reset_sent_at timestamp with time zone
-					, password_reset_token character varying
+					, password_reset_token text
 					, password_changed_at timestamp with time zone
 					, sign_in_count integer NOT NULL DEFAULT 0
 					, current_sign_in_at timestamp with time zone
 					, last_sign_in_at timestamp with time zone
-					, current_sign_in_ip character varying
-					, last_sign_in_ip character varying
+					, current_sign_in_ip text
+					, last_sign_in_ip text
 					, failed_attempts integer NOT NULL DEFAULT 0
-					, unlock_token character varying
+					, unlock_token text
 					, locked_at timestamp with time zone
-					, otp_secret character varying
+					, otp_secret text
 					, otp_expired_at timestamp with time zone
-					, photo character varying NOT NULL
-					, user_level character varying NOT NULL
-					, referral_code character varying UNIQUE
+					, photo text NOT NULL
+					, user_level text NOT NULL
+					, referral_code text UNIQUE
 					, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, referral_points bigint
 					, reward_points bigint
@@ -59,7 +59,7 @@ func init() {
 					, updated_at timestamp with time zone NOT NULL
 					, deactivated_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deactivated_at timestamp with time zone
-					, deactivation_reason character varying
+					, deactivation_reason text
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

@@ -19,12 +19,12 @@ func init() {
 				`CREATE TABLE notifications (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, notification_type character varying NOT NULL
-				, link character varying
+				, notification_type text NOT NULL
+				, link text
 				, link_id UUID
-				, subject character varying NOT NULL
-				, body character varying NOT NULL
-				, photo character varying
+				, subject text NOT NULL
+				, body text NOT NULL
+				, photo text
 				, params JSONB NOT NULL
 				, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL

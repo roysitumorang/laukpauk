@@ -22,7 +22,7 @@ func init() {
 				`CREATE TABLE delivery_plans (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
-					, name character varying COLLATE "natural_sort"
+					, name text COLLATE "natural_sort"
 					, weekday bigint NOT NULL
 					, transaction_window TSTZRANGE NOT NULL
 					, delivery_time_interval bigint NOT NULL
@@ -38,7 +38,7 @@ func init() {
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 					, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
 						weekday WITH =,
 						transaction_window WITH &&

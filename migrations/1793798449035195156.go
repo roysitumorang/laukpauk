@@ -21,10 +21,10 @@ func init() {
 					, record_status smallint NOT NULL
 					, voucher_type smallint NOT NULL
 					, target_audience smallint NOT NULL
-					, code character varying
-					, deleted_code character varying
-					, photo character varying NOT NULL
-					, name character varying NOT NULL COLLATE "natural_sort"
+					, code text
+					, deleted_code text
+					, photo text NOT NULL
+					, name text NOT NULL COLLATE "natural_sort"
 					, discount bigint NOT NULL
 					, minimum_purchase bigint NOT NULL
 					, quota_per_buyer bigint NOT NULL
@@ -32,14 +32,14 @@ func init() {
 					, effective_end_time timestamp with time zone NOT NULL
 					, effective_start_date timestamp with time zone NOT NULL
 					, effective_end_date timestamp with time zone NOT NULL
-					, description character varying NOT NULL
+					, description text NOT NULL
 					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, created_at timestamp with time zone NOT NULL
 					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 				);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")

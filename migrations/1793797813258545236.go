@@ -31,11 +31,11 @@ func init() {
 					, referral_points_slots bigint[] NOT NULL
 					, referral_points_expense bigint NOT NULL
 					, reward_points_accumulation_window_in_days smallint NOT NULL
-					, delivery_origin_longitude character varying NOT NULL
-					, delivery_origin_latitude character varying NOT NULL
+					, delivery_origin_longitude text NOT NULL
+					, delivery_origin_latitude text NOT NULL
 					, delivery_cost_per_km bigint NOT NULL
 					, delivery_max_distance_km bigint NOT NULL
-					, whatsapp_phone_number character varying NOT NULL UNIQUE
+					, whatsapp_phone_number text NOT NULL UNIQUE
 					, payment_terms bigint NOT NULL
 					, maximum_delivery_time bigint NOT NULL
 					, transaction_auto_withdrawal_enabled boolean NOT NULL

@@ -22,21 +22,21 @@ func init() {
 					, reordered BOOLEAN NOT NULL
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-					, reference_number character varying NOT NULL
+					, reference_number text NOT NULL
 					, status smallint NOT NULL
-					, recipient_name character varying NOT NULL
-					, recipient_mobile_phone character varying NOT NULL
-					, buyer_note character varying NOT NULL
+					, recipient_name text NOT NULL
+					, recipient_mobile_phone text NOT NULL
+					, buyer_note text NOT NULL
 					, unique_code bigint NOT NULL
 					, shopping_cost bigint NOT NULL
 					, referrer_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, referral_code character varying
+					, referral_code text
 					, referral_points bigint NOT NULL
 					, voucher_id UUID REFERENCES vouchers (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, voucher_type smallint
 					, voucher_discount bigint NOT NULL
 					, promotion_id UUID
-					, promotion_code character varying
+					, promotion_code text
 					, promotion_discount bigint NOT NULL
 					, reward_points_discounted BOOLEAN NOT NULL
 					, reward_points_discount bigint NOT NULL
@@ -47,31 +47,31 @@ func init() {
 					, delivery_estimated_cost bigint NOT NULL
 					, discounted_delivery_estimated_cost bigint NOT NULL
 					, delivery_address_id UUID NOT NULL REFERENCES delivery_addresses (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, delivery_destination_latitude character varying NOT NULL
-					, delivery_destination_longitude character varying NOT NULL
+					, delivery_destination_latitude text NOT NULL
+					, delivery_destination_longitude text NOT NULL
 					, delivery_distance_km bigint NOT NULL
-					, delivery_street_address character varying NOT NULL
-					, delivery_street_address_note character varying NOT NULL
-					, delivery_instruction character varying NOT NULL
+					, delivery_street_address text NOT NULL
+					, delivery_street_address_note text NOT NULL
+					, delivery_instruction text NOT NULL
 					, delivery_datetime timestamp with time zone NOT NULL
 					, payment_amount bigint NOT NULL
 					, payment_due_date timestamp with time zone
 					, payment_channel_id UUID REFERENCES payment_channels (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, payment_channel_name character varying
-					, payment_request_id character varying UNIQUE
-					, payment_token_id character varying UNIQUE
-					, payment_virtual_account_number character varying
+					, payment_channel_name text
+					, payment_request_id text UNIQUE
+					, payment_token_id text UNIQUE
+					, payment_virtual_account_number text
 					, payment_virtual_account_expired_at timestamp with time zone
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
 					, cancelled_at timestamp with time zone
-					, payment_status character varying
-					, payment_failure_code character varying
+					, payment_status text
+					, payment_failure_code text
 					, payment_captured_at timestamp with time zone
-					, payment_id character varying UNIQUE
+					, payment_id text UNIQUE
 					, paid_at timestamp with time zone
 					, withdrawal_requested_at timestamp with time zone
-					, withdrawal_reason character varying
+					, withdrawal_reason text
 					, withdrawn_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, withdrawn_at timestamp with time zone
 					, processed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -81,12 +81,12 @@ func init() {
 					, revised_payment_amount bigint NOT NULL
 					, refund_amount bigint NOT NULL
 					, refunded_at timestamp with time zone
-					, refund_id character varying UNIQUE
+					, refund_id text UNIQUE
 					, shipped_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, shipped_at timestamp with time zone
 					, delivery_actual_cost bigint NOT NULL
 					, complained_at timestamp with time zone
-					, complaint character varying
+					, complaint text
 					, completed_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, completed_at timestamp with time zone
 				);`,

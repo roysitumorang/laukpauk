@@ -20,20 +20,20 @@ func init() {
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, record_status smallint NOT NULL
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, origin_longitude character varying NOT NULL
-					, origin_latitude character varying NOT NULL
-					, destination_longitude character varying NOT NULL
-					, destination_latitude character varying NOT NULL
+					, origin_longitude text NOT NULL
+					, origin_latitude text NOT NULL
+					, destination_longitude text NOT NULL
+					, destination_latitude text NOT NULL
 					, distance_meters bigint NOT NULL
 					, distance_km bigint NOT NULL
-					, street_address character varying NOT NULL
-					, street_address_note character varying NOT NULL
-					, label character varying NOT NULL
+					, street_address text NOT NULL
+					, street_address_note text NOT NULL
+					, label text NOT NULL
 					, main boolean NOT NULL
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
 					, deleted_at timestamp with time zone
-					, deletion_reason character varying
+					, deletion_reason text
 					, UNIQUE (
 						user_id
 						, destination_longitude

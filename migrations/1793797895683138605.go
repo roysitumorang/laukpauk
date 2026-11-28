@@ -19,10 +19,10 @@ func init() {
 				`CREATE TABLE text_messages (
 				id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 				, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-				, mobile_phone character varying NOT NULL
+				, mobile_phone text NOT NULL
 				, message_type smallint NOT NULL
-				, body character varying NOT NULL
-				, delivery_status character varying
+				, body text NOT NULL
+				, delivery_status text
 				, message_id bigint
 				, created_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
 				, created_at timestamp with time zone NOT NULL

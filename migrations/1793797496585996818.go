@@ -19,7 +19,7 @@ func init() {
 				`CREATE TABLE notification_targets (
 					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
 					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, firebase_installation_id character varying NOT NULL UNIQUE
+					, firebase_installation_id text NOT NULL UNIQUE
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
 				);`,

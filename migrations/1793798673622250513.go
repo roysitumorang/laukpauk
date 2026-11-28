@@ -21,12 +21,12 @@ func init() {
 					, cart_id UUID NOT NULL REFERENCES carts (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, product_variant_id UUID NOT NULL REFERENCES product_variants (id) ON UPDATE CASCADE ON DELETE RESTRICT
 					, product_category_id UUID NOT NULL REFERENCES product_categories (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, product_category_name character varying NOT NULL COLLATE "natural_sort"
+					, product_category_name text NOT NULL COLLATE "natural_sort"
 					, product_id UUID NOT NULL REFERENCES products (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, product_name character varying NOT NULL COLLATE "natural_sort"
-					, product_photo character varying NOT NULL
+					, product_name text NOT NULL COLLATE "natural_sort"
+					, product_photo text NOT NULL
 					, product_ready_stock bool NOT NULL
-					, stock_unit character varying NOT NULL COLLATE "natural_sort"
+					, stock_unit text NOT NULL COLLATE "natural_sort"
 					, base_price bigint NOT NULL
 					, selling_price bigint NOT NULL
 					, discount_type smallint NOT NULL
@@ -34,9 +34,9 @@ func init() {
 					, discount_minimum_quantity bigint NOT NULL
 					, discount_amount bigint NOT NULL
 					, sale_price bigint NOT NULL
-					, description character varying NOT NULL
+					, description text NOT NULL
 					, quantity bigint NOT NULL
-					, note character varying NOT NULL
+					, note text NOT NULL
 					, created_at timestamp with time zone NOT NULL
 					, updated_at timestamp with time zone NOT NULL
 					, UNIQUE (cart_id, product_variant_id)
