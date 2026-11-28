@@ -11,6 +11,7 @@ import (
 	"uuid"
 
 	"github.com/roysitumorang/laukpauk/database"
+	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migrations"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -32,6 +33,7 @@ func testPool(t *testing.T) *database.Pool {
 	}
 	testPoolOnce.Do(func() {
 		ctx := context.Background()
+		helper.NewLogger()
 		if testPoolDB, testPoolErr = database.Open(ctx, dsn, 4); testPoolErr != nil {
 			return
 		}

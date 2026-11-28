@@ -145,16 +145,16 @@ func init() {
 				models.RoleSeller,
 				models.UserStatusActive,
 				"Ben",
-				"2024-12-11 07:41:55.000 +0700",
+				seedTime("2024-12-11 07:41:55.000 +0700"),
 				"+6281265688889",
 				"bigben",
-				"2024-12-11 07:41:55.000 +0700",
+				seedTime("2024-12-11 07:41:55.000 +0700"),
 				"benni.surbakti@gmail.com",
 				encryptedPassword,
 				"seller-default.png",
 				models.UserLevelSellerOwner,
-				"2021-12-16 17:26:51.000 +0700",
-				"2024-12-11 07:41:55.000 +0700",
+				seedTime("2021-12-16 17:26:51.000 +0700"),
+				seedTime("2024-12-11 07:41:55.000 +0700"),
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}

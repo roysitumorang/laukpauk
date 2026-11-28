@@ -144,3 +144,13 @@ func init() {
 		0600,
 	)
 }
+
+// seedTime parses a seed timestamp such as "2024-12-11 07:41:55.000 +0700": MariaDB doesn't take time zone offsets in
+// DATETIME text, so seeds pass time.Time values.
+func seedTime(value string) time.Time {
+	t, err := time.Parse("2006-01-02 15:04:05.000 -0700", value)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
