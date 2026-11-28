@@ -74,7 +74,7 @@ func (q *textMessageRepository) FindTextMessages(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -135,7 +135,7 @@ func (q *textMessageRepository) FindTextMessages(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -161,6 +161,10 @@ func (q *textMessageRepository) FindTextMessages(
 		offset++
 		textMessage.RowNo = offset
 		response = append(response, &textMessage)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -412,7 +416,7 @@ func (q *textMessageRepository) DeleteTextMessage(
 		textMessageID,
 	)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 	}
 	return result.RowsAffected()
 }

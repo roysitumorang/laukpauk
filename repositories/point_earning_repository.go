@@ -68,7 +68,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -125,7 +125,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -147,6 +147,10 @@ func (q *pointEarningRepository) FindPointEarnings(
 		offset++
 		pointEarning.RowNo = offset
 		response = append(response, &pointEarning)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }

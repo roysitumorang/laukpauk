@@ -69,7 +69,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -142,7 +142,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -764,13 +764,13 @@ func (q *deliveryPlanRepository) checkTransactionWindow(
 	}
 	rows, err := tx.QueryContext(ctx, query+" FOR UPDATE", params...)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return err
 	}
 	defer func() { _ = rows.Close() }()
 	overlapping := rows.Next()
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return err
 	}
 	if overlapping {

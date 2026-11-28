@@ -79,7 +79,7 @@ func (q *transactionRepository) FindTransactions(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 || request.ReturnCountOnly {
@@ -199,7 +199,7 @@ func (q *transactionRepository) FindTransactions(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -320,6 +320,10 @@ func (q *transactionRepository) FindTransactions(
 		_, _ = sb.WriteString("?")
 		mapTransactionIDs[transaction.ID] = n - 1
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	_, _ = sb.WriteString(") ORDER BY id")
 	if len(params) == 0 {
 		return response, total, pages, nil
@@ -329,7 +333,7 @@ func (q *transactionRepository) FindTransactions(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -362,6 +366,10 @@ func (q *transactionRepository) FindTransactions(
 		i = mapTransactionIDs[transactionItem.TransactionID]
 		transactionItem.RowNo = int64(len(response[i].Items) + 1)
 		response[i].Items = append(response[i].Items, &transactionItem)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -566,7 +574,7 @@ func (q *transactionRepository) FindTransaction(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -597,6 +605,10 @@ func (q *transactionRepository) FindTransaction(
 		}
 		transactionItem.RowNo = int64(len(response.Items) + 1)
 		response.Items = append(response.Items, &transactionItem)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, err
 	}
 	return &response, nil
 }
@@ -946,7 +958,7 @@ func (q *transactionRepository) CreateTransaction(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -982,7 +994,7 @@ func (q *transactionRepository) CreateTransaction(
 		response.Items = append(response.Items, &transactionItem)
 	}
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return nil, err
 	}
 	return &response, nil
@@ -1706,7 +1718,7 @@ func (q *transactionRepository) FindVouchersUsages(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -1723,7 +1735,7 @@ func (q *transactionRepository) FindVouchersUsages(
 		response[voucherID] = usages
 	}
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return nil, err
 	}
 	return response, nil
@@ -1771,7 +1783,7 @@ func (q *transactionRepository) FindPromotionsUsages(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -1788,7 +1800,7 @@ func (q *transactionRepository) FindPromotionsUsages(
 		response[promotionID] = usages
 	}
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return nil, err
 	}
 	return response, nil

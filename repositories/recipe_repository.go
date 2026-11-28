@@ -73,7 +73,7 @@ func (q *recipeRepository) FindRecipes(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -137,7 +137,7 @@ func (q *recipeRepository) FindRecipes(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -166,6 +166,10 @@ func (q *recipeRepository) FindRecipes(
 		offset++
 		recipe.RowNo = offset
 		response = append(response, &recipe)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }

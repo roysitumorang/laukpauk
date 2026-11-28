@@ -147,6 +147,9 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 			}
 			names = append(names, name)
 		}
+		if err = rows.Err(); err != nil {
+			t.Fatalf("scan: %v", err)
+		}
 		if strings.Join(names, ",") != "Item 1,Item 2,Item 10" {
 			t.Fatalf("natural order = %v", names)
 		}

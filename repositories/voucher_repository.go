@@ -70,7 +70,7 @@ func (q *voucherRepository) FindVouchers(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -143,7 +143,7 @@ func (q *voucherRepository) FindVouchers(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -193,6 +193,10 @@ func (q *voucherRepository) FindVouchers(
 		}
 		_, _ = sb.WriteString("?")
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	_, _ = sb.WriteString(") ORDER BY id")
 	if len(params) == 0 {
 		return response, total, pages, nil
@@ -202,7 +206,7 @@ func (q *voucherRepository) FindVouchers(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -223,6 +227,10 @@ func (q *voucherRepository) FindVouchers(
 		voucher := response[i]
 		voucher.UserIDs = append(voucher.UserIDs, buyerID)
 		response[i] = voucher
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -315,7 +323,7 @@ func (q *voucherRepository) FindVoucher(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -326,6 +334,10 @@ func (q *voucherRepository) FindVoucher(
 			return nil, err
 		}
 		response.UserIDs = append(response.UserIDs, buyerID)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, err
 	}
 	return (&response).Populate(), nil
 }
@@ -742,7 +754,7 @@ func (q *voucherRepository) UpdateVoucher(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
 	mapBuyerIDs := map[uuid.UUID]struct{}{}
@@ -785,7 +797,7 @@ func (q *voucherRepository) UpdateVoucher(
 			buyerID,
 			request.UpdatedAt,
 		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			return nil, err
 		}
 	}
@@ -793,7 +805,7 @@ func (q *voucherRepository) UpdateVoucher(
 		_, _ = sb.WriteString(")")
 	}
 	if _, err = tx.ExecContext(ctx, sb.String(), params...); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 		return nil, err
 	}
 	return (&response).Populate(), nil

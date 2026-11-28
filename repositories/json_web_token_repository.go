@@ -69,7 +69,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -123,7 +123,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -142,6 +142,10 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		offset++
 		jsonWebToken.RowNo = offset
 		response = append(response, &jsonWebToken)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -240,7 +244,7 @@ func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	_, _ = fmt.Fprintf(sb, "DELETE FROM json_web_tokens %s", condition)
 	result, err := tx.ExecContext(ctx, sb.String(), params...)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 		return 0, err
 	}
 	return result.RowsAffected()

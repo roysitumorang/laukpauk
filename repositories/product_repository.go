@@ -77,7 +77,7 @@ func (q *productRepository) FindProducts(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -145,7 +145,7 @@ func (q *productRepository) FindProducts(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -179,6 +179,10 @@ func (q *productRepository) FindProducts(
 		product.RowNo = offset
 		response = append(response, (&product).Populate())
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 
@@ -200,7 +204,7 @@ func (q *productRepository) InfiniteScrollProducts(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, err
 	}
 	if total == 0 ||
@@ -257,7 +261,7 @@ func (q *productRepository) InfiniteScrollProducts(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -289,6 +293,10 @@ func (q *productRepository) InfiniteScrollProducts(
 			return nil, 0, err
 		}
 		response = append(response, (&product).Populate())
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, err
 	}
 	var nextRowNo int64
 	if request.Limit > 0 && len(response) == int(request.Limit) {

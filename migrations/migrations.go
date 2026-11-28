@@ -67,7 +67,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return err
 	}
 	defer func() { _ = rows.Close() }()
@@ -79,6 +79,10 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			return err
 		}
 		mapVersions[version] = struct{}{}
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return err
 	}
 	sortedVersions := slices.Collect(maps.Keys(Migrations))
 	slices.Sort(sortedVersions)
@@ -98,7 +102,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			return err
 		}
 		if _, err = tx.ExecContext(ctx, `INSERT INTO "migrations" ("version") VALUES (?)`, version); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			return err
 		}
 	}

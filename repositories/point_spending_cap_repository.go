@@ -69,7 +69,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 	var total int64
 	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -131,7 +131,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -158,6 +158,10 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		offset++
 		pointSpendingCap.RowNo = offset
 		response = append(response, (&pointSpendingCap).Populate())
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -534,13 +538,13 @@ func (q *pointSpendingCapRepository) checkShoppingCost(
 	}
 	rows, err := tx.QueryContext(ctx, query+" FOR UPDATE", params...)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return err
 	}
 	defer func() { _ = rows.Close() }()
 	overlapping := rows.Next()
 	if err = rows.Err(); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
 		return err
 	}
 	if overlapping {
