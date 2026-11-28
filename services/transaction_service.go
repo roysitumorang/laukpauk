@@ -179,7 +179,7 @@ func (q *transactionService) CreateTransaction(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
 		return nil, nil, err
 	}
-	if cart == nil || request.CartID == nil || request.CartID != cart.ID {
+	if cart == nil || request.CartID == nil || *request.CartID != cart.ID {
 		return nil, nil, errors.New("cart_id: not found")
 	}
 	mapCartItems := map[uuid.UUID]*models.CartItem{}
@@ -312,7 +312,7 @@ func (q *transactionService) CreateTransaction(
 				return nil, nil, err
 			}
 			if (buyer.ReferrerID != nil &&
-				buyer.ReferrerID != referrer.ID) ||
+				*buyer.ReferrerID != referrer.ID) ||
 				int(total) >= len(setting.ReferralPointsSlots) {
 				return nil, nil, errors.New("referral_code: is invalid")
 			}
@@ -461,7 +461,7 @@ func (q *transactionService) CreateTransaction(
 	request.CalculateDiscount()
 	var paymentChannel *models.PaymentChannel
 	if request.PaymentAmount > 0 {
-		if request.PaymentChannelID == nil || request.PaymentChannelID == uuid.Nil {
+		if request.PaymentChannelID == nil || *request.PaymentChannelID == uuid.Nil {
 			return nil, nil, errors.New("payment_channel_id: is required")
 		}
 		paymentChannel, err = q.paymentChannelRepository.FindPaymentChannel(

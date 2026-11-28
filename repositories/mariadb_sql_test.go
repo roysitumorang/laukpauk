@@ -50,7 +50,7 @@ func TestMariaDBSQLRoundTrip(t *testing.T) {
 	).Scan(&id, &code, &gotRef, &slots, &gotAt, &doneAt, &flag); err != nil {
 		t.Fatalf("insert: %v", err)
 	}
-	if id == uuid.Nil || code != "A-A" || gotRef == nil || gotRef != ref ||
+	if id == uuid.Nil || code != "A-A" || gotRef == nil || *gotRef != ref ||
 		len(slots) != 2 || slots[1] != 10 || !gotAt.Equal(at) || doneAt != nil || !flag {
 		t.Fatalf("got id=%v code=%q ref=%v slots=%v at=%v done=%v flag=%v", id, code, gotRef, slots, gotAt, doneAt, flag)
 	}
