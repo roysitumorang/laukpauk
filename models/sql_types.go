@@ -2,8 +2,9 @@ package models
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"fmt"
+
+	"github.com/goccy/go-json"
 )
 
 // Int64s is a list of numbers kept in a JSON column.
