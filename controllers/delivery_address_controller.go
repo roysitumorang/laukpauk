@@ -523,5 +523,5 @@ func (q *deliveryAddressController) V1BuyerDelete(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
-		WriteResponse(c)
+		SendStatus(c)
 }

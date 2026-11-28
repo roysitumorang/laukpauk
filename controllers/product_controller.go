@@ -554,7 +554,7 @@ func (q *productController) V1SellerDelete(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
-		WriteResponse(c)
+		SendStatus(c)
 }
 
 func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
