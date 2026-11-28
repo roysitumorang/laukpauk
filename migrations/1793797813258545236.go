@@ -21,7 +21,7 @@ func init() {
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE TABLE setting (
-					id bigint NOT NULL AUTO_INCREMENT PRIMARY KEY CHECK (id = 1)
+					id bigint NOT NULL PRIMARY KEY DEFAULT 1 CHECK (id = 1)
 					, vacation_mode BOOLEAN NOT NULL
 					, vacation_end_date DATETIME(6)
 					, voucher_enabled BOOLEAN NOT NULL
