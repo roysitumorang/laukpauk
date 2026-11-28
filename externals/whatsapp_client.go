@@ -235,17 +235,12 @@ func (q *WhatsappClient) send(ctx context.Context, message *WhatsappMessage) (*W
 	}
 	statusCode := resp.StatusCode()
 	body := resp.Body()
-	failed := statusCode < fiber.StatusOK || statusCode >= fiber.StatusMultipleChoices
 	var response WhatsappResponse
 	if err = json.Unmarshal(body, &response); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
-		if failed {
-			// a non-JSON failure, e.g. from a proxy: keep the status and body
-			return nil, fmt.Errorf("whatsapp: HTTP %d: %s", statusCode, helper.ByteSlice2String(body))
-		}
 		return nil, err
 	}
-	if failed {
+	if statusCode < fiber.StatusOK || statusCode >= fiber.StatusMultipleChoices {
 		if response.Error == nil {
 			return nil, fmt.Errorf("whatsapp: HTTP %d: %s", statusCode, helper.ByteSlice2String(body))
 		}
