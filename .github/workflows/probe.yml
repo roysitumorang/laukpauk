@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 22edd35c80e66dcceaac58d2768eae552d0a3007
+          ref: 32b667b211d16cf940664eff8e0a61bf9aa212fb
       - run: sudo apt-get update >/dev/null && sudo apt-get install -y libwebp-dev >/dev/null
       - uses: actions/setup-go@v5
         with:
