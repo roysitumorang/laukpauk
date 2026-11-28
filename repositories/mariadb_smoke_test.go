@@ -28,6 +28,9 @@ func fillFilter(v reflect.Value, flag bool) {
 		switch name {
 		case "Sortings", "MapSortings", "Limit", "Page", "UrlValues", "PaginationURL", "NextRowNo":
 			continue
+		case "ProductTypes":
+			// nothing sets it, and products has no product_type column (on PostgreSQL either)
+			continue
 		}
 		fillValue(f, flag)
 	}
@@ -89,11 +92,23 @@ func TestMariaDBQueries(t *testing.T) {
 	}
 	finders := []finder{
 		{"banners", func() any { return models.NewBannerFilter() },
-			func(f any) error { _, _, _, err := NewBannerRepository(db, db).FindBanners(ctx, f.(*models.BannerFilter)); return err },
-			func(f any) error { _, err := NewBannerRepository(db, db).FindBanner(ctx, f.(*models.BannerFilter)); return err }},
+			func(f any) error {
+				_, _, _, err := NewBannerRepository(db, db).FindBanners(ctx, f.(*models.BannerFilter))
+				return err
+			},
+			func(f any) error {
+				_, err := NewBannerRepository(db, db).FindBanner(ctx, f.(*models.BannerFilter))
+				return err
+			}},
 		{"carts", func() any { return models.NewCartFilter() },
-			func(f any) error { _, _, _, err := NewCartRepository(db, db).FindCarts(ctx, f.(*models.CartFilter)); return err },
-			func(f any) error { _, err := NewCartRepository(db, db).FindCart(ctx, f.(*models.CartFilter)); return err }},
+			func(f any) error {
+				_, _, _, err := NewCartRepository(db, db).FindCarts(ctx, f.(*models.CartFilter))
+				return err
+			},
+			func(f any) error {
+				_, err := NewCartRepository(db, db).FindCart(ctx, f.(*models.CartFilter))
+				return err
+			}},
 		{"delivery addresses", func() any { return models.NewDeliveryAddressFilter() },
 			func(f any) error {
 				_, _, _, err := NewDeliveryAddressRepository(db, db).FindDeliveryAddresses(ctx, f.(*models.DeliveryAddressFilter))
@@ -167,8 +182,14 @@ func TestMariaDBQueries(t *testing.T) {
 				return err
 			}},
 		{"points", func() any { return models.NewPointFilter() },
-			func(f any) error { _, _, _, err := NewPointRepository(db, db).FindPoints(ctx, f.(*models.PointFilter)); return err },
-			func(f any) error { _, err := NewPointRepository(db, db).FindPoint(ctx, f.(*models.PointFilter)); return err }},
+			func(f any) error {
+				_, _, _, err := NewPointRepository(db, db).FindPoints(ctx, f.(*models.PointFilter))
+				return err
+			},
+			func(f any) error {
+				_, err := NewPointRepository(db, db).FindPoint(ctx, f.(*models.PointFilter))
+				return err
+			}},
 		{"point spending caps", func() any { return models.NewPointSpendingCapFilter() },
 			func(f any) error {
 				_, _, _, err := NewPointSpendingCapRepository(db, db).FindPointSpendingCaps(ctx, f.(*models.PointSpendingCapFilter))
@@ -188,8 +209,14 @@ func TestMariaDBQueries(t *testing.T) {
 				return err
 			}},
 		{"products", func() any { return models.NewProductFilter() },
-			func(f any) error { _, _, _, err := NewProductRepository(db, db).FindProducts(ctx, f.(*models.ProductFilter)); return err },
-			func(f any) error { _, err := NewProductRepository(db, db).FindProduct(ctx, f.(*models.ProductFilter)); return err }},
+			func(f any) error {
+				_, _, _, err := NewProductRepository(db, db).FindProducts(ctx, f.(*models.ProductFilter))
+				return err
+			},
+			func(f any) error {
+				_, err := NewProductRepository(db, db).FindProduct(ctx, f.(*models.ProductFilter))
+				return err
+			}},
 		{"product variants", func() any { return models.NewProductVariantFilter() },
 			func(f any) error {
 				_, _, _, err := NewProductVariantRepository(db, db).FindProductVariants(ctx, f.(*models.ProductVariantFilter))
@@ -204,7 +231,10 @@ func TestMariaDBQueries(t *testing.T) {
 				_, _, _, err := NewPromotionRepository(db, db).FindPromotions(ctx, f.(*models.PromotionFilter))
 				return err
 			},
-			func(f any) error { _, err := NewPromotionRepository(db, db).FindPromotion(ctx, f.(*models.PromotionFilter)); return err }},
+			func(f any) error {
+				_, err := NewPromotionRepository(db, db).FindPromotion(ctx, f.(*models.PromotionFilter))
+				return err
+			}},
 		{"recipe guides", func() any { return models.NewRecipeGuideFilter() },
 			func(f any) error {
 				_, _, _, err := NewRecipeGuideRepository(db, db).FindRecipeGuides(ctx, f.(*models.RecipeGuideFilter))
@@ -224,8 +254,14 @@ func TestMariaDBQueries(t *testing.T) {
 				return err
 			}},
 		{"recipes", func() any { return models.NewRecipeFilter() },
-			func(f any) error { _, _, _, err := NewRecipeRepository(db, db).FindRecipes(ctx, f.(*models.RecipeFilter)); return err },
-			func(f any) error { _, err := NewRecipeRepository(db, db).FindRecipe(ctx, f.(*models.RecipeFilter)); return err }},
+			func(f any) error {
+				_, _, _, err := NewRecipeRepository(db, db).FindRecipes(ctx, f.(*models.RecipeFilter))
+				return err
+			},
+			func(f any) error {
+				_, err := NewRecipeRepository(db, db).FindRecipe(ctx, f.(*models.RecipeFilter))
+				return err
+			}},
 		{"text messages", func() any { return models.NewTextMessageFilter() },
 			func(f any) error {
 				_, _, _, err := NewTextMessageRepository(db, db).FindTextMessages(ctx, f.(*models.TextMessageFilter))
@@ -245,11 +281,23 @@ func TestMariaDBQueries(t *testing.T) {
 				return err
 			}},
 		{"users", func() any { return models.NewUserFilter() },
-			func(f any) error { _, _, _, err := NewUserRepository(db, db).FindUsers(ctx, f.(*models.UserFilter)); return err },
-			func(f any) error { _, err := NewUserRepository(db, db).FindUser(ctx, f.(*models.UserFilter)); return err }},
+			func(f any) error {
+				_, _, _, err := NewUserRepository(db, db).FindUsers(ctx, f.(*models.UserFilter))
+				return err
+			},
+			func(f any) error {
+				_, err := NewUserRepository(db, db).FindUser(ctx, f.(*models.UserFilter))
+				return err
+			}},
 		{"vouchers", func() any { return models.NewVoucherFilter() },
-			func(f any) error { _, _, _, err := NewVoucherRepository(db, db).FindVouchers(ctx, f.(*models.VoucherFilter)); return err },
-			func(f any) error { _, err := NewVoucherRepository(db, db).FindVoucher(ctx, f.(*models.VoucherFilter)); return err }},
+			func(f any) error {
+				_, _, _, err := NewVoucherRepository(db, db).FindVouchers(ctx, f.(*models.VoucherFilter))
+				return err
+			},
+			func(f any) error {
+				_, err := NewVoucherRepository(db, db).FindVoucher(ctx, f.(*models.VoucherFilter))
+				return err
+			}},
 	}
 	for _, fd := range finders {
 		t.Run(fd.name, func(t *testing.T) {
