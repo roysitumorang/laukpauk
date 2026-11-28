@@ -323,6 +323,10 @@ func (q *transactionRepository) FindTransactions(
 		_, _ = fmt.Fprintf(sb, "$%d", n)
 		mapTransactionIDs[transaction.ID] = n - 1
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	_, _ = sb.WriteString(") ORDER BY id")
 	if len(params) == 0 {
 		return response, total, pages, nil
@@ -365,6 +369,10 @@ func (q *transactionRepository) FindTransactions(
 		i = mapTransactionIDs[transactionItem.TransactionID]
 		transactionItem.RowNo = int64(len(response[i].Items) + 1)
 		response[i].Items = append(response[i].Items, &transactionItem)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -600,6 +608,10 @@ func (q *transactionRepository) FindTransaction(
 		}
 		transactionItem.RowNo = int64(len(response.Items) + 1)
 		response.Items = append(response.Items, &transactionItem)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, err
 	}
 	return &response, nil
 }

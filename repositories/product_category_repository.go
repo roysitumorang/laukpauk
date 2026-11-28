@@ -166,6 +166,10 @@ func (q *productCategoryRepository) FindProductCategories(
 		productCategory.RowNo = offset
 		response = append(response, &productCategory)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 

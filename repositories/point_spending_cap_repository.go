@@ -161,6 +161,10 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		pointSpendingCap.RowNo = offset
 		response = append(response, (&pointSpendingCap).Populate())
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 

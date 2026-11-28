@@ -157,6 +157,10 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		recipeGuide.RowNo = offset
 		response = append(response, &recipeGuide)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 
