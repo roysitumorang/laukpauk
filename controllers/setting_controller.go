@@ -51,11 +51,11 @@ func (q *settingController) V1Show(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *settingController) V1Update(c fiber.Ctx) (err error) {
@@ -67,7 +67,7 @@ func (q *settingController) V1Update(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateSetting")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.UpdatedBy = currentUser.ID
 	request.UpdatedAt = time.Now()
@@ -76,7 +76,7 @@ func (q *settingController) V1Update(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -91,15 +91,15 @@ func (q *settingController) V1Update(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateSetting")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }

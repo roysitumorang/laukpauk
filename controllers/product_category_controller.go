@@ -62,7 +62,7 @@ func (q *productCategoryController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.productCategoryService.FindProductCategories(
 		ctx,
@@ -72,7 +72,7 @@ func (q *productCategoryController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -80,7 +80,7 @@ func (q *productCategoryController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
@@ -96,7 +96,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
@@ -108,7 +108,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
@@ -123,7 +123,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueProductCategoryNameViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		request.ID = productCategory.ID
 		request.Name = productCategory.Name
@@ -145,7 +145,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if productVariants, _, err = q.productVariantService.FindProductVariants(
 			ctx,
@@ -157,7 +157,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	tx, err := repositories.BeginTx(ctx)
@@ -166,7 +166,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -182,7 +182,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for _, product := range products {
 		product.ProductCategoryName = response.Name
@@ -191,7 +191,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	for _, productVariant := range productVariants {
@@ -201,7 +201,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
@@ -209,7 +209,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if productCategory != nil &&
 		productCategory.Photo != os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO") &&
@@ -219,7 +219,7 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(productCategory.Photo)
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -227,12 +227,12 @@ func (q *productCategoryController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("product category created successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productCategoryController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -243,7 +243,7 @@ func (q *productCategoryController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrProductCategoryNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.productCategoryService.FindProductCategory(
 		ctx,
@@ -254,17 +254,17 @@ func (q *productCategoryController) V1SellerShow(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductCategoryNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
@@ -276,7 +276,7 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrProductCategoryNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
@@ -287,13 +287,13 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductCategoryNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProductCategory(ctx, c)
 	if photo == nil {
@@ -303,7 +303,7 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProductCategory")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if productCategory.Name != request.Name {
 		otherProductCategory, err := q.productCategoryService.FindProductCategory(
@@ -316,12 +316,12 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if otherProductCategory != nil {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueProductCategoryNameViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	request.ID = productCategory.ID
@@ -341,7 +341,7 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productVariants, _, err := q.productVariantService.FindProductVariants(
 		ctx,
@@ -353,14 +353,14 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -375,7 +375,7 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for _, product := range products {
 		product.ProductCategoryName = response.Name
@@ -383,7 +383,7 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	for _, productVariant := range productVariants {
@@ -392,14 +392,14 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if productCategory.Photo != os.Getenv("PRODUCT_CATEGORY_DEFAULT_PHOTO") &&
 		productCategory.Photo != request.Photo {
@@ -407,19 +407,19 @@ func (q *productCategoryController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("product category updated successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
@@ -431,7 +431,7 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrProductCategoryNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
@@ -442,13 +442,13 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductCategoryNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCategory.RecordStatus = models.RecordStatusDeleted
 	productCategory.DeletedBy = &currentUser.ID
@@ -459,7 +459,7 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -473,13 +473,13 @@ func (q *productCategoryController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
 		SendStatus(c)
@@ -493,7 +493,7 @@ func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.productCategoryService.FindProductCategories(
 		ctx,
@@ -503,7 +503,7 @@ func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategories")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i, row := range rows {
@@ -512,5 +512,5 @@ func (q *productCategoryController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }

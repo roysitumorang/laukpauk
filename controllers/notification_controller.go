@@ -58,7 +58,7 @@ func (q *notificationController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNotifications")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.notificationService.FindNotifications(
 		ctx,
@@ -68,7 +68,7 @@ func (q *notificationController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNotifications")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -76,7 +76,7 @@ func (q *notificationController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *notificationController) V1SellerCreate(c fiber.Ctx) (err error) {
@@ -88,7 +88,7 @@ func (q *notificationController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateNotification")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	recipient, err := q.userService.FindUser(
 		ctx,
@@ -101,12 +101,12 @@ func (q *notificationController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if recipient == nil {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("user_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.NotificationType = models.NotificationTypeOther
 	request.Params = map[string]string{}
@@ -117,7 +117,7 @@ func (q *notificationController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -132,21 +132,21 @@ func (q *notificationController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateNotification")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if photo != nil && request.Photo != nil {
 		if err = helper.SaveFile(c, photo, mimetype, *request.Photo); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = q.kafkaClient.Publish(ctx, models.TopicMessage{
 		Topic: models.TopicNotification,
@@ -158,7 +158,7 @@ func (q *notificationController) V1SellerCreate(c fiber.Ctx) (err error) {
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("push notification created successfully").
 		SetData(notification).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *notificationController) V1SellerRead(c fiber.Ctx) (err error) {
@@ -170,7 +170,7 @@ func (q *notificationController) V1SellerRead(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrNotificationNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	notification, err := q.notificationService.FindNotification(
 		ctx,
@@ -183,12 +183,12 @@ func (q *notificationController) V1SellerRead(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindNotification")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if notification == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrNotificationNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	notification.ReadAt = new(time.Now())
 	tx, err := repositories.BeginTx(ctx)
@@ -196,7 +196,7 @@ func (q *notificationController) V1SellerRead(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -211,16 +211,16 @@ func (q *notificationController) V1SellerRead(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateNotification")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("notification marked as read successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }

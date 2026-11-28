@@ -57,7 +57,7 @@ func (q *deliveryPlanController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.deliveryPlanService.FindDeliveryPlans(
 		ctx,
@@ -67,7 +67,7 @@ func (q *deliveryPlanController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlans")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -75,7 +75,7 @@ func (q *deliveryPlanController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryPlanController) V1SellerCreate(c fiber.Ctx) (err error) {
@@ -87,7 +87,7 @@ func (q *deliveryPlanController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
@@ -99,12 +99,12 @@ func (q *deliveryPlanController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if deliveryPlan != nil {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(models.ErrUniqueDeliveryPlanTransactionWindowViolation.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	createdBy := currentUser.ID
@@ -118,7 +118,7 @@ func (q *deliveryPlanController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -135,18 +135,18 @@ func (q *deliveryPlanController) V1SellerCreate(c fiber.Ctx) (err error) {
 		}
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("delivery plan created successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryPlanController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -157,7 +157,7 @@ func (q *deliveryPlanController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
@@ -169,16 +169,16 @@ func (q *deliveryPlanController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if deliveryPlan == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(deliveryPlan).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryPlanController) V1SellerUpdate(c fiber.Ctx) (err error) {
@@ -190,7 +190,7 @@ func (q *deliveryPlanController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
@@ -202,19 +202,19 @@ func (q *deliveryPlanController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if deliveryPlan == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, statusCode, err := sanitizers.ValidateDeliveryPlan(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryPlan")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if deliveryPlan.Weekday != request.Weekday ||
 		deliveryPlan.TransactionWindowMin != request.TransactionWindowMin ||
@@ -230,12 +230,12 @@ func (q *deliveryPlanController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if otherDeliveryPlan != nil {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueDeliveryPlanTransactionWindowViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	request.ID = deliveryPlan.ID
@@ -250,7 +250,7 @@ func (q *deliveryPlanController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -267,18 +267,18 @@ func (q *deliveryPlanController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		}
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("delivery plan updated successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryPlanController) V1SellerDelete(c fiber.Ctx) (err error) {
@@ -290,7 +290,7 @@ func (q *deliveryPlanController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryPlan, err := q.deliveryPlanService.FindDeliveryPlan(
 		ctx,
@@ -302,12 +302,12 @@ func (q *deliveryPlanController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if deliveryPlan == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryPlan.RecordStatus = models.RecordStatusDeleted
 	deliveryPlan.DeletedBy = &currentUser.ID
@@ -318,7 +318,7 @@ func (q *deliveryPlanController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -333,18 +333,18 @@ func (q *deliveryPlanController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryPlan")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("delivery plan deleted successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
@@ -360,15 +360,15 @@ func (q *deliveryPlanController) V1BuyerShow(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrDeliveryPlanNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryPlanNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryPlan")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }

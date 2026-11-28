@@ -65,7 +65,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			if e, ok := errors.AsType[*fiber.Error](err); ok {
 				statusCode = e.Code
 			}
-			return helper.NewResponse(statusCode).SetMessage(err.Error()).WriteResponse(ctx)
+			return helper.NewResponse(statusCode).SetMessage(err.Error()).JSON(ctx)
 		},
 		TrustProxy: true,
 		TrustProxyConfig: fiber.TrustProxyConfig{
@@ -202,7 +202,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 				"build":   config.Build,
 				"upsince": config.Now.Format(time.RFC3339),
 				"uptime":  time.Since(config.Now).String(),
-			}).WriteResponse(c)
+			}).JSON(c)
 	}).
 		Get("/metrics", basicAuth, monitor.New(monitor.Config{
 			APIOnly: true,
@@ -211,10 +211,10 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 			envMap, err := godotenv.Read(".env")
 			if err != nil {
 				helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRead")
-				return helper.NewResponse(fiber.StatusBadRequest).SetMessage(err.Error()).WriteResponse(c)
+				return helper.NewResponse(fiber.StatusBadRequest).SetMessage(err.Error()).JSON(c)
 			}
 			envMap["GO_VERSION"] = runtime.Version()
-			return helper.NewResponse(fiber.StatusOK).SetData(envMap).WriteResponse(c)
+			return helper.NewResponse(fiber.StatusOK).SetData(envMap).JSON(c)
 		}).
 		Get("/assets*", static.New("", static.Config{
 			FS: os.DirFS("assets"),
@@ -359,7 +359,7 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(utils.StatusMessage(fiber.StatusNotFound)).
-			WriteResponse(c)
+			JSON(c)
 	})
 	port := DefaultPort
 	if envPort, ok := os.LookupEnv("PORT"); ok && envPort != "" {

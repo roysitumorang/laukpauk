@@ -50,9 +50,9 @@ func (q *paymentChannelController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPaymentChannels")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }

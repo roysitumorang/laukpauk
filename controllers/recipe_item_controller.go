@@ -62,7 +62,7 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipeItem")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	recipe, err := q.recipeService.FindRecipe(
 		ctx,
@@ -73,13 +73,13 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrRecipeNotFound) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("recipe_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipe")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	variant, err := q.productVariantService.FindProductVariant(
 		ctx,
@@ -90,13 +90,13 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductVariantNotFound) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("product_variant_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	product, err := q.productService.FindProduct(
 		ctx,
@@ -107,13 +107,13 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductNotFound) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("product_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.ProductID = product.ID
 	request.ProductName = product.Name
@@ -132,7 +132,7 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
@@ -145,7 +145,7 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 		if recipeItem.RecordStatus == models.RecordStatusActive {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueRecipeItemProductIdViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		request.ID = recipeItem.ID
 		request.CreatedBy = recipeItem.CreatedBy
@@ -159,7 +159,7 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -174,18 +174,18 @@ func (q *recipeItemController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveRecipeItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("recipe item created successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *recipeItemController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -196,7 +196,7 @@ func (q *recipeItemController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrRecipeItemNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.recipeItemService.FindRecipeItem(
 		ctx,
@@ -207,17 +207,17 @@ func (q *recipeItemController) V1SellerShow(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrRecipeItemNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *recipeItemController) V1SellerUpdate(c fiber.Ctx) (err error) {
@@ -229,14 +229,14 @@ func (q *recipeItemController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrRecipeItemNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, statusCode, err := sanitizers.ValidateRecipeItem(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateRecipeItem")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	recipeItem, err := q.recipeItemService.FindRecipeItem(
 		ctx,
@@ -247,13 +247,13 @@ func (q *recipeItemController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrRecipeItemNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	variant, err := q.productVariantService.FindProductVariant(
 		ctx,
@@ -264,13 +264,13 @@ func (q *recipeItemController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductVariantNotFound) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("product_variant_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariant")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	product, err := q.productService.FindProduct(
 		ctx,
@@ -281,13 +281,13 @@ func (q *recipeItemController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductNotFound) {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("product_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.ID = recipeItem.ID
 	request.RecordStatus = recipeItem.RecordStatus
@@ -306,7 +306,7 @@ func (q *recipeItemController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -321,18 +321,18 @@ func (q *recipeItemController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("recipe item updated successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *recipeItemController) V1SellerDelete(c fiber.Ctx) (err error) {
@@ -344,7 +344,7 @@ func (q *recipeItemController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrRecipeItemNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	recipeItem, err := q.recipeItemService.FindRecipeItem(
 		ctx,
@@ -355,13 +355,13 @@ func (q *recipeItemController) V1SellerDelete(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrRecipeItemNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	recipeItem.RecordStatus = models.RecordStatusDeleted
 	recipeItem.DeletedBy = new(currentUser.ID)
@@ -372,7 +372,7 @@ func (q *recipeItemController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -386,13 +386,13 @@ func (q *recipeItemController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
 		SendStatus(c)

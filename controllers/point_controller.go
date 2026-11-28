@@ -53,7 +53,7 @@ func (q *pointController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoints")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.pointService.FindPoints(
 		ctx,
@@ -63,7 +63,7 @@ func (q *pointController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoints")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -71,7 +71,7 @@ func (q *pointController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointController) V1SellerCreate(c fiber.Ctx) (err error) {
@@ -83,7 +83,7 @@ func (q *pointController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	buyer, err := q.userService.FindUser(
 		ctx,
@@ -96,12 +96,12 @@ func (q *pointController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindUser")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if buyer == nil {
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage("user_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	createdBy := currentUser.ID
 	now := time.Now()
@@ -115,7 +115,7 @@ func (q *pointController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -130,18 +130,18 @@ func (q *pointController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreatePoint")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("point created successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -152,7 +152,7 @@ func (q *pointController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	point, err := q.pointService.FindPoint(
 		ctx,
@@ -164,16 +164,16 @@ func (q *pointController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoint")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if point == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(point).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointController) V1SellerUpdate(c fiber.Ctx) (err error) {
@@ -185,7 +185,7 @@ func (q *pointController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	point, err := q.pointService.FindPoint(
 		ctx,
@@ -197,19 +197,19 @@ func (q *pointController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoint")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if point == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, statusCode, err := sanitizers.ValidatePoint(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePoint")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.ID = point.ID
 	request.RecordStatus = point.RecordStatus
@@ -226,7 +226,7 @@ func (q *pointController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -241,18 +241,18 @@ func (q *pointController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePoint")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("point updated successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointController) V1SellerDelete(c fiber.Ctx) (err error) {
@@ -264,7 +264,7 @@ func (q *pointController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	point, err := q.pointService.FindPoint(
 		ctx,
@@ -276,12 +276,12 @@ func (q *pointController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPoint")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if point == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	point.RecordStatus = models.RecordStatusDeleted
 	point.DeletedBy = &currentUser.ID
@@ -292,7 +292,7 @@ func (q *pointController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -307,16 +307,16 @@ func (q *pointController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePoint")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("point deleted successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }

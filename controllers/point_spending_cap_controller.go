@@ -56,7 +56,7 @@ func (q *pointSpendingCapController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCaps")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.pointSpendingCapService.FindPointSpendingCaps(
 		ctx,
@@ -66,7 +66,7 @@ func (q *pointSpendingCapController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCaps")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -74,7 +74,7 @@ func (q *pointSpendingCapController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointSpendingCapController) V1SellerCreate(c fiber.Ctx) (err error) {
@@ -86,7 +86,7 @@ func (q *pointSpendingCapController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointSpendingCap")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	createdBy := currentUser.ID
 	now := time.Now()
@@ -104,13 +104,13 @@ func (q *pointSpendingCapController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if pointSpendingCap != nil {
 		if pointSpendingCap.RecordStatus == models.RecordStatusActive {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrPointSpendingCapShoppingCostOverlapping.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		request.ID = pointSpendingCap.ID
 		request.DeletedBy = nil
@@ -122,7 +122,7 @@ func (q *pointSpendingCapController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -137,18 +137,18 @@ func (q *pointSpendingCapController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSavePointSpendingCap")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("point spending cap created successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointSpendingCapController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -159,7 +159,7 @@ func (q *pointSpendingCapController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointSpendingCapNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
@@ -171,16 +171,16 @@ func (q *pointSpendingCapController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if pointSpendingCap == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointSpendingCapNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pointSpendingCap).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointSpendingCapController) V1SellerUpdate(c fiber.Ctx) (err error) {
@@ -192,7 +192,7 @@ func (q *pointSpendingCapController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointSpendingCapNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pointSpendingCap, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
@@ -204,19 +204,19 @@ func (q *pointSpendingCapController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if pointSpendingCap == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointSpendingCapNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, statusCode, err := sanitizers.ValidatePointSpendingCap(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidatePointSpendingCap")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if pointSpendingCap.MinimumShoppingCost != request.MinimumShoppingCost ||
 		pointSpendingCap.MaximumShoppingCost != request.MaximumShoppingCost {
@@ -230,12 +230,12 @@ func (q *pointSpendingCapController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if otherPointSpendingCap != nil {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrPointSpendingCapShoppingCostOverlapping.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	request.ID = pointSpendingCap.ID
@@ -246,7 +246,7 @@ func (q *pointSpendingCapController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -261,18 +261,18 @@ func (q *pointSpendingCapController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointSpendingCap")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("point spending cap updated successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointSpendingCapController) V1SellerDelete(c fiber.Ctx) (err error) {
@@ -284,7 +284,7 @@ func (q *pointSpendingCapController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointSpendingCapNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, err := q.pointSpendingCapService.FindPointSpendingCap(
 		ctx,
@@ -296,12 +296,12 @@ func (q *pointSpendingCapController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCap")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if request == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrPointSpendingCapNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentUser.ID
@@ -312,7 +312,7 @@ func (q *pointSpendingCapController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -327,18 +327,18 @@ func (q *pointSpendingCapController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdatePointSpendingCap")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("point spending cap deleted successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *pointSpendingCapController) V1BuyerIndex(c fiber.Ctx) (err error) {
@@ -353,9 +353,9 @@ func (q *pointSpendingCapController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindPointSpendingCaps")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }

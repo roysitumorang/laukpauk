@@ -63,7 +63,7 @@ func (q *deliveryAddressController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddresses")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.deliveryAddressService.FindDeliveryAddresses(
 		ctx,
@@ -77,7 +77,7 @@ func (q *deliveryAddressController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddresses")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -85,7 +85,7 @@ func (q *deliveryAddressController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
@@ -97,14 +97,14 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryAddress")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	setting, err := q.settingService.FindSetting(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryAddress, err := q.deliveryAddressService.FindDeliveryAddress(
 		ctx,
@@ -120,14 +120,14 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	if deliveryAddress != nil {
 		if deliveryAddress.RecordStatus == models.RecordStatusActive {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage("delivery address with this longitude and latitude already exists").
-				WriteResponse(c)
+				JSON(c)
 		}
 		deliveryAddress.RecordStatus = models.RecordStatusActive
 		deliveryAddress.StreetAddress = request.StreetAddress
@@ -148,21 +148,21 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrComputeDistanceMeters")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		distanceMeters, err := decimal.New(request.DistanceMeters, 0)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		distanceKM, err := distanceMeters.Quo(decimal.Thousand)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrQuo")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		request.RecordStatus = models.RecordStatusActive
 		request.UserID = currentUser.ID
@@ -174,7 +174,7 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		if request.DistanceKM > setting.DeliveryMaxDistanceKM {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage("your coordinates is out of our coverage area").
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	tx, err := repositories.BeginTx(ctx)
@@ -182,7 +182,7 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -197,7 +197,7 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnsetMain")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	var response *models.DeliveryAddress
@@ -206,23 +206,23 @@ func (q *deliveryAddressController) V1BuyerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryAddress")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	} else if response, err = q.deliveryAddressService.CreateDeliveryAddress(ctx, tx, request); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusCreated).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryAddressController) V1BuyerShow(c fiber.Ctx) (err error) {
@@ -234,7 +234,7 @@ func (q *deliveryAddressController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryAddressNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.deliveryAddressService.FindDeliveryAddress(
 		ctx,
@@ -246,17 +246,17 @@ func (q *deliveryAddressController) V1BuyerShow(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrDeliveryAddressNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
@@ -268,7 +268,7 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryAddressNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryAddress, err := q.deliveryAddressService.FindDeliveryAddress(
 		ctx,
@@ -280,27 +280,27 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrDeliveryAddressNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, statusCode, err := sanitizers.ValidateDeliveryAddress(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateDeliveryAddress")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	setting, err := q.settingService.FindSetting(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindSetting")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryAddress.StreetAddress = request.StreetAddress
 	deliveryAddress.StreetAddressNote = request.StreetAddressNote
@@ -320,21 +320,21 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrComputeDistanceMeters")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		distanceMeters, err := decimal.New(deliveryAddress.DistanceMeters, 0)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrNew")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		distanceKM, err := distanceMeters.Quo(decimal.Thousand)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrQuo")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		deliveryAddress.DestinationLatitude = request.DestinationLatitude
 		deliveryAddress.DestinationLongitude = request.DestinationLongitude
@@ -345,7 +345,7 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -361,7 +361,7 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnsetMain")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	response, err := q.deliveryAddressService.UpdateDeliveryAddress(ctx, tx, deliveryAddress)
@@ -369,18 +369,18 @@ func (q *deliveryAddressController) V1BuyerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("delivery address updated successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryAddressController) V1BuyerSetAsMain(c fiber.Ctx) (err error) {
@@ -392,7 +392,7 @@ func (q *deliveryAddressController) V1BuyerSetAsMain(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryAddressNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryAddress, err := q.deliveryAddressService.FindDeliveryAddress(
 		ctx,
@@ -404,19 +404,19 @@ func (q *deliveryAddressController) V1BuyerSetAsMain(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrDeliveryAddressNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if deliveryAddress.Main {
 		return helper.NewResponse(fiber.StatusOK).
 			SetMessage("address set as primary successfully").
 			SetData(deliveryAddress).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryAddress.Main = true
 	deliveryAddress.UpdatedAt = time.Now()
@@ -425,7 +425,7 @@ func (q *deliveryAddressController) V1BuyerSetAsMain(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -439,25 +439,25 @@ func (q *deliveryAddressController) V1BuyerSetAsMain(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnsetMain")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.deliveryAddressService.UpdateDeliveryAddress(ctx, tx, deliveryAddress)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("delivery address set as primary successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *deliveryAddressController) V1BuyerDelete(c fiber.Ctx) (err error) {
@@ -469,7 +469,7 @@ func (q *deliveryAddressController) V1BuyerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrDeliveryAddressNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryAddress, err := q.deliveryAddressService.FindDeliveryAddress(
 		ctx,
@@ -481,13 +481,13 @@ func (q *deliveryAddressController) V1BuyerDelete(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrDeliveryAddressNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	deliveryAddress.RecordStatus = models.RecordStatusDeleted
 	deliveryAddress.DeletedAt = new(time.Now())
@@ -497,7 +497,7 @@ func (q *deliveryAddressController) V1BuyerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -514,13 +514,13 @@ func (q *deliveryAddressController) V1BuyerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateDeliveryAddress")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
 		SendStatus(c)

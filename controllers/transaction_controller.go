@@ -68,7 +68,7 @@ func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.transactionService.FindTransactions(
 		ctx,
@@ -78,7 +78,7 @@ func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -86,7 +86,7 @@ func (q *transactionController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
@@ -99,7 +99,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		c.Response().SetStatusCode(statusCode)
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.UserID = currentUser.ID
 	response, notificationIDs, err := q.transactionService.CreateTransaction(ctx, currentUser, request)
@@ -107,7 +107,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	messages := make([]models.TopicMessage, len(notificationIDs))
 	for i := range notificationIDs {
@@ -123,7 +123,7 @@ func (q *transactionController) V1BuyerCreate(c fiber.Ctx) (err error) {
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("transaction created successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
@@ -135,7 +135,7 @@ func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.transactionService.FindTransaction(
 		c,
@@ -147,16 +147,16 @@ func (q *transactionController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if response == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
@@ -167,14 +167,14 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransactionPayment")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transactionID, err := uuid.Parse(request.PaymentCapture.Value.Data.ReferenceID)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction, err := q.transactionService.FindTransaction(
 		ctx,
@@ -186,12 +186,12 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if transaction == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if transaction.PaymentStatus = &request.PaymentCapture.Value.Data.Status; *transaction.PaymentStatus == "SUCCEEDED" {
 		transaction.Status = models.TransactionStatusPaid
@@ -206,7 +206,7 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -220,13 +220,13 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
 		SendStatus(c)
@@ -241,7 +241,7 @@ func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction, err := q.transactionService.FindTransaction(
 		c,
@@ -254,19 +254,19 @@ func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if transaction == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, statusCode, err := sanitizers.ValidateTransactionWithdrawal(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransactionWithdrawal")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction.WithdrawalReason = &request.Reason
 	response, err := q.transactionService.RequestWithdrawal(ctx, transaction)
@@ -274,11 +274,11 @@ func (q *transactionController) V1BuyerWithdraw(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRequestWithdrawal")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1SellerIndex(c fiber.Ctx) (err error) {
@@ -289,7 +289,7 @@ func (q *transactionController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.transactionService.FindTransactions(
 		ctx,
@@ -299,7 +299,7 @@ func (q *transactionController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransactions")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -307,7 +307,7 @@ func (q *transactionController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -318,7 +318,7 @@ func (q *transactionController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.transactionService.FindTransaction(
 		ctx,
@@ -328,17 +328,17 @@ func (q *transactionController) V1SellerShow(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrTransactionNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1SellerWithdraw(c fiber.Ctx) (err error) {
@@ -350,7 +350,7 @@ func (q *transactionController) V1SellerWithdraw(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction, err := q.transactionService.FindTransaction(
 		ctx,
@@ -361,13 +361,13 @@ func (q *transactionController) V1SellerWithdraw(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrTransactionNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction.Status = models.TransactionStatusWithdrawn
 	transaction.WithdrawnBy = &currentUser.ID
@@ -377,12 +377,12 @@ func (q *transactionController) V1SellerWithdraw(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrWithdrawTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction withdrawn successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
@@ -394,7 +394,7 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction, err := q.transactionService.FindTransaction(
 		ctx,
@@ -405,20 +405,20 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrTransactionNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, statusCode, err := sanitizers.ValidateTransaction(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransaction")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	n := len(transaction.Items)
 	mapTransactionItemIDs := make(map[uuid.UUID]int, n)
@@ -430,18 +430,18 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 		if !ok {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(helper.Sprintf("items[%d].id: not found", i)).
-				WriteResponse(c)
+				JSON(c)
 		}
 		transactionItem := transaction.Items[j]
 		requestItem.RevisionNote = strings.TrimSpace(requestItem.RevisionNote)
 		if requestItem.Quantity > transactionItem.Quantity {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(helper.Sprintf("items[%d].quantity: cannot exceed %d", i, transactionItem.Quantity)).
-				WriteResponse(c)
+				JSON(c)
 		} else if requestItem.Quantity < transactionItem.Quantity && requestItem.RevisionNote == "" {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(helper.Sprintf("items[%d].revison_note: is required", i)).
-				WriteResponse(c)
+				JSON(c)
 		}
 		transactionItem.Quantity = max(requestItem.Quantity, 0)
 		transactionItem.OutOfStock = transactionItem.Quantity == 0
@@ -459,7 +459,7 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -474,18 +474,18 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction processed successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
@@ -497,7 +497,7 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction, err := q.transactionService.FindTransaction(
 		ctx,
@@ -508,20 +508,20 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrTransactionNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, _, err := sanitizers.ValidateTransactionShipment(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateTransactionShipment")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	transaction.Status = models.TransactionStatusShipped
@@ -534,7 +534,7 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -549,18 +549,18 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction shipped successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *transactionController) V1SellerComplete(c fiber.Ctx) (err error) {
@@ -571,7 +571,7 @@ func (q *transactionController) V1SellerComplete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	transaction, err := q.transactionService.FindTransaction(
 		ctx,
@@ -582,23 +582,23 @@ func (q *transactionController) V1SellerComplete(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrTransactionNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrTransactionNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.transactionService.CompleteTransaction(ctx, transaction)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCompleteTransaction")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("transaction completed successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }

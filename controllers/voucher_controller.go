@@ -62,7 +62,7 @@ func (q *voucherController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.voucherService.FindVouchers(
 		c,
@@ -72,7 +72,7 @@ func (q *voucherController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -80,7 +80,7 @@ func (q *voucherController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *voucherController) V1SellerCreate(c fiber.Ctx) (err error) {
@@ -93,7 +93,7 @@ func (q *voucherController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateVoucher")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if request.Code != nil {
 		voucher, err := q.voucherService.FindVoucher(
@@ -105,12 +105,12 @@ func (q *voucherController) V1SellerCreate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if voucher != nil {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueVoucherCodeViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	createdBy := currentUser.ID
@@ -127,7 +127,7 @@ func (q *voucherController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -142,24 +142,24 @@ func (q *voucherController) V1SellerCreate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCreateVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("voucher created successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *voucherController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -170,7 +170,7 @@ func (q *voucherController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
@@ -182,16 +182,16 @@ func (q *voucherController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if voucher == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(voucher).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
@@ -203,7 +203,7 @@ func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
@@ -215,19 +215,19 @@ func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if voucher == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateVoucher(ctx, c)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateVoucher")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if voucher.Code != nil && request.Code != nil && *voucher.Code != *request.Code {
 		otherVoucher, err := q.voucherService.FindVoucher(
@@ -240,12 +240,12 @@ func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if otherVoucher != nil {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueVoucherCodeViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	request.ID = voucher.ID
@@ -264,7 +264,7 @@ func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -279,24 +279,24 @@ func (q *voucherController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("voucher updated successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *voucherController) V1SellerDelete(c fiber.Ctx) (err error) {
@@ -308,7 +308,7 @@ func (q *voucherController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	voucher, err := q.voucherService.FindVoucher(
 		ctx,
@@ -320,12 +320,12 @@ func (q *voucherController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if voucher == nil {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request := voucher
 	if request.Code != nil {
@@ -341,7 +341,7 @@ func (q *voucherController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -356,18 +356,18 @@ func (q *voucherController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateVoucher")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("voucher deleted successfully").
 		SetData(saved).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
@@ -379,7 +379,7 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	vouchers, _, err := q.voucherService.FindVouchers(
@@ -392,14 +392,14 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchers")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	n := len(vouchers)
 	var response []*models.Voucher
 	if n == 0 {
 		return helper.NewResponse(fiber.StatusOK).
 			SetData(response).
-			WriteResponse(c)
+			JSON(c)
 	}
 	voucherIDs := make([]uuid.UUID, n)
 	for i := range vouchers {
@@ -414,7 +414,7 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchersUsages")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for _, voucher := range vouchers {
 		if voucher.Usages = mapVouchersUsages[voucher.ID]; voucher.Usages < voucher.QuotaPerBuyer {
@@ -424,7 +424,7 @@ func (q *voucherController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
@@ -436,7 +436,7 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	response, err := q.voucherService.FindVoucher(
@@ -450,13 +450,13 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrVoucherNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVoucher")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	mapVouchersUsages, err := q.transactionService.FindVouchersUsages(
 		ctx,
@@ -467,15 +467,15 @@ func (q *voucherController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindVouchersUsages")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if response.Usages = mapVouchersUsages[response.ID]; response.Usages >= response.QuotaPerBuyer {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrVoucherNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response.Photo = response.PhotoPath(c.BaseURL())
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }

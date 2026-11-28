@@ -30,9 +30,9 @@ func KeyAuthMiddleware(
 				err = keyauth.ErrMissingOrMalformedAPIKey
 			}
 			if errors.Is(err, models.ErrAccessDenied) {
-				return helper.NewResponse(fiber.StatusForbidden).SetMessage(err.Error()).WriteResponse(c)
+				return helper.NewResponse(fiber.StatusForbidden).SetMessage(err.Error()).JSON(c)
 			}
-			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).WriteResponse(c)
+			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage(err.Error()).JSON(c)
 		},
 		Validator: func(c fiber.Ctx, token string) (bool, error) {
 			claims, err := bearerVerify(token)

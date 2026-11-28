@@ -72,7 +72,7 @@ func (q *productController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	rows, pagination, err := q.productService.FindProducts(
 		ctx,
@@ -82,7 +82,7 @@ func (q *productController) V1SellerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	pagination.Rows = make([]any, len(rows))
 	for i := range rows {
@@ -90,7 +90,7 @@ func (q *productController) V1SellerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(pagination).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
@@ -106,7 +106,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
@@ -117,13 +117,13 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductCategoryNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage("category_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	product, err := q.productService.FindProduct(
 		ctx,
@@ -138,7 +138,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	now := time.Now()
 	request.RecordStatus = models.RecordStatusActive
@@ -155,7 +155,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueProductNameViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		request.ID = product.ID
 		request.Name = product.Name
@@ -177,7 +177,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if recipeItems, _, err = q.recipeItemService.FindRecipeItems(
 			ctx,
@@ -188,7 +188,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	tx, err := repositories.BeginTx(ctx)
@@ -197,7 +197,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -213,7 +213,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
@@ -226,7 +226,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	for _, recipeItem := range recipeItems {
@@ -238,7 +238,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
@@ -246,7 +246,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if product != nil &&
 		product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
@@ -256,7 +256,7 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 			request.SetPhoto(product.Photo)
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -264,12 +264,12 @@ func (q *productController) V1SellerCreate(c fiber.Ctx) (err error) {
 		request.SetPhoto(os.Getenv("PRODUCT_DEFAULT_PHOTO"))
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusCreated).
 		SetMessage("product created successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productController) V1SellerShow(c fiber.Ctx) (err error) {
@@ -280,7 +280,7 @@ func (q *productController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrProductNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	response, err := q.productService.FindProduct(
 		ctx,
@@ -291,13 +291,13 @@ func (q *productController) V1SellerShow(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if response.Variants, _, err = q.productVariantService.FindProductVariants(
 		ctx,
@@ -308,11 +308,11 @@ func (q *productController) V1SellerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
@@ -324,7 +324,7 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrProductNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	product, err := q.productService.FindProduct(
 		ctx,
@@ -335,13 +335,13 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, photo, mimetype, statusCode, err := sanitizers.ValidateProduct(ctx, c)
 	if photo == nil {
@@ -351,7 +351,7 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateProduct")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCategory, err := q.productCategoryService.FindProductCategory(
 		ctx,
@@ -362,13 +362,13 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductCategoryNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage("category_id: not found").
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductCategory")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if product.Name != request.Name {
 		otherProduct, err := q.productService.FindProduct(
@@ -381,12 +381,12 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if otherProduct != nil {
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(models.ErrUniqueProductNameViolation.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	request.ID = product.ID
@@ -408,7 +408,7 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	recipeItems, _, err := q.recipeItemService.FindRecipeItems(
 		ctx,
@@ -419,14 +419,14 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindRecipeItems")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	tx, err := repositories.BeginTx(ctx)
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -441,7 +441,7 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for _, productVariant := range productVariants {
 		productVariant.ProductCategoryID = response.ProductCategoryID
@@ -453,7 +453,7 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProductVariant")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	for _, recipeItem := range recipeItems {
@@ -464,14 +464,14 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateRecipeItem")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = helper.SaveFile(c, photo, mimetype, request.Photo); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveFile")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if product.Photo != os.Getenv("PRODUCT_DEFAULT_PHOTO") &&
 		product.Photo != request.Photo {
@@ -479,19 +479,19 @@ func (q *productController) V1SellerUpdate(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRemoveAll")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetMessage("product updated successfully").
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productController) V1SellerDelete(c fiber.Ctx) (err error) {
@@ -503,7 +503,7 @@ func (q *productController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrProductNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request, err := q.productService.FindProduct(
 		ctx,
@@ -514,13 +514,13 @@ func (q *productController) V1SellerDelete(c fiber.Ctx) (err error) {
 	if errors.Is(err, models.ErrProductNotFound) {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	request.RecordStatus = models.RecordStatusDeleted
 	request.DeletedBy = &currentUser.ID
@@ -531,7 +531,7 @@ func (q *productController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -545,13 +545,13 @@ func (q *productController) V1SellerDelete(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusNoContent).
 		SendStatus(c)
@@ -565,7 +565,7 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProducts")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	infiniteScroll, err := q.productService.InfiniteScrollProducts(
 		ctx,
@@ -576,7 +576,7 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrInfiniteScrollProducts")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for i := range infiniteScroll.Rows {
 		row, ok := infiniteScroll.Rows[i].(*models.Product)
@@ -588,7 +588,7 @@ func (q *productController) V1BuyerIndex(c fiber.Ctx) (err error) {
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(infiniteScroll).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
@@ -599,14 +599,14 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrParse")
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(models.ErrProductNotFound.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCache, err := q.storage.GetWithContext(ctx, c.Path())
 	if err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGetWithContext")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	buffer := pools.BufferPool.Get()
 	defer func() {
@@ -623,13 +623,13 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		); errors.Is(err, models.ErrProductNotFound) || response == nil {
 			return helper.NewResponse(fiber.StatusNotFound).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		variants, _, err := q.productVariantService.FindProductVariants(
 			ctx,
@@ -641,7 +641,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		response.Photo = response.PhotoPath(c.BaseURL())
 		response.Variants = make([]*models.ProductVariant, len(variants))
@@ -652,7 +652,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecode")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	hitsKey := helper.Sprintf("%s-hits", c.Path())
@@ -661,7 +661,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrGetWithContext")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if hitsCache != nil {
 		buffer.Reset()
@@ -670,7 +670,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrDecode")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 	}
 	var counter atomic.Int64
@@ -688,20 +688,20 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		if errors.Is(err, models.ErrProductNotFound) || product == nil {
 			return helper.NewResponse(fiber.StatusNotFound).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProduct")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		tx, err := repositories.BeginTx(ctx)
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		defer func(ctx context.Context) {
 			if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -716,19 +716,19 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		if errors.Is(err, models.ErrProductNotFound) || response == nil {
 			return helper.NewResponse(fiber.StatusNotFound).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateProduct")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		if err = tx.Commit(ctx); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		variants, _, err := q.productVariantService.FindProductVariants(
 			ctx,
@@ -740,7 +740,7 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(err.Error()).
-				WriteResponse(c)
+				JSON(c)
 		}
 		response.Photo = response.PhotoPath(c.BaseURL())
 		response.Variants = make([]*models.ProductVariant, len(variants))
@@ -751,30 +751,30 @@ func (q *productController) V1BuyerShow(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrEncode")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productCache = buffer.Bytes()
 	if err = q.storage.SetWithContext(ctx, c.Path(), productCache, 0); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSetWithContext")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	buffer.Reset()
 	if err = gob.NewEncoder(buffer).Encode(response.Hits); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrEncode")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	hitsCache = buffer.Bytes()
 	if err = q.storage.SetWithContext(ctx, hitsKey, hitsCache, 0); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSetWithContext")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response.HideBasePrices()).
-		WriteResponse(c)
+		JSON(c)
 }

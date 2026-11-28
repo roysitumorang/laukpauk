@@ -60,7 +60,7 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if response == nil {
 		response = &models.Cart{
@@ -68,14 +68,14 @@ func (q *cartController) V1BuyerIndex(c fiber.Ctx) (err error) {
 		}
 		return helper.NewResponse(fiber.StatusOK).
 			SetData(response).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for i := range response.Items {
 		response.Items[i].ProductPhoto = response.Items[i].ProductPhotoPath(c.BaseURL())
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }
 
 func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
@@ -87,7 +87,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrValidateCart")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	productVariantIDs := make([]uuid.UUID, len(request.Items))
 	for i := range request.Items {
@@ -103,7 +103,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindProductVariants")
 		return helper.NewResponse(statusCode).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	mapProductVariantIDs := make(map[uuid.UUID]*models.ProductVariant, len(productVariants))
 	for _, productVariant := range productVariants {
@@ -115,7 +115,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		if !ok || !productVariant.ProductReadyStock {
 			return helper.NewResponse(fiber.StatusBadRequest).
 				SetMessage(helper.Sprintf("items[%d].product_variant_id: not found or out of stock", i)).
-				WriteResponse(c)
+				JSON(c)
 		}
 		cartItem.ProductCategoryID = productVariant.ProductCategoryID
 		cartItem.ProductCategoryName = productVariant.ProductCategoryName
@@ -144,7 +144,7 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrBeginTx")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	defer func(ctx context.Context) {
 		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
@@ -159,18 +159,18 @@ func (q *cartController) V1BuyerSave(c fiber.Ctx) (err error) {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrSaveCart")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if err = tx.Commit(ctx); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	for i := range response.Items {
 		response.Items[i].ProductPhoto = response.Items[i].ProductPhotoPath(c.BaseURL())
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SetData(response).
-		WriteResponse(c)
+		JSON(c)
 }

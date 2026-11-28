@@ -38,7 +38,7 @@ func (q *whatsappController) V1WebhookVerify(c fiber.Ctx) error {
 		) != 1 {
 		return helper.NewResponse(fiber.StatusForbidden).
 			SetMessage("invalid verify token").
-			WriteResponse(c)
+			JSON(c)
 	}
 	return helper.NewResponse(fiber.StatusOK).
 		SendString(c, c.Query("hub.challenge"))
@@ -54,14 +54,14 @@ func (q *whatsappController) V1WebhookReceive(c fiber.Ctx) error {
 	if !q.whatsappClient.VerifyWhatsappSignature(ctx, body, c.Get(externals.WhatsappSignatureHeader)) {
 		return helper.NewResponse(fiber.StatusUnauthorized).
 			SetMessage("invalid signature").
-			WriteResponse(c)
+			JSON(c)
 	}
 	var payload externals.WhatsappWebhook
 	if err := json.Unmarshal(body, &payload); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUnmarshal")
 		return helper.NewResponse(fiber.StatusBadRequest).
 			SetMessage(err.Error()).
-			WriteResponse(c)
+			JSON(c)
 	}
 	if payload.Object == externals.WhatsappWebhookObject {
 		for _, entry := range payload.Entry {

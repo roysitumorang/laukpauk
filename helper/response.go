@@ -34,22 +34,20 @@ func NewResponse(statusCode int) *Response {
 }
 
 func (r *Response) SetMessage(message string) *Response {
-	if r.StatusCode == fiber.StatusNoContent {
-		return r
+	if r.StatusCode != fiber.StatusNoContent {
+		r.Message = message
 	}
-	r.Message = message
 	return r
 }
 
 func (r *Response) SetData(data any) *Response {
-	if r.StatusCode == fiber.StatusNoContent {
-		return r
+	if r.StatusCode != fiber.StatusNoContent {
+		r.Data = data
 	}
-	r.Data = data
 	return r
 }
 
-func (r *Response) WriteResponse(c fiber.Ctx) error {
+func (r *Response) JSON(c fiber.Ctx) error {
 	if r.StatusCode == fiber.StatusNoContent {
 		return r.SendStatus(c)
 	}
@@ -58,7 +56,6 @@ func (r *Response) WriteResponse(c fiber.Ctx) error {
 		sb.Reset()
 		pools.BuilderPool.Put(sb)
 	}()
-	sb.Reset()
 	_, _ = fmt.Fprintf(sb, "%s %s", c.Method(), c.FullURL())
 	r.RequestURL = sb.String()
 	r.RequestID = ByteSlice2String(c.Response().Header.Peek(fiber.HeaderXRequestID))
@@ -67,6 +64,9 @@ func (r *Response) WriteResponse(c fiber.Ctx) error {
 }
 
 func (r *Response) SendString(c fiber.Ctx, body string) error {
+	if r.StatusCode == fiber.StatusNoContent {
+		return r.SendStatus(c)
+	}
 	return c.Status(r.StatusCode).SendString(body)
 }
 

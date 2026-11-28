@@ -14,7 +14,7 @@ func BasicAuthMiddleware() fiber.Handler {
 			os.Getenv("BASIC_AUTH_USERNAME"): os.Getenv("BASIC_AUTH_PASSWORD"),
 		},
 		Unauthorized: func(c fiber.Ctx) error {
-			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage("Unauthorized").WriteResponse(c)
+			return helper.NewResponse(fiber.StatusUnauthorized).SetMessage("Unauthorized").JSON(c)
 		},
 	})
 }
