@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,17 +23,17 @@ type (
 		) (*models.ProductCategory, error)
 		CreateProductCategory(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx database.Tx,
 			request *models.ProductCategory,
 		) (*models.ProductCategory, error)
 		UpdateProductCategory(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx database.Tx,
 			request *models.ProductCategory,
 		) (*models.ProductCategory, error)
 		SaveProductCategory(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx database.Tx,
 			request *models.ProductCategory,
 		) (*models.ProductCategory, error)
 	}
@@ -95,7 +95,7 @@ func (q *productCategoryService) FindProductCategory(
 
 func (q *productCategoryService) CreateProductCategory(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductCategory,
 ) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryService-CreateProductCategory"
@@ -108,7 +108,7 @@ func (q *productCategoryService) CreateProductCategory(
 
 func (q *productCategoryService) UpdateProductCategory(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductCategory,
 ) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryService-UpdateProductCategory"
@@ -121,7 +121,7 @@ func (q *productCategoryService) UpdateProductCategory(
 
 func (q *productCategoryService) SaveProductCategory(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductCategory,
 ) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryService-SaveProductCategory"

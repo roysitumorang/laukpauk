@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,17 +22,17 @@ type PointSpendingCapService interface {
 	) (*models.PointSpendingCap, error)
 	CreatePointSpendingCap(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.PointSpendingCap,
 	) (*models.PointSpendingCap, error)
 	UpdatePointSpendingCap(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.PointSpendingCap,
 	) (*models.PointSpendingCap, error)
 	SavePointSpendingCap(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.PointSpendingCap,
 	) (*models.PointSpendingCap, error)
 }
@@ -93,7 +93,7 @@ func (q *pointSpendingCapService) FindPointSpendingCap(
 
 func (q *pointSpendingCapService) CreatePointSpendingCap(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.PointSpendingCap,
 ) (*models.PointSpendingCap, error) {
 	ctxt := "PointSpendingCapService-CreatePointSpendingCap"
@@ -106,7 +106,7 @@ func (q *pointSpendingCapService) CreatePointSpendingCap(
 
 func (q *pointSpendingCapService) UpdatePointSpendingCap(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.PointSpendingCap,
 ) (*models.PointSpendingCap, error) {
 	ctxt := "PointSpendingCapService-UpdatePointSpendingCap"
@@ -119,7 +119,7 @@ func (q *pointSpendingCapService) UpdatePointSpendingCap(
 
 func (q *pointSpendingCapService) SavePointSpendingCap(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.PointSpendingCap,
 ) (response *models.PointSpendingCap, err error) {
 	ctxt := "PointSpendingCapService-SavePointSpendingCap"

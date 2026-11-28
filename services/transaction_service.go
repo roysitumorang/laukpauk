@@ -10,7 +10,7 @@ import (
 	"uuid"
 
 	"github.com/dustin/go-humanize"
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -34,7 +34,7 @@ type TransactionService interface {
 	) (*models.Transaction, []uuid.UUID, error)
 	UpdateTransaction(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Transaction,
 	) (*models.Transaction, error)
 	AutoCancelOverdueTransactions(ctx context.Context) error
@@ -433,7 +433,7 @@ func (q *transactionService) CreateTransaction(
 		return nil, nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -605,7 +605,7 @@ func (q *transactionService) CreateTransaction(
 }
 func (q *transactionService) UpdateTransaction(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Transaction,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionService-UpdateTransaction"
@@ -638,7 +638,7 @@ func (q *transactionService) AutoCancelOverdueTransactions(ctx context.Context) 
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -702,7 +702,7 @@ func (q *transactionService) RequestWithdrawal(
 		return nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -744,7 +744,7 @@ func (q *transactionService) WithdrawTransaction(
 		return nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -771,7 +771,7 @@ func (q *transactionService) WithdrawTransaction(
 
 // refundBalances gives the buyer back the reward points and wallet a cancelled or withdrawn transaction used
 // (CreateTransaction debited them).
-func (q *transactionService) refundBalances(ctx context.Context, tx pgx.Tx, transaction *models.Transaction, now time.Time) error {
+func (q *transactionService) refundBalances(ctx context.Context, tx database.Tx, transaction *models.Transaction, now time.Time) error {
 	if transaction.RewardPointsDiscount <= 0 && transaction.WalletDiscount <= 0 {
 		return nil
 	}
@@ -815,7 +815,7 @@ func (q *transactionService) CompleteTransaction(
 		return nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -912,7 +912,7 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {

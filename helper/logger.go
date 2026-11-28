@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/config"
+	"github.com/roysitumorang/laukpauk/database"
 )
 
 var (
@@ -94,8 +94,8 @@ func Capture(ctx context.Context, level slog.Level, err error, context, scope st
 	case slog.LevelWarn:
 		logger.WarnContext(ctx, err.Error(), entries...)
 	case slog.LevelError:
-		// ignoring pgx.ErrNoRows
-		if errors.Is(err, pgx.ErrNoRows) {
+		// ignoring database.ErrNoRows
+		if errors.Is(err, database.ErrNoRows) {
 			return
 		}
 		var name string

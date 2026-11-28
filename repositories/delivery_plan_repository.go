@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +26,24 @@ type DeliveryPlanRepository interface {
 	) (*models.DeliveryPlan, error)
 	CreateDeliveryPlan(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.DeliveryPlan,
 	) (*models.DeliveryPlan, error)
 	UpdateDeliveryPlan(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.DeliveryPlan,
 	) (*models.DeliveryPlan, error)
 }
 
 type deliveryPlanRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewDeliveryPlanRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) DeliveryPlanRepository {
 	return &deliveryPlanRepository{
 		dbRead:  dbRead,
@@ -84,18 +82,18 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		, record_status
 		, name
 		, weekday
-		, lower(transaction_window)
-		, upper(transaction_window)
+		, transaction_window_min
+		, transaction_window_max
 		, delivery_time_interval
 		, same_day
-		, lower(same_day_window)
-		, upper(same_day_window)
+		, same_day_window_min
+		, same_day_window_max
 		, next_day
-		, lower(next_day_window)
-		, upper(next_day_window)
+		, next_day_window_min
+		, next_day_window_max
 		, next_two_day
-		, lower(next_two_day_window)
-		, upper(next_two_day_window)
+		, next_two_day_window_min
+		, next_two_day_window_max
 		, created_by
 		, created_at
 		, updated_by
@@ -115,7 +113,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -140,7 +138,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlans(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -210,18 +208,18 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 			, record_status
 			, name
 			, weekday
-			, lower(transaction_window)
-			, upper(transaction_window)
+			, transaction_window_min
+			, transaction_window_max
 			, delivery_time_interval
 			, same_day
-			, lower(same_day_window)
-			, upper(same_day_window)
+			, same_day_window_min
+			, same_day_window_max
 			, next_day
-			, lower(next_day_window)
-			, upper(next_day_window)
+			, next_day_window_min
+			, next_day_window_max
 			, next_two_day
-			, lower(next_two_day_window)
-			, upper(next_two_day_window)
+			, next_two_day_window_min
+			, next_two_day_window_max
 			, created_by
 			, created_at
 			, updated_by
@@ -258,7 +256,7 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrDeliveryPlanNotFound
 	}
 	if err != nil {
@@ -270,22 +268,13 @@ func (q *deliveryPlanRepository) FindDeliveryPlan(
 
 func (q *deliveryPlanRepository) CreateDeliveryPlan(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.DeliveryPlan,
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-CreateDeliveryPlan"
 	var response models.DeliveryPlan
-	var sameDayInterval,
-		nextDayInterval,
-		nextTwoDayInterval string
-	if request.SameDay {
-		sameDayInterval = ", '[]'"
-	}
-	if request.NextDay {
-		nextDayInterval = ", '[]'"
-	}
-	if request.NextTwoDay {
-		nextTwoDayInterval = ", '[]'"
+	if err := q.checkTransactionWindow(ctx, tx, nil, request); err != nil {
+		return nil, err
 	}
 	sb := pools.BuilderPool.Get()
 	defer func() {
@@ -299,14 +288,18 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			record_status
 			, name
 			, weekday
-			, transaction_window
+			, transaction_window_min
+			, transaction_window_max
 			, delivery_time_interval
 			, same_day
-			, same_day_window
+			, same_day_window_min
+			, same_day_window_max
 			, next_day
-			, next_day_window
+			, next_day_window_min
+			, next_day_window_max
 			, next_two_day
-			, next_two_day_window
+			, next_two_day_window_min
+			, next_two_day_window_max
 			, created_by
 			, created_at
 			, updated_by
@@ -315,14 +308,14 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			$1
 			, $2
 			, $3
-			, tstzrange($4, $5, '[]')
+			, $4, $5
 			, $6
 			, $7
-			, tstzrange($8, $9%s)
+			, $8, $9
 			, $10
-			, tstzrange($11, $12%s)
+			, $11, $12
 			, $13
-			, tstzrange($14, $15%s)
+			, $14, $15
 			, $16
 			, $17
 			, $18
@@ -332,18 +325,18 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, record_status
 			, name
 			, weekday
-			, lower(transaction_window)
-			, upper(transaction_window)
+			, transaction_window_min
+			, transaction_window_max
 			, delivery_time_interval
 			, same_day
-			, lower(same_day_window)
-			, upper(same_day_window)
+			, same_day_window_min
+			, same_day_window_max
 			, next_day
-			, lower(next_day_window)
-			, upper(next_day_window)
+			, next_day_window_min
+			, next_day_window_max
 			, next_two_day
-			, lower(next_two_day_window)
-			, upper(next_two_day_window)
+			, next_two_day_window_min
+			, next_two_day_window_max
 			, created_by
 			, created_at
 			, updated_by
@@ -351,9 +344,6 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 			, deleted_by
 			, deleted_at
 			, deletion_reason`,
-		sameDayInterval,
-		nextDayInterval,
-		nextTwoDayInterval,
 	)
 	err := tx.QueryRow(
 		ctx,
@@ -403,13 +393,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 		&response.DeletionReason,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.ExclusionViolation &&
-			pgxErr.ConstraintName == "no_overlapping_delivery_plans_transaction_window" {
-			err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return (&response).Populate(), nil
@@ -417,7 +401,7 @@ func (q *deliveryPlanRepository) CreateDeliveryPlan(
 
 func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.DeliveryPlan,
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanRepository-UpdateDeliveryPlan"
@@ -429,18 +413,18 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, record_status
 			, name
 			, weekday
-			, lower(transaction_window)
-			, upper(transaction_window)
+			, transaction_window_min
+			, transaction_window_max
 			, delivery_time_interval
 			, same_day
-			, lower(same_day_window)
-			, upper(same_day_window)
+			, same_day_window_min
+			, same_day_window_max
 			, next_day
-			, lower(next_day_window)
-			, upper(next_day_window)
+			, next_day_window_min
+			, next_day_window_max
 			, next_two_day
-			, lower(next_two_day_window)
-			, upper(next_two_day_window)
+			, next_two_day_window_min
+			, next_two_day_window_max
 			, created_by
 			, created_at
 			, updated_by
@@ -481,6 +465,13 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
+	if response.Weekday != request.Weekday ||
+		!response.TransactionWindowMin.Equal(request.TransactionWindowMin) ||
+		!response.TransactionWindowMax.Equal(request.TransactionWindowMax) {
+		if err = q.checkTransactionWindow(ctx, tx, &request.ID, request); err != nil {
+			return nil, err
+		}
+	}
 	var params []any
 	var n int
 	sb := pools.BuilderPool.Get()
@@ -517,7 +508,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " transaction_window = tstzrange($%d, $%d, '[]')", n-1, n)
+		_, _ = fmt.Fprintf(sb, " transaction_window_min = $%d, transaction_window_max = $%d", n-1, n)
 	}
 	if response.DeliveryTimeInterval != request.DeliveryTimeInterval {
 		params = append(params, request.DeliveryTimeInterval)
@@ -545,11 +536,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " same_day_window = tstzrange($%d, $%d", n-1, n)
-		if request.SameDay {
-			_, _ = sb.WriteString(", '[]'")
-		}
-		_, _ = sb.WriteString(")")
+		_, _ = fmt.Fprintf(sb, " same_day_window_min = $%d, same_day_window_max = $%d", n-1, n)
 	}
 	if response.NextDay != request.NextDay {
 		params = append(params, request.NextDay)
@@ -570,11 +557,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " next_day_window = tstzrange($%d, $%d", n-1, n)
-		if request.NextDay {
-			_, _ = sb.WriteString(", '[]'")
-		}
-		_, _ = sb.WriteString(")")
+		_, _ = fmt.Fprintf(sb, " next_day_window_min = $%d, next_day_window_max = $%d", n-1, n)
 	}
 	if response.NextTwoDay != request.NextTwoDay {
 		params = append(params, request.NextTwoDay)
@@ -595,11 +578,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " next_two_day_window = tstzrange($%d, $%d", n-1, n)
-		if request.NextTwoDay {
-			_, _ = sb.WriteString(", '[]'")
-		}
-		_, _ = sb.WriteString(")")
+		_, _ = fmt.Fprintf(sb, " next_two_day_window_min = $%d, next_two_day_window_max = $%d", n-1, n)
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -621,18 +600,18 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 			, record_status
 			, name
 			, weekday
-			, lower(transaction_window)
-			, upper(transaction_window)
+			, transaction_window_min
+			, transaction_window_max
 			, delivery_time_interval
 			, same_day
-			, lower(same_day_window)
-			, upper(same_day_window)
+			, same_day_window_min
+			, same_day_window_max
 			, next_day
-			, lower(next_day_window)
-			, upper(next_day_window)
+			, next_day_window_min
+			, next_day_window_max
 			, next_two_day
-			, lower(next_two_day_window)
-			, upper(next_two_day_window)
+			, next_two_day_window_min
+			, next_two_day_window_max
 			, created_by
 			, created_at
 			, updated_by
@@ -667,13 +646,7 @@ func (q *deliveryPlanRepository) UpdateDeliveryPlan(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.ExclusionViolation &&
-			pgxErr.ConstraintName == "no_overlapping_delivery_plans_transaction_window" {
-			err = models.ErrUniqueDeliveryPlanTransactionWindowViolation
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return (&response).Populate(), nil
@@ -742,14 +715,14 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 	if !request.TransactionDatetime.IsZero() {
 		params = append(params, request.TransactionDatetime)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "transaction_window @> $%d::timestamptz", len(params))
+		_, _ = fmt.Fprintf(sb, "transaction_window_min <= $%d AND transaction_window_max >= $%d", len(params), len(params))
 		conds = append(conds, sb.String())
 	}
 	if request.TransactionWindow != nil {
 		params = append(params, request.TransactionWindow.Min, request.TransactionWindow.Max)
 		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "transaction_window && tstzrange($%d, $%d, '[]')", n-1, n)
+		_, _ = fmt.Fprintf(sb, "transaction_window_min <= $%d AND transaction_window_max >= $%d", n, n-1)
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
@@ -772,4 +745,43 @@ func (q *deliveryPlanRepository) buildCondition(request *models.DeliveryPlanFilt
 		condition = sb.String()
 	}
 	return
+}
+
+// checkTransactionWindow returns models.ErrUniqueDeliveryPlanTransactionWindowViolation when another delivery plan
+// on the same weekday has a transaction window overlapping the plan's (both ends included); excludeID is the plan
+// being updated. MariaDB has no exclusion constraints, so this check takes their place: FOR UPDATE locks the plans
+// of that weekday (and, through the weekday index, the gap around them) until the transaction ends, so two
+// transactions can't add overlapping plans at the same time.
+func (q *deliveryPlanRepository) checkTransactionWindow(
+	ctx context.Context,
+	tx database.Tx,
+	excludeID *uuid.UUID,
+	request *models.DeliveryPlan,
+) error {
+	ctxt := "DeliveryPlanRepository-checkTransactionWindow"
+	params := []any{request.Weekday, request.TransactionWindowMax, request.TransactionWindowMin}
+	query := `SELECT id
+		FROM delivery_plans
+		WHERE weekday = $1
+			AND transaction_window_min <= $2
+			AND transaction_window_max >= $3`
+	if excludeID != nil {
+		params = append(params, *excludeID)
+		query += " AND id != $4"
+	}
+	rows, err := tx.Query(ctx, query+" FOR UPDATE", params...)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return err
+	}
+	defer rows.Close()
+	overlapping := rows.Next()
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return err
+	}
+	if overlapping {
+		return models.ErrUniqueDeliveryPlanTransactionWindowViolation
+	}
+	return nil
 }

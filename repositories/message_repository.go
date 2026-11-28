@@ -4,8 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -13,19 +12,19 @@ import (
 type MessageRepository interface {
 	CreateMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Message,
 	) (*models.Message, error)
 }
 
 type messageRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewMessageRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) MessageRepository {
 	return &messageRepository{
 		dbRead:  dbRead,
@@ -35,7 +34,7 @@ func NewMessageRepository(
 
 func (q *messageRepository) CreateMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Message,
 ) (*models.Message, error) {
 	ctxt := "MessageRepository-CreateMessage"

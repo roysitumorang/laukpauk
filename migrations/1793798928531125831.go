@@ -5,54 +5,48 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793798928531125831] = Migration{
 		Version: 1793798928531125831,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// payment_channels
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE TABLE payment_channels (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, business_id character varying NOT NULL
-					, name character varying NOT NULL
-					, channel_code character varying NOT NULL UNIQUE
-					, country character varying NOT NULL
-					, currency character varying NOT NULL
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
+					, business_id TEXT NOT NULL
+					, name TEXT NOT NULL
+					, channel_code VARCHAR(255) NOT NULL
+					, country TEXT NOT NULL
+					, currency TEXT NOT NULL
 					, minimum_amount bigint NOT NULL
 					, maximum_amount bigint NOT NULL
 					, payment_request_expiry double precision NOT NULL
-					, refund boolean NOT NULL
-					, channel_type character varying NOT NULL
-					, channel_category character varying NOT NULL
-					, created_at timestamp with time zone NOT NULL
-				);`,
+					, refund BOOLEAN NOT NULL
+					, channel_type TEXT NOT NULL
+					, channel_category TEXT NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, CONSTRAINT payment_channels_channel_code_key UNIQUE (channel_code)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				"CREATE INDEX ON payment_channels (LOWER(name));",
+				`CREATE INDEX payment_channels_minimum_amount_idx ON payment_channels (minimum_amount);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				"CREATE INDEX ON payment_channels (minimum_amount);",
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				"CREATE INDEX ON payment_channels (maximum_amount);",
+				`CREATE INDEX payment_channels_maximum_amount_idx ON payment_channels (maximum_amount);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -164,7 +158,7 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Down"
 			if _, err = tx.Exec(
 				ctx,

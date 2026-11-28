@@ -8,8 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +25,24 @@ type RecipeGuideRepository interface {
 	) (*models.RecipeGuide, error)
 	CreateRecipeGuide(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.RecipeGuide,
 	) (*models.RecipeGuide, error)
 	UpdateRecipeGuide(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.RecipeGuide,
 	) (*models.RecipeGuide, error)
 }
 
 type recipeGuideRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewRecipeGuideRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) RecipeGuideRepository {
 	return &recipeGuideRepository{
 		dbRead:  dbRead,
@@ -101,7 +100,7 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -126,7 +125,7 @@ func (q *recipeGuideRepository) FindRecipeGuides(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -204,7 +203,7 @@ func (q *recipeGuideRepository) FindRecipeGuide(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrRecipeGuideNotFound
 	}
 	if err != nil {
@@ -216,7 +215,7 @@ func (q *recipeGuideRepository) FindRecipeGuide(
 
 func (q *recipeGuideRepository) CreateRecipeGuide(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.RecipeGuide,
 ) (*models.RecipeGuide, error) {
 	ctxt := "RecipeGuideRepository-CreateRecipeGuide"
@@ -271,7 +270,7 @@ func (q *recipeGuideRepository) CreateRecipeGuide(
 
 func (q *recipeGuideRepository) UpdateRecipeGuide(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.RecipeGuide,
 ) (*models.RecipeGuide, error) {
 	ctxt := "RecipeGuideRepository-UpdateRecipeGuide"
@@ -307,7 +306,7 @@ func (q *recipeGuideRepository) UpdateRecipeGuide(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrRecipeGuideNotFound
 	}
 	if err != nil {

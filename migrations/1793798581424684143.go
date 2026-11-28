@@ -4,38 +4,41 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793798581424684143] = Migration{
 		Version: 1793798581424684143,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// carts
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE TABLE carts (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, user_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT UNIQUE
-					, deleted_user_id UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_at timestamp with time zone NOT NULL
-				);`,
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
+					, user_id UUID
+					, deleted_user_id UUID
+					, created_at DATETIME(6) NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT carts_user_id_key UNIQUE (user_id)
+					, CONSTRAINT carts_deleted_user_id_fkey FOREIGN KEY (deleted_user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON carts (deleted_user_id);`,
+				`CREATE INDEX carts_deleted_user_id_idx ON carts (deleted_user_id);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Down"
 			if _, err = tx.Exec(
 				ctx,

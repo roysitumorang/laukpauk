@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -26,17 +26,17 @@ type ProductService interface {
 	) (*models.Product, error)
 	CreateProduct(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 	UpdateProduct(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 	SaveProduct(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 }
@@ -125,7 +125,7 @@ func (q *productService) FindProduct(
 
 func (q *productService) CreateProduct(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	ctxt := "ProductService-CreateProduct"
@@ -138,7 +138,7 @@ func (q *productService) CreateProduct(
 
 func (q *productService) UpdateProduct(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	ctxt := "ProductService-UpdateProduct"
@@ -151,7 +151,7 @@ func (q *productService) UpdateProduct(
 
 func (q *productService) SaveProduct(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	ctxt := "ProductService-SaveProduct"

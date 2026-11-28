@@ -10,10 +10,7 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -30,24 +27,24 @@ type VoucherRepository interface {
 	) (*models.Voucher, error)
 	CreateVoucher(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Voucher,
 	) (*models.Voucher, error)
 	UpdateVoucher(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Voucher,
 	) (*models.Voucher, error)
 }
 
 type voucherRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewVoucherRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) VoucherRepository {
 	return &voucherRepository{
 		dbRead:  dbRead,
@@ -117,7 +114,7 @@ func (q *voucherRepository) FindVouchers(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -142,7 +139,7 @@ func (q *voucherRepository) FindVouchers(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -201,7 +198,7 @@ func (q *voucherRepository) FindVouchers(
 		return response, total, pages, nil
 	}
 	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -299,7 +296,7 @@ func (q *voucherRepository) FindVoucher(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrVoucherNotFound
 	}
 	if err != nil {
@@ -314,7 +311,7 @@ func (q *voucherRepository) FindVoucher(
 		ORDER BY id`,
 		response.ID,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -335,7 +332,7 @@ func (q *voucherRepository) FindVoucher(
 
 func (q *voucherRepository) CreateVoucher(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Voucher,
 ) (*models.Voucher, error) {
 	ctxt := "VoucherRepository-CreateVoucher"
@@ -431,9 +428,7 @@ func (q *voucherRepository) CreateVoucher(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "vouchers_unique_code_idx" {
+		if database.IsUniqueViolation(err, "vouchers_unique_code_idx") {
 			err = models.ErrUniqueVoucherCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -445,7 +440,7 @@ func (q *voucherRepository) CreateVoucher(
 
 func (q *voucherRepository) UpdateVoucher(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Voucher,
 ) (*models.Voucher, error) {
 	ctxt := "VoucherRepository-UpdateVoucher"
@@ -505,7 +500,7 @@ func (q *voucherRepository) UpdateVoucher(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrVoucherNotFound
 	}
 	if err != nil {
@@ -731,9 +726,7 @@ func (q *voucherRepository) UpdateVoucher(
 			&response.DeletedAt,
 			&response.DeletionReason,
 		); err != nil {
-			if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-				pgxErr.Code == pgerrcode.UniqueViolation &&
-				pgxErr.ConstraintName == "vouchers_unique_code_idx" {
+			if database.IsUniqueViolation(err, "vouchers_unique_code_idx") {
 				err = models.ErrUniqueVoucherCodeViolation
 			} else {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -749,7 +742,7 @@ func (q *voucherRepository) UpdateVoucher(
 		ORDER BY id`,
 		request.ID,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -17,7 +17,7 @@ type SettingService interface {
 	) (*models.Setting, error)
 	UpdateSetting(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Setting,
 	) (*models.Setting, error)
 }
@@ -47,7 +47,7 @@ func (q *settingService) FindSetting(
 
 func (q *settingService) UpdateSetting(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Setting,
 ) (*models.Setting, error) {
 	ctxt := "SettingService-UpdateSetting"

@@ -9,8 +9,7 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -27,24 +26,24 @@ type NotificationTargetRepository interface {
 	) (*models.NotificationTarget, error)
 	SaveNotificationTarget(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.NotificationTarget,
 	) (*models.NotificationTarget, error)
 	DeleteNotificationTarget(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.NotificationTargetFilter,
 	) (int64, error)
 }
 
 type notificationTargetRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewNotificationTargetRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) NotificationTargetRepository {
 	return &notificationTargetRepository{
 		dbRead:  dbRead,
@@ -96,7 +95,7 @@ func (q *notificationTargetRepository) FindNotificationTargets(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -121,7 +120,7 @@ func (q *notificationTargetRepository) FindNotificationTargets(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -182,7 +181,7 @@ func (q *notificationTargetRepository) FindNotificationTarget(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrNotificationTargetNotFound
 	}
 	if err != nil {
@@ -194,7 +193,7 @@ func (q *notificationTargetRepository) FindNotificationTarget(
 
 func (q *notificationTargetRepository) SaveNotificationTarget(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.NotificationTarget,
 ) (*models.NotificationTarget, error) {
 	ctxt := "NotificationTargetRepository-SaveNotificationTarget"
@@ -218,7 +217,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -307,7 +306,7 @@ func (q *notificationTargetRepository) SaveNotificationTarget(
 
 func (q *notificationTargetRepository) DeleteNotificationTarget(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.NotificationTargetFilter,
 ) (int64, error) {
 	ctxt := "NotificationTargetRepository-DeleteNotificationTarget"

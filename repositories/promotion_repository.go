@@ -8,10 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +25,24 @@ type PromotionRepository interface {
 	) (*models.Promotion, error)
 	CreatePromotion(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Promotion,
 	) (*models.Promotion, error)
 	UpdatePromotion(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Promotion,
 	) (*models.Promotion, error)
 }
 
 type promotionRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewPromotionRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) PromotionRepository {
 	return &promotionRepository{
 		dbRead:  dbRead,
@@ -109,7 +106,7 @@ func (q *promotionRepository) FindPromotions(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -134,7 +131,7 @@ func (q *promotionRepository) FindPromotions(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -234,7 +231,7 @@ func (q *promotionRepository) FindPromotion(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPromotionNotFound
 	}
 	if err != nil {
@@ -246,7 +243,7 @@ func (q *promotionRepository) FindPromotion(
 
 func (q *promotionRepository) CreatePromotion(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Promotion,
 ) (*models.Promotion, error) {
 	ctxt := "PromotionRepository-CreatePromotion"
@@ -318,9 +315,7 @@ func (q *promotionRepository) CreatePromotion(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "promotions_code_key" {
+		if database.IsUniqueViolation(err, "promotions_code_key") {
 			err = models.ErrUniquePromotionCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -332,7 +327,7 @@ func (q *promotionRepository) CreatePromotion(
 
 func (q *promotionRepository) UpdatePromotion(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Promotion,
 ) (*models.Promotion, error) {
 	ctxt := "PromotionRepository-UpdatePromotion"
@@ -380,7 +375,7 @@ func (q *promotionRepository) UpdatePromotion(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPromotionNotFound
 	}
 	if err != nil {
@@ -554,9 +549,7 @@ func (q *promotionRepository) UpdatePromotion(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "promotions_code_key" {
+		if database.IsUniqueViolation(err, "promotions_code_key") {
 			err = models.ErrUniquePromotionCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

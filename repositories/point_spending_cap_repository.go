@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +26,24 @@ type PointSpendingCapRepository interface {
 	) (*models.PointSpendingCap, error)
 	CreatePointSpendingCap(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.PointSpendingCap,
 	) (*models.PointSpendingCap, error)
 	UpdatePointSpendingCap(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.PointSpendingCap,
 	) (*models.PointSpendingCap, error)
 }
 
 type pointSpendingCapRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewPointSpendingCapRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) PointSpendingCapRepository {
 	return &pointSpendingCapRepository{
 		dbRead:  dbRead,
@@ -82,8 +80,8 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		"COUNT(1)",
 		`id
 		, record_status
-		, LOWER(shopping_cost)
-		, UPPER(shopping_cost) - 1
+		, shopping_cost_min
+		, shopping_cost_max
 		, disposable_points
 		, created_by
 		, created_at
@@ -104,7 +102,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -129,7 +127,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCaps(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -182,8 +180,8 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 		`SELECT
 			id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, disposable_points
 			, created_by
 			, created_at
@@ -211,7 +209,7 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPointSpendingCapNotFound
 	}
 	if err != nil {
@@ -223,26 +221,30 @@ func (q *pointSpendingCapRepository) FindPointSpendingCap(
 
 func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.PointSpendingCap,
 ) (*models.PointSpendingCap, error) {
 	ctxt := "PointSpendingCapRepository-CreatePointSpendingCap"
 	var response models.PointSpendingCap
+	if err := q.checkShoppingCost(ctx, tx, nil, request.MinimumShoppingCost, request.MaximumShoppingCost); err != nil {
+		return nil, err
+	}
 	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO point_spending_caps (
 			record_status
-			, shopping_cost
+			, shopping_cost_min
+			, shopping_cost_max
 			, disposable_points
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, int8range($2, $3, '[]'), $4, $5, $6, $7, $8)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, disposable_points
 			, created_by
 			, created_at
@@ -274,13 +276,7 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 		&response.DeletionReason,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.ExclusionViolation &&
-			pgxErr.ConstraintName == "point_spending_caps_no_overlapping_shopping_cost" {
-			err = models.ErrPointSpendingCapShoppingCostOverlapping
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return (&response).Populate(), nil
@@ -288,7 +284,7 @@ func (q *pointSpendingCapRepository) CreatePointSpendingCap(
 
 func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.PointSpendingCap,
 ) (*models.PointSpendingCap, error) {
 	ctxt := "PointSpendingCapRepository-UpdatePointSpendingCap"
@@ -298,8 +294,8 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		`SELECT
 			id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, disposable_points
 			, created_by
 			, created_at
@@ -326,7 +322,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPointSpendingCapNotFound
 	}
 	if err != nil {
@@ -351,11 +347,20 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 	}
 	if (response.MinimumShoppingCost != request.MinimumShoppingCost) ||
 		(response.MaximumShoppingCost != request.MaximumShoppingCost) {
+		if err = q.checkShoppingCost(
+			ctx,
+			tx,
+			&request.ID,
+			request.MinimumShoppingCost,
+			request.MaximumShoppingCost,
+		); err != nil {
+			return nil, err
+		}
 		params = append(params, request.MinimumShoppingCost, request.MaximumShoppingCost)
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " shopping_cost = int8range($%d, $%d, '[]')", n-1, n)
+		_, _ = fmt.Fprintf(sb, " shopping_cost_min = $%d, shopping_cost_max = $%d", n-1, n)
 	}
 	if response.DisposablePoints != request.DisposablePoints {
 		params = append(params, request.DisposablePoints)
@@ -417,8 +422,8 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		` WHERE id = $%d
 		RETURNING id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, disposable_points
 			, created_by
 			, created_at
@@ -443,13 +448,7 @@ func (q *pointSpendingCapRepository) UpdatePointSpendingCap(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_spending_caps_no_overlapping_shopping_cost" {
-			err = models.ErrPointSpendingCapShoppingCostOverlapping
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return &response, nil
@@ -500,7 +499,7 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 		params = append(params, request.MinimumShoppingCost, request.MaximumShoppingCost)
 		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "shopping_cost && int8range($%d, $%d, '[]')", n-1, n)
+		_, _ = fmt.Fprintf(sb, "shopping_cost_min <= $%d AND shopping_cost_max >= $%d", n, n-1)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
@@ -515,4 +514,42 @@ func (q *pointSpendingCapRepository) buildCondition(request *models.PointSpendin
 		condition = sb.String()
 	}
 	return
+}
+
+// checkShoppingCost returns models.ErrPointSpendingCapShoppingCostOverlapping when another point spending cap's shopping cost range overlaps
+// [minimum, maximum] (both ends included); excludeID is the cap being updated. MariaDB has no exclusion constraints,
+// so this check takes their place: FOR UPDATE locks the overlapping caps (and, through the shopping cost index, the
+// range around them) until the transaction ends, so two transactions can't add overlapping caps at the same time.
+func (q *pointSpendingCapRepository) checkShoppingCost(
+	ctx context.Context,
+	tx database.Tx,
+	excludeID *uuid.UUID,
+	minimum,
+	maximum int64,
+) error {
+	ctxt := "PointSpendingCapRepository-checkShoppingCost"
+	params := []any{maximum, minimum}
+	query := `SELECT id
+		FROM point_spending_caps
+		WHERE shopping_cost_min <= $1
+			AND shopping_cost_max >= $2`
+	if excludeID != nil {
+		params = append(params, *excludeID)
+		query += " AND id != $3"
+	}
+	rows, err := tx.Query(ctx, query+" FOR UPDATE", params...)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return err
+	}
+	defer rows.Close()
+	overlapping := rows.Next()
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		return err
+	}
+	if overlapping {
+		return models.ErrPointSpendingCapShoppingCostOverlapping
+	}
+	return nil
 }

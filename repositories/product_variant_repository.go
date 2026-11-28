@@ -8,10 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +25,24 @@ type ProductVariantRepository interface {
 	) (*models.ProductVariant, error)
 	CreateProductVariant(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.ProductVariant,
 	) (*models.ProductVariant, error)
 	UpdateProductVariant(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.ProductVariant,
 	) (*models.ProductVariant, error)
 }
 
 type productVariantRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewProductVariantRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) ProductVariantRepository {
 	return &productVariantRepository{
 		dbRead:  dbRead,
@@ -117,7 +114,7 @@ func (q *productVariantRepository) FindProductVariants(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -142,7 +139,7 @@ func (q *productVariantRepository) FindProductVariants(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -262,7 +259,7 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrProductVariantNotFound
 	}
 	if err != nil {
@@ -274,7 +271,7 @@ func (q *productVariantRepository) FindProductVariant(
 
 func (q *productVariantRepository) CreateProductVariant(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantRepository-CreateProductVariant"
@@ -377,9 +374,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_lower_product_id_idx" {
+		if database.IsUniqueViolation(err, "product_variants_lower_product_id_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -391,7 +386,7 @@ func (q *productVariantRepository) CreateProductVariant(
 
 func (q *productVariantRepository) UpdateProductVariant(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantRepository-UpdateProductVariant"
@@ -455,7 +450,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrProductVariantNotFound
 	}
 	if err != nil {
@@ -695,9 +690,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_lower_product_id_idx" {
+		if database.IsUniqueViolation(err, "product_variants_lower_product_id_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

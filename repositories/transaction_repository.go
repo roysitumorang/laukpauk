@@ -9,10 +9,7 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -29,12 +26,12 @@ type TransactionRepository interface {
 	) (*models.Transaction, error)
 	CreateTransaction(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Transaction,
 	) (*models.Transaction, error)
 	UpdateTransaction(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Transaction,
 	) (*models.Transaction, error)
 	FindVouchersUsages(
@@ -51,12 +48,12 @@ type TransactionRepository interface {
 
 type transactionRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewTransactionRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) TransactionRepository {
 	return &transactionRepository{
 		dbRead:  dbRead,
@@ -173,7 +170,7 @@ func (q *transactionRepository) FindTransactions(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -198,7 +195,7 @@ func (q *transactionRepository) FindTransactions(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -328,7 +325,7 @@ func (q *transactionRepository) FindTransactions(
 		return response, total, pages, nil
 	}
 	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -532,7 +529,7 @@ func (q *transactionRepository) FindTransaction(
 		&response.CompletedBy,
 		&response.CompletedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrTransactionNotFound
 	}
 	if err != nil {
@@ -565,7 +562,7 @@ func (q *transactionRepository) FindTransaction(
 		ORDER BY id`,
 		response.ID,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -606,7 +603,7 @@ func (q *transactionRepository) FindTransaction(
 
 func (q *transactionRepository) CreateTransaction(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Transaction,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionRepository-CreateTransaction"
@@ -854,9 +851,8 @@ func (q *transactionRepository) CreateTransaction(
 		&response.CompletedAt,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation {
-			switch pgxErr.ConstraintName {
+		if key, ok := database.UniqueViolationKey(err); ok {
+			switch key {
 			case "transactions_cart_id_key":
 				err = models.ErrUniqueTransactionCartIdViolation
 			case "transactions_unique_reference_number_idx":
@@ -950,7 +946,7 @@ func (q *transactionRepository) CreateTransaction(
 			, out_of_stock`,
 	)
 	rows, err := tx.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -980,9 +976,7 @@ func (q *transactionRepository) CreateTransaction(
 			&transactionItem.RevisionNote,
 			&transactionItem.OutOfStock,
 		); err != nil {
-			if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-				pgxErr.Code == pgerrcode.UniqueViolation &&
-				pgxErr.ConstraintName == "transaction_items_transaction_id_product_variant_id_key" {
+			if database.IsUniqueViolation(err, "transaction_items_transaction_id_product_variant_id_key") {
 				err = models.ErrUniqueTransactionProductVariantIdViolation
 			} else {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -1000,7 +994,7 @@ func (q *transactionRepository) CreateTransaction(
 
 func (q *transactionRepository) UpdateTransaction(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Transaction,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionRepository-UpdateTransaction"
@@ -1570,7 +1564,7 @@ func (q *transactionRepository) UpdateTransaction(
 			FROM transaction_items
 			WHERE transaction_id = $1
 				AND id = $2
-			FOR NO KEY UPDATE`,
+			FOR UPDATE`,
 			request.ID,
 			itemRequest.ID,
 		).Scan(
@@ -1727,7 +1721,7 @@ func (q *transactionRepository) FindVouchersUsages(
 	}
 	_, _ = sb.WriteString(" GROUP BY voucher_id HAVING COUNT(1) > 0")
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -1798,7 +1792,7 @@ func (q *transactionRepository) FindPromotionsUsages(
 	}
 	_, _ = sb.WriteString(" GROUP BY promotion_id HAVING COUNT(1) > 0")
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {

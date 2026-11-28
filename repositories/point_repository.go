@@ -8,8 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +25,24 @@ type PointRepository interface {
 	) (*models.Point, error)
 	CreatePoint(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 	UpdatePoint(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 }
 
 type pointRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewPointRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) PointRepository {
 	return &pointRepository{
 		dbRead:  dbRead,
@@ -104,7 +103,7 @@ func (q *pointRepository) FindPoints(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -129,7 +128,7 @@ func (q *pointRepository) FindPoints(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -217,7 +216,7 @@ func (q *pointRepository) FindPoint(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPointNotFound
 	}
 	if err != nil {
@@ -229,7 +228,7 @@ func (q *pointRepository) FindPoint(
 
 func (q *pointRepository) CreatePoint(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointRepository-CreatePoint"
@@ -297,7 +296,7 @@ func (q *pointRepository) CreatePoint(
 
 func (q *pointRepository) UpdatePoint(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointRepository-UpdatePoint"
@@ -321,7 +320,7 @@ func (q *pointRepository) UpdatePoint(
 			, deletion_reason
 		FROM points
 		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -339,7 +338,7 @@ func (q *pointRepository) UpdatePoint(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPointNotFound
 	}
 	if err != nil {

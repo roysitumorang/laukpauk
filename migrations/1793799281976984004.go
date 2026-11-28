@@ -6,7 +6,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -14,55 +14,56 @@ import (
 func init() {
 	Migrations[1793799281976984004] = Migration{
 		Version: 1793799281976984004,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// point_earning_caps
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE TABLE point_earning_caps (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
 					, record_status smallint NOT NULL
-					, shopping_cost int8range NOT NULL
+					, shopping_cost_min BIGINT NOT NULL
+					, shopping_cost_max BIGINT NOT NULL
 					, earned_points bigint NOT NULL
-					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, updated_at timestamp with time zone NOT NULL
-					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, deleted_at timestamp with time zone
-					, deletion_reason character varying
-					, CONSTRAINT point_earning_caps_no_overlapping_shopping_cost EXCLUDE USING gist (
-						shopping_cost WITH &&
-					)
-				);`,
+					, created_by UUID NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_by UUID NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, deleted_by UUID
+					, deleted_at DATETIME(6)
+					, deletion_reason TEXT
+					, CONSTRAINT point_earning_caps_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT point_earning_caps_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT point_earning_caps_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (shopping_cost);`,
+				`CREATE INDEX point_earning_caps_shopping_cost_idx ON point_earning_caps (shopping_cost_min, shopping_cost_max);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (created_by);`,
+				`CREATE INDEX point_earning_caps_created_by_idx ON point_earning_caps (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (updated_by);`,
+				`CREATE INDEX point_earning_caps_updated_by_idx ON point_earning_caps (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON point_earning_caps (deleted_by);`,
+				`CREATE INDEX point_earning_caps_deleted_by_idx ON point_earning_caps (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -168,13 +169,14 @@ func init() {
 					ctx,
 					`INSERT INTO point_earning_caps (
 						record_status
-						, shopping_cost
+						, shopping_cost_min
+						, shopping_cost_max
 						, earned_points
 						, created_by
 						, created_at
 						, updated_by
 						, updated_at
-					) VALUES ($1, int8range($2, $3, '[]'), $4, $5, $6, $7, $8);`,
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
 					pointEarningCaps[i]...,
 				); err != nil {
 					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
@@ -183,7 +185,7 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Down"
 			if _, err = tx.Exec(
 				ctx,

@@ -8,10 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,29 +25,29 @@ type ProductCategoryRepository interface {
 	) (*models.ProductCategory, error)
 	CreateProductCategory(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.ProductCategory,
 	) (*models.ProductCategory, error)
 	UpdateProductCategory(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.ProductCategory,
 	) (*models.ProductCategory, error)
 	SaveProductCategory(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.ProductCategory,
 	) (*models.ProductCategory, error)
 }
 
 type productCategoryRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewProductCategoryRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) ProductCategoryRepository {
 	return &productCategoryRepository{
 		dbRead:  dbRead,
@@ -109,7 +106,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -134,7 +131,7 @@ func (q *productCategoryRepository) FindProductCategories(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -216,7 +213,7 @@ func (q *productCategoryRepository) FindProductCategory(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrProductCategoryNotFound
 	}
 	if err != nil {
@@ -228,7 +225,7 @@ func (q *productCategoryRepository) FindProductCategory(
 
 func (q *productCategoryRepository) CreateProductCategory(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductCategory,
 ) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryRepository-CreateProductCategory"
@@ -279,9 +276,7 @@ func (q *productCategoryRepository) CreateProductCategory(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_categories_unique_name_idx" {
+		if database.IsUniqueViolation(err, "product_categories_unique_name_idx") {
 			err = models.ErrUniqueProductCategoryNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -293,7 +288,7 @@ func (q *productCategoryRepository) CreateProductCategory(
 
 func (q *productCategoryRepository) UpdateProductCategory(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductCategory,
 ) (*models.ProductCategory, error) {
 	ctxt := "ProductCategoryRepository-UpdateProductCategory"
@@ -331,7 +326,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrProductCategoryNotFound
 	}
 	if err != nil {
@@ -454,9 +449,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_categories_unique_name_idx" {
+		if database.IsUniqueViolation(err, "product_categories_unique_name_idx") {
 			err = models.ErrUniqueProductCategoryNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -468,7 +461,7 @@ func (q *productCategoryRepository) UpdateProductCategory(
 
 func (q *productCategoryRepository) SaveProductCategory(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.ProductCategory,
 ) (*models.ProductCategory, error) {
 	if request.New() {

@@ -8,10 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +25,24 @@ type PointEarningRepository interface {
 	) (*models.PointEarning, error)
 	CreatePointEarning(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 	UpdatePointEarning(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 }
 
 type pointEarningRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewPointEarningRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) PointEarningRepository {
 	return &pointEarningRepository{
 		dbRead:  dbRead,
@@ -99,7 +96,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -124,7 +121,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -191,7 +188,7 @@ func (q *pointEarningRepository) FindPointEarning(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPointEarningNotFound
 	}
 	if err != nil {
@@ -203,7 +200,7 @@ func (q *pointEarningRepository) FindPointEarning(
 
 func (q *pointEarningRepository) CreatePointEarning(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningRepository-CreatePointEarning"
@@ -241,9 +238,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 		&response.UpdatedAt,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
+		if database.IsUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -255,7 +250,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 
 func (q *pointEarningRepository) UpdatePointEarning(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningRepository-UpdatePointEarning"
@@ -282,7 +277,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrPointEarningNotFound
 	}
 	if err != nil {
@@ -337,9 +332,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
+		if database.IsUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")

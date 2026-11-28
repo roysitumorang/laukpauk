@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -27,24 +26,24 @@ type JsonWebTokenRepository interface {
 	) (*models.JsonWebToken, error)
 	CreateJsonWebToken(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.JsonWebToken,
 	) (*models.JsonWebToken, error)
 	DeleteJsonWebToken(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.JsonWebTokenFilter,
 	) (int64, error)
 }
 
 type jsonWebTokenRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewJsonWebTokenRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) JsonWebTokenRepository {
 	return &jsonWebTokenRepository{
 		dbRead:  dbRead,
@@ -95,7 +94,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -120,7 +119,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -178,7 +177,7 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrJsonWebTokenNotFound
 	}
 	if err != nil {
@@ -190,7 +189,7 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 
 func (q *jsonWebTokenRepository) CreateJsonWebToken(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.JsonWebToken,
 ) (*models.JsonWebToken, error) {
 	ctxt := "JsonWebTokenRepository-CreateJsonWebToken"
@@ -223,7 +222,7 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 
 func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.JsonWebTokenFilter,
 ) (int64, error) {
 	ctxt := "JsonWebTokenRepository-DeleteJsonWebToken"

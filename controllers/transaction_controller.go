@@ -9,7 +9,7 @@ import (
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
@@ -209,7 +209,7 @@ func (q *transactionController) V1Pay(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -462,7 +462,7 @@ func (q *transactionController) V1SellerProcess(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -537,7 +537,7 @@ func (q *transactionController) V1SellerShip(c fiber.Ctx) (err error) {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {

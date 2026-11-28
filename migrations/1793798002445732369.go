@@ -6,7 +6,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -14,78 +14,74 @@ import (
 func init() {
 	Migrations[1793798002445732369] = Migration{
 		Version: 1793798002445732369,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// delivery_plans
 			if _, err = tx.Exec(
 				ctx,
 				`CREATE TABLE delivery_plans (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
 					, record_status smallint NOT NULL
-					, name character varying COLLATE "natural_sort"
+					, name TEXT
 					, weekday bigint NOT NULL
-					, transaction_window TSTZRANGE NOT NULL
+					, transaction_window_min DATETIME(6) NOT NULL
+					, transaction_window_max DATETIME(6) NOT NULL
 					, delivery_time_interval bigint NOT NULL
 					, same_day BOOLEAN NOT NULL
-					, same_day_window TSTZRANGE NOT NULL
+					, same_day_window_min DATETIME(6)
+					, same_day_window_max DATETIME(6)
 					, next_day BOOLEAN NOT NULL
-					, next_day_window TSTZRANGE NOT NULL
+					, next_day_window_min DATETIME(6)
+					, next_day_window_max DATETIME(6)
 					, next_two_day BOOLEAN NOT NULL
-					, next_two_day_window TSTZRANGE NOT NULL
-					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, updated_at timestamp with time zone NOT NULL
-					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, deleted_at timestamp with time zone
-					, deletion_reason character varying
-					, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
-						weekday WITH =,
-						transaction_window WITH &&
-					)
-				);`,
+					, next_two_day_window_min DATETIME(6)
+					, next_two_day_window_max DATETIME(6)
+					, created_by UUID NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_by UUID NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, deleted_by UUID
+					, deleted_at DATETIME(6)
+					, deletion_reason TEXT
+					, CONSTRAINT delivery_plans_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT delivery_plans_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT delivery_plans_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_cs;`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (record_status);`,
+				`CREATE INDEX delivery_plans_record_status_idx ON delivery_plans (record_status);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (LOWER(name));`,
+				`CREATE INDEX delivery_plans_weekday_idx ON delivery_plans (weekday);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (weekday);`,
+				`CREATE INDEX delivery_plans_created_by_idx ON delivery_plans (created_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (created_by);`,
+				`CREATE INDEX delivery_plans_updated_by_idx ON delivery_plans (updated_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
 			}
 			if _, err = tx.Exec(
 				ctx,
-				`CREATE INDEX ON delivery_plans (updated_by);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON delivery_plans (deleted_by);`,
+				`CREATE INDEX delivery_plans_deleted_by_idx ON delivery_plans (deleted_by);`,
 			); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 				return
@@ -352,14 +348,18 @@ func init() {
 						record_status
 						, name
 						, weekday
-						, transaction_window
+						, transaction_window_min
+						, transaction_window_max
 						, delivery_time_interval
 						, same_day
-						, same_day_window
+						, same_day_window_min
+						, same_day_window_max
 						, next_day
-						, next_day_window
+						, next_day_window_min
+						, next_day_window_max
 						, next_two_day
-						, next_two_day_window
+						, next_two_day_window_min
+						, next_two_day_window_max
 						, created_by
 						, created_at
 						, updated_by
@@ -368,14 +368,14 @@ func init() {
 						$1
 						, $2
 						, $3
-						, tstzrange($4, $5, '[]')
+						, $4, $5
 						, $6
 						, $7
-						, tstzrange($8, $9)
+						, $8, $9
 						, $10
-						, tstzrange($11, $12, '[]')
+						, $11, $12
 						, $13
-						, tstzrange($14, $15, '[]')
+						, $14, $15
 						, $16
 						, $17
 						, $18
@@ -389,7 +389,7 @@ func init() {
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Down"
 			if _, err = tx.Exec(
 				ctx,

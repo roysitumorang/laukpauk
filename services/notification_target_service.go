@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,12 +23,12 @@ type (
 		) (*models.NotificationTarget, error)
 		SaveNotificationTarget(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx database.Tx,
 			request *models.NotificationTarget,
 		) (*models.NotificationTarget, error)
 		DeleteNotificationTarget(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx database.Tx,
 			request *models.NotificationTargetFilter,
 		) (int64, error)
 	}
@@ -90,7 +90,7 @@ func (q *notificationTargetService) FindNotificationTarget(
 
 func (q *notificationTargetService) SaveNotificationTarget(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.NotificationTarget,
 ) (*models.NotificationTarget, error) {
 	ctxt := "NotificationTargetService-CreateNotificationTarget"
@@ -103,7 +103,7 @@ func (q *notificationTargetService) SaveNotificationTarget(
 
 func (q *notificationTargetService) DeleteNotificationTarget(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.NotificationTargetFilter,
 ) (int64, error) {
 	ctxt := "NotificationTargetService-DeleteNotificationTarget"

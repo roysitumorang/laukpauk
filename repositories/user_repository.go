@@ -10,10 +10,7 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -30,17 +27,17 @@ type UserRepository interface {
 	) (*models.User, error)
 	CreateUser(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.User,
 	) (*models.User, error)
 	UpdateUser(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.User,
 	) (*models.User, error)
 	AddUserBalances(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		userID uuid.UUID,
 		referralPoints,
 		rewardPoints,
@@ -51,12 +48,12 @@ type UserRepository interface {
 
 type userRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewUserRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) UserRepository {
 	return &userRepository{
 		dbRead:  dbRead,
@@ -144,7 +141,7 @@ func (q *userRepository) FindUsers(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -169,7 +166,7 @@ func (q *userRepository) FindUsers(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -337,7 +334,7 @@ func (q *userRepository) FindUser(
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrUserNotFound
 	}
 	if err != nil {
@@ -477,7 +474,7 @@ func (q *userRepository) buildCondition(request *models.UserFilter, sb *strings.
 
 func (q *userRepository) CreateUser(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.User,
 ) (*models.User, error) {
 	ctxt := "UserRepository-CreateUser"
@@ -656,9 +653,8 @@ func (q *userRepository) CreateUser(
 		&response.DeactivationReason,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation {
-			switch pgxErr.ConstraintName {
+		if key, ok := database.UniqueViolationKey(err); ok {
+			switch key {
 			case "users_username_key":
 				err = models.ErrUniqueUserUsernameViolation
 			case "users_mobile_phone_key":
@@ -676,7 +672,7 @@ func (q *userRepository) CreateUser(
 
 func (q *userRepository) UpdateUser(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.User,
 ) (*models.User, error) {
 	ctxt := "UserRepository-UpdateUser"
@@ -772,7 +768,7 @@ func (q *userRepository) UpdateUser(
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrUserNotFound
 	}
 	if err != nil {
@@ -1175,9 +1171,8 @@ func (q *userRepository) UpdateUser(
 		&response.DeactivationReason,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation {
-			switch pgxErr.ConstraintName {
+		if key, ok := database.UniqueViolationKey(err); ok {
+			switch key {
 			case "users_username_key":
 				err = models.ErrUniqueUserUsernameViolation
 			case "users_mobile_phone_key":
@@ -1197,7 +1192,7 @@ func (q *userRepository) UpdateUser(
 // referral points, reward points and wallet. Zero amounts are left alone.
 func (q *userRepository) AddUserBalances(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	userID uuid.UUID,
 	referralPoints,
 	rewardPoints,
@@ -1252,7 +1247,7 @@ func (q *userRepository) AddUserBalances(
 			, deactivation_reason
 		FROM users
 		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 		userID,
 	).Scan(
 		&response.ID,
@@ -1297,7 +1292,7 @@ func (q *userRepository) AddUserBalances(
 		&response.DeactivatedAt,
 		&response.DeactivationReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrUserNotFound
 	}
 	if err != nil {

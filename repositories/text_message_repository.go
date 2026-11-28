@@ -9,8 +9,7 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -27,29 +26,29 @@ type TextMessageRepository interface {
 	) (*models.TextMessage, error)
 	CreateTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
 	UpdateTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
 	DeleteTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		textMessageID uuid.UUID,
 	) (int64, error)
 }
 
 type textMessageRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewTextMessageRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) TextMessageRepository {
 	return &textMessageRepository{
 		dbRead:  dbRead,
@@ -107,7 +106,7 @@ func (q *textMessageRepository) FindTextMessages(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -132,7 +131,7 @@ func (q *textMessageRepository) FindTextMessages(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -210,7 +209,7 @@ func (q *textMessageRepository) FindTextMessage(
 		&response.UpdatedAt,
 		&response.SentAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrTextMessageNotFound
 	}
 	if err != nil {
@@ -222,7 +221,7 @@ func (q *textMessageRepository) FindTextMessage(
 
 func (q *textMessageRepository) CreateTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.TextMessage,
 ) (*models.TextMessage, error) {
 	ctxt := "TextMessageRepository-CreateTextMessage"
@@ -277,7 +276,7 @@ func (q *textMessageRepository) CreateTextMessage(
 
 func (q *textMessageRepository) UpdateTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.TextMessage,
 ) (*models.TextMessage, error) {
 	ctxt := "TextMessageRepository-UpdateTextMessage"
@@ -298,7 +297,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 			, sent_at
 		FROM text_messages
 		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -313,7 +312,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		&response.UpdatedAt,
 		&response.SentAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrTextMessageNotFound
 	}
 	if err != nil {
@@ -407,7 +406,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 
 func (q *textMessageRepository) DeleteTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	textMessageID uuid.UUID,
 ) (int64, error) {
 	ctxt := "TextMessageRepository-DeleteTextMessage"

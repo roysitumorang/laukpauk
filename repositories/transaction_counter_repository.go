@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -18,12 +18,12 @@ type TransactionCounterRepository interface {
 
 type transactionCounterRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewTransactionCounterRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) TransactionCounterRepository {
 	return &transactionCounterRepository{
 		dbRead:  dbRead,
@@ -45,8 +45,8 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 			, created_at
 			, updated_at
 		) VALUES ($1, 1, $2, $3)
-		ON CONFLICT (transaction_window) DO UPDATE SET
-			hits = transaction_counters.hits + 1
+		ON DUPLICATE KEY UPDATE
+			hits = hits + 1
 			, updated_at = $3
 		RETURNING id
 			, transaction_window

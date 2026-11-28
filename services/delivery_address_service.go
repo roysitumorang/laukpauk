@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"uuid"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,17 +23,17 @@ type DeliveryAddressService interface {
 	) (*models.DeliveryAddress, error)
 	CreateDeliveryAddress(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.DeliveryAddress,
 	) (*models.DeliveryAddress, error)
 	UpdateDeliveryAddress(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.DeliveryAddress,
 	) (*models.DeliveryAddress, error)
 	UnsetMain(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		userID uuid.UUID,
 	) error
 }
@@ -94,7 +94,7 @@ func (q *deliveryAddressService) FindDeliveryAddress(
 
 func (q *deliveryAddressService) CreateDeliveryAddress(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.DeliveryAddress,
 ) (*models.DeliveryAddress, error) {
 	ctxt := "DeliveryAddressService-CreateDeliveryAddress"
@@ -107,7 +107,7 @@ func (q *deliveryAddressService) CreateDeliveryAddress(
 
 func (q *deliveryAddressService) UpdateDeliveryAddress(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.DeliveryAddress,
 ) (*models.DeliveryAddress, error) {
 	ctxt := "DeliveryAddressService-UpdateDeliveryAddress"
@@ -120,7 +120,7 @@ func (q *deliveryAddressService) UpdateDeliveryAddress(
 
 func (q *deliveryAddressService) UnsetMain(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	userID uuid.UUID,
 ) error {
 	ctxt := "DeliveryAddressService-UnsetMain"

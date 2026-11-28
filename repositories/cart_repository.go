@@ -9,8 +9,7 @@ import (
 	"uuid"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -27,19 +26,19 @@ type CartRepository interface {
 	) (*models.Cart, error)
 	SaveCart(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Cart,
 	) (*models.Cart, error)
 }
 
 type cartRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewCartRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) CartRepository {
 	return &cartRepository{
 		dbRead:  dbRead,
@@ -91,7 +90,7 @@ func (q *cartRepository) FindCarts(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -116,7 +115,7 @@ func (q *cartRepository) FindCarts(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -183,7 +182,7 @@ func (q *cartRepository) FindCarts(
 	}
 	_, _ = sb.WriteString(") ORDER BY id")
 	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -261,7 +260,7 @@ func (q *cartRepository) FindCart(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrCartNotFound
 	}
 	if err != nil {
@@ -298,7 +297,7 @@ func (q *cartRepository) FindCart(
 		ORDER BY id`,
 		response.ID,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -343,7 +342,7 @@ func (q *cartRepository) FindCart(
 
 func (q *cartRepository) SaveCart(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Cart,
 ) (*models.Cart, error) {
 	ctxt := "CartRepository-SaveCart"
@@ -376,14 +375,14 @@ func (q *cartRepository) SaveCart(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	var row pgx.Row
+	var row database.Row
 	if response.ID.Compare(uuid.Nil()) == 0 {
 		row = tx.QueryRow(
 			ctx,
@@ -392,8 +391,8 @@ func (q *cartRepository) SaveCart(
 				, created_at
 				, updated_at
 			) VALUES ($1, $2, $3)
-			ON CONFLICT (user_id) DO UPDATE SET
-				user_id = EXCLUDED.user_id
+			ON DUPLICATE KEY UPDATE
+				user_id = VALUES(user_id)
 			RETURNING id
 				, user_id
 				, deleted_user_id
@@ -467,7 +466,7 @@ func (q *cartRepository) SaveCart(
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
 			, $21
-		) ON CONFLICT (cart_id, product_variant_id) DO UPDATE SET
+		) ON DUPLICATE KEY UPDATE
 			product_category_id = $3
 			, product_category_name = $4
 			, product_id = $5

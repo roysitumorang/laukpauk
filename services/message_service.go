@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -14,7 +14,7 @@ type (
 	MessageService interface {
 		CreateMessage(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx database.Tx,
 			request *models.Message,
 		) (*models.Message, error)
 	}
@@ -34,7 +34,7 @@ func NewMessageService(
 
 func (q *messageService) CreateMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Message,
 ) (*models.Message, error) {
 	ctxt := "MessageService-CreateMessage"

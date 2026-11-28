@@ -8,8 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +25,24 @@ type BannerRepository interface {
 	) (*models.Banner, error)
 	CreateBanner(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Banner,
 	) (*models.Banner, error)
 	UpdateBanner(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Banner,
 	) (*models.Banner, error)
 }
 
 type bannerRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewBannerRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) BannerRepository {
 	return &bannerRepository{
 		dbRead:  dbRead,
@@ -102,7 +101,7 @@ func (q *bannerRepository) FindBanners(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -127,7 +126,7 @@ func (q *bannerRepository) FindBanners(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -211,7 +210,7 @@ func (q *bannerRepository) FindBanner(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrBannerNotFound
 	}
 	if err != nil {
@@ -223,7 +222,7 @@ func (q *bannerRepository) FindBanner(
 
 func (q *bannerRepository) CreateBanner(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Banner,
 ) (*models.Banner, error) {
 	ctxt := "BannerRepository-CreateBanner"
@@ -286,7 +285,7 @@ func (q *bannerRepository) CreateBanner(
 
 func (q *bannerRepository) UpdateBanner(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Banner,
 ) (*models.Banner, error) {
 	ctxt := "BannerRepository-UpdateBanner"
@@ -309,7 +308,7 @@ func (q *bannerRepository) UpdateBanner(
 			, deletion_reason
 		FROM banners
 		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -326,7 +325,7 @@ func (q *bannerRepository) UpdateBanner(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrBannerNotFound
 	}
 	if err != nil {

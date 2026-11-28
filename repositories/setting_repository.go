@@ -8,8 +8,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -21,19 +20,19 @@ type SettingRepository interface {
 	) (*models.Setting, error)
 	UpdateSetting(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Setting,
 	) (*models.Setting, error)
 }
 
 type settingRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewSettingRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) SettingRepository {
 	return &settingRepository{
 		dbRead:  dbRead,
@@ -67,8 +66,8 @@ func (q *settingRepository) FindSetting(
 			, payment_terms
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, transaction_auto_withdrawal_window_min
+			, transaction_auto_withdrawal_window_max
 			, otp_required_for_login
 			, created_by
 			, created_at
@@ -102,7 +101,7 @@ func (q *settingRepository) FindSetting(
 		&response.UpdatedBy,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrSettingNotFound
 	}
 	if err != nil {
@@ -114,7 +113,7 @@ func (q *settingRepository) FindSetting(
 
 func (q *settingRepository) UpdateSetting(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Setting,
 ) (*models.Setting, error) {
 	ctxt := "SettingRepository-UpdateSetting"
@@ -140,8 +139,8 @@ func (q *settingRepository) UpdateSetting(
 			, payment_terms
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, transaction_auto_withdrawal_window_min
+			, transaction_auto_withdrawal_window_max
 			, otp_required_for_login
 			, created_by
 			, created_at
@@ -149,7 +148,7 @@ func (q *settingRepository) UpdateSetting(
 			, updated_at
 		FROM setting
 		WHERE id = 1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 	).Scan(
 		&response.ID,
 		&response.VacationMode,
@@ -337,7 +336,7 @@ func (q *settingRepository) UpdateSetting(
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_window = tstzrange($%d, $%d, '[]')", n-1, n)
+		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_window_min = $%d, transaction_auto_withdrawal_window_max = $%d", n-1, n)
 	}
 	if response.OtpRequiredForLogin != request.OtpRequiredForLogin {
 		params = append(params, request.OtpRequiredForLogin)
@@ -374,8 +373,8 @@ func (q *settingRepository) UpdateSetting(
 			, payment_terms
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, transaction_auto_withdrawal_window_min
+			, transaction_auto_withdrawal_window_max
 			, otp_required_for_login
 			, created_by
 			, created_at

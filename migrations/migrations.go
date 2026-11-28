@@ -10,42 +10,43 @@ import (
 	"slices"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 type Migrator struct {
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 type Migration struct {
 	Version int64
-	Up      func(ctx context.Context, tx pgx.Tx) error
-	Down    func(ctx context.Context, tx pgx.Tx) error
+	Up      func(ctx context.Context, tx database.Tx) error
+	Down    func(ctx context.Context, tx database.Tx) error
 }
 
 var Migrations = map[int64]Migration{}
 
 func NewMigrator(
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) *Migrator {
 	return &Migrator{
 		dbWrite: dbWrite,
 	}
 }
 
+// Migrate runs the migrations that haven't run yet, in version order. MariaDB commits each CREATE / ALTER / DROP on
+// its own, so a migration that fails halfway is not rolled back by the transaction: its Down undoes what it can.
 func (m *Migrator) Migrate(ctx context.Context) error {
 	ctxt := "Migrator-Migrate"
-	tx, err := m.dbWrite.BeginTx(ctx, pgx.TxOptions{
-		IsoLevel: pgx.Serializable,
+	tx, err := m.dbWrite.BeginTx(ctx, database.TxOptions{
+		IsoLevel: database.Serializable,
 	})
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBeginTx")
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(ctx); errors.Is(err, database.ErrTxClosed) {
 			err = nil
 		}
 		if err != nil {
@@ -54,43 +55,15 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	}(ctx)
 	if _, err = tx.Exec(
 		ctx,
-		"CREATE EXTENSION IF NOT EXISTS btree_gist;",
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
-	if _, err = tx.Exec(
-		ctx,
-		`CREATE COLLATION IF NOT EXISTS natural_sort (
-			PROVIDER = 'icu'
-			, LOCALE = 'en-US-u-kn-true'
-		);`,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
-	if _, err = tx.Exec(
-		ctx,
-		`CREATE COLLATION IF NOT EXISTS case_insensitive (
-			PROVIDER = 'icu'
-			, LOCALE = 'und-u-ks-level2'
-			, DETERMINISTIC = false
-		);`,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
-	if _, err = tx.Exec(
-		ctx,
 		`CREATE TABLE IF NOT EXISTS migrations (
 			"version" bigint NOT NULL PRIMARY KEY
-		)`,
+		) ENGINE=InnoDB`,
 	); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
 		return err
 	}
 	rows, err := tx.Query(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -146,17 +119,17 @@ func (m *Migrator) CreateMigrationFile() error {
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 )
 
 func init() {
 	Migrations[%d] = Migration{
 		Version: %d,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Up"
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx database.Tx) (err error) {
 			ctxt := "Migration-Down"
 			return
 		},

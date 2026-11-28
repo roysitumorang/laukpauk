@@ -8,10 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,29 +25,29 @@ type RecipeItemRepository interface {
 	) (*models.RecipeItem, error)
 	CreateRecipeItem(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.RecipeItem,
 	) (*models.RecipeItem, error)
 	UpdateRecipeItem(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.RecipeItem,
 	) (*models.RecipeItem, error)
 	SaveRecipeItem(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.RecipeItem,
 	) (*models.RecipeItem, error)
 }
 
 type recipeItemRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewRecipeItemRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) RecipeItemRepository {
 	return &recipeItemRepository{
 		dbRead:  dbRead,
@@ -115,7 +112,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -140,7 +137,7 @@ func (q *recipeItemRepository) FindRecipeItems(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -239,7 +236,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrRecipeItemNotFound
 	}
 	if err != nil {
@@ -251,7 +248,7 @@ func (q *recipeItemRepository) FindRecipeItem(
 
 func (q *recipeItemRepository) CreateRecipeItem(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.RecipeItem,
 ) (*models.RecipeItem, error) {
 	ctxt := "RecipeItemRepository-CreateRecipeItem"
@@ -326,9 +323,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipe_items_recipe_id_product_id_idx" {
+		if database.IsUniqueViolation(err, "recipe_items_recipe_id_product_id_idx") {
 			err = models.ErrUniqueRecipeItemProductIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -340,7 +335,7 @@ func (q *recipeItemRepository) CreateRecipeItem(
 
 func (q *recipeItemRepository) UpdateRecipeItem(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.RecipeItem,
 ) (*models.RecipeItem, error) {
 	ctxt := "RecipeItemRepository-UpdateRecipeItem"
@@ -390,7 +385,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrRecipeItemNotFound
 	}
 	if err != nil {
@@ -560,9 +555,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "recipe_items_recipe_id_product_id_idx" {
+		if database.IsUniqueViolation(err, "recipe_items_recipe_id_product_id_idx") {
 			err = models.ErrUniqueRecipeItemProductIdViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -574,7 +567,7 @@ func (q *recipeItemRepository) UpdateRecipeItem(
 
 func (q *recipeItemRepository) SaveRecipeItem(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.RecipeItem,
 ) (*models.RecipeItem, error) {
 	if request.New() {

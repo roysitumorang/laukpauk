@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,17 +22,17 @@ type RecipeService interface {
 	) (*models.Recipe, error)
 	CreateRecipe(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Recipe,
 	) (*models.Recipe, error)
 	UpdateRecipe(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Recipe,
 	) (*models.Recipe, error)
 	SaveRecipe(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Recipe,
 	) (*models.Recipe, error)
 }
@@ -93,7 +93,7 @@ func (q *recipeService) FindRecipe(
 
 func (q *recipeService) CreateRecipe(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Recipe,
 ) (*models.Recipe, error) {
 	ctxt := "RecipeService-CreateRecipe"
@@ -106,7 +106,7 @@ func (q *recipeService) CreateRecipe(
 
 func (q *recipeService) UpdateRecipe(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Recipe,
 ) (*models.Recipe, error) {
 	ctxt := "RecipeService-UpdateRecipe"
@@ -119,7 +119,7 @@ func (q *recipeService) UpdateRecipe(
 
 func (q *recipeService) SaveRecipe(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Recipe,
 ) (*models.Recipe, error) {
 	ctxt := "RecipeService-SaveRecipe"

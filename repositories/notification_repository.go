@@ -8,8 +8,7 @@ import (
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +25,24 @@ type NotificationRepository interface {
 	) (*models.Notification, error)
 	CreateNotification(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 	UpdateNotification(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx database.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 }
 
 type notificationRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *database.Pool
 }
 
 func NewNotificationRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *database.Pool,
 ) NotificationRepository {
 	return &notificationRepository{
 		dbRead:  dbRead,
@@ -102,7 +101,7 @@ func (q *notificationRepository) FindNotifications(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -127,7 +126,7 @@ func (q *notificationRepository) FindNotifications(
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
 	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
@@ -208,7 +207,7 @@ func (q *notificationRepository) FindNotification(
 		&response.CreatedAt,
 		&response.ReadAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrNotificationNotFound
 	}
 	if err != nil {
@@ -220,7 +219,7 @@ func (q *notificationRepository) FindNotification(
 
 func (q *notificationRepository) CreateNotification(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationRepository-CreateNotification"
@@ -285,7 +284,7 @@ func (q *notificationRepository) CreateNotification(
 
 func (q *notificationRepository) UpdateNotification(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationRepository-UpdateNotification"
@@ -308,7 +307,7 @@ func (q *notificationRepository) UpdateNotification(
 			, read_at
 		FROM notifications
 		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -325,7 +324,7 @@ func (q *notificationRepository) UpdateNotification(
 		&response.SentAt,
 		&response.ReadAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, database.ErrNoRows) {
 		return nil, models.ErrNotificationNotFound
 	}
 	if err != nil {

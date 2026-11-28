@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/roysitumorang/laukpauk/database"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,7 +23,7 @@ type (
 		) (*models.Cart, error)
 		SaveCart(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx database.Tx,
 			request *models.Cart,
 		) (*models.Cart, error)
 	}
@@ -85,7 +85,7 @@ func (q *cartService) FindCart(
 
 func (q *cartService) SaveCart(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx database.Tx,
 	request *models.Cart,
 ) (*models.Cart, error) {
 	ctxt := "CartService-CreateCart"

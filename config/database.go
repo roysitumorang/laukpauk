@@ -3,21 +3,11 @@ package config
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/roysitumorang/laukpauk/database"
 )
 
-func CreateDbConnection(ctx context.Context, dataSourceName string, maxConns int32) (*pgxpool.Pool, error) {
-	config, err := pgxpool.ParseConfig(dataSourceName)
-	if err != nil {
-		return nil, err
-	}
-	config.MaxConns = int32(maxConns)
-	db, err := pgxpool.NewWithConfig(ctx, config)
-	if err != nil {
-		return nil, err
-	}
-	if err = db.Ping(ctx); err != nil {
-		return nil, err
-	}
-	return db, nil
+// CreateDbConnection connects to MariaDB. dataSourceName is a go-sql-driver/mysql DSN, e.g.
+// user:password@tcp(localhost:3306)/laukpauk.
+func CreateDbConnection(ctx context.Context, dataSourceName string, maxConns int32) (*database.Pool, error) {
+	return database.Open(ctx, dataSourceName, int(maxConns))
 }
