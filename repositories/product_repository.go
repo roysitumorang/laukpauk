@@ -182,6 +182,10 @@ func (q *productRepository) FindProducts(
 		product.RowNo = offset
 		response = append(response, (&product).Populate())
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 
@@ -292,6 +296,10 @@ func (q *productRepository) InfiniteScrollProducts(
 			return nil, 0, err
 		}
 		response = append(response, (&product).Populate())
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, err
 	}
 	var nextRowNo int64
 	if request.Limit > 0 && len(response) == int(request.Limit) {

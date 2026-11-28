@@ -178,6 +178,10 @@ func (q *cartRepository) FindCarts(
 		}
 		_, _ = fmt.Fprintf(sb, "$%d", n)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	if len(params) == 0 {
 		return response, total, pages, nil
 	}
@@ -225,6 +229,10 @@ func (q *cartRepository) FindCarts(
 		cart.Quantity += cartItem.Quantity
 		cart.Items = append(cart.Items, &cartItem)
 		response[i] = cart
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -337,6 +345,10 @@ func (q *cartRepository) FindCart(
 		}
 		response.Items = append(response.Items, &cartItem)
 		response.Quantity += cartItem.Quantity
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, err
 	}
 	return &response, nil
 }

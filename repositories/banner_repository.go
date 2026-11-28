@@ -160,6 +160,10 @@ func (q *bannerRepository) FindBanners(
 		banner.RowNo = offset
 		response = append(response, &banner)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 

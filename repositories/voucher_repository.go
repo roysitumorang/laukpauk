@@ -196,6 +196,10 @@ func (q *voucherRepository) FindVouchers(
 		}
 		_, _ = fmt.Fprintf(sb, "$%d", n)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	_, _ = sb.WriteString(") ORDER BY id")
 	if len(params) == 0 {
 		return response, total, pages, nil
@@ -226,6 +230,10 @@ func (q *voucherRepository) FindVouchers(
 		voucher := response[i]
 		voucher.UserIDs = append(voucher.UserIDs, buyerID)
 		response[i] = voucher
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -329,6 +337,10 @@ func (q *voucherRepository) FindVoucher(
 			return nil, err
 		}
 		response.UserIDs = append(response.UserIDs, buyerID)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, err
 	}
 	return (&response).Populate(), nil
 }

@@ -163,6 +163,10 @@ func (q *textMessageRepository) FindTextMessages(
 		textMessage.RowNo = offset
 		response = append(response, &textMessage)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 
