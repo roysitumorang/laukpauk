@@ -528,15 +528,22 @@ func (q *pointEarningCapRepository) checkShoppingCost(
 ) error {
 	ctxt := "PointEarningCapRepository-checkShoppingCost"
 	params := []any{maximum, minimum}
-	query := `SELECT id
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString(`SELECT id
 		FROM point_earning_caps
 		WHERE shopping_cost_min <= ?
-			AND shopping_cost_max >= ?`
+			AND shopping_cost_max >= ?`)
 	if excludeID != nil {
 		params = append(params, *excludeID)
-		query += " AND id != ?"
+		_, _ = sb.WriteString(" AND id != ?")
 	}
-	rows, err := tx.QueryContext(ctx, query+" FOR UPDATE", params...)
+	_, _ = sb.WriteString(" FOR UPDATE")
+	rows, err := tx.QueryContext(ctx, sb.String(), params...)
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return err

@@ -21,16 +21,7 @@ func TestMariaDBSQLRoundTrip(t *testing.T) {
 		t.Fatalf("conn: %v", err)
 	}
 	defer func() { _ = conn.Close() }()
-	if _, err = conn.ExecContext(ctx, "CREATE TEMPORARY TABLE sql_test ("+
-		" id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())"+
-		" , `code` VARCHAR(255) NOT NULL"+
-		" , ref_id UUID"+
-		" , slots JSON NOT NULL"+
-		" , at DATETIME(6) NOT NULL"+
-		" , done_at DATETIME(6)"+
-		" , flag BOOLEAN NOT NULL"+
-		" , CONSTRAINT sql_test_code_key UNIQUE (`code`)"+
-		" )"); err != nil {
+	if _, err = conn.ExecContext(ctx, "CREATE TEMPORARY TABLE sql_test (id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7()), `code` VARCHAR(255) NOT NULL, ref_id UUID, slots JSON NOT NULL, at DATETIME(6) NOT NULL, done_at DATETIME(6), flag BOOLEAN NOT NULL, CONSTRAINT sql_test_code_key UNIQUE (`code`))"); err != nil {
 		t.Fatalf("create: %v", err)
 	}
 	ref := uuid.Must(uuid.NewV7())
@@ -43,9 +34,7 @@ func TestMariaDBSQLRoundTrip(t *testing.T) {
 	var flag bool
 	var code string
 	// a UUID, a JSON slice, a time and CONCAT
-	if err = conn.QueryRowContext(ctx, "INSERT INTO sql_test (`code`, ref_id, slots, at, flag)"+
-		" VALUES (CONCAT(?, '-', ?), ?, ?, ?, ?)"+
-		" RETURNING id, `code`, ref_id, slots, at, done_at, flag",
+	if err = conn.QueryRowContext(ctx, "INSERT INTO sql_test (`code`, ref_id, slots, at, flag) VALUES (CONCAT(?, '-', ?), ?, ?, ?, ?) RETURNING id, `code`, ref_id, slots, at, done_at, flag",
 		"A", "A", ref, models.Int64s{5, 10}, at, true,
 	).Scan(&id, &code, &gotRef, &slots, &gotAt, &doneAt, &flag); err != nil {
 		t.Fatalf("insert: %v", err)
@@ -67,9 +56,7 @@ func TestMariaDBSQLRoundTrip(t *testing.T) {
 
 	// ON DUPLICATE KEY UPDATE ... RETURNING gives the updated row
 	var n int64
-	if err = conn.QueryRowContext(ctx, "INSERT INTO sql_test (`code`, slots, at, flag) VALUES (?, '[]', ?, FALSE)"+
-		" ON DUPLICATE KEY UPDATE slots = '[1,2,3]'"+
-		" RETURNING JSON_LENGTH(slots)", "A-A", at).Scan(&n); err != nil {
+	if err = conn.QueryRowContext(ctx, "INSERT INTO sql_test (`code`, slots, at, flag) VALUES (?, '[]', ?, FALSE) ON DUPLICATE KEY UPDATE slots = '[1,2,3]' RETURNING JSON_LENGTH(slots)", "A-A", at).Scan(&n); err != nil {
 		t.Fatalf("upsert returning: %v", err)
 	}
 	if n != 3 {

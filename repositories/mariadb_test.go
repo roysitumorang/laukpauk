@@ -15,6 +15,7 @@ import (
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/migrations"
 	"github.com/roysitumorang/laukpauk/models"
+	"github.com/roysitumorang/laukpauk/pools"
 )
 
 // These tests run against a real MariaDB when TEST_DATABASE_URL (a go-sql-driver/mysql DSN of an empty database) is
@@ -79,7 +80,15 @@ func TestMariaDBTransactionCounterUpsert(t *testing.T) {
 	db := testPool(t)
 	ctx := context.Background()
 	repo := NewTransactionCounterRepository(db, db)
-	window := "test-" + time.Now().Format("150405.000000000")
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString("test-")
+	_, _ = sb.WriteString(time.Now().Format("150405.000000000"))
+	window := sb.String()
 	now := time.Now()
 	first, err := repo.SaveTransactionCounter(ctx, &models.TransactionCounter{TransactionWindow: window, CreatedAt: now, UpdatedAt: now})
 	if err != nil {
@@ -134,7 +143,15 @@ func TestMariaDBProductCategoryUniqueName(t *testing.T) {
 				t.Fatalf("create %q: %v", name, err)
 			}
 		}
-		rows, err := tx.QueryContext(ctx, "SELECT name FROM product_categories WHERE name LIKE ? ORDER BY "+sortExpression("name"), "Item %")
+		sb := pools.BuilderPool.Get()
+		defer func() {
+			sb.Reset()
+			pools.BuilderPool.Put(sb)
+		}()
+		sb.Reset()
+		_, _ = sb.WriteString("SELECT name FROM product_categories WHERE name LIKE ? ORDER BY ")
+		_, _ = sb.WriteString(sortExpression("name"))
+		rows, err := tx.QueryContext(ctx, sb.String(), "Item %")
 		if err != nil {
 			t.Fatalf("query: %v", err)
 		}
