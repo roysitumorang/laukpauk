@@ -2,14 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +25,24 @@ type NotificationRepository interface {
 	) (*models.Notification, error)
 	CreateNotification(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 	UpdateNotification(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Notification,
 	) (*models.Notification, error)
 }
 
 type notificationRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewNotificationRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) NotificationRepository {
 	return &notificationRepository{
 		dbRead:  dbRead,
@@ -67,9 +66,9 @@ func (q *notificationRepository) FindNotifications(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM notifications %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -102,7 +101,7 @@ func (q *notificationRepository) FindNotifications(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -126,15 +125,15 @@ func (q *notificationRepository) FindNotifications(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Notification
 	for rows.Next() {
 		var notification models.Notification
@@ -158,6 +157,10 @@ func (q *notificationRepository) FindNotifications(
 		offset++
 		notification.RowNo = offset
 		response = append(response, &notification)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -194,7 +197,7 @@ func (q *notificationRepository) FindNotification(
 		condition,
 	)
 	var response models.Notification
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.NotificationType,
@@ -208,7 +211,7 @@ func (q *notificationRepository) FindNotification(
 		&response.CreatedAt,
 		&response.ReadAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrNotificationNotFound
 	}
 	if err != nil {
@@ -220,12 +223,12 @@ func (q *notificationRepository) FindNotification(
 
 func (q *notificationRepository) CreateNotification(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationRepository-CreateNotification"
 	var response models.Notification
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO notifications (
 			user_id
@@ -238,7 +241,7 @@ func (q *notificationRepository) CreateNotification(
 			, params
 			, created_by
 			, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, user_id
 			, notification_type
@@ -285,12 +288,12 @@ func (q *notificationRepository) CreateNotification(
 
 func (q *notificationRepository) UpdateNotification(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Notification,
 ) (*models.Notification, error) {
 	ctxt := "NotificationRepository-UpdateNotification"
 	var response models.Notification
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -307,8 +310,8 @@ func (q *notificationRepository) UpdateNotification(
 			, sent_at
 			, read_at
 		FROM notifications
-		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		WHERE id = ?
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -325,7 +328,7 @@ func (q *notificationRepository) UpdateNotification(
 		&response.SentAt,
 		&response.ReadAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrNotificationNotFound
 	}
 	if err != nil {
@@ -349,7 +352,7 @@ func (q *notificationRepository) UpdateNotification(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " sent_at = $%d", n)
+		_, _ = sb.WriteString(" sent_at = ?")
 	}
 	if (response.ReadAt == nil && request.ReadAt != nil) ||
 		(response.ReadAt != nil && request.ReadAt == nil) ||
@@ -359,15 +362,13 @@ func (q *notificationRepository) UpdateNotification(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " read_at = $%d", n)
+		_, _ = sb.WriteString(" read_at = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, user_id
 			, notification_type
@@ -380,10 +381,8 @@ func (q *notificationRepository) UpdateNotification(
 			, created_by
 			, created_at
 			, sent_at
-			, read_at`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, read_at`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.NotificationType,
@@ -414,7 +413,7 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -427,7 +426,7 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -440,7 +439,7 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -461,25 +460,21 @@ func (q *notificationRepository) buildCondition(request *models.NotificationFilt
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
+		keyword := sb.String()
+		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`EXISTS(
+		_, _ = sb.WriteString(`EXISTS(
 				SELECT 1
 				FROM users
 				WHERE users.id = notifications.user_id
 					AND (
-						LOWER(users.name) LIKE $%d
-						OR users.username LIKE $%d
-						OR users.email LIKE $%d
-						OR users.mobile_phone LIKE $%d
+						users.name LIKE ?
+						OR users.username LIKE ?
+						OR users.email LIKE ?
+						OR users.mobile_phone LIKE ?
 					)
-			)`,
-			n, n, n, n,
-		)
+			)`)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

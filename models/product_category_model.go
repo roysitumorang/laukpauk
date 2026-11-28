@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -44,7 +44,7 @@ func (q *ProductCategory) Validate() error {
 }
 
 func (q *ProductCategory) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 func (q *ProductCategory) SetPhoto(photo string) *ProductCategory {

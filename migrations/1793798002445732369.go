@@ -2,11 +2,11 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
-	"uuid"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -14,88 +14,84 @@ import (
 func init() {
 	Migrations[1793798002445732369] = Migration{
 		Version: 1793798002445732369,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// delivery_plans
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE delivery_plans (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
 					, record_status smallint NOT NULL
-					, name character varying COLLATE "natural_sort"
+					, name TEXT
 					, weekday bigint NOT NULL
-					, transaction_window TSTZRANGE NOT NULL
+					, transaction_window_min DATETIME(6) NOT NULL
+					, transaction_window_max DATETIME(6) NOT NULL
 					, delivery_time_interval bigint NOT NULL
 					, same_day BOOLEAN NOT NULL
-					, same_day_window TSTZRANGE NOT NULL
+					, same_day_window_min DATETIME(6)
+					, same_day_window_max DATETIME(6)
 					, next_day BOOLEAN NOT NULL
-					, next_day_window TSTZRANGE NOT NULL
+					, next_day_window_min DATETIME(6)
+					, next_day_window_max DATETIME(6)
 					, next_two_day BOOLEAN NOT NULL
-					, next_two_day_window TSTZRANGE NOT NULL
-					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, updated_at timestamp with time zone NOT NULL
-					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, deleted_at timestamp with time zone
-					, deletion_reason character varying
-					, CONSTRAINT no_overlapping_delivery_plans_transaction_window EXCLUDE USING gist (
-						weekday WITH =,
-						transaction_window WITH &&
-					)
-				);`,
+					, next_two_day_window_min DATETIME(6)
+					, next_two_day_window_max DATETIME(6)
+					, created_by UUID NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_by UUID NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, deleted_by UUID
+					, deleted_at DATETIME(6)
+					, deletion_reason TEXT
+					, CONSTRAINT delivery_plans_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT delivery_plans_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT delivery_plans_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON delivery_plans (record_status);`,
+				`CREATE INDEX delivery_plans_record_status_idx ON delivery_plans (record_status);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON delivery_plans (LOWER(name));`,
+				`CREATE INDEX delivery_plans_weekday_idx ON delivery_plans (weekday);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON delivery_plans (weekday);`,
+				`CREATE INDEX delivery_plans_created_by_idx ON delivery_plans (created_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON delivery_plans (created_by);`,
+				`CREATE INDEX delivery_plans_updated_by_idx ON delivery_plans (updated_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON delivery_plans (updated_by);`,
+				`CREATE INDEX delivery_plans_deleted_by_idx ON delivery_plans (deleted_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON delivery_plans (deleted_by);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			var sellerID uuid.UUID
-			if err = tx.QueryRow(
+			if err = tx.QueryRowContext(
 				ctx,
 				`SELECT id
 				FROM users
-				WHERE email = $1`,
+				WHERE email = ?`,
 				"benni.surbakti@gmail.com",
 			).Scan(&sellerID); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -103,18 +99,18 @@ func init() {
 			}
 			now := time.Now().In(time.Local)
 			deliveryTimeInterval := 2 * time.Hour
-			today000000 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today095959 := time.Date(now.Year(), now.Month(), now.Day(), 9, 59, 59, 0, time.Local).Format(time.RFC3339Nano)
-			today100000 := time.Date(now.Year(), now.Month(), now.Day(), 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today120000 := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today215959 := time.Date(now.Year(), now.Month(), now.Day(), 21, 59, 59, 0, time.Local).Format(time.RFC3339Nano)
-			today220000 := time.Date(now.Year(), now.Month(), now.Day(), 22, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			today235959 := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local).Format(time.RFC3339Nano)
-			nextDay080000 := time.Date(now.Year(), now.Month(), now.Day()+1, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextDay100000 := time.Date(now.Year(), now.Month(), now.Day()+1, 10, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextDay120000 := time.Date(now.Year(), now.Month(), now.Day()+1, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextTwoDay080000 := time.Date(now.Year(), now.Month(), now.Day()+2, 8, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
-			nextTwoDay120000 := time.Date(now.Year(), now.Month(), now.Day()+2, 12, 0, 0, 0, time.Local).Format(time.RFC3339Nano)
+			today000000 := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+			today095959 := time.Date(now.Year(), now.Month(), now.Day(), 9, 59, 59, 0, time.Local)
+			today100000 := time.Date(now.Year(), now.Month(), now.Day(), 10, 0, 0, 0, time.Local)
+			today120000 := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.Local)
+			today215959 := time.Date(now.Year(), now.Month(), now.Day(), 21, 59, 59, 0, time.Local)
+			today220000 := time.Date(now.Year(), now.Month(), now.Day(), 22, 0, 0, 0, time.Local)
+			today235959 := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
+			nextDay080000 := time.Date(now.Year(), now.Month(), now.Day()+1, 8, 0, 0, 0, time.Local)
+			nextDay100000 := time.Date(now.Year(), now.Month(), now.Day()+1, 10, 0, 0, 0, time.Local)
+			nextDay120000 := time.Date(now.Year(), now.Month(), now.Day()+1, 12, 0, 0, 0, time.Local)
+			nextTwoDay080000 := time.Date(now.Year(), now.Month(), now.Day()+2, 8, 0, 0, 0, time.Local)
+			nextTwoDay120000 := time.Date(now.Year(), now.Month(), now.Day()+2, 12, 0, 0, 0, time.Local)
 			deliveryPlans := [][]any{
 				// weekdays
 				{
@@ -346,56 +342,60 @@ func init() {
 				},
 			}
 			for i := range deliveryPlans {
-				if _, err = tx.Exec(
+				if _, err = tx.ExecContext(
 					ctx,
 					`INSERT INTO delivery_plans (
 						record_status
 						, name
 						, weekday
-						, transaction_window
+						, transaction_window_min
+						, transaction_window_max
 						, delivery_time_interval
 						, same_day
-						, same_day_window
+						, same_day_window_min
+						, same_day_window_max
 						, next_day
-						, next_day_window
+						, next_day_window_min
+						, next_day_window_max
 						, next_two_day
-						, next_two_day_window
+						, next_two_day_window_min
+						, next_two_day_window_max
 						, created_by
 						, created_at
 						, updated_by
 						, updated_at
 					) VALUES (
-						$1
-						, $2
-						, $3
-						, tstzrange($4, $5, '[]')
-						, $6
-						, $7
-						, tstzrange($8, $9)
-						, $10
-						, tstzrange($11, $12, '[]')
-						, $13
-						, tstzrange($14, $15, '[]')
-						, $16
-						, $17
-						, $18
-						, $19
+						?
+						, ?
+						, ?
+						, ?, ?
+						, ?
+						, ?
+						, ?, ?
+						, ?
+						, ?, ?
+						, ?
+						, ?, ?
+						, ?
+						, ?
+						, ?
+						, ?
 					)`,
 					deliveryPlans[i]...,
 				); err != nil {
-					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+					helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 					return
 				}
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE delivery_plans",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

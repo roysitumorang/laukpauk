@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,94 +11,64 @@ import (
 	"slices"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 type Migrator struct {
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 type Migration struct {
 	Version int64
-	Up      func(ctx context.Context, tx pgx.Tx) error
-	Down    func(ctx context.Context, tx pgx.Tx) error
+	Up      func(ctx context.Context, tx *sql.Tx) error
+	Down    func(ctx context.Context, tx *sql.Tx) error
 }
 
 var Migrations = map[int64]Migration{}
 
 func NewMigrator(
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) *Migrator {
 	return &Migrator{
 		dbWrite: dbWrite,
 	}
 }
 
+// Migrate runs the migrations that haven't run yet, in version order. MariaDB commits each CREATE / ALTER / DROP on
+// its own, so a migration that fails halfway is not rolled back by the transaction: its Down undoes what it can.
 func (m *Migrator) Migrate(ctx context.Context) error {
 	ctxt := "Migrator-Migrate"
-	tx, err := m.dbWrite.BeginTx(ctx, pgx.TxOptions{
-		IsoLevel: pgx.Serializable,
+	tx, err := m.dbWrite.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
 	})
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrBeginTx")
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrRollback")
 		}
 	}(ctx)
-	if _, err = tx.Exec(
+	if _, err = tx.ExecContext(
 		ctx,
-		"CREATE EXTENSION IF NOT EXISTS btree_gist;",
+		"CREATE TABLE IF NOT EXISTS `migrations` (`version` bigint NOT NULL PRIMARY KEY) ENGINE=InnoDB",
 	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 		return err
 	}
-	if _, err = tx.Exec(
-		ctx,
-		`CREATE COLLATION IF NOT EXISTS natural_sort (
-			PROVIDER = 'icu'
-			, LOCALE = 'en-US-u-kn-true'
-		);`,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
-	if _, err = tx.Exec(
-		ctx,
-		`CREATE COLLATION IF NOT EXISTS case_insensitive (
-			PROVIDER = 'icu'
-			, LOCALE = 'und-u-ks-level2'
-			, DETERMINISTIC = false
-		);`,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
-	if _, err = tx.Exec(
-		ctx,
-		`CREATE TABLE IF NOT EXISTS migrations (
-			"version" bigint NOT NULL PRIMARY KEY
-		)`,
-	); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-		return err
-	}
-	rows, err := tx.Query(ctx, `SELECT "version" FROM "migrations" ORDER BY "version"`)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := tx.QueryContext(ctx, "SELECT `version` FROM `migrations` ORDER BY `version`")
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	mapVersions := map[int64]struct{}{}
 	for rows.Next() {
 		var version int64
@@ -106,6 +77,10 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			return err
 		}
 		mapVersions[version] = struct{}{}
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return err
 	}
 	sortedVersions := slices.Collect(maps.Keys(Migrations))
 	slices.Sort(sortedVersions)
@@ -124,12 +99,12 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrUp")
 			return err
 		}
-		if _, err = tx.Exec(ctx, `INSERT INTO "migrations" ("version") VALUES ($1)`, version); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		if _, err = tx.ExecContext(ctx, "INSERT INTO `migrations` (`version`) VALUES (?)", version); err != nil {
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			return err
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrCommit")
 		return err
 	}
@@ -146,17 +121,16 @@ func (m *Migrator) CreateMigrationFile() error {
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
 )
 
 func init() {
 	Migrations[%d] = Migration{
 		Version: %d,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
 			return
 		},
@@ -170,4 +144,14 @@ func init() {
 		helper.String2ByteSlice(content),
 		0600,
 	)
+}
+
+// seedTime parses a seed timestamp such as "2024-12-11 07:41:55.000 +0700": MariaDB doesn't take time zone offsets in
+// DATETIME text, so seeds pass time.Time values.
+func seedTime(value string) time.Time {
+	t, err := time.Parse("2006-01-02 15:04:05.000 -0700", value)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }

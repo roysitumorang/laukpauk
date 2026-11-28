@@ -4,11 +4,11 @@ import (
 	"errors"
 	"slices"
 	"time"
-	"uuid"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/keyauth"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/keys"
 	"github.com/roysitumorang/laukpauk/models"

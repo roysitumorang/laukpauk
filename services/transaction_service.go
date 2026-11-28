@@ -2,15 +2,15 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"time"
-	"uuid"
 
 	"github.com/dustin/go-humanize"
-	"github.com/jackc/pgx/v5"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -34,7 +34,7 @@ type TransactionService interface {
 	) (*models.Transaction, []uuid.UUID, error)
 	UpdateTransaction(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Transaction,
 	) (*models.Transaction, error)
 	AutoCancelOverdueTransactions(ctx context.Context) error
@@ -179,7 +179,7 @@ func (q *transactionService) CreateTransaction(
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrFindCart")
 		return nil, nil, err
 	}
-	if cart == nil || request.CartID == nil || request.CartID.Compare(cart.ID) != 0 {
+	if cart == nil || request.CartID == nil || *request.CartID != cart.ID {
 		return nil, nil, errors.New("cart_id: not found")
 	}
 	mapCartItems := map[uuid.UUID]*models.CartItem{}
@@ -312,7 +312,7 @@ func (q *transactionService) CreateTransaction(
 				return nil, nil, err
 			}
 			if (buyer.ReferrerID != nil &&
-				buyer.ReferrerID.Compare(referrer.ID) != 0) ||
+				*buyer.ReferrerID != referrer.ID) ||
 				int(total) >= len(setting.ReferralPointsSlots) {
 				return nil, nil, errors.New("referral_code: is invalid")
 			}
@@ -433,7 +433,7 @@ func (q *transactionService) CreateTransaction(
 		return nil, nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -461,7 +461,7 @@ func (q *transactionService) CreateTransaction(
 	request.CalculateDiscount()
 	var paymentChannel *models.PaymentChannel
 	if request.PaymentAmount > 0 {
-		if request.PaymentChannelID == nil || request.PaymentChannelID.Compare(uuid.Nil()) == 0 {
+		if request.PaymentChannelID == nil || *request.PaymentChannelID == uuid.Nil {
 			return nil, nil, errors.New("payment_channel_id: is required")
 		}
 		paymentChannel, err = q.paymentChannelRepository.FindPaymentChannel(
@@ -597,7 +597,7 @@ func (q *transactionService) CreateTransaction(
 		}
 		notificationIDs[i] = notification.ID
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return nil, nil, err
 	}
@@ -605,7 +605,7 @@ func (q *transactionService) CreateTransaction(
 }
 func (q *transactionService) UpdateTransaction(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Transaction,
 ) (*models.Transaction, error) {
 	ctxt := "TransactionService-UpdateTransaction"
@@ -638,7 +638,7 @@ func (q *transactionService) AutoCancelOverdueTransactions(ctx context.Context) 
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -664,7 +664,7 @@ func (q *transactionService) AutoCancelOverdueTransactions(ctx context.Context) 
 			}
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return err
 	}
@@ -702,7 +702,7 @@ func (q *transactionService) RequestWithdrawal(
 		return nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -720,7 +720,7 @@ func (q *transactionService) RequestWithdrawal(
 			return nil, err
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return nil, err
 	}
@@ -744,7 +744,7 @@ func (q *transactionService) WithdrawTransaction(
 		return nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -762,7 +762,7 @@ func (q *transactionService) WithdrawTransaction(
 			return nil, err
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return nil, err
 	}
@@ -771,7 +771,7 @@ func (q *transactionService) WithdrawTransaction(
 
 // refundBalances gives the buyer back the reward points and wallet a cancelled or withdrawn transaction used
 // (CreateTransaction debited them).
-func (q *transactionService) refundBalances(ctx context.Context, tx pgx.Tx, transaction *models.Transaction, now time.Time) error {
+func (q *transactionService) refundBalances(ctx context.Context, tx *sql.Tx, transaction *models.Transaction, now time.Time) error {
 	if transaction.RewardPointsDiscount <= 0 && transaction.WalletDiscount <= 0 {
 		return nil
 	}
@@ -815,7 +815,7 @@ func (q *transactionService) CompleteTransaction(
 		return nil, err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -849,7 +849,7 @@ func (q *transactionService) CompleteTransaction(
 			}
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return nil, err
 	}
@@ -912,7 +912,7 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -950,7 +950,7 @@ func (q *transactionService) AutoCompleteTransactions(ctx context.Context) error
 			}
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return err
 	}

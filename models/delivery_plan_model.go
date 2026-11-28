@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -310,7 +310,7 @@ func (q *DeliveryPlan) Validate() (err error) {
 }
 
 func (q *DeliveryPlan) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 func (q *DeliveryPlan) Populate() *DeliveryPlan {

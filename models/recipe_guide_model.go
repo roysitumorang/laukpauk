@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -31,7 +31,7 @@ type RecipeGuide struct {
 }
 
 func (q *RecipeGuide) Validate() error {
-	if q.RecipeID.Compare(uuid.Nil()) == 0 {
+	if q.RecipeID == uuid.Nil {
 		return errors.New("recipe_id: is required")
 	}
 	if q.Instruction = strings.TrimSpace(q.Instruction); q.Instruction == "" {
@@ -41,7 +41,7 @@ func (q *RecipeGuide) Validate() error {
 }
 
 func (q *RecipeGuide) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 type RecipeGuideFilter struct {

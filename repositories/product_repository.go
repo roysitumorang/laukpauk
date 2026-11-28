@@ -2,16 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -32,29 +29,29 @@ type ProductRepository interface {
 	) (*models.Product, error)
 	CreateProduct(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 	UpdateProduct(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 	SaveProduct(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Product,
 	) (*models.Product, error)
 }
 
 type productRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewProductRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) ProductRepository {
 	return &productRepository{
 		dbRead:  dbRead,
@@ -78,9 +75,9 @@ func (q *productRepository) FindProducts(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM products %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -119,7 +116,7 @@ func (q *productRepository) FindProducts(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -143,15 +140,15 @@ func (q *productRepository) FindProducts(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Product
 	for rows.Next() {
 		var product models.Product
@@ -182,6 +179,10 @@ func (q *productRepository) FindProducts(
 		product.RowNo = offset
 		response = append(response, (&product).Populate())
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 
@@ -201,9 +202,9 @@ func (q *productRepository) InfiniteScrollProducts(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM products %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, err
 	}
 	if total == 0 ||
@@ -221,7 +222,7 @@ func (q *productRepository) InfiniteScrollProducts(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	_, _ = fmt.Fprintf(
 		sb,
@@ -251,19 +252,19 @@ func (q *productRepository) InfiniteScrollProducts(
 	)
 	if request.NextRowNo != nil {
 		params = append(params, request.NextRowNo)
-		_, _ = fmt.Fprintf(sb, " WHERE rn >= $%d", len(params))
+		_, _ = sb.WriteString(" WHERE rn >= ?")
 	}
 	params = append(params, request.Limit)
-	_, _ = fmt.Fprintf(sb, " FETCH FIRST $%d ROWS ONLY", len(params))
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	_, _ = sb.WriteString(" FETCH FIRST ? ROWS ONLY")
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Product
 	for rows.Next() {
 		var product models.Product
@@ -292,6 +293,10 @@ func (q *productRepository) InfiniteScrollProducts(
 			return nil, 0, err
 		}
 		response = append(response, (&product).Populate())
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, err
 	}
 	var nextRowNo int64
 	if request.Limit > 0 && len(response) == int(request.Limit) {
@@ -338,7 +343,7 @@ func (q *productRepository) FindProduct(
 		condition,
 	)
 	var response models.Product
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
@@ -358,7 +363,7 @@ func (q *productRepository) FindProduct(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductNotFound
 	}
 	if err != nil {
@@ -370,12 +375,12 @@ func (q *productRepository) FindProduct(
 
 func (q *productRepository) CreateProduct(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	ctxt := "ProductRepository-CreateProduct"
 	var response models.Product
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO products (
 			record_status
@@ -392,7 +397,7 @@ func (q *productRepository) CreateProduct(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, product_category_id
@@ -445,9 +450,7 @@ func (q *productRepository) CreateProduct(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "products_unique_name_idx" {
+		if isUniqueViolation(err, "products_unique_name_idx") {
 			err = models.ErrUniqueProductNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -459,12 +462,12 @@ func (q *productRepository) CreateProduct(
 
 func (q *productRepository) UpdateProduct(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	ctxt := "ProductRepository-UpdateProduct"
 	var response models.Product
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -486,7 +489,7 @@ func (q *productRepository) UpdateProduct(
 			, deleted_at
 			, deletion_reason
 		FROM products
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -509,7 +512,7 @@ func (q *productRepository) UpdateProduct(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductNotFound
 	}
 	if err != nil {
@@ -530,97 +533,97 @@ func (q *productRepository) UpdateProduct(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
-	if response.ProductCategoryID.Compare(request.ProductCategoryID) != 0 {
+	if response.ProductCategoryID != request.ProductCategoryID {
 		params = append(params, request.ProductCategoryID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_category_id = $%d", n)
+		_, _ = sb.WriteString(" product_category_id = ?")
 	}
 	if response.ProductCategoryName != request.ProductCategoryName {
 		params = append(params, request.ProductCategoryName)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_category_name = $%d", n)
+		_, _ = sb.WriteString(" product_category_name = ?")
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+		_, _ = sb.WriteString(" photo = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if response.ReadyStock != request.ReadyStock {
 		params = append(params, request.ReadyStock)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " ready_stock = $%d", n)
+		_, _ = sb.WriteString(" ready_stock = ?")
 	}
 	if response.Pinned != request.Pinned {
 		params = append(params, request.Pinned)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " pinned = $%d", n)
+		_, _ = sb.WriteString(" pinned = ?")
 	}
 	if response.Hits != request.Hits {
 		params = append(params, request.Hits)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " hits = $%d", n)
+		_, _ = sb.WriteString(" hits = ?")
 	}
 	if response.LowestSellingPrice != request.LowestSellingPrice {
 		params = append(params, request.LowestSellingPrice)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " lowest_selling_price = $%d", n)
+		_, _ = sb.WriteString(" lowest_selling_price = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
-	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+	if response.UpdatedBy != request.UpdatedBy {
 		params = append(params, request.UpdatedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
 		(response.DeletedBy != nil && request.DeletedBy != nil &&
-			response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+			*response.DeletedBy != *request.DeletedBy) {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -630,7 +633,7 @@ func (q *productRepository) UpdateProduct(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -640,12 +643,10 @@ func (q *productRepository) UpdateProduct(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, product_category_id
@@ -663,10 +664,8 @@ func (q *productRepository) UpdateProduct(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, deletion_reason`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
@@ -686,9 +685,7 @@ func (q *productRepository) UpdateProduct(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "products_unique_name_idx" {
+		if isUniqueViolation(err, "products_unique_name_idx") {
 			err = models.ErrUniqueProductNameViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -700,7 +697,7 @@ func (q *productRepository) UpdateProduct(
 
 func (q *productRepository) SaveProduct(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Product,
 ) (*models.Product, error) {
 	if request.New() {
@@ -719,7 +716,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -732,7 +729,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -745,7 +742,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -758,7 +755,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -771,7 +768,7 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -779,15 +776,15 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	if len(request.Names) > 0 {
 		sb.Reset()
 		for i, name := range request.Names {
-			params = append(params, strings.ToLower(name))
+			params = append(params, name)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) IN (%s)", placeholders)
+		_, _ = fmt.Fprintf(sb, "name IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if request.ReadyStock != nil {
@@ -799,10 +796,10 @@ func (q *productRepository) buildCondition(request *models.ProductFilter, sb *st
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("name LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

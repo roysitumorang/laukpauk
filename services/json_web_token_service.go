@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -23,12 +23,12 @@ type (
 		) (*models.JsonWebToken, error)
 		CreateJsonWebToken(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx *sql.Tx,
 			request *models.JsonWebToken,
 		) (*models.JsonWebToken, error)
 		DeleteJsonWebToken(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx *sql.Tx,
 			request *models.JsonWebTokenFilter,
 		) (int64, error)
 	}
@@ -90,7 +90,7 @@ func (q *jsonWebTokenService) FindJsonWebToken(
 
 func (q *jsonWebTokenService) CreateJsonWebToken(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.JsonWebToken,
 ) (*models.JsonWebToken, error) {
 	ctxt := "JsonWebTokenService-CreateJsonWebToken"
@@ -103,7 +103,7 @@ func (q *jsonWebTokenService) CreateJsonWebToken(
 
 func (q *jsonWebTokenService) DeleteJsonWebToken(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.JsonWebTokenFilter,
 ) (int64, error) {
 	ctxt := "JsonWebTokenService-DeleteJsonWebToken"

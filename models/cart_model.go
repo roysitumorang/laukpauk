@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -26,7 +26,7 @@ type Cart struct {
 
 func (q *Cart) Validate() error {
 	for i, cartItem := range q.Items {
-		if cartItem.ProductVariantID.Compare(uuid.Nil()) == 0 {
+		if cartItem.ProductVariantID == uuid.Nil {
 			return fmt.Errorf("items[%d].product_variant_id: is required", i)
 		}
 		cartItem.Quantity = max(cartItem.Quantity, 0)
@@ -37,7 +37,7 @@ func (q *Cart) Validate() error {
 }
 
 func (q *Cart) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 type CartItem struct {

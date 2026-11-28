@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
 	"github.com/coregx/coregex"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -86,7 +86,7 @@ func (q *Promotion) Validate() (err error) {
 }
 
 func (q *Promotion) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 type PromotionFilter struct {

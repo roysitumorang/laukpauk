@@ -2,14 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +25,24 @@ type BannerRepository interface {
 	) (*models.Banner, error)
 	CreateBanner(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Banner,
 	) (*models.Banner, error)
 	UpdateBanner(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Banner,
 	) (*models.Banner, error)
 }
 
 type bannerRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewBannerRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) BannerRepository {
 	return &bannerRepository{
 		dbRead:  dbRead,
@@ -66,9 +65,9 @@ func (q *bannerRepository) FindBanners(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM banners %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -102,7 +101,7 @@ func (q *bannerRepository) FindBanners(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -126,15 +125,15 @@ func (q *bannerRepository) FindBanners(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Banner
 	for rows.Next() {
 		var banner models.Banner
@@ -159,6 +158,10 @@ func (q *bannerRepository) FindBanners(
 		offset++
 		banner.RowNo = offset
 		response = append(response, &banner)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -196,7 +199,7 @@ func (q *bannerRepository) FindBanner(
 	)
 	query := sb.String()
 	var response models.Banner
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
@@ -211,7 +214,7 @@ func (q *bannerRepository) FindBanner(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrBannerNotFound
 	}
 	if err != nil {
@@ -223,12 +226,12 @@ func (q *bannerRepository) FindBanner(
 
 func (q *bannerRepository) CreateBanner(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Banner,
 ) (*models.Banner, error) {
 	ctxt := "BannerRepository-CreateBanner"
 	var response models.Banner
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO banners (
 			record_status
@@ -240,7 +243,7 @@ func (q *bannerRepository) CreateBanner(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, name
@@ -286,12 +289,12 @@ func (q *bannerRepository) CreateBanner(
 
 func (q *bannerRepository) UpdateBanner(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Banner,
 ) (*models.Banner, error) {
 	ctxt := "BannerRepository-UpdateBanner"
 	var response models.Banner
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -308,8 +311,8 @@ func (q *bannerRepository) UpdateBanner(
 			, deleted_at
 			, deletion_reason
 		FROM banners
-		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		WHERE id = ?
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -326,7 +329,7 @@ func (q *bannerRepository) UpdateBanner(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrBannerNotFound
 	}
 	if err != nil {
@@ -346,78 +349,76 @@ func (q *bannerRepository) UpdateBanner(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+		_, _ = sb.WriteString(" photo = ?")
 	}
 	if response.Visible != request.Visible {
 		params = append(params, request.Visible)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " visible = $%d", n)
+		_, _ = sb.WriteString(" visible = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
-	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+	if response.UpdatedBy != request.UpdatedBy {
 		params = append(params, request.UpdatedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if response.DeletedBy == nil && request.DeletedBy != nil {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if response.DeletedAt == nil && request.DeletedAt != nil {
 		params = append(params, request.DeletedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if response.DeletionReason == nil && request.DeletionReason != nil {
 		params = append(params, request.DeletionReason)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, name
@@ -430,10 +431,8 @@ func (q *bannerRepository) UpdateBanner(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, deletion_reason`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.Name,
@@ -464,7 +463,7 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -477,7 +476,7 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -491,10 +490,10 @@ func (q *bannerRepository) buildCondition(request *models.BannerFilter, sb *stri
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("name LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

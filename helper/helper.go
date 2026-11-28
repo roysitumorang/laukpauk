@@ -21,7 +21,6 @@ import (
 	"time"
 	"unicode"
 	"unsafe"
-	"uuid"
 
 	"github.com/goccy/go-json/v2"
 	"github.com/godruoyi/go-snowflake"
@@ -142,10 +141,6 @@ func DecodeShortUniqueIDs(id string) uint64 {
 		return 0
 	}
 	return unsignedNumbers[0]
-}
-
-func GenerateUniqueID() string {
-	return uuid.New().String()
 }
 
 func GetEnv() string {

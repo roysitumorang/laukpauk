@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strings"
 	"time"
-	"uuid"
 
 	"github.com/coregx/coregex"
 	"github.com/goccy/go-json/jsontext"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 

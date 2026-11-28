@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/middlewares"
@@ -119,7 +119,7 @@ func (q *userController) V1SellerSignIn(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -138,7 +138,7 @@ func (q *userController) V1SellerSignIn(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	if !matched {
-		if err = tx.Commit(ctx); err != nil {
+		if err = tx.Commit(); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
@@ -172,7 +172,7 @@ func (q *userController) V1SellerSignIn(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
@@ -295,7 +295,7 @@ func (q *userController) V1BuyerSignUp(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -325,7 +325,7 @@ func (q *userController) V1BuyerSignUp(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
@@ -416,7 +416,7 @@ func (q *userController) V1BuyerSignIn(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -435,7 +435,7 @@ func (q *userController) V1BuyerSignIn(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	if !matched {
-		if err = tx.Commit(ctx); err != nil {
+		if err = tx.Commit(); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return helper.NewResponse(fiber.StatusUnprocessableEntity).
 				SetMessage(err.Error()).
@@ -469,7 +469,7 @@ func (q *userController) V1BuyerSignIn(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).
@@ -529,7 +529,7 @@ func (q *userController) V1BuyerConfirmMobilePhone(c fiber.Ctx) error {
 			WriteResponse(c)
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -547,7 +547,7 @@ func (q *userController) V1BuyerConfirmMobilePhone(c fiber.Ctx) error {
 			SetMessage(err.Error()).
 			WriteResponse(c)
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return helper.NewResponse(fiber.StatusUnprocessableEntity).
 			SetMessage(err.Error()).

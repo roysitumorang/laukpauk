@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
 	"github.com/nyaruka/phonenumbers"
 )
@@ -21,7 +21,7 @@ type Setting struct {
 	ReferralPointsEnabled                bool            `json:"referral_points_enabled"`
 	ReferralPointsMinimumShoppingCost    int64           `json:"referral_points_minimum_shopping_cost"`
 	ReferralPointsAmount                 int64           `json:"referral_points_amount"`
-	ReferralPointsSlots                  []int64         `json:"referral_points_slots"`
+	ReferralPointsSlots                  Int64s          `json:"referral_points_slots"`
 	ReferralPointsExpense                int64           `json:"referral_points_expense"`
 	RewardPointsAccumulationWindowInDays int16           `json:"reward_points_accumulation_window_in_days"`
 	DeliveryOriginLongitude              decimal.Decimal `json:"delivery_origin_longitude"`

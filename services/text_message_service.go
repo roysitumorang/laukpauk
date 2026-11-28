@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
-	"uuid"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
@@ -25,17 +25,17 @@ type TextMessageService interface {
 	) (*models.TextMessage, error)
 	CreateTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
 	UpdateTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
 	DeleteTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		textMessageID uuid.UUID,
 	) (int64, error)
 	ConsumeMessage(
@@ -107,7 +107,7 @@ func (q *textMessageService) FindTextMessage(
 
 func (q *textMessageService) CreateTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.TextMessage,
 ) (*models.TextMessage, error) {
 	ctxt := "TextMessageService-CreateTextMessage"
@@ -121,7 +121,7 @@ func (q *textMessageService) CreateTextMessage(
 
 func (q *textMessageService) UpdateTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.TextMessage,
 ) (*models.TextMessage, error) {
 	ctxt := "TextMessageService-UpdateTextMessage"
@@ -135,7 +135,7 @@ func (q *textMessageService) UpdateTextMessage(
 
 func (q *textMessageService) DeleteTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	textMessageID uuid.UUID,
 ) (int64, error) {
 	ctxt := "TextMessageService-DeleteTextMessage"
@@ -196,7 +196,7 @@ func (q *textMessageService) ConsumeMessage(
 			return err
 		}
 		defer func(ctx context.Context) {
-			if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 				err = nil
 			}
 			if err != nil {
@@ -207,7 +207,7 @@ func (q *textMessageService) ConsumeMessage(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTextMessage")
 			return err
 		}
-		if err = tx.Commit(ctx); err != nil {
+		if err = tx.Commit(); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return err
 		}
@@ -242,7 +242,7 @@ func (q *textMessageService) ConsumeMessage(
 			return err
 		}
 		defer func(ctx context.Context) {
-			if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+			if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 				err = nil
 			}
 			if err != nil {
@@ -253,7 +253,7 @@ func (q *textMessageService) ConsumeMessage(
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrUpdateTextMessage")
 			return err
 		}
-		if err = tx.Commit(ctx); err != nil {
+		if err = tx.Commit(); err != nil {
 			helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 			return err
 		}

@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -13,7 +14,6 @@ import (
 	"github.com/goccy/go-json/v2"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/storage/valkey"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/config"
 	"github.com/roysitumorang/laukpauk/externals"
 	"github.com/roysitumorang/laukpauk/helper"
@@ -24,7 +24,7 @@ import (
 )
 
 type Service struct {
-	DbWrite                   *pgxpool.Pool
+	DbWrite                   *sql.DB
 	Migrator                  *migrations.Migrator
 	KafkaClient               *externals.KafkaClient
 	FcmClient                 *externals.FcmClient

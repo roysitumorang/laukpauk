@@ -2,14 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,12 +27,12 @@ type PaymentChannelRepository interface {
 
 type paymentChannelRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewPaymentChannelRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) PaymentChannelRepository {
 	return &paymentChannelRepository{
 		dbRead:  dbRead,
@@ -57,9 +56,9 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM payment_channels %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -93,11 +92,7 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		field := item.Field
-		if item.Field == models.PaymentChannelSortingFieldName {
-			field = "LOWER(name)"
-		}
-		_, _ = fmt.Fprintf(sb, " %s %s", field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -121,15 +116,15 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.PaymentChannel
 	for rows.Next() {
 		var paymentChannel models.PaymentChannel
@@ -154,6 +149,10 @@ func (q *paymentChannelRepository) FindPaymentChannels(
 		offset++
 		paymentChannel.RowNo = offset
 		response = append(response, &paymentChannel)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -192,7 +191,7 @@ func (q *paymentChannelRepository) FindPaymentChannel(
 	)
 	query := sb.String()
 	var response models.PaymentChannel
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
 		&response.ID,
 		&response.BusinessID,
 		&response.Name,
@@ -207,7 +206,7 @@ func (q *paymentChannelRepository) FindPaymentChannel(
 		&response.ChannelCategory,
 		&response.CreatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPaymentChannelNotFound
 	}
 	if err != nil {
@@ -227,7 +226,7 @@ func (q *paymentChannelRepository) buildCondition(request *models.PaymentChannel
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -235,15 +234,15 @@ func (q *paymentChannelRepository) buildCondition(request *models.PaymentChannel
 	if request.Amount > 0 {
 		params = append(params, request.Amount)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "($%d BETWEEN minimum_amount AND maximum_amount)", len(params))
+		_, _ = sb.WriteString("(? BETWEEN minimum_amount AND maximum_amount)")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
 		params = append(params, sb.String())
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(name) LIKE $%d", len(params))
+		_, _ = sb.WriteString("name LIKE ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

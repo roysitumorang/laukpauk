@@ -2,14 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -26,24 +25,24 @@ type PointRepository interface {
 	) (*models.Point, error)
 	CreatePoint(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 	UpdatePoint(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Point,
 	) (*models.Point, error)
 }
 
 type pointRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewPointRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) PointRepository {
 	return &pointRepository{
 		dbRead:  dbRead,
@@ -67,9 +66,9 @@ func (q *pointRepository) FindPoints(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM points %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -104,7 +103,7 @@ func (q *pointRepository) FindPoints(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -128,15 +127,15 @@ func (q *pointRepository) FindPoints(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Point
 	for rows.Next() {
 		var point models.Point
@@ -162,6 +161,10 @@ func (q *pointRepository) FindPoints(
 		offset++
 		point.RowNo = offset
 		response = append(response, &point)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -201,7 +204,7 @@ func (q *pointRepository) FindPoint(
 	)
 	query := sb.String()
 	var response models.Point
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.PointType,
@@ -217,7 +220,7 @@ func (q *pointRepository) FindPoint(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointNotFound
 	}
 	if err != nil {
@@ -229,12 +232,12 @@ func (q *pointRepository) FindPoint(
 
 func (q *pointRepository) CreatePoint(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointRepository-CreatePoint"
 	var response models.Point
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO points (
 			record_status
@@ -247,7 +250,7 @@ func (q *pointRepository) CreatePoint(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, point_type
@@ -297,12 +300,12 @@ func (q *pointRepository) CreatePoint(
 
 func (q *pointRepository) UpdatePoint(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Point,
 ) (*models.Point, error) {
 	ctxt := "PointRepository-UpdatePoint"
 	var response models.Point
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -320,8 +323,8 @@ func (q *pointRepository) UpdatePoint(
 			, deleted_at
 			, deletion_reason
 		FROM points
-		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		WHERE id = ?
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -339,7 +342,7 @@ func (q *pointRepository) UpdatePoint(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointNotFound
 	}
 	if err != nil {
@@ -360,21 +363,21 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.Amount != request.Amount {
 		params = append(params, request.Amount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " amount = $%d", n)
+		_, _ = sb.WriteString(" amount = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -382,29 +385,29 @@ func (q *pointRepository) UpdatePoint(
 	if (response.UpdatedBy == nil && request.UpdatedBy != nil) ||
 		(response.UpdatedBy != nil && request.UpdatedBy == nil) ||
 		(response.UpdatedBy != nil && request.UpdatedBy != nil &&
-			response.UpdatedBy.Compare(*request.UpdatedBy) != 0) {
+			*response.UpdatedBy != *request.UpdatedBy) {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
 		(response.DeletedBy != nil && request.DeletedBy != nil &&
-			response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+			*response.DeletedBy != *request.DeletedBy) {
 		params = append(params, request.DeletedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -414,7 +417,7 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -424,12 +427,10 @@ func (q *pointRepository) UpdatePoint(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, point_type
@@ -443,10 +444,8 @@ func (q *pointRepository) UpdatePoint(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, deletion_reason`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.PointType,
@@ -478,7 +477,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -491,7 +490,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -504,7 +503,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -517,7 +516,7 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -530,31 +529,27 @@ func (q *pointRepository) buildCondition(request *models.PointFilter, sb *string
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
+		keyword := sb.String()
+		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`(EXISTS(
+		_, _ = sb.WriteString(`(EXISTS(
 				SELECT 1
 				FROM users u
 				WHERE u.id = points.user_id
 					AND (
-						LOWER(u.name) LIKE $%d
-						OR u.username LIKE $%d
-						OR u.mobile_phone LIKE $%d
+						u.name LIKE ?
+						OR u.username LIKE ?
+						OR u.mobile_phone LIKE ?
 					)
-			) OR LOWER(points.description) LIKE $%d)`,
-			n, n, n, n,
-		)
+			) OR points.description LIKE ?)`)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

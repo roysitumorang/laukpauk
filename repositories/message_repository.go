@@ -2,10 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -13,19 +12,19 @@ import (
 type MessageRepository interface {
 	CreateMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Message,
 	) (*models.Message, error)
 }
 
 type messageRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewMessageRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) MessageRepository {
 	return &messageRepository{
 		dbRead:  dbRead,
@@ -35,19 +34,19 @@ func NewMessageRepository(
 
 func (q *messageRepository) CreateMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Message,
 ) (*models.Message, error) {
 	ctxt := "MessageRepository-CreateMessage"
 	var response models.Message
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO messages (
 			name
 			, mobile_phone
 			, body
 			, created_at
-		) VALUES ($1, $2, $3, $4)
+		) VALUES (?, ?, ?, ?)
 		RETURNING id
 			, name
 			, mobile_phone

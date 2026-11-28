@@ -2,46 +2,48 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793797496585996818] = Migration{
 		Version: 1793797496585996818,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// notification_targets
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE notification_targets (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
-					, user_id UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, firebase_installation_id character varying NOT NULL UNIQUE
-					, created_at timestamp with time zone NOT NULL
-					, updated_at timestamp with time zone NOT NULL
-				);`,
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
+					, user_id UUID NOT NULL
+					, firebase_installation_id VARCHAR(255) NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, CONSTRAINT notification_targets_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT notification_targets_firebase_installation_id_key UNIQUE (firebase_installation_id)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON notification_targets (user_id);`,
+				`CREATE INDEX notification_targets_user_id_idx ON notification_targets (user_id);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE notification_targets",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

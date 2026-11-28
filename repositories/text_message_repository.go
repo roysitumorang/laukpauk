@@ -2,15 +2,14 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -27,29 +26,29 @@ type TextMessageRepository interface {
 	) (*models.TextMessage, error)
 	CreateTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
 	UpdateTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.TextMessage,
 	) (*models.TextMessage, error)
 	DeleteTextMessage(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		textMessageID uuid.UUID,
 	) (int64, error)
 }
 
 type textMessageRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewTextMessageRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) TextMessageRepository {
 	return &textMessageRepository{
 		dbRead:  dbRead,
@@ -73,9 +72,9 @@ func (q *textMessageRepository) FindTextMessages(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM text_messages %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -107,7 +106,7 @@ func (q *textMessageRepository) FindTextMessages(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -131,15 +130,15 @@ func (q *textMessageRepository) FindTextMessages(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.TextMessage
 	for rows.Next() {
 		var textMessage models.TextMessage
@@ -162,6 +161,10 @@ func (q *textMessageRepository) FindTextMessages(
 		offset++
 		textMessage.RowNo = offset
 		response = append(response, &textMessage)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -197,7 +200,7 @@ func (q *textMessageRepository) FindTextMessage(
 		condition,
 	)
 	var response models.TextMessage
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.MobilePhone,
@@ -210,7 +213,7 @@ func (q *textMessageRepository) FindTextMessage(
 		&response.UpdatedAt,
 		&response.SentAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrTextMessageNotFound
 	}
 	if err != nil {
@@ -222,12 +225,12 @@ func (q *textMessageRepository) FindTextMessage(
 
 func (q *textMessageRepository) CreateTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.TextMessage,
 ) (*models.TextMessage, error) {
 	ctxt := "TextMessageRepository-CreateTextMessage"
 	var response models.TextMessage
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO text_messages (
 			user_id
@@ -237,7 +240,7 @@ func (q *textMessageRepository) CreateTextMessage(
 			, created_by
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, user_id
 			, mobile_phone
@@ -277,12 +280,12 @@ func (q *textMessageRepository) CreateTextMessage(
 
 func (q *textMessageRepository) UpdateTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.TextMessage,
 ) (*models.TextMessage, error) {
 	ctxt := "TextMessageRepository-UpdateTextMessage"
 	var response models.TextMessage
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -297,8 +300,8 @@ func (q *textMessageRepository) UpdateTextMessage(
 			, updated_at
 			, sent_at
 		FROM text_messages
-		WHERE id = $1
-		FOR NO KEY UPDATE`,
+		WHERE id = ?
+		FOR UPDATE`,
 		request.ID,
 	).Scan(
 		&response.ID,
@@ -313,7 +316,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		&response.UpdatedAt,
 		&response.SentAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrTextMessageNotFound
 	}
 	if err != nil {
@@ -337,7 +340,7 @@ func (q *textMessageRepository) UpdateTextMessage(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_status = $%d", n)
+		_, _ = sb.WriteString(" delivery_status = ?")
 	}
 	if (response.MessageID == nil && request.MessageID != nil) ||
 		(response.MessageID != nil && request.MessageID == nil) ||
@@ -347,14 +350,14 @@ func (q *textMessageRepository) UpdateTextMessage(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " message_id = $%d", n)
+		_, _ = sb.WriteString(" message_id = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.SentAt == nil && request.SentAt != nil) ||
 		(response.SentAt != nil && request.SentAt == nil) ||
@@ -364,15 +367,13 @@ func (q *textMessageRepository) UpdateTextMessage(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " sent_at = $%d", n)
+		_, _ = sb.WriteString(" sent_at = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, user_id
 			, mobile_phone
@@ -383,10 +384,8 @@ func (q *textMessageRepository) UpdateTextMessage(
 			, created_by
 			, created_at
 			, updated_at
-			, sent_at`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, sent_at`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.MobilePhone,
@@ -407,19 +406,19 @@ func (q *textMessageRepository) UpdateTextMessage(
 
 func (q *textMessageRepository) DeleteTextMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	textMessageID uuid.UUID,
 ) (int64, error) {
 	ctxt := "TextMessageRepository-DeleteTextMessage"
-	result, err := tx.Exec(
+	result, err := tx.ExecContext(
 		ctx,
-		`DELETE FROM text_messages WHERE id = $1`,
+		`DELETE FROM text_messages WHERE id = ?`,
 		textMessageID,
 	)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 	}
-	return result.RowsAffected(), nil
+	return result.RowsAffected()
 }
 
 func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter, sb *strings.Builder) (condition string, params []any) {
@@ -432,7 +431,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -445,7 +444,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -458,7 +457,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -474,7 +473,7 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -487,32 +486,28 @@ func (q *textMessageRepository) buildCondition(request *models.TextMessageFilter
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
+		keyword := sb.String()
+		params = append(params, keyword, keyword, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`EXISTS(
+		_, _ = sb.WriteString(`EXISTS(
 				SELECT 1
 				FROM users
 				WHERE users.id = text_messages.user_id
 					AND (
-						LOWER(users.name) LIKE $%d
-						OR users.username LIKE $%d
-						OR users.email LIKE $%d
-						OR users.mobile_phone LIKE $%d
+						users.name LIKE ?
+						OR users.username LIKE ?
+						OR users.email LIKE ?
+						OR users.mobile_phone LIKE ?
 					)
-			)`,
-			n, n, n, n,
-		)
+			)`)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

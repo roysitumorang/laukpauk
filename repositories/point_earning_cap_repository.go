@@ -2,16 +2,14 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +26,24 @@ type PointEarningCapRepository interface {
 	) (*models.PointEarningCap, error)
 	CreatePointEarningCap(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.PointEarningCap,
 	) (*models.PointEarningCap, error)
 	UpdatePointEarningCap(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.PointEarningCap,
 	) (*models.PointEarningCap, error)
 }
 
 type pointEarningCapRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewPointEarningCapRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) PointEarningCapRepository {
 	return &pointEarningCapRepository{
 		dbRead:  dbRead,
@@ -69,9 +67,9 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM point_earning_caps %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -82,8 +80,8 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 		"COUNT(1)",
 		`id
 		, record_status
-		, LOWER(shopping_cost)
-		, UPPER(shopping_cost) - 1
+		, shopping_cost_min
+		, shopping_cost_max
 		, earned_points
 		, created_by
 		, created_at
@@ -104,7 +102,7 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -128,15 +126,15 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.PointEarningCap
 	for rows.Next() {
 		var pointEarningCap models.PointEarningCap
@@ -161,6 +159,10 @@ func (q *pointEarningCapRepository) FindPointEarningCaps(
 		pointEarningCap.RowNo = offset
 		response = append(response, &pointEarningCap)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
+	}
 	return response, total, pages, nil
 }
 
@@ -182,8 +184,8 @@ func (q *pointEarningCapRepository) FindPointEarningCap(
 		`SELECT
 			id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, earned_points
 			, created_by
 			, created_at
@@ -197,7 +199,7 @@ func (q *pointEarningCapRepository) FindPointEarningCap(
 	)
 	query := sb.String()
 	var response models.PointEarningCap
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.MinimumShoppingCost,
@@ -211,7 +213,7 @@ func (q *pointEarningCapRepository) FindPointEarningCap(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningCapNotFound
 	}
 	if err != nil {
@@ -223,26 +225,30 @@ func (q *pointEarningCapRepository) FindPointEarningCap(
 
 func (q *pointEarningCapRepository) CreatePointEarningCap(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.PointEarningCap,
 ) (*models.PointEarningCap, error) {
 	ctxt := "PointEarningCapRepository-CreatePointEarningCap"
 	var response models.PointEarningCap
-	err := tx.QueryRow(
+	if err := q.checkShoppingCost(ctx, tx, nil, request.MinimumShoppingCost, request.MaximumShoppingCost); err != nil {
+		return nil, err
+	}
+	err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO point_earning_caps (
 			record_status
-			, shopping_cost
+			, shopping_cost_min
+			, shopping_cost_max
 			, earned_points
 			, created_by
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, int8range($2, $3, '[]'), $4, $5, $6, $7, $8)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, earned_points
 			, created_by
 			, created_at
@@ -274,13 +280,7 @@ func (q *pointEarningCapRepository) CreatePointEarningCap(
 		&response.DeletionReason,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earning_caps_no_overlapping_shopping_cost" {
-			err = models.ErrPointEarningCapShoppingCostOverlapping
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return &response, nil
@@ -288,18 +288,18 @@ func (q *pointEarningCapRepository) CreatePointEarningCap(
 
 func (q *pointEarningCapRepository) UpdatePointEarningCap(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.PointEarningCap,
 ) (*models.PointEarningCap, error) {
 	ctxt := "PointEarningCapRepository-UpdatePointEarningCap"
 	var response models.PointEarningCap
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, earned_points
 			, created_by
 			, created_at
@@ -309,7 +309,7 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 			, deleted_at
 			, deletion_reason
 		FROM point_earning_caps
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -326,7 +326,7 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningCapNotFound
 	}
 	if err != nil {
@@ -347,39 +347,48 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if (response.MinimumShoppingCost != request.MinimumShoppingCost) ||
 		(response.MaximumShoppingCost != request.MaximumShoppingCost) {
+		if err = q.checkShoppingCost(
+			ctx,
+			tx,
+			&request.ID,
+			request.MinimumShoppingCost,
+			request.MaximumShoppingCost,
+		); err != nil {
+			return nil, err
+		}
 		params = append(params, request.MinimumShoppingCost, request.MaximumShoppingCost)
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " shopping_cost = int8range($%d, $%d, '[]')", n-1, n)
+		_, _ = sb.WriteString(" shopping_cost_min = ?, shopping_cost_max = ?")
 	}
 	if response.EarnedPoints != request.EarnedPoints {
 		params = append(params, request.EarnedPoints)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " earned_points = $%d", n)
+		_, _ = sb.WriteString(" earned_points = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
-	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+	if response.UpdatedBy != request.UpdatedBy {
 		params = append(params, request.UpdatedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
@@ -389,7 +398,7 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -399,7 +408,7 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -409,16 +418,14 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
-			, LOWER(shopping_cost)
-			, UPPER(shopping_cost) - 1
+			, shopping_cost_min
+			, shopping_cost_max
 			, earned_points
 			, created_by
 			, created_at
@@ -426,10 +433,8 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, deletion_reason`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.MinimumShoppingCost,
@@ -443,13 +448,7 @@ func (q *pointEarningCapRepository) UpdatePointEarningCap(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earning_caps_no_overlapping_shopping_cost" {
-			err = models.ErrPointEarningCapShoppingCostOverlapping
-		} else {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
-		}
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
 	return &response, nil
@@ -465,7 +464,7 @@ func (q *pointEarningCapRepository) buildCondition(request *models.PointEarningC
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -478,7 +477,7 @@ func (q *pointEarningCapRepository) buildCondition(request *models.PointEarningC
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -491,16 +490,15 @@ func (q *pointEarningCapRepository) buildCondition(request *models.PointEarningC
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.MinimumShoppingCost > 0 && request.MaximumShoppingCost > 0 {
-		params = append(params, request.MinimumShoppingCost, request.MaximumShoppingCost)
-		n := len(params)
+		params = append(params, request.MaximumShoppingCost, request.MinimumShoppingCost)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "shopping_cost && int8range($%d, $%d, '[]')", n-1, n)
+		_, _ = sb.WriteString("shopping_cost_min <= ? AND shopping_cost_max >= ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {
@@ -515,4 +513,49 @@ func (q *pointEarningCapRepository) buildCondition(request *models.PointEarningC
 		condition = sb.String()
 	}
 	return
+}
+
+// checkShoppingCost returns models.ErrPointEarningCapShoppingCostOverlapping when another point earning cap's shopping cost range overlaps
+// [minimum, maximum] (both ends included); excludeID is the cap being updated. MariaDB has no exclusion constraints,
+// so this check takes their place: FOR UPDATE locks the overlapping caps (and, through the shopping cost index, the
+// range around them) until the transaction ends, so two transactions can't add overlapping caps at the same time.
+func (q *pointEarningCapRepository) checkShoppingCost(
+	ctx context.Context,
+	tx *sql.Tx,
+	excludeID *uuid.UUID,
+	minimum,
+	maximum int64,
+) error {
+	ctxt := "PointEarningCapRepository-checkShoppingCost"
+	params := []any{maximum, minimum}
+	sb := pools.BuilderPool.Get()
+	defer func() {
+		sb.Reset()
+		pools.BuilderPool.Put(sb)
+	}()
+	sb.Reset()
+	_, _ = sb.WriteString(`SELECT id
+		FROM point_earning_caps
+		WHERE shopping_cost_min <= ?
+			AND shopping_cost_max >= ?`)
+	if excludeID != nil {
+		params = append(params, *excludeID)
+		_, _ = sb.WriteString(" AND id != ?")
+	}
+	_, _ = sb.WriteString(" FOR UPDATE")
+	rows, err := tx.QueryContext(ctx, sb.String(), params...)
+	if err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+	overlapping := rows.Next()
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return err
+	}
+	if overlapping {
+		return models.ErrPointEarningCapShoppingCostOverlapping
+	}
+	return nil
 }

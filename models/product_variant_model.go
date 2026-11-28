@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
 	"github.com/roysitumorang/laukpauk/helper"
 )
@@ -45,7 +45,7 @@ type ProductVariant struct {
 }
 
 func (q *ProductVariant) Validate() error {
-	if q.ProductID.Compare(uuid.Nil()) == 0 {
+	if q.ProductID == uuid.Nil {
 		return errors.New("product_id: is required")
 	}
 	if q.StockUnit = strings.TrimSpace(q.StockUnit); q.StockUnit == "" {
@@ -104,7 +104,7 @@ func (q *ProductVariant) Validate() error {
 }
 
 func (q *ProductVariant) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 func (q *ProductVariant) Populate() *ProductVariant {

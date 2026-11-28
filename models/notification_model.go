@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
@@ -29,24 +29,24 @@ const TopicNotification Topic = "notification"
 const TopicNotificationEventSend TopicEvent = "send"
 
 type Notification struct {
-	RowNo            int64             `json:"-"`
-	ID               uuid.UUID         `json:"id"`
-	UserID           uuid.UUID         `json:"user_id"`
-	NotificationType NotificationType  `json:"notification_type"`
-	Link             *string           `json:"link"`
-	LinkID           *uuid.UUID        `json:"link_id"`
-	Subject          string            `json:"subject"`
-	Body             string            `json:"body"`
-	Photo            *string           `json:"photo"`
-	Params           map[string]string `json:"params"`
-	CreatedBy        uuid.UUID         `json:"created_by"`
-	CreatedAt        time.Time         `json:"created_at"`
-	SentAt           *time.Time        `json:"sent_at"`
-	ReadAt           *time.Time        `json:"read_at"`
+	RowNo            int64            `json:"-"`
+	ID               uuid.UUID        `json:"id"`
+	UserID           uuid.UUID        `json:"user_id"`
+	NotificationType NotificationType `json:"notification_type"`
+	Link             *string          `json:"link"`
+	LinkID           *uuid.UUID       `json:"link_id"`
+	Subject          string           `json:"subject"`
+	Body             string           `json:"body"`
+	Photo            *string          `json:"photo"`
+	Params           StringMap        `json:"params"`
+	CreatedBy        uuid.UUID        `json:"created_by"`
+	CreatedAt        time.Time        `json:"created_at"`
+	SentAt           *time.Time       `json:"sent_at"`
+	ReadAt           *time.Time       `json:"read_at"`
 }
 
 func (q *Notification) New() bool {
-	return q.ID.Compare(uuid.Nil()) == 0
+	return q.ID == uuid.Nil
 }
 
 func (q *Notification) SetPhoto(photo *string) *Notification {

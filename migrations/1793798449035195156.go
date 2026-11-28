@@ -2,148 +2,131 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793798449035195156] = Migration{
 		Version: 1793798449035195156,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// vouchers
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE vouchers (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
 					, record_status smallint NOT NULL
 					, voucher_type smallint NOT NULL
 					, target_audience smallint NOT NULL
-					, code character varying
-					, deleted_code character varying
-					, photo character varying NOT NULL
-					, name character varying NOT NULL COLLATE "natural_sort"
+					, code VARCHAR(255)
+					, deleted_code TEXT
+					, photo TEXT NOT NULL
+					, name TEXT NOT NULL
 					, discount bigint NOT NULL
 					, minimum_purchase bigint NOT NULL
 					, quota_per_buyer bigint NOT NULL
-					, effective_start_time timestamp with time zone NOT NULL
-					, effective_end_time timestamp with time zone NOT NULL
-					, effective_start_date timestamp with time zone NOT NULL
-					, effective_end_date timestamp with time zone NOT NULL
-					, description character varying NOT NULL
-					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, updated_at timestamp with time zone NOT NULL
-					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, deleted_at timestamp with time zone
-					, deletion_reason character varying
-				);`,
+					, effective_start_time DATETIME(6) NOT NULL
+					, effective_end_time DATETIME(6) NOT NULL
+					, effective_start_date DATETIME(6) NOT NULL
+					, effective_end_date DATETIME(6) NOT NULL
+					, description TEXT NOT NULL
+					, created_by UUID NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_by UUID NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, deleted_by UUID
+					, deleted_at DATETIME(6)
+					, deletion_reason TEXT
+					, CONSTRAINT vouchers_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT vouchers_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT vouchers_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT vouchers_unique_code_idx UNIQUE (code)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (record_status);`,
+				`CREATE INDEX vouchers_record_status_idx ON vouchers (record_status);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (voucher_type);`,
+				`CREATE INDEX vouchers_voucher_type_idx ON vouchers (voucher_type);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (target_audience);`,
+				`CREATE INDEX vouchers_target_audience_idx ON vouchers (target_audience);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE UNIQUE INDEX vouchers_unique_code_idx ON vouchers (LOWER(code));`,
+				`CREATE INDEX vouchers_effective_start_time_idx ON vouchers (effective_start_time);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (LOWER(deleted_code));`,
+				`CREATE INDEX vouchers_effective_end_time_idx ON vouchers (effective_end_time);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (LOWER(name));`,
+				`CREATE INDEX vouchers_effective_start_date_idx ON vouchers (effective_start_date);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_start_time);`,
+				`CREATE INDEX vouchers_effective_end_date_idx ON vouchers (effective_end_date);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_end_time);`,
+				`CREATE INDEX vouchers_created_by_idx ON vouchers (created_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_start_date);`,
+				`CREATE INDEX vouchers_updated_by_idx ON vouchers (updated_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON vouchers (effective_end_date);`,
+				`CREATE INDEX vouchers_deleted_by_idx ON vouchers (deleted_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON vouchers (created_by);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON vouchers (updated_by);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON vouchers (deleted_by);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE vouchers",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

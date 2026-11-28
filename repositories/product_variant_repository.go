@@ -2,16 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +25,24 @@ type ProductVariantRepository interface {
 	) (*models.ProductVariant, error)
 	CreateProductVariant(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.ProductVariant,
 	) (*models.ProductVariant, error)
 	UpdateProductVariant(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.ProductVariant,
 	) (*models.ProductVariant, error)
 }
 
 type productVariantRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewProductVariantRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) ProductVariantRepository {
 	return &productVariantRepository{
 		dbRead:  dbRead,
@@ -69,9 +66,9 @@ func (q *productVariantRepository) FindProductVariants(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM product_variants %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -117,7 +114,7 @@ func (q *productVariantRepository) FindProductVariants(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -141,15 +138,15 @@ func (q *productVariantRepository) FindProductVariants(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.ProductVariant
 	for rows.Next() {
 		var productVariant models.ProductVariant
@@ -186,6 +183,10 @@ func (q *productVariantRepository) FindProductVariants(
 		offset++
 		productVariant.RowNo = offset
 		response = append(response, (&productVariant).Populate())
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -235,7 +236,7 @@ func (q *productVariantRepository) FindProductVariant(
 		condition,
 	)
 	var response models.ProductVariant
-	err := q.dbRead.QueryRow(ctx, sb.String(), params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
@@ -262,7 +263,7 @@ func (q *productVariantRepository) FindProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductVariantNotFound
 	}
 	if err != nil {
@@ -274,12 +275,12 @@ func (q *productVariantRepository) FindProductVariant(
 
 func (q *productVariantRepository) CreateProductVariant(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantRepository-CreateProductVariant"
 	var response models.ProductVariant
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO product_variants (
 			record_status
@@ -303,7 +304,7 @@ func (q *productVariantRepository) CreateProductVariant(
 			, created_at
 			, updated_by
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, record_status
 			, product_category_id
@@ -377,9 +378,7 @@ func (q *productVariantRepository) CreateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_lower_product_id_idx" {
+		if isUniqueViolation(err, "product_variants_unique_product_stock_unit_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -391,12 +390,12 @@ func (q *productVariantRepository) CreateProductVariant(
 
 func (q *productVariantRepository) UpdateProductVariant(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.ProductVariant,
 ) (*models.ProductVariant, error) {
 	ctxt := "ProductVariantRepository-UpdateProductVariant"
 	var response models.ProductVariant
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -425,7 +424,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, deleted_at
 			, deletion_reason
 		FROM product_variants
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -455,7 +454,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrProductVariantNotFound
 	}
 	if err != nil {
@@ -476,136 +475,136 @@ func (q *productVariantRepository) UpdateProductVariant(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.ProductCategoryID != request.ProductCategoryID {
 		params = append(params, request.ProductCategoryID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_category_id = $%d", n)
+		_, _ = sb.WriteString(" product_category_id = ?")
 	}
 	if response.ProductCategoryName != request.ProductCategoryName {
 		params = append(params, request.ProductCategoryName)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_category_name = $%d", n)
+		_, _ = sb.WriteString(" product_category_name = ?")
 	}
 	if response.ProductID != request.ProductID {
 		params = append(params, request.ProductID)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_id = $%d", n)
+		_, _ = sb.WriteString(" product_id = ?")
 	}
 	if response.ProductName != request.ProductName {
 		params = append(params, request.ProductName)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_name = $%d", n)
+		_, _ = sb.WriteString(" product_name = ?")
 	}
 	if response.ProductPhoto != request.ProductPhoto {
 		params = append(params, request.ProductPhoto)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_photo = $%d", n)
+		_, _ = sb.WriteString(" product_photo = ?")
 	}
 	if response.ProductReadyStock != request.ProductReadyStock {
 		params = append(params, request.ProductReadyStock)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " product_ready_stock = $%d", n)
+		_, _ = sb.WriteString(" product_ready_stock = ?")
 	}
 	if response.StockUnit != request.StockUnit {
 		params = append(params, request.StockUnit)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " stock_unit = $%d", n)
+		_, _ = sb.WriteString(" stock_unit = ?")
 	}
 	if response.WeightInGrams != request.WeightInGrams {
 		params = append(params, request.WeightInGrams)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " weight_in_grams = $%d", n)
+		_, _ = sb.WriteString(" weight_in_grams = ?")
 	}
 	if response.BasePrice != request.BasePrice {
 		params = append(params, request.BasePrice)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " base_price = $%d", n)
+		_, _ = sb.WriteString(" base_price = ?")
 	}
 	if response.SellingPrice != request.SellingPrice {
 		params = append(params, request.SellingPrice)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " selling_price = $%d", n)
+		_, _ = sb.WriteString(" selling_price = ?")
 	}
 	if response.DiscountType != request.DiscountType {
 		params = append(params, request.DiscountType)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " discount_type = $%d", n)
+		_, _ = sb.WriteString(" discount_type = ?")
 	}
 	if response.DiscountRate != request.DiscountRate {
 		params = append(params, request.DiscountRate)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " discount_rate = $%d", n)
+		_, _ = sb.WriteString(" discount_rate = ?")
 	}
 	if response.DiscountMinimumQuantity != request.DiscountMinimumQuantity {
 		params = append(params, request.DiscountMinimumQuantity)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " discount_minimum_quantity = $%d", n)
+		_, _ = sb.WriteString(" discount_minimum_quantity = ?")
 	}
 	if response.DiscountAmount != request.DiscountAmount {
 		params = append(params, request.DiscountAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " discount_amount = $%d", n)
+		_, _ = sb.WriteString(" discount_amount = ?")
 	}
 	if response.SalePrice != request.SalePrice {
 		params = append(params, request.SalePrice)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " sale_price = $%d", n)
+		_, _ = sb.WriteString(" sale_price = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if len(params) == 0 {
 		return (&response).Populate(), nil
 	}
-	if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+	if response.UpdatedBy != request.UpdatedBy {
 		params = append(params, request.UpdatedBy)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+		_, _ = sb.WriteString(" updated_by = ?")
 	}
 	if !response.UpdatedAt.Equal(request.UpdatedAt) {
 		params = append(params, request.UpdatedAt)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 		(response.DeletedBy != nil && request.DeletedBy == nil) ||
@@ -615,7 +614,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+		_, _ = sb.WriteString(" deleted_by = ?")
 	}
 	if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 		(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -625,7 +624,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+		_, _ = sb.WriteString(" deleted_at = ?")
 	}
 	if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 		(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -635,12 +634,10 @@ func (q *productVariantRepository) UpdateProductVariant(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+		_, _ = sb.WriteString(" deletion_reason = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, record_status
 			, product_category_id
@@ -665,10 +662,8 @@ func (q *productVariantRepository) UpdateProductVariant(
 			, updated_at
 			, deleted_by
 			, deleted_at
-			, deletion_reason`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, deletion_reason`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.ProductCategoryID,
@@ -695,9 +690,7 @@ func (q *productVariantRepository) UpdateProductVariant(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "product_variants_lower_product_id_idx" {
+		if isUniqueViolation(err, "product_variants_unique_product_stock_unit_idx") {
 			err = models.ErrUniqueProductVariantStockUnitViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -717,7 +710,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -730,7 +723,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -743,7 +736,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -756,7 +749,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -769,7 +762,7 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -777,15 +770,15 @@ func (q *productVariantRepository) buildCondition(request *models.ProductVariant
 	if len(request.StockUnits) > 0 {
 		sb.Reset()
 		for i, stockUnit := range request.StockUnits {
-			params = append(params, strings.ToLower(stockUnit))
+			params = append(params, stockUnit)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		placeholders := sb.String()
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "LOWER(stock_unit) IN (%s)", placeholders)
+		_, _ = fmt.Fprintf(sb, "stock_unit IN (%s)", placeholders)
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

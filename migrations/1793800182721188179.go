@@ -2,91 +2,82 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793800182721188179] = Migration{
 		Version: 1793800182721188179,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// recipes
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE recipes (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
 					, record_status smallint NOT NULL
-					, name character varying
-					, deleted_name character varying
-					, photo character varying NOT NULL
-					, description character varying NOT NULL
-					, instagram_link character varying NOT NULL
-					, facebook_link character varying NOT NULL
-					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, updated_at timestamp with time zone NOT NULL
-					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, deleted_at timestamp with time zone
-					, deletion_reason character varying
-				);`,
+					, name VARCHAR(255)
+					, deleted_name TEXT
+					, photo TEXT NOT NULL
+					, description TEXT NOT NULL
+					, instagram_link TEXT NOT NULL
+					, facebook_link TEXT NOT NULL
+					, created_by UUID NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_by UUID NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, deleted_by UUID
+					, deleted_at DATETIME(6)
+					, deletion_reason TEXT
+					, active_name_key VARCHAR(255) AS (IF(record_status = 0, name, NULL)) PERSISTENT INVISIBLE
+					, CONSTRAINT recipes_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT recipes_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT recipes_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT recipes_unique_name_idx UNIQUE (active_name_key)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipes (record_status);`,
+				`CREATE INDEX recipes_record_status_idx ON recipes (record_status);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE UNIQUE INDEX ON recipes (LOWER(name)) WHERE record_status = 0;`,
+				`CREATE INDEX recipes_created_by_idx ON recipes (created_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipes (LOWER(deleted_name));`,
+				`CREATE INDEX recipes_updated_by_idx ON recipes (updated_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipes (created_by);`,
+				`CREATE INDEX recipes_deleted_by_idx ON recipes (deleted_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON recipes (updated_by);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
-				return
-			}
-			if _, err = tx.Exec(
-				ctx,
-				`CREATE INDEX ON recipes (deleted_by);`,
-			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE recipes",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

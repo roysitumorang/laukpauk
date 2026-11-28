@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,8 +10,6 @@ import (
 	"time"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -27,24 +26,24 @@ type JsonWebTokenRepository interface {
 	) (*models.JsonWebToken, error)
 	CreateJsonWebToken(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.JsonWebToken,
 	) (*models.JsonWebToken, error)
 	DeleteJsonWebToken(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.JsonWebTokenFilter,
 	) (int64, error)
 }
 
 type jsonWebTokenRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewJsonWebTokenRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) JsonWebTokenRepository {
 	return &jsonWebTokenRepository{
 		dbRead:  dbRead,
@@ -68,9 +67,9 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM json_web_tokens %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -95,7 +94,7 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -119,15 +118,15 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.JsonWebToken
 	for rows.Next() {
 		var jsonWebToken models.JsonWebToken
@@ -143,6 +142,10 @@ func (q *jsonWebTokenRepository) FindJsonWebTokens(
 		offset++
 		jsonWebToken.RowNo = offset
 		response = append(response, &jsonWebToken)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -172,13 +175,13 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 	)
 	query := sb.String()
 	var response models.JsonWebToken
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.CreatedAt,
 		&response.ExpiredAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrJsonWebTokenNotFound
 	}
 	if err != nil {
@@ -190,18 +193,18 @@ func (q *jsonWebTokenRepository) FindJsonWebToken(
 
 func (q *jsonWebTokenRepository) CreateJsonWebToken(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.JsonWebToken,
 ) (*models.JsonWebToken, error) {
 	ctxt := "JsonWebTokenRepository-CreateJsonWebToken"
 	var response models.JsonWebToken
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO json_web_tokens (
 			user_id
 			, created_at
 			, expired_at
-		) VALUES ($1, $2, $3)
+		) VALUES (?, ?, ?)
 		RETURNING id
 			, user_id
 			, created_at
@@ -223,7 +226,7 @@ func (q *jsonWebTokenRepository) CreateJsonWebToken(
 
 func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.JsonWebTokenFilter,
 ) (int64, error) {
 	ctxt := "JsonWebTokenRepository-DeleteJsonWebToken"
@@ -239,12 +242,12 @@ func (q *jsonWebTokenRepository) DeleteJsonWebToken(
 	}
 	sb.Reset()
 	_, _ = fmt.Fprintf(sb, "DELETE FROM json_web_tokens %s", condition)
-	result, err := tx.Exec(ctx, sb.String(), params...)
+	result, err := tx.ExecContext(ctx, sb.String(), params...)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 		return 0, err
 	}
-	return result.RowsAffected(), nil
+	return result.RowsAffected()
 }
 
 func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilter, sb *strings.Builder) (condition string, params []any) {
@@ -257,7 +260,7 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -270,7 +273,7 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -284,7 +287,7 @@ func (q *jsonWebTokenRepository) buildCondition(request *models.JsonWebTokenFilt
 		} else {
 			_, _ = sb.WriteString(">")
 		}
-		_, _ = fmt.Fprintf(sb, "$%d", len(params))
+		_, _ = sb.WriteString("?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

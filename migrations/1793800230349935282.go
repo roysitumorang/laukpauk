@@ -2,80 +2,84 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 )
 
 func init() {
 	Migrations[1793800230349935282] = Migration{
 		Version: 1793800230349935282,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// recipe_guides
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE recipe_guides (
-					id UUID NOT NULL PRIMARY KEY DEFAULT uuidv7()
+					id UUID NOT NULL PRIMARY KEY DEFAULT (UUID_v7())
 					, record_status smallint NOT NULL
-					, recipe_id UUID NOT NULL REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, instruction character varying NOT NULL
-					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, updated_at timestamp with time zone NOT NULL
-					, deleted_by UUID REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, deleted_at timestamp with time zone
-					, deletion_reason character varying
-				);`,
+					, recipe_id UUID NOT NULL
+					, instruction TEXT NOT NULL
+					, created_by UUID NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_by UUID NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, deleted_by UUID
+					, deleted_at DATETIME(6)
+					, deletion_reason TEXT
+					, CONSTRAINT recipe_guides_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES recipes (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT recipe_guides_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT recipe_guides_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT recipe_guides_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipe_guides (record_status);`,
+				`CREATE INDEX recipe_guides_record_status_idx ON recipe_guides (record_status);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipe_guides (recipe_id);`,
+				`CREATE INDEX recipe_guides_recipe_id_idx ON recipe_guides (recipe_id);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipe_guides (created_by);`,
+				`CREATE INDEX recipe_guides_created_by_idx ON recipe_guides (created_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipe_guides (updated_by);`,
+				`CREATE INDEX recipe_guides_updated_by_idx ON recipe_guides (updated_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON recipe_guides (deleted_by);`,
+				`CREATE INDEX recipe_guides_deleted_by_idx ON recipe_guides (deleted_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE recipe_guides",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

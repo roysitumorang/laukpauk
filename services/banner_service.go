@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -22,12 +22,12 @@ type BannerService interface {
 	) (*models.Banner, error)
 	CreateBanner(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Banner,
 	) (*models.Banner, error)
 	UpdateBanner(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Banner,
 	) (*models.Banner, error)
 }
@@ -88,7 +88,7 @@ func (q *bannerService) FindBanner(
 
 func (q *bannerService) CreateBanner(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Banner,
 ) (*models.Banner, error) {
 	ctxt := "BannerService-CreateBanner"
@@ -100,7 +100,7 @@ func (q *bannerService) CreateBanner(
 }
 func (q *bannerService) UpdateBanner(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Banner,
 ) (*models.Banner, error) {
 	ctxt := "BannerService-UpdateBanner"

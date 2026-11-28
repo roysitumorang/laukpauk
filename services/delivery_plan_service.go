@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/repositories"
@@ -24,12 +24,12 @@ type (
 		) (*models.DeliveryPlan, error)
 		CreateDeliveryPlan(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx *sql.Tx,
 			request *models.DeliveryPlan,
 		) (*models.DeliveryPlan, error)
 		UpdateDeliveryPlan(
 			ctx context.Context,
-			tx pgx.Tx,
+			tx *sql.Tx,
 			request *models.DeliveryPlan,
 		) (*models.DeliveryPlan, error)
 		AutoUpdateDate(ctx context.Context) error
@@ -92,7 +92,7 @@ func (q *deliveryPlanService) FindDeliveryPlan(
 
 func (q *deliveryPlanService) CreateDeliveryPlan(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.DeliveryPlan,
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanService-CreateDeliveryPlan"
@@ -105,7 +105,7 @@ func (q *deliveryPlanService) CreateDeliveryPlan(
 
 func (q *deliveryPlanService) UpdateDeliveryPlan(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.DeliveryPlan,
 ) (*models.DeliveryPlan, error) {
 	ctxt := "DeliveryPlanService-UpdateDeliveryPlan"
@@ -155,7 +155,7 @@ func (q *deliveryPlanService) AutoUpdateDate(ctx context.Context) error {
 		return err
 	}
 	defer func(ctx context.Context) {
-		if err = tx.Rollback(ctx); errors.Is(err, pgx.ErrTxClosed) {
+		if err = tx.Rollback(); errors.Is(err, sql.ErrTxDone) {
 			err = nil
 		}
 		if err != nil {
@@ -168,7 +168,7 @@ func (q *deliveryPlanService) AutoUpdateDate(ctx context.Context) error {
 			return err
 		}
 	}
-	if err = tx.Commit(ctx); err != nil {
+	if err = tx.Commit(); err != nil {
 		helper.Log(ctx, slog.LevelError, err.Error(), ctxt, "ErrCommit")
 		return err
 	}

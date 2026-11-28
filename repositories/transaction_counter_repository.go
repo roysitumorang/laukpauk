@@ -2,9 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -18,12 +18,12 @@ type TransactionCounterRepository interface {
 
 type transactionCounterRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewTransactionCounterRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) TransactionCounterRepository {
 	return &transactionCounterRepository{
 		dbRead:  dbRead,
@@ -37,17 +37,17 @@ func (q *transactionCounterRepository) SaveTransactionCounter(
 ) (*models.TransactionCounter, error) {
 	ctxt := "TransactionCounterRepository-SaveTransactionCounter"
 	var response models.TransactionCounter
-	if err := q.dbWrite.QueryRow(
+	if err := q.dbWrite.QueryRowContext(
 		ctx,
 		`INSERT INTO transaction_counters (
 			transaction_window
 			, hits
 			, created_at
 			, updated_at
-		) VALUES ($1, 1, $2, $3)
-		ON CONFLICT (transaction_window) DO UPDATE SET
-			hits = transaction_counters.hits + 1
-			, updated_at = $3
+		) VALUES (?, 1, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			hits = hits + 1
+			, updated_at = VALUES(updated_at)
 		RETURNING id
 			, transaction_window
 			, hits

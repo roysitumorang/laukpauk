@@ -2,18 +2,15 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -30,24 +27,24 @@ type VoucherRepository interface {
 	) (*models.Voucher, error)
 	CreateVoucher(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Voucher,
 	) (*models.Voucher, error)
 	UpdateVoucher(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Voucher,
 	) (*models.Voucher, error)
 }
 
 type voucherRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewVoucherRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) VoucherRepository {
 	return &voucherRepository{
 		dbRead:  dbRead,
@@ -71,9 +68,9 @@ func (q *voucherRepository) FindVouchers(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM vouchers %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -117,7 +114,7 @@ func (q *voucherRepository) FindVouchers(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -141,15 +138,15 @@ func (q *voucherRepository) FindVouchers(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.Voucher
 	params = []any{}
 	sb.Reset()
@@ -194,21 +191,25 @@ func (q *voucherRepository) FindVouchers(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, "$%d", n)
+		_, _ = sb.WriteString("?")
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	_, _ = sb.WriteString(") ORDER BY id")
 	if len(params) == 0 {
 		return response, total, pages, nil
 	}
-	rows, err = q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err = q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var (
 		voucherID,
 		buyerID uuid.UUID
@@ -226,6 +227,10 @@ func (q *voucherRepository) FindVouchers(
 		voucher := response[i]
 		voucher.UserIDs = append(voucher.UserIDs, buyerID)
 		response[i] = voucher
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -274,7 +279,7 @@ func (q *voucherRepository) FindVoucher(
 	)
 	query := sb.String()
 	var response models.Voucher
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
 		&response.ID,
 		&response.RecordStatus,
 		&response.VoucherType,
@@ -299,29 +304,29 @@ func (q *voucherRepository) FindVoucher(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrVoucherNotFound
 	}
 	if err != nil {
 		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, err
 	}
-	rows, err := q.dbRead.Query(
+	rows, err := q.dbRead.QueryContext(
 		ctx,
 		`SELECT user_id
 		FROM vouchers_users
-		WHERE voucher_id = $1
+		WHERE voucher_id = ?
 		ORDER BY id`,
 		response.ID,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var buyerID uuid.UUID
 	for rows.Next() {
 		if err = rows.Scan(&buyerID); err != nil {
@@ -330,17 +335,21 @@ func (q *voucherRepository) FindVoucher(
 		}
 		response.UserIDs = append(response.UserIDs, buyerID)
 	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, err
+	}
 	return (&response).Populate(), nil
 }
 
 func (q *voucherRepository) CreateVoucher(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Voucher,
 ) (*models.Voucher, error) {
 	ctxt := "VoucherRepository-CreateVoucher"
 	var response models.Voucher
-	if err := tx.QueryRow(
+	if err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO vouchers (
 			record_status
@@ -362,8 +371,8 @@ func (q *voucherRepository) CreateVoucher(
 			, updated_by
 			, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9,
-			$10, $11, $12, $13, $14, $15, $16, $17, $18
+			?, ?, ?, ?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 		RETURNING id
 			, record_status
@@ -431,9 +440,7 @@ func (q *voucherRepository) CreateVoucher(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "vouchers_unique_code_idx" {
+		if isUniqueViolation(err, "vouchers_unique_code_idx") {
 			err = models.ErrUniqueVoucherCodeViolation
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -445,12 +452,12 @@ func (q *voucherRepository) CreateVoucher(
 
 func (q *voucherRepository) UpdateVoucher(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Voucher,
 ) (*models.Voucher, error) {
 	ctxt := "VoucherRepository-UpdateVoucher"
 	var response models.Voucher
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -477,7 +484,7 @@ func (q *voucherRepository) UpdateVoucher(
 			, deleted_at
 			, deletion_reason
 		FROM vouchers
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -505,7 +512,7 @@ func (q *voucherRepository) UpdateVoucher(
 		&response.DeletedAt,
 		&response.DeletionReason,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrVoucherNotFound
 	}
 	if err != nil {
@@ -526,21 +533,21 @@ func (q *voucherRepository) UpdateVoucher(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " record_status = $%d", n)
+		_, _ = sb.WriteString(" record_status = ?")
 	}
 	if response.VoucherType != request.VoucherType {
 		params = append(params, request.VoucherType)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " voucher_type = $%d", n)
+		_, _ = sb.WriteString(" voucher_type = ?")
 	}
 	if response.TargetAudience != request.TargetAudience {
 		params = append(params, request.TargetAudience)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " target_audience = $%d", n)
+		_, _ = sb.WriteString(" target_audience = ?")
 	}
 	if (response.Code == nil && request.Code != nil) ||
 		(response.Code != nil && request.Code == nil) ||
@@ -550,7 +557,7 @@ func (q *voucherRepository) UpdateVoucher(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " code = $%d", n)
+		_, _ = sb.WriteString(" code = ?")
 	}
 	if (response.DeletedCode == nil && request.DeletedCode != nil) ||
 		(response.DeletedCode != nil && request.DeletedCode == nil) ||
@@ -560,102 +567,102 @@ func (q *voucherRepository) UpdateVoucher(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " deleted_code = $%d", n)
+		_, _ = sb.WriteString(" deleted_code = ?")
 	}
 	if response.Photo != request.Photo {
 		params = append(params, request.Photo)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " photo = $%d", n)
+		_, _ = sb.WriteString(" photo = ?")
 	}
 	if response.Name != request.Name {
 		params = append(params, request.Name)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " name = $%d", n)
+		_, _ = sb.WriteString(" name = ?")
 	}
 	if response.Discount != request.Discount {
 		params = append(params, request.Discount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " discount = $%d", n)
+		_, _ = sb.WriteString(" discount = ?")
 	}
 	if response.MinimumPurchase != request.MinimumPurchase {
 		params = append(params, request.MinimumPurchase)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " minimum_purchase = $%d", n)
+		_, _ = sb.WriteString(" minimum_purchase = ?")
 	}
 	if response.QuotaPerBuyer != request.QuotaPerBuyer {
 		params = append(params, request.QuotaPerBuyer)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " quota_per_buyer = $%d", n)
+		_, _ = sb.WriteString(" quota_per_buyer = ?")
 	}
 	if !response.EffectiveStartTime.Equal(request.EffectiveStartTime) {
 		params = append(params, request.EffectiveStartTime)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " effective_start_time = $%d", n)
+		_, _ = sb.WriteString(" effective_start_time = ?")
 	}
 	if !response.EffectiveEndTime.Equal(request.EffectiveEndTime) {
 		params = append(params, request.EffectiveEndTime)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " effective_end_time = $%d", n)
+		_, _ = sb.WriteString(" effective_end_time = ?")
 	}
 	if !response.EffectiveStartDate.Equal(request.EffectiveStartDate) {
 		params = append(params, request.EffectiveStartDate)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " effective_start_date = $%d", n)
+		_, _ = sb.WriteString(" effective_start_date = ?")
 	}
 	if !response.EffectiveEndDate.Equal(request.EffectiveEndDate) {
 		params = append(params, request.EffectiveEndDate)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " effective_end_date = $%d", n)
+		_, _ = sb.WriteString(" effective_end_date = ?")
 	}
 	if response.Description != request.Description {
 		params = append(params, request.Description)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " description = $%d", n)
+		_, _ = sb.WriteString(" description = ?")
 	}
 	if len(params) > 0 {
-		if response.UpdatedBy.Compare(request.UpdatedBy) != 0 {
+		if response.UpdatedBy != request.UpdatedBy {
 			params = append(params, request.UpdatedBy)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " updated_by = $%d", n)
+			_, _ = sb.WriteString(" updated_by = ?")
 		}
 		if !response.UpdatedAt.Equal(request.UpdatedAt) {
 			params = append(params, request.UpdatedAt)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+			_, _ = sb.WriteString(" updated_at = ?")
 		}
 		if (response.DeletedBy == nil && request.DeletedBy != nil) ||
 			(response.DeletedBy != nil && request.DeletedBy == nil) ||
 			(response.DeletedBy != nil && request.DeletedBy != nil &&
-				response.DeletedBy.Compare(*request.DeletedBy) != 0) {
+				*response.DeletedBy != *request.DeletedBy) {
 			params = append(params, request.DeletedBy)
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " deleted_by = $%d", n)
+			_, _ = sb.WriteString(" deleted_by = ?")
 		}
 		if (response.DeletedAt == nil && request.DeletedAt != nil) ||
 			(response.DeletedAt != nil && request.DeletedAt == nil) ||
@@ -665,7 +672,7 @@ func (q *voucherRepository) UpdateVoucher(
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " deleted_at = $%d", n)
+			_, _ = sb.WriteString(" deleted_at = ?")
 		}
 		if (response.DeletionReason == nil && request.DeletionReason != nil) ||
 			(response.DeletionReason != nil && request.DeletionReason == nil) ||
@@ -675,12 +682,10 @@ func (q *voucherRepository) UpdateVoucher(
 			if n = len(params); n > 1 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, " deletion_reason = $%d", n)
+			_, _ = sb.WriteString(" deletion_reason = ?")
 		}
 		params = append(params, request.ID)
-		_, _ = fmt.Fprintf(
-			sb,
-			` WHERE id = $%d
+		_, _ = sb.WriteString(` WHERE id = ?
 			RETURNING id
 				, record_status
 				, voucher_type
@@ -703,10 +708,8 @@ func (q *voucherRepository) UpdateVoucher(
 				, updated_at
 				, deleted_by
 				, deleted_at
-				, deletion_reason`,
-			len(params),
-		)
-		if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+				, deletion_reason`)
+		if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 			&response.ID,
 			&response.RecordStatus,
 			&response.VoucherType,
@@ -731,9 +734,7 @@ func (q *voucherRepository) UpdateVoucher(
 			&response.DeletedAt,
 			&response.DeletionReason,
 		); err != nil {
-			if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-				pgxErr.Code == pgerrcode.UniqueViolation &&
-				pgxErr.ConstraintName == "vouchers_unique_code_idx" {
+			if isUniqueViolation(err, "vouchers_unique_code_idx") {
 				err = models.ErrUniqueVoucherCodeViolation
 			} else {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -741,19 +742,19 @@ func (q *voucherRepository) UpdateVoucher(
 			return nil, err
 		}
 	}
-	rows, err := tx.Query(
+	rows, err := tx.QueryContext(
 		ctx,
 		`SELECT user_id
 		FROM vouchers_users
-		WHERE voucher_id = $1
+		WHERE voucher_id = ?
 		ORDER BY id`,
 		request.ID,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, err
 	}
 	mapBuyerIDs := map[uuid.UUID]struct{}{}
@@ -772,7 +773,7 @@ func (q *voucherRepository) UpdateVoucher(
 	params = params[:0]
 	params = append(params, request.ID)
 	sb.Reset()
-	_, _ = fmt.Fprintf(sb, "DELETE FROM vouchers_users WHERE voucher_id = $%d", len(params))
+	_, _ = sb.WriteString("DELETE FROM vouchers_users WHERE voucher_id = ?")
 	if len(request.UserIDs) > 0 {
 		_, _ = sb.WriteString(" AND user_id NOT IN (")
 	}
@@ -781,30 +782,30 @@ func (q *voucherRepository) UpdateVoucher(
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " $%d", n)
+		_, _ = sb.WriteString(" ?")
 		if _, ok := mapBuyerIDs[buyerID]; ok {
 			continue
 		}
-		if _, err = tx.Exec(
+		if _, err = tx.ExecContext(
 			ctx,
 			`INSERT INTO vouchers_users (
 				voucher_id
 				, user_id
 				, created_at
-			) VALUES ($1, $2, $3)`,
+			) VALUES (?, ?, ?)`,
 			request.ID,
 			buyerID,
 			request.UpdatedAt,
 		); err != nil {
-			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			return nil, err
 		}
 	}
 	if len(request.UserIDs) > 0 {
 		_, _ = sb.WriteString(")")
 	}
-	if _, err = tx.Exec(ctx, sb.String(), params...); err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+	if _, err = tx.ExecContext(ctx, sb.String(), params...); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 		return nil, err
 	}
 	return (&response).Populate(), nil
@@ -820,7 +821,7 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -833,7 +834,7 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -846,7 +847,7 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -859,7 +860,7 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -872,51 +873,47 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if len(request.Codes) > 0 {
 		sb.Reset()
-		_, _ = sb.WriteString("LOWER(code) IN (")
+		_, _ = sb.WriteString("code IN (")
 		for i, name := range request.Codes {
-			params = append(params, strings.ToLower(name))
+			params = append(params, name)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
 	}
 	if request.Keyword != "" {
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "%%%s%%", strings.ToLower(request.Keyword))
-		params = append(params, sb.String())
-		n := len(params)
+		_, _ = fmt.Fprintf(sb, "%%%s%%", request.Keyword)
+		keyword := sb.String()
+		params = append(params, keyword, keyword)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "(LOWER(code) LIKE $%d OR LOWER(name) LIKE $%d)", n, n)
+		_, _ = sb.WriteString("(code LIKE ? OR name LIKE ?)")
 		conds = append(conds, sb.String())
 	}
 	if len(request.UserIDs) > 0 {
 		params = append(params, models.VoucherTargetAudienceAllBuyers)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`(target_audience = $%d OR EXISTS(
+		_, _ = sb.WriteString(`(target_audience = ? OR EXISTS(
 				SELECT 1
 				FROM vouchers_users
 				WHERE vouchers_users.voucher_id = vouchers.id
-					AND vouchers_users.user_id IN (`,
-			len(params),
-		)
+					AND vouchers_users.user_id IN (`)
 		for i, buyerID := range request.UserIDs {
 			params = append(params, buyerID)
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")))")
 		conds = append(conds, sb.String())
@@ -933,24 +930,15 @@ func (q *voucherRepository) buildCondition(request *models.VoucherFilter, sb *st
 			request.TransactionDatetime.Location(),
 		)
 		params = append(params, request.TransactionDatetime, t)
-		n := len(params)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			`($%d BETWEEN effective_start_date AND effective_end_date
-			AND $%d BETWEEN effective_start_time AND effective_end_time)`,
-			n-1, n,
-		)
+		_, _ = sb.WriteString(`(? BETWEEN effective_start_date AND effective_end_date
+			AND ? BETWEEN effective_start_time AND effective_end_time)`)
 		conds = append(conds, sb.String())
 	}
 	if request.Purchase > 0 {
 		params = append(params, request.Purchase)
 		sb.Reset()
-		_, _ = fmt.Fprintf(
-			sb,
-			"minimum_purchase <= $%d",
-			len(params),
-		)
+		_, _ = sb.WriteString("minimum_purchase <= ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

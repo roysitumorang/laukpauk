@@ -2,14 +2,12 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
 	"slices"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -21,19 +19,19 @@ type SettingRepository interface {
 	) (*models.Setting, error)
 	UpdateSetting(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.Setting,
 	) (*models.Setting, error)
 }
 
 type settingRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewSettingRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) SettingRepository {
 	return &settingRepository{
 		dbRead:  dbRead,
@@ -46,7 +44,7 @@ func (q *settingRepository) FindSetting(
 ) (*models.Setting, error) {
 	ctxt := "SettingRepository-FindSetting"
 	var response models.Setting
-	err := q.dbRead.QueryRow(
+	err := q.dbRead.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -67,8 +65,8 @@ func (q *settingRepository) FindSetting(
 			, payment_terms
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, transaction_auto_withdrawal_window_min
+			, transaction_auto_withdrawal_window_max
 			, otp_required_for_login
 			, created_by
 			, created_at
@@ -102,7 +100,7 @@ func (q *settingRepository) FindSetting(
 		&response.UpdatedBy,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrSettingNotFound
 	}
 	if err != nil {
@@ -114,12 +112,12 @@ func (q *settingRepository) FindSetting(
 
 func (q *settingRepository) UpdateSetting(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.Setting,
 ) (*models.Setting, error) {
 	ctxt := "SettingRepository-UpdateSetting"
 	var response models.Setting
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -140,8 +138,8 @@ func (q *settingRepository) UpdateSetting(
 			, payment_terms
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, transaction_auto_withdrawal_window_min
+			, transaction_auto_withdrawal_window_max
 			, otp_required_for_login
 			, created_by
 			, created_at
@@ -149,7 +147,7 @@ func (q *settingRepository) UpdateSetting(
 			, updated_at
 		FROM setting
 		WHERE id = 1
-		FOR NO KEY UPDATE`,
+		FOR UPDATE`,
 	).Scan(
 		&response.ID,
 		&response.VacationMode,
@@ -195,7 +193,7 @@ func (q *settingRepository) UpdateSetting(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " vacation_mode = $%d", n)
+		_, _ = sb.WriteString(" vacation_mode = ?")
 	}
 	if (response.VacationEndDate == nil &&
 		request.VacationEndDate != nil) ||
@@ -208,35 +206,35 @@ func (q *settingRepository) UpdateSetting(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " vacation_end_date = $%d", n)
+		_, _ = sb.WriteString(" vacation_end_date = ?")
 	}
 	if response.VoucherEnabled != request.VoucherEnabled {
 		params = append(params, request.VoucherEnabled)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " voucher_enabled = $%d", n)
+		_, _ = sb.WriteString(" voucher_enabled = ?")
 	}
 	if response.ReferralPointsEnabled != request.ReferralPointsEnabled {
 		params = append(params, request.ReferralPointsEnabled)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " referral_points_enabled = $%d", n)
+		_, _ = sb.WriteString(" referral_points_enabled = ?")
 	}
 	if response.ReferralPointsMinimumShoppingCost != request.ReferralPointsMinimumShoppingCost {
 		params = append(params, request.ReferralPointsMinimumShoppingCost)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " referral_points_minimum_shopping_cost = $%d", n)
+		_, _ = sb.WriteString(" referral_points_minimum_shopping_cost = ?")
 	}
 	if response.ReferralPointsAmount != request.ReferralPointsAmount {
 		params = append(params, request.ReferralPointsAmount)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " referral_points_amount = $%d", n)
+		_, _ = sb.WriteString(" referral_points_amount = ?")
 	}
 	if slices.Compare(response.ReferralPointsSlots, request.ReferralPointsSlots) != 0 {
 		if request.ReferralPointsSlots == nil {
@@ -246,70 +244,70 @@ func (q *settingRepository) UpdateSetting(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " referral_points_slots = $%d", n)
+		_, _ = sb.WriteString(" referral_points_slots = ?")
 	}
 	if response.RewardPointsAccumulationWindowInDays != request.RewardPointsAccumulationWindowInDays {
 		params = append(params, request.RewardPointsAccumulationWindowInDays)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " reward_points_accumulation_window_in_days = $%d", n)
+		_, _ = sb.WriteString(" reward_points_accumulation_window_in_days = ?")
 	}
 	if response.DeliveryOriginLongitude != request.DeliveryOriginLongitude {
 		params = append(params, request.DeliveryOriginLongitude)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_origin_longitude = $%d", n)
+		_, _ = sb.WriteString(" delivery_origin_longitude = ?")
 	}
 	if response.DeliveryOriginLatitude != request.DeliveryOriginLatitude {
 		params = append(params, request.DeliveryOriginLatitude)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_origin_latitude = $%d", n)
+		_, _ = sb.WriteString(" delivery_origin_latitude = ?")
 	}
 	if response.DeliveryCostPerKM != request.DeliveryCostPerKM {
 		params = append(params, request.DeliveryCostPerKM)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_cost_per_km = $%d", n)
+		_, _ = sb.WriteString(" delivery_cost_per_km = ?")
 	}
 	if response.DeliveryMaxDistanceKM != request.DeliveryMaxDistanceKM {
 		params = append(params, request.DeliveryMaxDistanceKM)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " delivery_max_distance_km = $%d", n)
+		_, _ = sb.WriteString(" delivery_max_distance_km = ?")
 	}
 	if response.WhatsappPhoneNumber != request.WhatsappPhoneNumber {
 		params = append(params, request.WhatsappPhoneNumber)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " whatsapp_phone_number = $%d", n)
+		_, _ = sb.WriteString(" whatsapp_phone_number = ?")
 	}
 	if response.PaymentTerms != request.PaymentTerms {
 		params = append(params, request.PaymentTerms)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " payment_terms = $%d", n)
+		_, _ = sb.WriteString(" payment_terms = ?")
 	}
 	if response.MaximumDeliveryTime != request.MaximumDeliveryTime {
 		params = append(params, request.MaximumDeliveryTime)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " maximum_delivery_time = $%d", n)
+		_, _ = sb.WriteString(" maximum_delivery_time = ?")
 	}
 	if response.TransactionAutoWithdrawalEnabled != request.TransactionAutoWithdrawalEnabled {
 		params = append(params, request.TransactionAutoWithdrawalEnabled)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_enabled = $%d", n)
+		_, _ = sb.WriteString(" transaction_auto_withdrawal_enabled = ?")
 	}
 	var requestWindowMin,
 		responseWindowMin,
@@ -337,25 +335,22 @@ func (q *settingRepository) UpdateSetting(
 		if n = len(params); n > 2 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " transaction_auto_withdrawal_window = tstzrange($%d, $%d, '[]')", n-1, n)
+		_, _ = sb.WriteString(" transaction_auto_withdrawal_window_min = ?, transaction_auto_withdrawal_window_max = ?")
 	}
 	if response.OtpRequiredForLogin != request.OtpRequiredForLogin {
 		params = append(params, request.OtpRequiredForLogin)
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " otp_required_for_login = $%d", n)
+		_, _ = sb.WriteString(" otp_required_for_login = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
 	}
 	params = append(params, request.UpdatedBy, request.UpdatedAt, response.ID)
-	n = len(params)
-	_, _ = fmt.Fprintf(
-		sb,
-		`, updated_by = $%d
-		, updated_at = $%d
-		WHERE id = $%d
+	_, _ = sb.WriteString(`, updated_by = ?
+		, updated_at = ?
+		WHERE id = ?
 		RETURNING id
 			, vacation_mode
 			, vacation_end_date
@@ -374,16 +369,14 @@ func (q *settingRepository) UpdateSetting(
 			, payment_terms
 			, maximum_delivery_time
 			, transaction_auto_withdrawal_enabled
-			, lower(transaction_auto_withdrawal_window)
-			, upper(transaction_auto_withdrawal_window)
+			, transaction_auto_withdrawal_window_min
+			, transaction_auto_withdrawal_window_max
 			, otp_required_for_login
 			, created_by
 			, created_at
 			, updated_by
-			, updated_at`,
-		n-2, n-1, n,
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, updated_at`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.VacationMode,
 		&response.VacationEndDate,

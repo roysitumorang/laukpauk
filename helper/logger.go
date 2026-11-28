@@ -2,13 +2,13 @@ package helper
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"os"
 	"runtime"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/config"
 )
 
@@ -94,8 +94,8 @@ func Capture(ctx context.Context, level slog.Level, err error, context, scope st
 	case slog.LevelWarn:
 		logger.WarnContext(ctx, err.Error(), entries...)
 	case slog.LevelError:
-		// ignoring pgx.ErrNoRows
-		if errors.Is(err, pgx.ErrNoRows) {
+		// ignoring sql.ErrNoRows
+		if errors.Is(err, sql.ErrNoRows) {
 			return
 		}
 		var name string

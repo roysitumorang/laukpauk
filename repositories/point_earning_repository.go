@@ -2,16 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 	"github.com/roysitumorang/laukpauk/pools"
@@ -28,24 +25,24 @@ type PointEarningRepository interface {
 	) (*models.PointEarning, error)
 	CreatePointEarning(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 	UpdatePointEarning(
 		ctx context.Context,
-		tx pgx.Tx,
+		tx *sql.Tx,
 		request *models.PointEarning,
 	) (*models.PointEarning, error)
 }
 
 type pointEarningRepository struct {
 	dbRead,
-	dbWrite *pgxpool.Pool
+	dbWrite *sql.DB
 }
 
 func NewPointEarningRepository(
 	dbRead,
-	dbWrite *pgxpool.Pool,
+	dbWrite *sql.DB,
 ) PointEarningRepository {
 	return &pointEarningRepository{
 		dbRead:  dbRead,
@@ -69,9 +66,9 @@ func (q *pointEarningRepository) FindPointEarnings(
 	_, _ = fmt.Fprintf(sb, "SELECT COUNT(1) FROM point_earnings %s", condition)
 	query := sb.String()
 	var total int64
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(&total)
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(&total)
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
 		return nil, 0, 0, err
 	}
 	if total == 0 {
@@ -99,7 +96,7 @@ func (q *pointEarningRepository) FindPointEarnings(
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " %s %s", item.Field, item.Direction)
+		_, _ = fmt.Fprintf(sb, " %s %s", sortExpression(item.Field), item.Direction)
 	}
 	pages := int64(1)
 	var offset int64
@@ -123,15 +120,15 @@ func (q *pointEarningRepository) FindPointEarnings(
 		offset = request.Page * request.Limit
 		_, _ = fmt.Fprintf(sb, " LIMIT %d OFFSET %d", request.Limit, offset)
 	}
-	rows, err := q.dbRead.Query(ctx, sb.String(), params...)
-	if errors.Is(err, pgx.ErrNoRows) {
+	rows, err := q.dbRead.QueryContext(ctx, sb.String(), params...)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = nil
 	}
 	if err != nil {
-		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQuery")
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrQueryContext")
 		return nil, 0, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var response []*models.PointEarning
 	for rows.Next() {
 		var pointEarning models.PointEarning
@@ -150,6 +147,10 @@ func (q *pointEarningRepository) FindPointEarnings(
 		offset++
 		pointEarning.RowNo = offset
 		response = append(response, &pointEarning)
+	}
+	if err = rows.Err(); err != nil {
+		helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrErr")
+		return nil, 0, 0, err
 	}
 	return response, total, pages, nil
 }
@@ -182,7 +183,7 @@ func (q *pointEarningRepository) FindPointEarning(
 	)
 	query := sb.String()
 	var response models.PointEarning
-	err := q.dbRead.QueryRow(ctx, query, params...).Scan(
+	err := q.dbRead.QueryRowContext(ctx, query, params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.StartDate,
@@ -191,7 +192,7 @@ func (q *pointEarningRepository) FindPointEarning(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningNotFound
 	}
 	if err != nil {
@@ -203,12 +204,12 @@ func (q *pointEarningRepository) FindPointEarning(
 
 func (q *pointEarningRepository) CreatePointEarning(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningRepository-CreatePointEarning"
 	var response models.PointEarning
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`INSERT INTO point_earnings (
 			user_id
@@ -217,7 +218,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 			, amount
 			, created_at
 			, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6)
+		) VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING id
 			, user_id
 			, start_date
@@ -241,9 +242,7 @@ func (q *pointEarningRepository) CreatePointEarning(
 		&response.UpdatedAt,
 	)
 	if err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
+		if isUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -255,12 +254,12 @@ func (q *pointEarningRepository) CreatePointEarning(
 
 func (q *pointEarningRepository) UpdatePointEarning(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx *sql.Tx,
 	request *models.PointEarning,
 ) (*models.PointEarning, error) {
 	ctxt := "PointEarningRepository-UpdatePointEarning"
 	var response models.PointEarning
-	err := tx.QueryRow(
+	err := tx.QueryRowContext(
 		ctx,
 		`SELECT
 			id
@@ -271,7 +270,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 			, created_at
 			, updated_at
 		FROM point_earnings
-		WHERE id = $1
+		WHERE id = ?
 		FOR UPDATE`,
 		request.ID,
 	).Scan(
@@ -282,7 +281,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, models.ErrPointEarningNotFound
 	}
 	if err != nil {
@@ -303,7 +302,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " amount = $%d", n)
+		_, _ = sb.WriteString(" amount = ?")
 	}
 	if len(params) == 0 {
 		return &response, nil
@@ -313,22 +312,18 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		if n = len(params); n > 1 {
 			_, _ = sb.WriteString(",")
 		}
-		_, _ = fmt.Fprintf(sb, " updated_at = $%d", n)
+		_, _ = sb.WriteString(" updated_at = ?")
 	}
 	params = append(params, request.ID)
-	_, _ = fmt.Fprintf(
-		sb,
-		` WHERE id = $%d
+	_, _ = sb.WriteString(` WHERE id = ?
 		RETURNING id
 			, user_id
 			, start_date
 			, end_date
 			, amount
 			, created_at
-			, updated_at`,
-		len(params),
-	)
-	if err = tx.QueryRow(ctx, sb.String(), params...).Scan(
+			, updated_at`)
+	if err = tx.QueryRowContext(ctx, sb.String(), params...).Scan(
 		&response.ID,
 		&response.UserID,
 		&response.StartDate,
@@ -337,9 +332,7 @@ func (q *pointEarningRepository) UpdatePointEarning(
 		&response.CreatedAt,
 		&response.UpdatedAt,
 	); err != nil {
-		if pgxErr, ok := errors.AsType[*pgconn.PgError](err); ok &&
-			pgxErr.Code == pgerrcode.UniqueViolation &&
-			pgxErr.ConstraintName == "point_earnings_user_id_start_date_end_date_key" {
+		if isUniqueViolation(err, "point_earnings_user_id_start_date_end_date_key") {
 			err = models.ErrPointEarningUniqueBuyerIdStartDateEndDate
 		} else {
 			helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -359,7 +352,7 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -372,7 +365,7 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
-			_, _ = fmt.Fprintf(sb, "$%d", len(params))
+			_, _ = sb.WriteString("?")
 		}
 		_, _ = sb.WriteString(")")
 		conds = append(conds, sb.String())
@@ -380,13 +373,13 @@ func (q *pointEarningRepository) buildCondition(request *models.PointEarningFilt
 	if !request.StartDate.IsZero() {
 		params = append(params, request.StartDate)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "start_date = $%d", len(params))
+		_, _ = sb.WriteString("start_date = ?")
 		conds = append(conds, sb.String())
 	}
 	if !request.EndDate.IsZero() {
 		params = append(params, request.EndDate)
 		sb.Reset()
-		_, _ = fmt.Fprintf(sb, "end_date = $%d", len(params))
+		_, _ = sb.WriteString("end_date = ?")
 		conds = append(conds, sb.String())
 	}
 	if len(conds) > 0 {

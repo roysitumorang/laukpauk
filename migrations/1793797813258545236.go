@@ -2,12 +2,12 @@ package migrations
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/govalues/decimal"
-	"github.com/jackc/pgx/v5"
 	"github.com/roysitumorang/laukpauk/helper"
 	"github.com/roysitumorang/laukpauk/models"
 )
@@ -15,54 +15,58 @@ import (
 func init() {
 	Migrations[1793797813258545236] = Migration{
 		Version: 1793797813258545236,
-		Up: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Up: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Up"
 			// setting
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`CREATE TABLE setting (
-					id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY CHECK (id = 1)
+					id bigint NOT NULL PRIMARY KEY DEFAULT 1 CHECK (id = 1)
 					, vacation_mode BOOLEAN NOT NULL
-					, vacation_end_date timestamp with time zone
+					, vacation_end_date DATETIME(6)
 					, voucher_enabled BOOLEAN NOT NULL
 					, referral_points_enabled BOOLEAN NOT NULL
 					, referral_points_minimum_shopping_cost bigint NOT NULL
 					, referral_points_amount bigint NOT NULL
-					, referral_points_slots bigint[] NOT NULL
+					, referral_points_slots JSON NOT NULL
 					, referral_points_expense bigint NOT NULL
 					, reward_points_accumulation_window_in_days smallint NOT NULL
-					, delivery_origin_longitude character varying NOT NULL
-					, delivery_origin_latitude character varying NOT NULL
+					, delivery_origin_longitude TEXT NOT NULL
+					, delivery_origin_latitude TEXT NOT NULL
 					, delivery_cost_per_km bigint NOT NULL
 					, delivery_max_distance_km bigint NOT NULL
-					, whatsapp_phone_number character varying NOT NULL UNIQUE
+					, whatsapp_phone_number VARCHAR(255) NOT NULL
 					, payment_terms bigint NOT NULL
 					, maximum_delivery_time bigint NOT NULL
-					, transaction_auto_withdrawal_enabled boolean NOT NULL
-					, transaction_auto_withdrawal_window TSTZRANGE NOT NULL
-					, otp_required_for_login boolean NOT NULL
-					, created_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, created_at timestamp with time zone NOT NULL
-					, updated_by UUID NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
-					, updated_at timestamp with time zone NOT NULL
-				);`,
+					, transaction_auto_withdrawal_enabled BOOLEAN NOT NULL
+					, transaction_auto_withdrawal_window_min DATETIME(6)
+					, transaction_auto_withdrawal_window_max DATETIME(6)
+					, otp_required_for_login BOOLEAN NOT NULL
+					, created_by UUID NOT NULL
+					, created_at DATETIME(6) NOT NULL
+					, updated_by UUID NOT NULL
+					, updated_at DATETIME(6) NOT NULL
+					, CONSTRAINT setting_whatsapp_phone_number_key UNIQUE (whatsapp_phone_number)
+					, CONSTRAINT setting_created_by_fkey FOREIGN KEY (created_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+					, CONSTRAINT setting_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users (id) ON UPDATE CASCADE ON DELETE RESTRICT
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_as_ci;`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
-				`CREATE INDEX ON setting (updated_by);`,
+				`CREATE INDEX setting_updated_by_idx ON setting (updated_by);`,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 				return
 			}
 			var sellerID uuid.UUID
-			if err = tx.QueryRow(
+			if err = tx.QueryRowContext(
 				ctx,
 				`SELECT id
 				FROM users
-				WHERE email = $1`,
+				WHERE email = ?`,
 				"benni.surbakti@gmail.com",
 			).Scan(&sellerID); err != nil {
 				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrScan")
@@ -135,7 +139,7 @@ func init() {
 					now.Location(),
 				),
 			}
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				`INSERT INTO setting (
 					vacation_mode
@@ -155,16 +159,17 @@ func init() {
 					, payment_terms
 					, maximum_delivery_time
 					, transaction_auto_withdrawal_enabled
-					, transaction_auto_withdrawal_window
+					, transaction_auto_withdrawal_window_min
+					, transaction_auto_withdrawal_window_max
 					, otp_required_for_login
 					, created_by
 					, created_at
 					, updated_by
 					, updated_at
 				) VALUES (
-					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-					, $11, $12, $13, $14, $15, $16, $17, tstzrange($18, $19), $20
-					, $21, $22, $23, $24
+					?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+					, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+					, ?, ?, ?, ?
 				);`,
 				setting.VacationMode,
 				setting.VacationEndDate,
@@ -191,17 +196,17 @@ func init() {
 				sellerID,
 				now,
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},
-		Down: func(ctx context.Context, tx pgx.Tx) (err error) {
+		Down: func(ctx context.Context, tx *sql.Tx) (err error) {
 			ctxt := "Migration-Down"
-			if _, err = tx.Exec(
+			if _, err = tx.ExecContext(
 				ctx,
 				"DROP TABLE setting",
 			); err != nil {
-				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExec")
+				helper.Capture(ctx, slog.LevelError, err, ctxt, "ErrExecContext")
 			}
 			return
 		},

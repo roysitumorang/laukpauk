@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"uuid"
 
+	"github.com/google/uuid"
 	"github.com/nyaruka/phonenumbers"
 )
 
