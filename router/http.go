@@ -353,6 +353,9 @@ func (q *Service) HTTPServerMain(ctx context.Context, logger *slog.Logger) error
 		q.UserService,
 		q.TransactionService,
 	).Mount(app.Group("/promotions"))
+	controllers.NewWhatsappController(
+		q.WhatsappClient,
+	).Mount(app.Group("/whatsapp"))
 	app.Use(func(c fiber.Ctx) error {
 		return helper.NewResponse(fiber.StatusNotFound).
 			SetMessage(utils.StatusMessage(fiber.StatusNotFound)).

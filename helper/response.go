@@ -51,7 +51,7 @@ func (r *Response) SetData(data any) *Response {
 
 func (r *Response) WriteResponse(c fiber.Ctx) error {
 	if r.StatusCode == fiber.StatusNoContent {
-		return c.SendStatus(r.StatusCode)
+		return r.SendStatus(c)
 	}
 	sb := pools.BuilderPool.Get()
 	defer func() {
@@ -64,4 +64,12 @@ func (r *Response) WriteResponse(c fiber.Ctx) error {
 	r.RequestID = ByteSlice2String(c.Response().Header.Peek(fiber.HeaderXRequestID))
 	r.Latency = time.Since(c.RequestCtx().Time()).String()
 	return c.Status(r.StatusCode).JSON(r)
+}
+
+func (r *Response) SendString(c fiber.Ctx, body string) error {
+	return c.Status(r.StatusCode).SendString(body)
+}
+
+func (r *Response) SendStatus(c fiber.Ctx) error {
+	return c.SendStatus(r.StatusCode)
 }
